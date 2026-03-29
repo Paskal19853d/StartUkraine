@@ -727,3 +727,69 @@ html, body {
   from { transform: translateX(20px); opacity: 0; }
   to   { transform: translateX(0);    opacity: 1; }
 }
+/* ── ДОПОВНЕННЯ ДО STYLE.CSS ────────────────────────── */
+
+/* Dupe chips */
+.dupe-chip {
+  display: inline-block;
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: rgba(212,168,0,.08);
+  border: 1px solid rgba(212,168,0,.2);
+  color: var(--yellow);
+  margin: 2px 2px 0 0;
+  animation: fadeIn .3s var(--ease);
+}
+
+/* Pick bar animation */
+#pick-bar.on {
+  display: block;
+  animation: pickBarIn .3s var(--ease) forwards;
+}
+@keyframes pickBarIn {
+  from { transform: translateX(-50%) translateY(-10px); opacity: 0; }
+  to   { transform: translateX(-50%) translateY(0); opacity: 1; }
+}
+
+/* Map wrap cursor states */
+#map-wrap.grabbing { cursor: grabbing !important; }
+#map-wrap.picking  { cursor: crosshair !important; }
+
+/* Burst animation for like button */
+#lbtn.burst { animation: burst .4s var(--ease); }
+@keyframes burst {
+  0%  { transform: scale(1); }
+  35% { transform: scale(1.18); }
+  100%{ transform: scale(1); }
+}
+
+/* Dynamic colors tag */
+#dynamic-colors { /* managed by JS */ }
+
+/* SVG oblast base styles */
+#ukraine-svg g path,
+#ukraine-svg g polygon {
+  fill: #040f1e;
+  stroke: rgba(90,110,130,.3);
+  stroke-width: 1.5;
+  transition: fill .25s;
+  cursor: default;
+}
+#ukraine-svg g path:hover,
+#ukraine-svg g polygon:hover { fill: #071a30; }
+#ukraine-svg text { pointer-events: none; }
+#oblast-labels text {
+  font-family: Arial, sans-serif;
+  font-size: 145px;
+  fill: rgba(160,195,220,.45);
+  font-weight: 400;
+}
+
+/* Canvas */
+#canvas-layer {
+  position: absolute;
+  top: 0; left: 0;
+  pointer-events: none;
+  will-change: contents;
+}
