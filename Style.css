@@ -772,7 +772,7 @@ html, body {
 #ukraine-svg g polygon {
   fill: #040f1e;
   stroke: rgba(90,110,130,.3);
-  stroke-width: 1.5;
+  stroke-width: 18;
   transition: fill .25s;
   cursor: default;
 }
