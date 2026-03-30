@@ -1,0 +1,6 @@
+venv\Scripts\activate
+uvicorn Paskal:app --port 8000
+
+
+//-----
+(venv) D:\OSPanel\OpenServer\domains\localhost\treetex>uvicorn Paskal:app --port 8000
