@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache" />
 <title>Зоряна Памʼять</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700&family=Geologica:wght@300;400;500&display=swap" rel="stylesheet">
@@ -10,9 +11,74 @@
 <style id="dynamic-colors">
 /* Кольори завантажуються з БД */
 </style>
+<!-------->
+<canvas id="fluid"></canvas>
+<script src="js/dat.gui.min.js"></script>
+    <style>
+      * {
+        user-select: none;
+      }
+
+      html,
+      body {
+        overflow: hidden;
+        background-color: #000;
+      }
+
+      body {
+        margin: 0;
+        position: fixed;
+        width: 100%;
+        height: 100%;
+        background-repeat: no-repeat;
+        background-size: 100% 100%;
+        background-position: center;
+      }
+
+      canvas {
+        width: 100%;
+        height: 100%;
+      }
+		#fluid {
+		position: fixed;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		z-index: 900;
+		pointer-events: none;
+		opacity: 0.55;
+		mix-blend-mode: screen;
+		}	
+		
+		eoBackground {
+        position: absolute;
+        z-index: -1;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        object-fit: fill;
+      }
+
+      #overlay {
+		z-index: 9999; /* больше, чем у canvas или videoBackground */
+		pointer-events: true; /* если хочешь, чтобы клики проходили сквозь эффект */
+		position: fixed;
+		width: 100px;  /* пример размера */
+		height: 100px;
+		background-size: contain;
+		background-position: center;
+		background-repeat: no-repeat;
+		transform: translate(-50%, -50%);
+		transition: left 0.05s linear, top 1.05s linear; /* плавное движение */
+      }
+    </style>
+<!--------->
 </head>
 <body>
-
+<canvas width="1365" height="953"></canvas>
 <header id="topbar">
   <div id="logo"><span id="logo-star">&#9733;</span> <em id="logo-em">Зоряна</em> Памʼять</div>
   <div class="tstat">&#128101; <strong id="sttotal">0</strong>&nbsp;людей</div>
@@ -31,7 +97,7 @@
 
 <div id="map-wrap">
   <div id="svg-layer">
-<svg id="ukraine-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14000 9500" preserveAspectRatio="xMidYMid meet" style="position:absolute;top:0;left:0;width:100%;height:100%">
+<svg id="ukraine-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14000 9500" preserveAspectRatio="xMidYMid meet" style="position:absolute;top:0;left:0;width:100%;height:100%" >
 
 <g id="21" data-rid="r-zakarpattia">
 <title>Zakarpattia Oblast</title>
@@ -2566,5 +2632,12 @@ function showN(msg,err=false){
   connectWS();
 })();
 </script>
+
+
+    <canvas></canvas>
+    <video id="videoBackground" muted loop></video>
+    <div id="overlay"></div>
+    <script src="js/script.js"></script>
+ 
 </body>
 </html>

@@ -32,7 +32,7 @@ html, body {
   font-family: 'Geologica', 'Segoe UI', sans-serif;
   background: var(--bg);
   color: var(--text);
-  overflow: hidden;
+ /*  overflow: hidden;*/
   -webkit-font-smoothing: antialiased;
 }
 
@@ -225,10 +225,12 @@ html, body {
 
 /* ── MAP ───────────────────────────────────────────── */
 #map-wrap {
+	z-index: 600;
   position: fixed;
   top: var(--bar); left: 0; right: 0; bottom: 0;
   overflow: hidden;
   cursor: grab;
+  background: transparent; /* щоб fluid просвічував знизу */
 }
 #map-wrap.grabbing { cursor: grabbing; }
 #map-wrap.picking  { cursor: crosshair; }
@@ -775,6 +777,10 @@ html, body {
   stroke-width: 18;
   transition: fill .25s;
   cursor: default;
+  
+ 
+box-shadow: 3px -4px 28px 0px rgba(142
+  
 }
 #ukraine-svg g path:hover,
 #ukraine-svg g polygon:hover { fill: #071a30; }
@@ -793,3 +799,4 @@ html, body {
   pointer-events: none;
   will-change: contents;
 }
+ 

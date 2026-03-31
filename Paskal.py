@@ -514,3 +514,6 @@ def admin_stats(email:str, password:str):
     likes=db.execute("SELECT COALESCE(SUM(likes),0) FROM memorials").fetchone()[0]
     db.close()
     return {"total":total,"approved":approved,"pending":pending,"users":users,"likes":likes,"online":len(connected)}
+from fastapi.staticfiles import StaticFiles
+
+app.mount("/", StaticFiles(directory=".", html=True), name="static")
