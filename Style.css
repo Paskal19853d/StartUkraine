@@ -247,13 +247,27 @@ html, body {
 #ukraine-svg g path,
 #ukraine-svg g polygon {
   fill: #040f1e;
-  stroke: rgba(90,110,130,.3);
+  /*stroke: rgba(90,110,130,.3);*/
   stroke-width: 1.5;
   transition: fill .25s;
   cursor: default;
+  
+  
+  
 }
 #ukraine-svg g path:hover,
-#ukraine-svg g polygon:hover { fill: #071a30; }
+#ukraine-svg g polygon:hover { 
+fill: #071a30; 
+}
+#ukraine-svg g path,
+#ukraine-svg g polygon {
+    stroke: #040f1e;
+    stroke-width: 2;
+		  filter:
+        drop-shadow(0 0 6px rgba(255, 215, 0, 0.8))
+        drop-shadow(0 0 12px rgba(255, 215, 0, 0.6))
+        drop-shadow(0 0 54px rgba(255, 215, 0, 0.4));
+}
 
 /* Oblast labels */
 #ukraine-svg text { pointer-events: none; }
