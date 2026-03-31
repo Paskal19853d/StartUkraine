@@ -28,11 +28,11 @@ const canvas = document.getElementById("fluid");
 resizeCanvas();
 
 let config = {
-  SIM_RESOLUTION: 128,
+  SIM_RESOLUTION: 256,
   DYE_RESOLUTION: 1024,
   CAPTURE_RESOLUTION: 512,
   DENSITY_DISSIPATION: 1,
-  VELOCITY_DISSIPATION: 0.2,
+  VELOCITY_DISSIPATION: 0.9,
   PRESSURE: 0.8,
   PRESSURE_ITERATIONS: 20,
   CURL: 30,
@@ -43,18 +43,18 @@ let config = {
   COLOR_UPDATE_SPEED: 10,
   PAUSED: false,
   BACK_COLOR: { r: 0, g: 0, b: 0 },
-  TRANSPARENT: true,
+  TRANSPARENT: false,
   BLOOM: true,
   BLOOM_ITERATIONS: 8,
-  BLOOM_RESOLUTION: 256,
-  BLOOM_INTENSITY: 0.8,
+  BLOOM_RESOLUTION: 12,
+  BLOOM_INTENSITY: 0.2,
   BLOOM_THRESHOLD: 0.6,
   BLOOM_SOFT_KNEE: 0.7,
   SUNRAYS: true,
   SUNRAYS_RESOLUTION: 196,
   SUNRAYS_WEIGHT: 1.0,
-  SOUND_SENSITIVITY: 0.25,
-  FREQ_RANGE: 40,
+  SOUND_SENSITIVITY: 0,
+  FREQ_RANGE: 0,
   FREQ_MULTI: 0.1,
   CUSTOM_COLOR: true
 };
@@ -121,7 +121,9 @@ function multipleSplats(amount) {
 
 let _randomSplats = false;
 let _audioReact = false;
-let colorRange = ["#FF0000","#FF0001"];
+let colorRange = ["#0057B7","#0057B7"];
+ 
+
 let colorConfig = null;
 let splatRadiusModulationEnabled = false;
 let baseRadius = config.SPLAT_RADIUS;
@@ -1826,10 +1828,11 @@ function generateColor() {
       if(x>1){
         x -= 1;
       }
-      c = HSVtoRGB(x,Math.random()*(r.s-l.s)+l.s, (Math.random()*(r.v-l.v)+l.v)*0.15);
+	  /*Math.random()*/
+    c = HSVtoRGB(x, Math.random()*(r.s-l.s)+l.s, (Math.random()*(r.v-l.v)+l.v)*0.1);
     } catch (error) {
       console.log("Invalid color config",error);
-      c = hexToRgb("#000000");
+      c = hexToRgb("#0057B7");
     }
   }
   return c;

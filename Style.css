@@ -230,7 +230,7 @@ html, body {
   top: var(--bar); left: 0; right: 0; bottom: 0;
   overflow: hidden;
   cursor: grab;
-  background: transparent; /* щоб fluid просвічував знизу */
+      background: transparent; /* щоб fluid просвічував знизу */
 }
 #map-wrap.grabbing { cursor: grabbing; }
 #map-wrap.picking  { cursor: crosshair; }
@@ -379,7 +379,7 @@ html, body {
   background: rgba(4,9,18,.98);
   border-left: 1px solid var(--border);
   backdrop-filter: blur(16px);
-  z-index: 80;
+  z-index: 800;
   transform: translateX(100%);
   transition: transform .38s var(--ease);
   display: flex;
@@ -524,7 +524,7 @@ html, body {
   inset: 0;
   background: rgba(0,0,0,.75);
   backdrop-filter: blur(5px);
-  z-index: 300;
+  z-index: 900;
   display: none;
   align-items: center;
   justify-content: center;
