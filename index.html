@@ -2300,6 +2300,30 @@ const cv  = document.getElementById('canvas-layer');
 const ctx = cv.getContext('2d');
 
 function resize() { const r=mw.getBoundingClientRect(); W=cv.width=r.width; H=cv.height=r.height; }
+function getSvgBounds() {
+  // SVG viewBox: 14000 x 9500, preserveAspectRatio = xMidYMid meet
+  const SVG_W = 14000, SVG_H = 9500;
+  const svgAspect = SVG_W / SVG_H;  // ≈ 1.4737
+  const canvasAspect = W / H;
+
+  let svgDrawW, svgDrawH, svgOffX, svgOffY;
+
+  if (canvasAspect > svgAspect) {
+    // Canvas шире — пустые полосы слева и справа
+    svgDrawH = H;
+    svgDrawW = H * svgAspect;
+    svgOffX = (W - svgDrawW) / 2;
+    svgOffY = 0;
+  } else {
+    // Canvas выше — пустые полосы сверху и снизу
+    svgDrawW = W;
+    svgDrawH = W / svgAspect;
+    svgOffX = 0;
+    svgOffY = (H - svgDrawH) / 2;
+  }
+
+  return { x: svgOffX, y: svgOffY, w: svgDrawW, h: svgDrawH };
+}
 window.addEventListener('resize',resize); resize();
 
 function applyTr() { sl.style.transform=`translate(${tr.x}px,${tr.y}px) scale(${tr.s})`; sl.style.transformOrigin='0 0'; }
@@ -2310,8 +2334,20 @@ function clampTr() {
 }
 function resetView() { tr.x=0;tr.y=0;tr.s=1;applyTr(); }
 function zoomAt(cx,cy,f) { tr.x=cx-(cx-tr.x)*f;tr.y=cy-(cy-tr.y)*f;tr.s*=f;clampTr();applyTr(); }
-function w2s(xr,yr) { return {x:xr*W*tr.s+tr.x, y:yr*H*tr.s+tr.y}; }
-function s2w(sx,sy) { return {x:(sx-tr.x)/(tr.s*W), y:(sy-tr.y)/(tr.s*H)}; }
+function w2s(xr, yr) {
+  const b = getSvgBounds();
+  return {
+    x: (b.x + xr * b.w) * tr.s + tr.x,
+    y: (b.y + yr * b.h) * tr.s + tr.y
+  };
+}
+function s2w(sx, sy) {
+  const b = getSvgBounds();
+  return {
+    x: ((sx - tr.x) / tr.s - b.x) / b.w,
+    y: ((sy - tr.y) / tr.s - b.y) / b.h
+  };
+}
 function flyTo(xr,yr,ts) {
   const tx=W/2-xr*W*ts,ty=H/2-yr*H*ts,sx=tr.x,sy=tr.y,ss=tr.s; let st=0;
   const ease=t=>t<.5?2*t*t:-1+(4-2*t)*t;
