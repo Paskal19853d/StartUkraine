@@ -1,4 +1,0 @@
-  git add .
-  git commit -m "Дробление проєкта"
-  git push -u origin drop_data
-  git push
