@@ -2154,10 +2154,11 @@
     <div id="cname"></div>
     <div id="cdates"></div>
     <hr>
-    <div class="cf"><span class="cl">&#9875; Місце поховання</span><span class="cv" id="cbury"></span></div>
-    <div class="cf"><span class="cl">&#128205; Місце загибелі</span><span class="cv" id="cloc"></span></div>
-    <div class="cf"><span class="cl">Обставини</span><span class="cv" id="ccirc"></span></div>
-    <div class="cf"><span class="cl">Опис</span><span class="cv" id="cdesc"></span></div>
+  <!-- Стало — добавить строку с позывным ПОСЛЕ cdates и ПЕРЕД cbury: -->
+	<div class="cf"><span class="cl">&#9875; Місце поховання</span><span class="cv" id="cbury"></span></div>
+	<div class="cf"><span class="cl">&#128205; Місце загибелі</span><span class="cv" id="cloc"></span></div>
+	<div class="cf" id="cgrp-row" style="display:none"><span class="cl">📻 Позивний</span><span class="cv" id="cgrp"></span></div>
+	<div class="cf"><span class="cl">Обставини</span><span class="cv" id="ccirc"></span></div>
     <hr>
     <div class="cf" id="dupes-section" style="display:none">
       <span class="cl">&#128279; Також додали</span>
@@ -2532,7 +2533,17 @@ function openCard(p) {
   document.getElementById('cbury').textContent=p.bury||'—';
   document.getElementById('cloc').textContent=p.loc||'—';
   document.getElementById('ccirc').innerHTML=p.circ?`<span class="badge">${p.circ}</span>`:'—';
-  document.getElementById('cdesc').textContent=p.descr||'—';
+  document.getElementById('cdesc').textContent = p.descr || '—';
+	// Позывной (grp)
+	const cgrpRow = document.getElementById('cgrp-row');
+	const cgrpEl  = document.getElementById('cgrp');
+	if (p.grp) {
+	  cgrpEl.textContent = p.grp;
+	  cgrpRow.style.display = '';
+	} else {
+	  cgrpRow.style.display = 'none';
+	}
+  
   document.getElementById('lcnt').textContent=p.likes||0;
   const dupes=p.grp?people.filter(x=>x.grp===p.grp&&x.id!==p.id):[];
   const ds=document.getElementById('dupes-section');

@@ -53,7 +53,7 @@ html, body {
   background: rgba(3,7,14,.96);
   border-bottom: 1px solid var(--border);
   backdrop-filter: blur(16px);
-  z-index: 100;
+  z-index: 700;
   animation: fadeDown .5s var(--ease);
 }
 
@@ -137,7 +137,7 @@ html, body {
   border: 1px solid var(--border2);
   border-radius: var(--radius);
   display: none;
-  z-index: 200;
+  z-index: 9000;
   box-shadow: 0 12px 32px rgba(0,0,0,.7);
   overflow: hidden;
   animation: fadeUp .2s var(--ease);

@@ -239,8 +239,15 @@ tr:hover td{background:rgba(255,255,255,.02)}
       <div id="sec-mem" class="section">
         <div class="sec-title">📋 Всі записи</div>
         <div class="tbl-wrap"><table>
-          <thead><tr><th>ID</th><th>ПІБ</th><th>Місце пох.</th><th>Обст.</th><th>Статус</th><th>★</th><th>Дії</th></tr></thead>
+		  <thead><tr><th>ID</th><th>ПІБ</th><th>Позивний</th><th>Місце пох.</th><th>Обст.</th><th>Статус</th><th>★</th><th>Дії</th></tr></thead>
           <tbody id="mem-tb"></tbody>
+		  
+			<div id="mem-pagination" style="display:flex;gap:8px;align-items:center;margin-top:12px;flex-wrap:wrap;">
+		  <button class="btn btn-b" id="pg-prev" onclick="memPage(-1)">◀ Назад</button>
+		  <span id="pg-info" style="color:var(--muted);font-size:12px"></span>
+		  <button class="btn btn-b" id="pg-next" onclick="memPage(1)">Вперед ▶</button>
+			</div>
+		  
         </table></div>
       </div>
 
@@ -2434,7 +2441,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
       <div class="em-f"><label>Статус</label>
         <select id="e-approved"><option value="0">На модерації</option><option value="1">Схвалено</option></select>
       </div>
-      <div class="em-f"><label>Група (дублікати)</label><input id="e-grp"></div>
+      <div class="em-f"><label>Позивний</label><input id="e-grp"></div>
       <div class="em-f"><label>Фото URL</label><input id="e-photo"></div>
       <div class="em-f em-full"><label>Опис</label><textarea id="e-desc"></textarea></div>
     </div>
@@ -2514,12 +2521,29 @@ async function loadStats() {
 }
 
 /* ══════════ MEMORIALS ══════════ */
+ 
+let allPeople = [];
+let memCurrentPage = 0;
+const MEM_PAGE_SIZE = 100;
+
 async function loadMem() {
-  const r=await fetch(`${API}/api/people`); people=await r.json();
-  document.getElementById('mem-tb').innerHTML=people.map(p=>`
+  const r = await fetch(`${API}/api/people`);
+  allPeople = await r.json();
+  memCurrentPage = 0;
+  renderMemPage();
+}
+
+function renderMemPage() {
+  const start = memCurrentPage * MEM_PAGE_SIZE;
+  const slice = allPeople.slice(start, start + MEM_PAGE_SIZE);
+  const total = allPeople.length;
+  const totalPages = Math.ceil(total / MEM_PAGE_SIZE);
+
+  document.getElementById('mem-tb').innerHTML = slice.map(p => `
     <tr>
       <td style="color:var(--muted)">${p.id}</td>
       <td><strong>${p.last} ${p.first}</strong><br><small style="color:var(--muted)">${p.mid||''}</small></td>
+      <td style="font-size:11px;color:#4fc3f7">${p.grp||'—'}</td>
       <td style="font-size:11px">${p.bury||'—'}</td>
       <td><span class="badge bb">${p.circ||'—'}</span></td>
       <td><span class="badge ${p.approved?'bg':'by'}">${p.approved?'OK':'Мод.'}</span></td>
@@ -2529,6 +2553,17 @@ async function loadMem() {
         <button class="btn btn-r" onclick="delMem(${p.id})">🗑</button>
       </td>
     </tr>`).join('');
+
+  document.getElementById('pg-info').textContent =
+    `Сторінка ${memCurrentPage + 1} з ${totalPages} (всього: ${total})`;
+  document.getElementById('pg-prev').disabled = memCurrentPage === 0;
+  document.getElementById('pg-next').disabled = memCurrentPage >= totalPages - 1;
+}
+
+function memPage(dir) {
+  const totalPages = Math.ceil(allPeople.length / MEM_PAGE_SIZE);
+  memCurrentPage = Math.max(0, Math.min(memCurrentPage + dir, totalPages - 1));
+  renderMemPage();
 }
 
 async function loadPend() {
