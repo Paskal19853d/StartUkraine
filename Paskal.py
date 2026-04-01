@@ -66,6 +66,12 @@ def init_db():
             color TEXT DEFAULT 'rgba(160,195,220,0.45)',
             size  INTEGER DEFAULT 145
         );
+        CREATE TABLE IF NOT EXISTS search_logs (
+            id             INTEGER PRIMARY KEY AUTOINCREMENT,
+            query          TEXT NOT NULL,
+            results_count  INTEGER DEFAULT 0,
+            created_at     INTEGER DEFAULT (strftime('%s','now'))
+        );
     """)
 
     # Admin user
@@ -323,14 +329,163 @@ def get_people():
     db.close()
     return [dict(r) for r in rows]
 
+ # ── SEARCH ────────────────────────────────────────
+#@app.get("/api/search")
+#def search(q:str):
+#   if len(q)<2: return []
+#   db=get_db(); like=f"%{q}%"
+#   rows=db.execute("""SELECT * FROM memorials WHERE approved=1
+#        AND (last LIKE ? OR first LIKE ? OR mid LIKE ? OR loc LIKE ? OR bury LIKE ?)
+#        ORDER BY rating DESC LIMIT 10""", (like,)*5).fetchall()
+#        db.close(); return [dict(r) for r in rows]
+# ── SEARCH (розширений) ──────────────────────────────────
+
+def _normalize(s: str) -> str:
+    """Нормалізує рядок: нижній регістр, заміна схожих символів"""
+    return (s or "").lower().strip()
+
+def _fuzzy_score(text: str, query: str) -> float:
+    """Проста fuzzy оцінка: точне входження > слово на початку > часткове > fuzzy"""
+    t, q = _normalize(text), _normalize(query)
+    if not t or not q:
+        return 0.0
+    if t == q:
+        return 1.0
+    if t.startswith(q):
+        return 0.92
+    if q in t:
+        return 0.80
+    # Перевіряємо кожне слово
+    for word in t.split():
+        if word.startswith(q):
+            return 0.75
+        if q in word:
+            return 0.65
+    # Fuzzy: рахуємо загальні символи
+    if len(q) >= 2:
+        matches = sum(1 for c in q if c in t)
+        ratio = matches / max(len(q), len(t))
+        if ratio > 0.6:
+            return ratio * 0.55
+    return 0.0
+
+def _score_person(row: dict, q: str) -> float:
+    """Рахує загальний score по всіх полях запису"""
+    fields = [
+        (row.get("last", ""),  2.0),   # прізвище — найважливіше
+        (row.get("first", ""), 1.8),   # ім'я
+        (row.get("mid", ""),   1.2),   # по батькові
+        (row.get("grp", ""),   1.5),   # підрозділ (позивний/група)
+        (row.get("loc", ""),   1.3),   # місце загибелі
+        (row.get("bury", ""),  1.0),   # місце поховання
+        (row.get("circ", ""),  0.8),   # обставини
+        (row.get("descr", ""), 0.6),   # опис
+    ]
+    best = 0.0
+    for value, weight in fields:
+        score = _fuzzy_score(value, q) * weight
+        if score > best:
+            best = score
+    # Також перевіряємо повне ФІО разом
+    full = f"{row.get('last','')} {row.get('first','')} {row.get('mid','')}".strip()
+    full_score = _fuzzy_score(full, q) * 2.0
+    return max(best, full_score)
+
 @app.get("/api/search")
-def search(q:str):
-    if len(q)<2: return []
-    db=get_db(); like=f"%{q}%"
-    rows=db.execute("""SELECT * FROM memorials WHERE approved=1
-        AND (last LIKE ? OR first LIKE ? OR mid LIKE ? OR loc LIKE ? OR bury LIKE ?)
-        ORDER BY rating DESC LIMIT 10""", (like,)*5).fetchall()
-    db.close(); return [dict(r) for r in rows]
+def search(q: str = ""):
+    q = q.strip()
+    if len(q) < 2:
+        return []
+    db = get_db()
+    # Беремо всі approved записи (кеш у пам'яті не потрібен при SQLite)
+    rows = db.execute(
+        "SELECT * FROM memorials WHERE approved=1"
+    ).fetchall()
+    db.close()
+
+    scored = []
+    for row in rows:
+        r = dict(row)
+        score = _score_person(r, q)
+        if score > 0.3:
+            scored.append((score, r))
+
+    scored.sort(key=lambda x: (-x[0], -(x[1].get("rating") or 0)))
+
+    results = []
+    for score, r in scored[:10]:
+        results.append({
+            "id":       r["id"],
+            "name":     f"{r['last']} {r['first']} {r.get('mid','') or ''}".strip(),
+            "last":     r["last"],
+            "first":    r["first"],
+            "mid":      r.get("mid", "") or "",
+            "callsign": r.get("grp", "") or "",
+            "location": r.get("loc", "") or "",
+            "bury":     r.get("bury", "") or "",
+            "color":    r.get("color", "#4fc3f7"),
+            "x":        r.get("pos_x", 0.5),
+            "y":        r.get("pos_y", 0.5),
+            "likes":    r.get("likes", 0),
+            "score":    round(score, 3),
+        })
+
+    # Логуємо запит асинхронно
+    try:
+        db2 = get_db()
+        db2.execute(
+            "INSERT INTO search_logs (query, results_count, created_at) VALUES (?,?,?)",
+            (q, len(results), int(time.time()))
+        )
+        db2.commit()
+        db2.close()
+    except:
+        pass
+
+    return results
+
+
+@app.post("/api/search/log")
+def search_log(data: dict):
+    """Додаткове логування з клієнта (опційно)"""
+    try:
+        q = str(data.get("query", ""))[:200]
+        cnt = int(data.get("results_count", 0))
+        db = get_db()
+        db.execute(
+            "INSERT INTO search_logs (query, results_count, created_at) VALUES (?,?,?)",
+            (q, cnt, int(time.time()))
+        )
+        db.commit()
+        db.close()
+    except:
+        pass
+    return {"ok": True}
+
+
+@app.get("/api/search/stats")
+def search_stats(email: str = "", password: str = ""):
+    """Статистика пошуків (доступна публічно для демо, або захистити адмін-перевіркою)"""
+    db = get_db()
+    total      = db.execute("SELECT COUNT(*) FROM search_logs").fetchone()[0]
+    empty      = db.execute("SELECT COUNT(*) FROM search_logs WHERE results_count=0").fetchone()[0]
+    top_queries = db.execute(
+        """SELECT query, COUNT(*) as cnt
+           FROM search_logs
+           GROUP BY LOWER(TRIM(query))
+           ORDER BY cnt DESC LIMIT 10"""
+    ).fetchall()
+    recent = db.execute(
+        "SELECT query, results_count, created_at FROM search_logs ORDER BY id DESC LIMIT 20"
+    ).fetchall()
+    db.close()
+    return {
+        "total_searches":   total,
+        "empty_results":    empty,
+        "top_queries":      [{"query": r[0], "count": r[1]} for r in top_queries],
+        "recent":           [dict(r) for r in recent],
+    }   
+   
 
 @app.get("/api/stats")
 def get_stats():

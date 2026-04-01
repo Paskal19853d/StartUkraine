@@ -161,6 +161,100 @@ html, body {
 .sdi-name { font-size: 12px; font-weight: 500; color: var(--text); }
 .sdi-loc  { font-size: 11px; color: var(--text2); margin-top: 1px; }
 
+/* ── Search розширений ── */
+
+/* Кнопка очистки */
+#search-clear {
+  position: absolute;
+  right: 8px; top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 13px;
+  cursor: pointer;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  transition: background .15s, color .15s;
+  z-index: 2;
+}
+#search-clear:hover { background: rgba(255,255,255,.08); color: var(--text); }
+
+/* Підсвітка збігів */
+mark.shl {
+  background: rgba(0,200,255,.25);
+  color: #a0efff;
+  border-radius: 2px;
+  padding: 0 1px;
+  font-style: normal;
+}
+
+/* Позивний у результаті */
+.sdi-call {
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 10px;
+  color: var(--accent);
+  background: rgba(0,200,255,.1);
+  border: 1px solid rgba(0,200,255,.2);
+  border-radius: 4px;
+  padding: 0 5px;
+  vertical-align: middle;
+}
+
+/* Тіло результату */
+.sdi-body { flex: 1; min-width: 0; }
+.sdi-name { font-size: 12px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sdi-loc  { font-size: 11px; color: var(--text2); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Активний елемент (клавіатурна навігація) */
+.sdi-active {
+  background: rgba(0,200,255,.12) !important;
+  transform: translateX(3px);
+}
+
+/* Пустий результат */
+.sdi-empty {
+  text-align: center;
+  color: var(--muted);
+  font-size: 12px;
+  padding: 14px;
+  cursor: default;
+}
+.sdi-empty:hover { background: none !important; transform: none !important; }
+
+/* Loader */
+.sdi-loader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 12px;
+  padding: 12px 14px;
+  cursor: default;
+}
+.sdi-loader:hover { background: none !important; transform: none !important; }
+
+/* Spinner */
+.sld {
+  width: 14px; height: 14px;
+  border: 2px solid rgba(0,200,255,.2);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Scrollbar всередині списку */
+#sdrop { max-height: 360px; overflow-y: auto; }
+#sdrop::-webkit-scrollbar { width: 4px; }
+#sdrop::-webkit-scrollbar-track { background: transparent; }
+#sdrop::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
 /* Auth buttons */
 #un {
   font-size: 11px;

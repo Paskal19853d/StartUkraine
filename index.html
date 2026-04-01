@@ -84,9 +84,10 @@
   <div class="tstat">&#128101; <strong id="sttotal">0</strong>&nbsp;людей</div>
   <div class="tstat">&#11088; <strong id="stlikes">0</strong>&nbsp;зірок</div>
   <div class="tstat"><span class="tdot"></span><strong id="stonline">—</strong>&nbsp;онлайн</div>
-  <div id="sw">
-    <span class="sico">&#128269;</span>
-    <input type="text" id="search" placeholder="Пошук за іменем, місцем…" autocomplete="off">
+<div id="sw">
+    <span class="sico">🔍</span>
+    <input type="text" id="search" placeholder="Пошук за іменем, позивним, місцем…" autocomplete="off">
+    <button id="search-clear" onclick="si.value='';closeDrop();this.style.display='none';" title="Очистити">✕</button>
     <div id="sdrop"></div>
   </div>
   <span id="un"></span>
@@ -2451,7 +2452,16 @@ function drawDot(p) {
   if(hasDupe){const ringR=r*4.5+Math.sin(animT*2.5+p.id)*r*.5;ctx.beginPath();ctx.arc(pos.x,pos.y,ringR,0,Math.PI*2);ctx.strokeStyle=`rgba(0,200,255,${.12+.08*Math.sin(animT*2)})`;ctx.lineWidth=1;ctx.stroke();}
   if(isS||isH){ctx.beginPath();ctx.arc(pos.x,pos.y,r*4,0,Math.PI*2);ctx.strokeStyle=h2r(p.color,.5+.3*Math.sin(animT*3.5));ctx.lineWidth=1.3;ctx.stroke();}
   ctx.beginPath();ctx.arc(pos.x,pos.y,r,0,Math.PI*2);ctx.fillStyle=p.color;ctx.fill();
-  if(rn>.2||isH||isS){ctx.globalAlpha=.5+.4*pulse;ctx.beginPath();ctx.arc(pos.x,pos.y,r*.4,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();ctx.globalAlpha=1;}
+  if(rn>.2||isH||isS){
+	  ctx.globalAlpha=.5+.4*pulse;ctx.beginPath();
+	  ctx.arc(pos.x,pos.y,r*.4,0,Math.PI*2);
+	  // Приглушення при активному пошуку
+	  const dimAlpha = p._dimmed ? 0.15 : 1.0;
+	  ctx.fillStyle='#fff';
+	  ctx.fill();
+	  ctx.globalAlpha=1;
+	 // ctx.globalAlpha = someValue * (p._dimmed ? 0.15 : 1.0);
+	  }
 }
 
 (function loop(){
@@ -2553,20 +2563,173 @@ async function doLike(){
   try{await fetch(`${API}/api/like/${id}`,{method:'POST'});}catch{}
 }
 
-/* ── Search ── */
-const si=document.getElementById('search'),sd=document.getElementById('sdrop');
-let sT=null;
-si.addEventListener('input',()=>{clearTimeout(sT);const q=si.value.trim();if(q.length<2){sd.style.display='none';return;}sT=setTimeout(()=>doSearch(q),250);});
-function doSearch(q){
-  const ql=q.toLowerCase();
-  const res=people.filter(p=>`${p.last} ${p.first} ${p.mid||''} ${p.loc||''} ${p.bury||''}`.toLowerCase().includes(ql)).slice(0,8);
-  if(!res.length){sd.style.display='none';return;}
-  sd.style.display='block';
-  sd.innerHTML=res.map(p=>`<div class="sdi" onclick="pickRes(${p.id})"><div class="sdi-dot" style="background:${p.color}"></div><div><div class="sdi-name">${p.last} ${p.first}</div><div class="sdi-loc">&#9875; ${p.bury||'—'} &middot; &#11088; ${p.likes||0}</div></div></div>`).join('');
-}
-function pickRes(id){const p=people.find(x=>x.id===id);if(!p)return;sd.style.display='none';si.value='';flyTo(p.x,p.y,4);setTimeout(()=>openCard(p),360);}
-document.addEventListener('click',e=>{if(!e.target.closest('#sw'))sd.style.display='none';});
+/* ── Search (розширений) ── */
+const si = document.getElementById('search'), sd = document.getElementById('sdrop');
+let sT = null, sIdx = -1, sResults = [], searchActive = false;
 
+/* --- Highlight: підсвічує збіг у рядку --- */
+function hlText(str, q) {
+  if (!q || !str) return str || '';
+  const esc = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return str.replace(new RegExp(`(${esc})`, 'gi'),
+    '<mark class="shl">$1</mark>');
+}
+
+/* --- Fuzzy score (клієнтська копія для сортування) --- */
+function clientScore(p, q) {
+  const ql = q.toLowerCase();
+  const full = `${p.last} ${p.first} ${p.mid||''} ${p.grp||''} ${p.loc||''}`.toLowerCase();
+  if (full.startsWith(ql)) return 1;
+  if (full.includes(ql)) return 0.8;
+  for (const w of full.split(/\s+/)) {
+    if (w.startsWith(ql)) return 0.7;
+  }
+  return 0;
+}
+
+/* --- Рендер списку --- */
+function renderDrop(results, q) {
+  if (!results.length) {
+    sd.innerHTML = `<div class="sdi sdi-empty">Нічого не знайдено</div>`;
+    sd.style.display = 'block';
+    return;
+  }
+  sd.innerHTML = results.map((p, i) => {
+    const name = hlText(`${p.last} ${p.first} ${p.mid || ''}`.trim(), q);
+    const call = p.callsign ? `<span class="sdi-call">${hlText(p.callsign, q)}</span>` : '';
+    const loc  = hlText(p.location || p.bury || '—', q);
+    return `
+      <div class="sdi${i === sIdx ? ' sdi-active' : ''}" 
+           data-idx="${i}"
+           onmousedown="pickRes(${i})">
+        <div class="sdi-dot" style="background:${p.color}"></div>
+        <div class="sdi-body">
+          <div class="sdi-name">${name}${call}</div>
+          <div class="sdi-loc">&#9875; ${loc}${p.likes ? ` &middot; &#11088; ${p.likes}` : ''}</div>
+        </div>
+      </div>`;
+  }).join('');
+  sd.style.display = 'block';
+}
+
+/* --- Підсвітка точок на карті --- */
+function highlightMap(results) {
+  const ids = new Set(results.map(r => r.id));
+  // canvas-шар: приглушуємо всі крім знайдених
+  if (!results.length) {
+    people.forEach(p => { p._dimmed = false; });
+  } else {
+    people.forEach(p => { p._dimmed = !ids.has(p.id); });
+  }
+}
+
+/* --- Вибір результату --- */
+function pickRes(idx) {
+  const r = sResults[idx];
+  if (!r) return;
+  closeDrop();
+  si.value = `${r.last} ${r.first}`.trim();
+  // Знайти в масиві people
+  const p = people.find(pp => pp.id === r.id);
+  if (p) {
+    highlightMap([r]);
+    flyTo(p.x, p.y, 3.5);
+    setTimeout(() => openCard(p), 350);
+  }
+}
+
+/* --- Закрити список --- */
+function closeDrop() {
+  sd.style.display = 'none';
+  sIdx = -1;
+  searchActive = false;
+  // Знімаємо приглушення
+  people.forEach(p => { p._dimmed = false; });
+}
+
+/* --- Основна функція пошуку --- */
+async function doSearch(q) {
+  if (q.length < 2) { closeDrop(); return; }
+
+  // Показуємо loader
+  sd.innerHTML = '<div class="sdi sdi-loader"><span class="sld"></span>Пошук…</div>';
+  sd.style.display = 'block';
+  searchActive = true;
+
+  try {
+    const resp = await fetch(`${API}/api/search?q=${encodeURIComponent(q)}`);
+    if (!resp.ok) throw new Error('err');
+    sResults = await resp.json();
+    sIdx = -1;
+    renderDrop(sResults, q);
+    highlightMap(sResults);
+  } catch {
+    // Fallback: локальний пошук по масиву people
+    const ql = q.toLowerCase();
+    sResults = people
+      .filter(p => `${p.last} ${p.first} ${p.mid||''} ${p.grp||''} ${p.loc||''}`
+        .toLowerCase().includes(ql))
+      .sort((a, b) => (b.rating || 0) - (a.rating || 0))
+      .slice(0, 10)
+      .map(p => ({
+        id: p.id, last: p.last, first: p.first, mid: p.mid || '',
+        callsign: p.grp || '', location: p.loc || '', bury: p.bury || '',
+        color: p.color, likes: p.likes || 0
+      }));
+    sIdx = -1;
+    renderDrop(sResults, q);
+    highlightMap(sResults);
+  }
+}
+
+/* --- Клавіатурна навігація --- */
+si.addEventListener('keydown', e => {
+  if (!searchActive && sd.style.display === 'none') return;
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    sIdx = Math.min(sIdx + 1, sResults.length - 1);
+    renderDrop(sResults, si.value.trim());
+    // Scroll до активного елемента
+    const active = sd.querySelector('.sdi-active');
+    if (active) active.scrollIntoView({ block: 'nearest' });
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    sIdx = Math.max(sIdx - 1, -1);
+    renderDrop(sResults, si.value.trim());
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    if (sIdx >= 0) pickRes(sIdx);
+    else if (sResults.length) pickRes(0);
+  } else if (e.key === 'Escape') {
+    closeDrop();
+    si.blur();
+  }
+});
+
+/* --- Input з debounce 300ms --- */
+si.addEventListener('input', () => {
+  clearTimeout(sT);
+  const q = si.value.trim();
+  // Показати кнопку очистки
+  const clr = document.getElementById('search-clear');
+  if (clr) clr.style.display = q.length ? 'flex' : 'none';
+  if (q.length < 2) { closeDrop(); return; }
+  sT = setTimeout(() => doSearch(q), 300);
+});
+
+/* --- Закрити при кліку поза списком --- */
+document.addEventListener('mousedown', e => {
+  if (!si.contains(e.target) && !sd.contains(e.target)) {
+    closeDrop();
+  }
+});
+
+/* --- Focus: якщо є текст — повторний пошук --- */
+si.addEventListener('focus', () => {
+  const q = si.value.trim();
+  if (q.length >= 2 && !sResults.length) doSearch(q);
+  else if (sResults.length) renderDrop(sResults, q);
+});
 /* ── Auth ── */
 function updateAuthUI(){
   const un=document.getElementById('un'),ba=document.getElementById('btn-auth'),bl=document.getElementById('btn-logout');
