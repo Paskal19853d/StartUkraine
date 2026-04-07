@@ -1,0 +1,1 @@
+python -m uvicorn Paskal:app --reload --port 8000

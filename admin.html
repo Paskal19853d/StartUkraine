@@ -2847,11 +2847,25 @@ window.addEventListener('mousemove',e=>{
     applyMapTr();
   }
 });
+
+/*
 window.addEventListener('mouseup',e=>{
   if(lblDrag)lblDrag=false;
   if(dotDrag)dotDrag=false;
   if(mDrag){mDrag=false;mapWrap.classList.remove('grabbing');}
 });
+*/
+
+window.addEventListener('mouseup', e => {
+  if(lblDrag) lblDrag = false;
+  if(dotDrag) {
+    dotDrag = false;
+    const autoCb = document.getElementById('autosave-dot-cb');
+    if(autoCb && autoCb.checked) saveSelectedDot(); // ← автосохранение
+  }
+  if(mDrag) { mDrag = false; mapWrap.classList.remove('grabbing'); }
+});
+
 mapCont.addEventListener('wheel',e=>{
   e.preventDefault();
   const r=mapCont.getBoundingClientRect();
@@ -3004,5 +3018,7 @@ async function initAll(){
   connectWS();
 }
 </script>
+
+
 </body>
 </html>
