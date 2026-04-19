@@ -2321,24 +2321,47 @@ function applyColors() {
   window.CITY_BORDER_ZOOM = parseFloat(c('city_border_zoom') || '2.5');
   // Застосовуємо smoke-налаштування до fluid simulation
   applySmokeConfig();
+
+  // Куки: перевіряємо чи адмін дозволив, потім читаємо збережений стан диму
+  _cookiesOk = getC('use_cookies') === '1';
+  if (!_cookiesOk) {
+    // Куки вимкнено — скидаємо збережені вподобання і завжди вмикаємо дим
+    _deleteCookie('zp_smoke');
+    _smokeOn = true;
+  } else {
+    _applyCookiePrefs(); // читаємо збережений стан з куки
+  }
+  _applySmokeState();   // застосовуємо до UI і WebGL
 }
 function applySmokeConfig() {
   const fc = window._fluidConfig;
   if (!fc) return;
   const c = k => getC(k);
-  fc.DENSITY_DISSIPATION = parseFloat(c('smoke_density')      || '0.995');
-  fc.VELOCITY_DISSIPATION= parseFloat(c('smoke_velocity')     || '0.98');
-  fc.SPLAT_RADIUS        = parseFloat(c('smoke_splat_radius') || '0.22');
-  fc.SPLAT_FORCE         = parseFloat(c('smoke_splat_force')  || '14000');
-  fc.CURL                = parseFloat(c('smoke_curl')         || '35');
-  // Колір диму через colorRange (0057B7 = синій прапора)
+  fc.DENSITY_DISSIPATION  = parseFloat(c('smoke_density')      || '0.995');
+  fc.VELOCITY_DISSIPATION = parseFloat(c('smoke_velocity')     || '0.98');
+  fc.SPLAT_RADIUS         = parseFloat(c('smoke_splat_radius') || '0.22');
+  fc.SPLAT_FORCE          = parseFloat(c('smoke_splat_force')  || '14000');
+  fc.CURL                 = parseFloat(c('smoke_curl')         || '35');
+  fc.CUSTOM_COLOR         = true; // завжди використовувати colorRange
+
+  // Колір диму з БД
   const cf = c('smoke_color_from') || '#0057B7';
   const ct = c('smoke_color_to')   || '#00BFFF';
-  if (window.colorRange) { window.colorRange[0] = cf; window.colorRange[1] = ct; }
-  // Прозорість canvas (opacity керує силою видимості диму)
+  if (window.colorRange) {
+    window.colorRange[0] = cf;
+    window.colorRange[1] = ct;
+  }
+
+  // Прозорість canvas
   const op = parseFloat(c('smoke_opacity') || '0.85');
   const fl = document.getElementById('fluid');
-  if (fl) fl.style.opacity = op;
+  if (fl) fl.style.opacity = _smokeOn ? op : '0';
+
+  // Перезапуск сплеттів з правильним кольором з БД
+  // (замінює веселкові кольори від першого старту script.js)
+  if (typeof multipleSplats === 'function') {
+    setTimeout(() => multipleSplats(12), 50);
+  }
 }
 
 /* ── Canvas ── */
@@ -2991,9 +3014,30 @@ function showN(msg,err=false){
   clearTimeout(nt);nt=setTimeout(()=>el.classList.remove('show'),3200);
 }
 
-/* ── Дим — перемикач ── */
-// При кожному завантаженні сайту дим завжди увімкнено
-let _smokeOn = true;
+/* ── Cookie helpers ── */
+function _setCookie(name, value, days = 365) {
+  const d = new Date();
+  d.setTime(d.getTime() + days * 24 * 60 * 60 * 1000);
+  document.cookie = `${name}=${value};expires=${d.toUTCString()};path=/;SameSite=Lax`;
+}
+function _getCookie(name) {
+  const found = document.cookie.split(';').map(c => c.trim()).find(c => c.startsWith(name + '='));
+  return found ? found.split('=').slice(1).join('=') : null;
+}
+function _deleteCookie(name) {
+  document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/`;
+}
+
+/* ── Дим — перемикач із підтримкою куків ── */
+let _smokeOn      = true;  // дефолт — увімкнено
+let _cookiesOk    = false; // стає true після loadColors якщо use_cookies=1
+
+// Застосувати збережений стан з куки (викликається після loadColors)
+function _applyCookiePrefs() {
+  if (!_cookiesOk) return;
+  const saved = _getCookie('zp_smoke');
+  if (saved !== null) _smokeOn = saved === '1';
+}
 
 function _applySmokeState() {
   const fl  = document.getElementById('fluid');
@@ -3006,6 +3050,8 @@ function _applySmokeState() {
   if (window._fluidConfig) window._fluidConfig.PAUSED = !_smokeOn;
   if (btn) btn.classList.toggle('active', _smokeOn);
   if (lbl) lbl.textContent = _smokeOn ? 'Дим увімкнено' : 'Дим вимкнено';
+  // Зберегти вибір у куку якщо дозволено адміном
+  if (_cookiesOk) _setCookie('zp_smoke', _smokeOn ? '1' : '0');
 }
 
 function toggleSmoke() {
@@ -3013,7 +3059,7 @@ function toggleSmoke() {
   _applySmokeState();
 }
 
-// Toggle показується активним одразу, до завантаження WebGL
+// Toggle показується активним одразу (до завантаження WebGL і куків)
 document.addEventListener('DOMContentLoaded', () => {
   const btn = document.getElementById('btn-smoke');
   const lbl = document.getElementById('smoke-lbl');
@@ -3039,7 +3085,7 @@ window.addEventListener('load', _applySmokeState);
     <canvas></canvas>
     <video id="videoBackground" muted loop></video>
     <div id="overlay"></div>
-    <script src="js/script.js"></script>
+    <script src="js/script.js?v=20260419"></script>
 
 <!-- INFO MODALS -->
 <div class="mov" id="m-rules">

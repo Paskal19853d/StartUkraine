@@ -1835,14 +1835,17 @@ function generateColor() {
         l.v = x;
       }
       if(r.h < l.h){
-        r.h += 1;
+        if (l.h - r.h > 0.5) {
+          r.h += 1; // довгий шлях (напр. червоний→помаранчевий через 360°)
+        } else {
+          x = r.h; r.h = l.h; l.h = x; // короткий шлях (напр. синій→блакитний)
+        }
       }
 
       x = Math.random()*(r.h-l.h) + l.h;
       if(x>1){
         x -= 1;
       }
-	  /*Math.random()*/
     c = HSVtoRGB(x, Math.random()*(r.s-l.s)+l.s, (Math.random()*(r.v-l.v)+l.v)*0.1);
     } catch (error) {
       console.log("Invalid color config",error);

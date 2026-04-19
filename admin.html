@@ -3159,6 +3159,7 @@ function renderColors(){
 
   const zoomKeys =['zoom_min','zoom_max','city_border','city_border_zoom'];
   const smokeKeys=['smoke_density','smoke_velocity','smoke_splat_radius','smoke_splat_force','smoke_curl','smoke_opacity','smoke_color_from','smoke_color_to'];
+  const boolKeys =['use_cookies'];
 
   const zoomBlock=`
   <div style="grid-column:1/-1;background:rgba(0,200,255,.06);border:1px solid rgba(0,200,255,.2);border-radius:8px;padding:14px 16px;margin-bottom:4px">
@@ -3168,15 +3169,29 @@ function renderColors(){
     </div>
   </div>`;
 
+  const cookieOn = (COLORS['use_cookies']?.value ?? '1') === '1';
   const smokeBlock=`
   <div style="grid-column:1/-1;background:rgba(100,200,255,.05);border:1px solid rgba(100,200,255,.18);border-radius:8px;padding:14px 16px;margin-bottom:4px">
     <div style="font-size:11px;color:#4fc3f7;font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px">💨 Ефект диму</div>
     <div style="display:flex;flex-wrap:wrap;gap:10px">
       ${smokeKeys.map(k=>COLORS[k]?renderColorRow(k,COLORS[k]):'').join('')}
     </div>
+    <div style="margin-top:14px;padding-top:12px;border-top:1px solid rgba(100,200,255,.12);display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+      <div>
+        <div style="font-size:12px;color:#d0dce8;font-weight:500">Кукі налаштувань користувача</div>
+        <div style="font-size:11px;color:#3a5068;margin-top:2px">${COLORS['use_cookies']?.label||'Зберігати налаштування у браузері'}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
+        <span id="cookie-toggle-lbl" style="font-size:12px;color:${cookieOn?'#00c8ff':'#3a5068'};transition:color .2s">${cookieOn?'Увімкнено':'Вимкнено'}</span>
+        <div id="cookie-toggle" onclick="adminToggleCookies()"
+          style="width:44px;height:24px;background:${cookieOn?'rgba(0,200,255,.25)':'rgba(255,255,255,.08)'};border:1px solid ${cookieOn?'rgba(0,200,255,.55)':'rgba(255,255,255,.12)'};border-radius:12px;position:relative;cursor:pointer;transition:background .25s,border-color .25s,box-shadow .25s;${cookieOn?'box-shadow:0 0 10px rgba(0,200,255,.2)':''}">
+          <div style="position:absolute;top:3px;left:${cookieOn?'18':'3'}px;width:16px;height:16px;background:${cookieOn?'#00c8ff':'#3a5068'};border-radius:50%;transition:left .25s,background .25s"></div>
+        </div>
+      </div>
+    </div>
   </div>`;
 
-  const otherEntries=Object.entries(COLORS).filter(([k])=>!glowKeys.includes(k)&&!zoomKeys.includes(k)&&!smokeKeys.includes(k));
+  const otherEntries=Object.entries(COLORS).filter(([k])=>!glowKeys.includes(k)&&!zoomKeys.includes(k)&&!smokeKeys.includes(k)&&!boolKeys.includes(k));
   document.getElementById('colors-grid').innerHTML=glowBlock+zoomBlock+smokeBlock+otherEntries.map(([k,info])=>renderColorRow(k,info)).join('');
 }
 
@@ -3233,6 +3248,24 @@ function updatePreview(){
     ctx.beginPath();ctx.moveTo(70,10);ctx.lineTo(70,60);ctx.stroke();
     ctx.beginPath();ctx.moveTo(14,35);ctx.lineTo(126,35);ctx.stroke();}
 }
+function adminToggleCookies(){
+  const cur = (pendColors['use_cookies'] ?? COLORS['use_cookies']?.value ?? '1');
+  const next = cur === '1' ? '0' : '1';
+  onClrChange('use_cookies', next);
+  // Оновити вигляд toggle без перемальовки всього блоку
+  const tog = document.getElementById('cookie-toggle');
+  const lbl = document.getElementById('cookie-toggle-lbl');
+  const on  = next === '1';
+  if (tog) {
+    tog.style.background    = on ? 'rgba(0,200,255,.25)' : 'rgba(255,255,255,.08)';
+    tog.style.borderColor   = on ? 'rgba(0,200,255,.55)' : 'rgba(255,255,255,.12)';
+    tog.style.boxShadow     = on ? '0 0 10px rgba(0,200,255,.2)' : '';
+    const thumb = tog.querySelector('div');
+    if (thumb) { thumb.style.left = on ? '18px' : '3px'; thumb.style.background = on ? '#00c8ff' : '#3a5068'; }
+  }
+  if (lbl) { lbl.textContent = on ? 'Увімкнено' : 'Вимкнено'; lbl.style.color = on ? '#00c8ff' : '#3a5068'; }
+}
+
 async function saveAllColors(){
   const batch=Object.entries(pendColors).map(([k,v])=>({key:k,value:v}));
   if(!batch.length){showN('Немає змін');return;}

@@ -224,6 +224,7 @@ def init_db():
         ("smoke_opacity",         "0.85",     "Дим — прозорість (0.1–1.0)"),
         ("smoke_color_from",      "#0057B7",  "Дим — колір від"),
         ("smoke_color_to",        "#00BFFF",  "Дим — колір до"),
+        ("use_cookies",           "1",        "Зберігати налаштування користувача в куках (1=так, 0=ні)"),
     ]
     with db.cursor() as c:
         for key, val, label in defaults:
