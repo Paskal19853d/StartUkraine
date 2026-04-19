@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>Зоряна Пам'ять</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700&family=Geologica:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style id="dynamic-colors">/* завантажується з БД */</style>
+<style>
+  *, *::before, *::after { user-select: none; }
+  html, body { overflow: hidden; background: #000; }
+  body { margin: 0; position: fixed; width: 100%; height: 100%; }
+  canvas { width: 100%; height: 100%; }
+</style>
+<canvas id="fluid"></canvas>
+<script src="/js/dat.gui.min.js"></script>
+</head>
+<body>
+
+<header id="topbar">
+  <div id="logo"><span id="logo-star">&#9733;</span> <em id="logo-em">Зоряна</em> Пам'ять</div>
+  <div class="tstat">&#128101; <strong id="sttotal">0</strong>&nbsp;людей</div>
+  <div class="tstat">&#11088; <strong id="stlikes">0</strong>&nbsp;зірок</div>
+  <div class="tstat"><span class="tdot"></span><strong id="stonline">—</strong>&nbsp;онлайн</div>
+  <div id="sw">
+    <span class="sico">🔍</span>
+    <input type="text" id="search" placeholder="Пошук за іменем, позивним, місцем…" autocomplete="off" maxlength="100">
+    <button id="search-clear" title="Очистити">✕</button>
+    <div id="sdrop"></div>
+  </div>
+  <span id="un"></span>
+  <button id="btn-logout">Вийти</button>
+  <button id="btn-auth">Увійти</button>
+  <button id="btn-add">+ ДОДАТИ</button>
+</header>
+
+<div id="map-wrap">
+  <div id="svg-layer"></div>
+  <canvas id="canvas-layer"></canvas>
+  <div id="pick-bar">📍 Клікніть на карті — місце поховання</div>
+  <div id="zoom">
+    <button class="zbtn" id="zin">+</button>
+    <button class="zbtn" id="zout">&#8722;</button>
+    <button class="zbtn" style="font-size:11px" id="zrst">&#8962;</button>
+  </div>
+  <div id="count"><strong id="btotal">0</strong><span>у пам'яті</span></div>
+  <div id="tip"></div>
+</div>
+
+<aside id="card">
+  <button id="cclose" onclick="closeCard()">&#10005;</button>
+  <div id="cphoto"><img id="cimg" src="" alt="Фото" loading="lazy"><div id="cgrad"></div></div>
+  <div id="cbody">
+    <div id="cname"></div>
+    <div id="cdates"></div>
+    <hr>
+    <div class="cf"><span class="cl">⚓ Місце поховання</span><span class="cv" id="cbury"></span></div>
+    <div class="cf"><span class="cl">📍 Місце загибелі</span><span class="cv" id="cloc"></span></div>
+    <div class="cf" id="cgrp-row" style="display:none"><span class="cl">📻 Позивний</span><span class="cv" id="cgrp"></span></div>
+    <div class="cf"><span class="cl">Обставини</span><span class="cv" id="ccirc"></span></div>
+    <hr>
+    <div class="cf"><span class="cl">Опис</span><div id="cdesc"></div></div>
+    <div class="cf" id="dupes-section" style="display:none">
+      <span class="cl">🔗 Також додали</span>
+      <div id="cdupes"></div>
+    </div>
+    <hr id="dupes-hr" style="display:none">
+    <button id="lbtn" onclick="doLike()">
+      <span>&#11088;</span><span>Зірка пам'яті</span><span id="lcnt">0</span>
+    </button>
+  </div>
+</aside>
+
+<!-- AUTH MODAL -->
+<div class="mov" id="mauth">
+  <div class="mo" style="max-width:360px">
+    <button class="moc" onclick="closeAuth()">&#10005;</button>
+    <h2>🔒 Вхід / Реєстрація</h2>
+    <div class="atabs">
+      <div class="atab active" id="tlogin" onclick="switchTab('login')">Увійти</div>
+      <div class="atab" id="treg" onclick="switchTab('reg')">Реєстрація</div>
+    </div>
+    <div id="plogin">
+      <div class="fr full" style="margin-bottom:10px"><div class="fg"><label>Email</label><input type="email" id="lemail" placeholder="you@email.com" maxlength="120" autocomplete="email"></div></div>
+      <div class="fr full" style="margin-bottom:16px"><div class="fg"><label>Пароль</label><input type="password" id="lpass" placeholder="мінімум 6 символів" maxlength="128" autocomplete="current-password"></div></div>
+      <button class="fsub" onclick="doLogin()">Увійти</button>
+    </div>
+    <div id="preg" style="display:none">
+      <div class="fr full" style="margin-bottom:10px"><div class="fg"><label>Ім'я</label><input id="rname" placeholder="Ваше ім'я" maxlength="80" autocomplete="name"></div></div>
+      <div class="fr full" style="margin-bottom:10px"><div class="fg"><label>Email</label><input type="email" id="remail" placeholder="you@email.com" maxlength="120" autocomplete="email"></div></div>
+      <div class="fr full" style="margin-bottom:16px"><div class="fg"><label>Пароль</label><input type="password" id="rpass" placeholder="мінімум 6 символів" maxlength="128" autocomplete="new-password"></div></div>
+      <button class="fsub" onclick="doRegister()">Зареєструватись</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD MEMORIAL MODAL -->
+<div class="mov" id="madd">
+  <div class="mo">
+    <button class="moc" onclick="closeAdd()">&#10005;</button>
+    <h2>✦ Додати загиблого</h2>
+    <p class="mo-sub">Записи проходять модерацію. Вказуйте лише достовірні дані.</p>
+    <div class="fr">
+      <div class="fg"><label>Прізвище *</label><input id="flast" placeholder="Шевченко" maxlength="100"></div>
+      <div class="fg"><label>Ім'я *</label><input id="ffirst" placeholder="Олег" maxlength="100"></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label>По батькові</label><input id="fmid" placeholder="Миколайович" maxlength="100"></div>
+      <div class="fg"><label>Позивний</label><input id="fgrp" placeholder="Напр.: Сокіл" maxlength="100"></div>
+    </div>
+    <div class="fr full">
+      <div class="fg"><label>Фото (https://…)</label><input id="fphoto" placeholder="https://i.imgur.com/…" maxlength="500" type="url"></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label>Дата народження</label><input type="date" id="fbirth"></div>
+      <div class="fg"><label>Дата загибелі</label><input type="date" id="fdeath"></div>
+    </div>
+    <div class="fr full"><div class="fg"><label>Де загинув</label><input id="floc" placeholder="Авдіївка, Донецька обл." maxlength="300"></div></div>
+    <div class="fr full"><div class="fg"><label>Де похований</label><input id="fbury" placeholder="с. Березівка, Київська обл." maxlength="300"></div></div>
+    <div class="fr full">
+      <div class="fg"><label>Обставини загибелі</label>
+        <select id="fcirc">
+          <option value="">— оберіть —</option>
+          <option>Міна</option><option>Ракетний удар</option><option>Шахед</option>
+          <option>Артилерія</option><option>Прямий контакт</option><option>Снайпер</option>
+          <option>Авіабомба</option><option>Полон</option><option>Інше</option>
+        </select>
+      </div>
+    </div>
+    <div class="fr full"><div class="fg"><label>Опис (до 2000 символів)</label><textarea id="fdesc" placeholder="Хоробрий захисник…" maxlength="2000"></textarea></div></div>
+    <div class="fg" style="margin-bottom:12px">
+      <label>Колір точки</label>
+      <div class="crow" id="crow">
+        <div class="csw sel" style="background:#4fc3f7" data-c="#4fc3f7"></div>
+        <div class="csw" style="background:#ffd54f" data-c="#ffd54f"></div>
+        <div class="csw" style="background:#ef9a9a" data-c="#ef9a9a"></div>
+        <div class="csw" style="background:#a5d6a7" data-c="#a5d6a7"></div>
+        <div class="csw" style="background:#ce93d8" data-c="#ce93d8"></div>
+        <div class="csw" style="background:#c8b060" data-c="#c8b060"></div>
+        <div class="csw" style="background:#ff8a65" data-c="#ff8a65"></div>
+        <div class="csw" style="background:#80cbc4" data-c="#80cbc4"></div>
+      </div>
+    </div>
+    <p class="plbl">📍 Місце поховання на карті: <strong id="pstatus">не обрано</strong></p>
+    <div class="ph" onclick="startPick()">🗺 Клікніть щоб поставити точку на карті</div>
+    <input type="hidden" id="fpx"><input type="hidden" id="fpy">
+    <button class="fsub" onclick="submitAdd()">✦ НАДІСЛАТИ НА МОДЕРАЦІЮ</button>
+  </div>
+</div>
+
+<div id="notif"></div>
+
+<script>
+'use strict';
+const API = window.location.origin; // Same origin — no hardcoded URLs
+
+// ── State ──────────────────────────────────────────────
+let people = [], curUser = null, authToken = null;
+let selColor = '#4fc3f7', isPick = false, pickCb = null, activePerson = null;
+let W = 0, H = 0, animT = 0, particles = [];
+const tr = {x:0, y:0, s:1};
+let drag = false, dragS = {x:0,y:0}, trS = {x:0,y:0};
+let hovId = null, selId = null;
+let COLORS = {};
+
+// ── Restore session ────────────────────────────────────
+function loadSession() {
+  try {
+    const saved = localStorage.getItem('zp_session');
+    if (saved) {
+      const s = JSON.parse(saved);
+      if (s && s.token && s.user) {
+        authToken = s.token;
+        curUser   = s.user;
+      }
+    }
+  } catch { localStorage.removeItem('zp_session'); }
+}
+
+function saveSession() {
+  if (authToken && curUser) {
+    localStorage.setItem('zp_session', JSON.stringify({token: authToken, user: curUser}));
+  } else {
+    localStorage.removeItem('zp_session');
+  }
+}
+
+// ── XSS-safe text helper ────────────────────────────────
+function esc(str) {
+  const d = document.createElement('div');
+  d.textContent = String(str || '');
+  return d.innerHTML;
+}
+
+// ── Colors from DB ─────────────────────────────────────
+async function loadColors() {
+  try {
+    const r = await fetch(API + '/api/colors');
+    if (!r.ok) return;
+    COLORS = await r.json();
+    applyColors();
+  } catch { /* use CSS defaults */ }
+}
+
+function getC(key, fallback='') {
+  return COLORS[key]?.value || fallback;
+}
+
+function applyColors() {
+  const c = k => getC(k);
+  const style = document.getElementById('dynamic-colors');
+  style.textContent = `
+    body { background: ${c('bg') || '#03070e'}; }
+    #topbar { background: ${c('bar_bg') || 'rgba(3,7,14,.96)'}; }
+    #ukraine-svg { background: ${c('map_bg') || '#03070e'}; }
+    #logo-star { color: ${c('logo_star') || '#f0c030'}; }
+    #logo-em   { color: ${c('logo_accent') || '#00c8ff'}; }
+    #logo      { color: ${c('logo_text') || '#f0c030'}; }
+    #card      { background: ${c('card_bg') || 'rgba(4,9,18,.98)'}; }
+    .tstat strong { color: ${c('text_primary') || '#d0dce8'}; }
+    #ukraine-svg g path, #ukraine-svg g polygon {
+      fill: ${c('oblast_fill') || '#040f1e'};
+      stroke: ${c('oblast_stroke') || 'rgba(90,110,130,.3)'};
+      stroke-width: 2;
+      vector-effect: non-scaling-stroke;
+    }
+    #count strong { color: ${c('yellow2') || '#f0c030'}; }
+    #btn-add { background: linear-gradient(135deg, ${c('btn_add_bg')||'#0e2860'}, #0088bb); color: ${c('btn_add_text')||'#a8e0f8'}; }
+  `;
+  window.THREAD_COLOR = c('thread_color') || 'rgba(0,200,255,1)';
+  window.NEON_BLUE    = c('neon_blue') || '#00ccff';
+  window.NEON_YELLOW  = c('neon_yellow') || '#d4a800';
+}
+
+// ── Canvas ─────────────────────────────────────────────
+const mw  = document.getElementById('map-wrap');
+const sl  = document.getElementById('svg-layer');
+const cv  = document.getElementById('canvas-layer');
+const ctx = cv.getContext('2d');
+
+function resize() { const r=mw.getBoundingClientRect(); W=cv.width=r.width; H=cv.height=r.height; }
+function getSvgBounds() {
+  const SVG_W=14000, SVG_H=9500, svgAspect=SVG_W/SVG_H, canvasAspect=W/H;
+  let svgDrawW, svgDrawH, svgOffX, svgOffY;
+  if (canvasAspect > svgAspect) {
+    svgDrawH=H; svgDrawW=H*svgAspect; svgOffX=(W-svgDrawW)/2; svgOffY=0;
+  } else {
+    svgDrawW=W; svgDrawH=W/svgAspect; svgOffX=0; svgOffY=(H-svgDrawH)/2;
+  }
+  return {x:svgOffX, y:svgOffY, w:svgDrawW, h:svgDrawH};
+}
+window.addEventListener('resize', resize); resize();
+
+function applyTr() { sl.style.transform=`translate(${tr.x}px,${tr.y}px) scale(${tr.s})`; sl.style.transformOrigin='0 0'; }
+function clampTr() {
+  tr.s=Math.max(.35,Math.min(16,tr.s));
+  tr.x=Math.max(W*(1-tr.s)-W*.3,Math.min(W*.3,tr.x));
+  tr.y=Math.max(H*(1-tr.s)-H*.3,Math.min(H*.3,tr.y));
+}
+function resetView() { tr.x=0;tr.y=0;tr.s=1;applyTr(); }
+function zoomAt(cx,cy,f) { tr.x=cx-(cx-tr.x)*f;tr.y=cy-(cy-tr.y)*f;tr.s*=f;clampTr();applyTr(); }
+function w2s(xr,yr) { const b=getSvgBounds(); return {x:(b.x+xr*b.w)*tr.s+tr.x, y:(b.y+yr*b.h)*tr.s+tr.y}; }
+function s2w(sx,sy) { const b=getSvgBounds(); return {x:((sx-tr.x)/tr.s-b.x)/b.w, y:((sy-tr.y)/tr.s-b.y)/b.h}; }
+function flyTo(xr,yr,ts) {
+  const tx=W/2-xr*W*ts, ty=H/2-yr*H*ts, sx=tr.x, sy=tr.y, ss=tr.s; let st=0;
+  const ease=t=>t<.5?2*t*t:-1+(4-2*t)*t;
+  (function a(){ st++;const p=ease(st/32);tr.x=sx+(tx-sx)*p;tr.y=sy+(ty-sy)*p;tr.s=ss+(ts-ss)*p;clampTr();applyTr();if(st<32)requestAnimationFrame(a); })();
+}
+
+function dotR(p) { const rn=Math.min(((p.rating||0)+(p.likes||0)/150)/12,1); return(2+rn*3.5)*Math.min(Math.sqrt(tr.s),2.5); }
+function hit(sx,sy) {
+  let best=null, bd=Infinity;
+  for(const p of people){const pos=w2s(p.x,p.y);const d=Math.hypot(sx-pos.x,sy-pos.y);const r=dotR(p)*3+10;if(d<r&&d<bd){best=p;bd=d;}}
+  return best;
+}
+
+// ── Mouse / Touch ──────────────────────────────────────
+mw.addEventListener('mousedown',e=>{
+  if(e.target.closest('#zoom,#count'))return;
+  if(isPick){const r=mw.getBoundingClientRect();const w=s2w(e.clientX-r.left,e.clientY-r.top);if(pickCb)pickCb(w);return;}
+  drag=true;dragS={x:e.clientX,y:e.clientY};trS={x:tr.x,y:tr.y};mw.classList.add('grabbing');
+});
+window.addEventListener('mousemove',e=>{
+  if(drag){tr.x=trS.x+(e.clientX-dragS.x);tr.y=trS.y+(e.clientY-dragS.y);clampTr();applyTr();document.getElementById('tip').style.display='none';return;}
+  const r=mw.getBoundingClientRect(); const sx=e.clientX-r.left, sy=e.clientY-r.top;
+  const p=hit(sx,sy); const tip=document.getElementById('tip');
+  if(p){
+    hovId=p.id; mw.style.cursor='pointer'; tip.style.display='block';
+    tip.style.left=(sx+16)+'px'; tip.style.top=(sy-10)+'px';
+    const dupes=people.filter(x=>x.grp&&x.grp===p.grp&&x.id!==p.id);
+    // XSS-safe tooltip
+    tip.innerHTML='';
+    const dn=document.createElement('div'); dn.className='tn'; dn.textContent=`${p.last} ${p.first}`; tip.appendChild(dn);
+    const dl=document.createElement('div'); dl.className='tl'; dl.textContent=`⚓ ${p.bury||'—'}`; tip.appendChild(dl);
+    const ds=document.createElement('div'); ds.className='ts'; ds.textContent=`⭐ ${p.likes||0}${dupes.length?' 🔗'+dupes.length+' збіг':''}`; tip.appendChild(ds);
+  } else {
+    hovId=null; mw.style.cursor=isPick?'crosshair':'grab'; tip.style.display='none';
+  }
+});
+window.addEventListener('mouseup',e=>{
+  const was=drag; drag=false; mw.classList.remove('grabbing');
+  if(was&&Math.hypot(e.clientX-dragS.x,e.clientY-dragS.y)>5)return;
+  const r=mw.getBoundingClientRect(); const p=hit(e.clientX-r.left,e.clientY-r.top);
+  if(p&&!isPick){openCard(p);flyTo(p.x,p.y,3.5);}
+});
+mw.addEventListener('wheel',e=>{e.preventDefault();const r=mw.getBoundingClientRect();zoomAt(e.clientX-r.left,e.clientY-r.top,e.deltaY<0?1.14:.87);},{passive:false});
+document.getElementById('zin').onclick  =()=>zoomAt(W/2,H/2,1.28);
+document.getElementById('zout').onclick =()=>zoomAt(W/2,H/2,0.78);
+document.getElementById('zrst').onclick = resetView;
+
+let lD=0, lC={x:0,y:0};
+mw.addEventListener('touchstart',e=>{
+  if(e.touches.length===2){lD=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);lC={x:(e.touches[0].clientX+e.touches[1].clientX)/2,y:(e.touches[0].clientY+e.touches[1].clientY)/2};}
+  else{drag=true;dragS={x:e.touches[0].clientX,y:e.touches[0].clientY};trS={x:tr.x,y:tr.y};}
+},{passive:true});
+mw.addEventListener('touchmove',e=>{
+  e.preventDefault();
+  if(e.touches.length===2){const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);const r=mw.getBoundingClientRect();zoomAt(lC.x-r.left,lC.y-r.top,d/lD);lD=d;}
+  else if(drag){tr.x=trS.x+(e.touches[0].clientX-dragS.x);tr.y=trS.y+(e.touches[0].clientY-dragS.y);clampTr();applyTr();}
+},{passive:false});
+mw.addEventListener('touchend',()=>{drag=false;});
+
+// ── Canvas Draw ────────────────────────────────────────
+function h2r(h,a){
+  if(!h||h.length<7)return`rgba(79,195,247,${a})`;
+  const r=parseInt(h.slice(1,3),16),g=parseInt(h.slice(3,5),16),b=parseInt(h.slice(5,7),16);
+  return`rgba(${r},${g},${b},${a})`;
+}
+
+function drawNeonThreads(){
+  const groups={};
+  for(const p of people){if(!p.grp)continue;if(!groups[p.grp])groups[p.grp]=[];groups[p.grp].push(p);}
+  for(const grp of Object.values(groups)){
+    if(grp.length<2)continue;
+    for(let i=0;i<grp.length;i++)for(let j=i+1;j<grp.length;j++){
+      const a=w2s(grp[i].x,grp[i].y),b=w2s(grp[j].x,grp[j].y);
+      const dist=Math.hypot(b.x-a.x,b.y-a.y);if(dist<3)continue;
+      const mid={x:(a.x+b.x)/2+Math.sin(animT*1.5+i)*dist*.08,y:(a.y+b.y)/2+Math.cos(animT*1.2+j)*dist*.08};
+      const pulse=.5+.5*Math.sin(animT*2+i*1.3);
+      const tc=window.THREAD_COLOR||'rgba(0,200,255,1)';
+      ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.quadraticCurveTo(mid.x,mid.y,b.x,b.y);
+      ctx.strokeStyle=tc.replace('1)',`${.08*pulse})`);ctx.lineWidth=6;ctx.stroke();
+      ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.quadraticCurveTo(mid.x,mid.y,b.x,b.y);
+      ctx.strokeStyle=tc.replace('1)',`${.4+.4*pulse})`);ctx.lineWidth=1.2;ctx.stroke();
+      const t=(Math.sin(animT*1.8+i)+1)/2;
+      const bx=(1-t)*(1-t)*a.x+2*(1-t)*t*mid.x+t*t*b.x;
+      const by=(1-t)*(1-t)*a.y+2*(1-t)*t*mid.y+t*t*b.y;
+      ctx.beginPath();ctx.arc(bx,by,2.5,0,Math.PI*2);ctx.fillStyle=`rgba(100,230,255,${.7+.3*pulse})`;ctx.fill();
+      ctx.beginPath();ctx.arc(bx,by,5,0,Math.PI*2);ctx.fillStyle=`rgba(0,200,255,${.15*pulse})`;ctx.fill();
+    }
+  }
+}
+
+function drawDot(p){
+  if(!p||!isFinite(p.x)||!isFinite(p.y))return;
+  const pos=w2s(p.x,p.y);if(!isFinite(pos.x)||!isFinite(pos.y))return;
+  const rn=Math.min(((p.rating||0)+(p.likes||0)/150)/12,1);
+  const r=dotR(p),sp=1+rn*2,pulse=.55+.45*Math.sin(animT*sp+(p.id||0)*.8);
+  const isH=hovId===p.id,isS=selId===p.id;
+  const hasDupe=p.grp&&people.some(x=>x.grp===p.grp&&x.id!==p.id);
+  const gr=r*(2.5+rn*2)*pulse;
+  if(gr>0&&isFinite(gr)){
+    const grd=ctx.createRadialGradient(pos.x,pos.y,0,pos.x,pos.y,gr);
+    grd.addColorStop(0,h2r(p.color,(.07+rn*.2)*pulse*2));grd.addColorStop(1,h2r(p.color,0));
+    ctx.beginPath();ctx.arc(pos.x,pos.y,gr,0,Math.PI*2);ctx.fillStyle=grd;ctx.fill();
+  }
+  if(hasDupe){const ringR=r*4.5+Math.sin(animT*2.5+p.id)*r*.5;ctx.beginPath();ctx.arc(pos.x,pos.y,ringR,0,Math.PI*2);ctx.strokeStyle=`rgba(0,200,255,${.12+.08*Math.sin(animT*2)})`;ctx.lineWidth=1;ctx.stroke();}
+  if(isS||isH){ctx.beginPath();ctx.arc(pos.x,pos.y,r*4,0,Math.PI*2);ctx.strokeStyle=h2r(p.color,.5+.3*Math.sin(animT*3.5));ctx.lineWidth=1.3;ctx.stroke();}
+  ctx.beginPath();ctx.arc(pos.x,pos.y,r,0,Math.PI*2);ctx.fillStyle=p.color;ctx.fill();
+  if(rn>.2||isH||isS){
+    ctx.globalAlpha=.5+.4*pulse;ctx.beginPath();ctx.arc(pos.x,pos.y,r*.4,0,Math.PI*2);
+    ctx.fillStyle='#fff';ctx.fill();ctx.globalAlpha=1;
+  }
+}
+
+(function loop(){
+  animT+=.016; ctx.clearRect(0,0,W,H);
+  drawNeonThreads();
+  for(const p of people) drawDot(p);
+  particles=particles.filter(p=>p.age<1);
+  for(const p of particles){p.age+=.022;const pos=w2s(p.x,p.y);ctx.globalAlpha=1-p.age;ctx.font=`${13+(1-p.age)*6}px sans-serif`;ctx.fillText('⭐',pos.x-8,pos.y-p.age*55);ctx.globalAlpha=1;}
+  requestAnimationFrame(loop);
+})();
+
+// ── SVG Borders ────────────────────────────────────────
+function initSVGBorders(){
+  const svg=document.getElementById('ukraine-svg');if(!svg)return;
+  const groups=[...svg.querySelectorAll('g[data-rid]')];
+  const firstPaths=groups.map(g=>g.querySelector('path')).filter(Boolean);
+  firstPaths.sort((a,b)=>{try{return b.getTotalLength()-a.getTotalLength();}catch{return 0;}});
+  const nb=window.NEON_BLUE||'#00ccff', ny=window.NEON_YELLOW||'#d4a800';
+  firstPaths.slice(0,6).forEach(p=>{p.style.stroke=nb;p.style.strokeWidth='3';p.style.vectorEffect='non-scaling-stroke';p.style.filter=`drop-shadow(0 0 6px ${nb}) drop-shadow(0 0 18px ${nb}88)`;});
+  firstPaths.slice(6).forEach(p=>{p.style.stroke=ny;p.style.strokeWidth='2';p.style.vectorEffect='non-scaling-stroke';p.style.filter=`drop-shadow(0 0 5px ${ny}) drop-shadow(0 0 12px ${ny}88)`;});
+}
+
+// ── Labels ─────────────────────────────────────────────
+async function loadLabels(){
+  try{
+    const r=await fetch(API+'/api/labels'); const labels=await r.json();
+    const svg=document.getElementById('ukraine-svg'); if(!svg)return;
+    let g=svg.querySelector('#oblast-labels'); if(g)g.remove();
+    g=document.createElementNS('http://www.w3.org/2000/svg','g');
+    g.id='oblast-labels'; g.style.pointerEvents='none';
+    const opacity=getC('label_opacity')||'0.45';
+    labels.forEach(l=>{
+      const t=document.createElementNS('http://www.w3.org/2000/svg','text');
+      t.setAttribute('x',l.x); t.setAttribute('y',l.y); t.setAttribute('text-anchor','middle');
+      t.style.fontFamily='Arial,sans-serif'; t.style.fontSize=(l.size||145)+'px';
+      t.style.fill=l.color||`rgba(160,195,220,${opacity})`; t.style.fontWeight='400';
+      t.textContent=l.name; // textContent — safe
+      g.appendChild(t);
+    });
+    svg.appendChild(g);
+  }catch{}
+}
+
+// ── Load SVG map ───────────────────────────────────────
+async function loadSVGMap(){
+  try{
+    const r=await fetch(API+'/ukraine-map.svg'); if(!r.ok)return;
+    const svgText=await r.text();
+    document.getElementById('svg-layer').innerHTML=svgText;
+    const svg=document.getElementById('svg-layer').querySelector('svg');
+    if(!svg)return;
+    // Required: ID so JS and CSS rules can find it
+    svg.id='ukraine-svg';
+    // Remove absolute pixel dimensions, use viewBox for proper scaling
+    svg.removeAttribute('width');
+    svg.removeAttribute('height');
+    svg.setAttribute('viewBox','0 0 14000 9500');
+    svg.setAttribute('preserveAspectRatio','xMidYMid meet');
+    // Override the file's default style (white fill, black stroke)
+    svg.style.cssText='position:absolute;top:0;left:0;width:100%;height:100%';
+    // Re-apply dynamic colors now that #ukraine-svg exists in DOM
+    applyColors();
+    initSVGBorders();
+  }catch(e){console.warn('SVG map not loaded',e);}
+}
+
+// ── Data ───────────────────────────────────────────────
+async function loadData(){
+  try{
+    const [rp,rs]=await Promise.all([
+      fetch(API+'/api/people?limit=500'),
+      fetch(API+'/api/stats')
+    ]);
+    const data=await rp.json(); const stats=await rs.json();
+    const raw=data.items||data; // support both paginated and legacy
+    people=raw.map(p=>({...p,x:parseFloat(p.pos_x??p.x??0.5),y:parseFloat(p.pos_y??p.y??0.5),grp:p.grp||''}));
+    const total=stats.total||people.length;
+    document.getElementById('sttotal').textContent=total;
+    document.getElementById('stlikes').textContent=stats.likes||0;
+    document.getElementById('btotal').textContent=total;
+  }catch{console.warn('API недоступний');}
+}
+
+// ── Card ───────────────────────────────────────────────
+function openCard(p){
+  activePerson=p; selId=p.id;
+  // All safe — use textContent
+  document.getElementById('cname').textContent=`${p.last} ${p.first} ${p.mid||''}`.trim();
+  document.getElementById('cdates').textContent=`${fd(p.birth)} — ${fd(p.death)}`;
+  document.getElementById('cbury').textContent=p.bury||'—';
+  document.getElementById('cloc').textContent=p.loc||'—';
+  document.getElementById('cdesc').textContent=p.descr||'—';
+  document.getElementById('lcnt').textContent=p.likes||0;
+
+  // Circ badge (safe — controlled text from select)
+  const ccirc=document.getElementById('ccirc');
+  ccirc.innerHTML='';
+  if(p.circ){const sp=document.createElement('span');sp.className='badge';sp.textContent=p.circ;ccirc.appendChild(sp);}
+  else{ccirc.textContent='—';}
+
+  // Callsign
+  const cgrpRow=document.getElementById('cgrp-row');
+  const cgrpEl=document.getElementById('cgrp');
+  if(p.grp){cgrpEl.textContent=p.grp;cgrpRow.style.display='';}
+  else{cgrpRow.style.display='none';}
+
+  // Duplicates — safe
+  const dupes=p.grp?people.filter(x=>x.grp===p.grp&&x.id!==p.id):[];
+  const ds=document.getElementById('dupes-section');
+  const dhr=document.getElementById('dupes-hr');
+  const cdupes=document.getElementById('cdupes');
+  cdupes.innerHTML='';
+  if(dupes.length){
+    dupes.forEach(d=>{
+      const chip=document.createElement('span');chip.className='dupe-chip';
+      chip.textContent=`🔗 ${d.last} ${d.first} (${d.added_by||'?'})`;
+      cdupes.appendChild(chip);
+    });
+    ds.style.display=''; dhr.style.display='';
+  }else{ds.style.display='none';dhr.style.display='none';}
+
+  // Photo — only HTTPS URLs
+  const img=document.getElementById('cimg');
+  if(p.photo&&p.photo.trim()&&p.photo.startsWith('https://')){
+    img.src=p.photo.trim();
+    img.onerror=()=>{img.src='img/foto_false.png';};
+  }else{img.src='img/foto_false.png';}
+
+  document.getElementById('card').classList.add('open');
+}
+function closeCard(){document.getElementById('card').classList.remove('open');selId=null;activePerson=null;}
+function fd(s){if(!s)return'?';try{return new Date(s).toLocaleDateString('uk-UA',{day:'numeric',month:'long',year:'numeric'});}catch{return s;}}
+
+// ── Likes ──────────────────────────────────────────────
+const lCD={};
+async function doLike(){
+  if(!activePerson)return;
+  if(!authToken){showN('Увійдіть щоб ставити зірки',true);openAuth();return;}
+  const id=activePerson.id, now=Date.now();
+  if(lCD[id]&&now-lCD[id]<700)return; lCD[id]=now;
+  activePerson.likes=(activePerson.likes||0)+1;
+  document.getElementById('lcnt').textContent=activePerson.likes;
+  particles.push({x:activePerson.x,y:activePerson.y,age:0});
+  const b=document.getElementById('lbtn');b.classList.add('burst');setTimeout(()=>b.classList.remove('burst'),400);
+  try{await fetch(`${API}/api/like/${id}`,{method:'POST'});}catch{}
+}
+
+// ── Search ─────────────────────────────────────────────
+const si=document.getElementById('search'), sd=document.getElementById('sdrop');
+let sT=null, sIdx=-1, sResults=[], searchActive=false;
+
+function escHtml(str){
+  return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function hlText(str,q){
+  if(!q||!str)return escHtml(str||'');
+  const safe=escHtml(str);
+  const escQ=escHtml(q).replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  return safe.replace(new RegExp(`(${escQ})`,'gi'),'<mark class="shl">$1</mark>');
+}
+
+function renderDrop(results,q){
+  if(!results.length){sd.innerHTML=`<div class="sdi sdi-empty">Нічого не знайдено</div>`;sd.style.display='block';return;}
+  sd.innerHTML=results.map((p,i)=>{
+    const name=hlText(`${p.last} ${p.first} ${p.mid||''}`.trim(),q);
+    const call=p.callsign?`<span class="sdi-call">${hlText(p.callsign,q)}</span>`:'';
+    const loc=hlText(p.location||p.bury||'—',q);
+    return`<div class="sdi${i===sIdx?' sdi-active':''}" data-idx="${i}" onmousedown="pickRes(${i})">
+      <div class="sdi-dot" style="background:${escHtml(p.color)}"></div>
+      <div class="sdi-body">
+        <div class="sdi-name">${name}${call}</div>
+        <div class="sdi-loc">⚓ ${loc}${p.likes?` · ⭐ ${p.likes}`:''}</div>
+      </div></div>`;
+  }).join('');
+  sd.style.display='block';
+}
+
+function highlightMap(results){
+  const ids=new Set(results.map(r=>r.id));
+  if(!results.length){people.forEach(p=>{p._dimmed=false;});}
+  else{people.forEach(p=>{p._dimmed=!ids.has(p.id);});}
+}
+
+function pickRes(idx){
+  const r=sResults[idx]; if(!r)return;
+  closeDrop(); si.value=`${r.last} ${r.first}`.trim();
+  const p=people.find(pp=>pp.id===r.id);
+  if(p){highlightMap([r]);flyTo(p.x,p.y,3.5);setTimeout(()=>openCard(p),350);}
+}
+
+function closeDrop(){
+  sd.style.display='none'; sIdx=-1; searchActive=false;
+  people.forEach(p=>{p._dimmed=false;});
+}
+
+async function doSearch(q){
+  if(q.length<2){closeDrop();return;}
+  sd.innerHTML='<div class="sdi sdi-loader"><span class="sld"></span>Пошук…</div>';
+  sd.style.display='block'; searchActive=true;
+  try{
+    const resp=await fetch(`${API}/api/search?q=${encodeURIComponent(q)}`);
+    if(!resp.ok)throw new Error();
+    sResults=await resp.json(); sIdx=-1;
+    renderDrop(sResults,q); highlightMap(sResults);
+  }catch{
+    const ql=q.toLowerCase();
+    sResults=people.filter(p=>`${p.last} ${p.first} ${p.mid||''} ${p.grp||''} ${p.loc||''}`.toLowerCase().includes(ql))
+      .sort((a,b)=>(b.rating||0)-(a.rating||0)).slice(0,10)
+      .map(p=>({id:p.id,last:p.last,first:p.first,mid:p.mid||'',callsign:p.grp||'',location:p.loc||'',bury:p.bury||'',color:p.color,likes:p.likes||0}));
+    sIdx=-1; renderDrop(sResults,q); highlightMap(sResults);
+  }
+}
+
+si.addEventListener('keydown',e=>{
+  if(!searchActive&&sd.style.display==='none')return;
+  if(e.key==='ArrowDown'){e.preventDefault();sIdx=Math.min(sIdx+1,sResults.length-1);renderDrop(sResults,si.value.trim());const a=sd.querySelector('.sdi-active');if(a)a.scrollIntoView({block:'nearest'});}
+  else if(e.key==='ArrowUp'){e.preventDefault();sIdx=Math.max(sIdx-1,-1);renderDrop(sResults,si.value.trim());}
+  else if(e.key==='Enter'){e.preventDefault();if(sIdx>=0)pickRes(sIdx);else if(sResults.length)pickRes(0);}
+  else if(e.key==='Escape'){closeDrop();si.blur();}
+});
+si.addEventListener('input',()=>{
+  clearTimeout(sT);const q=si.value.trim();
+  const clr=document.getElementById('search-clear');
+  if(clr)clr.style.display=q.length?'flex':'none';
+  if(q.length<2){closeDrop();return;}
+  sT=setTimeout(()=>doSearch(q),300);
+});
+document.addEventListener('mousedown',e=>{if(!si.contains(e.target)&&!sd.contains(e.target))closeDrop();});
+si.addEventListener('focus',()=>{const q=si.value.trim();if(q.length>=2&&!sResults.length)doSearch(q);else if(sResults.length)renderDrop(sResults,q);});
+document.getElementById('search-clear').onclick=()=>{si.value='';closeDrop();document.getElementById('search-clear').style.display='none';};
+
+// ── Auth ───────────────────────────────────────────────
+function updateAuthUI(){
+  const un=document.getElementById('un'),ba=document.getElementById('btn-auth'),bl=document.getElementById('btn-logout');
+  if(curUser&&authToken){
+    un.textContent='👤 '+curUser.name; un.style.display='block';
+    bl.style.display='block'; ba.style.display='none';
+  }else{
+    un.style.display='none'; bl.style.display='none'; ba.style.display='block';
+  }
+}
+function openAuth(){document.getElementById('mauth').classList.add('open');}
+function closeAuth(){document.getElementById('mauth').classList.remove('open');}
+function switchTab(t){
+  document.getElementById('plogin').style.display=t==='login'?'':'none';
+  document.getElementById('preg').style.display=t==='reg'?'':'none';
+  document.getElementById('tlogin').classList.toggle('active',t==='login');
+  document.getElementById('treg').classList.toggle('active',t==='reg');
+}
+async function doLogin(){
+  const email=document.getElementById('lemail').value.trim();
+  const pass=document.getElementById('lpass').value;
+  if(!email||!pass){showN('Заповніть всі поля',true);return;}
+  try{
+    const r=await fetch(API+'/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:pass})});
+    const d=await r.json();
+    if(!r.ok)throw new Error(d.detail||'Помилка');
+    authToken=d.token; curUser=d.user; saveSession();
+    updateAuthUI(); closeAuth(); showN('Ласкаво просимо, '+curUser.name+'!');
+  }catch(e){showN(e.message||'Невірний email або пароль',true);}
+}
+async function doRegister(){
+  const name=document.getElementById('rname').value.trim();
+  const email=document.getElementById('remail').value.trim();
+  const pass=document.getElementById('rpass').value;
+  if(!name||!email||!pass){showN('Заповніть всі поля',true);return;}
+  if(pass.length<6){showN('Пароль мінімум 6 символів',true);return;}
+  try{
+    const r=await fetch(API+'/api/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,email,password:pass})});
+    const d=await r.json();
+    if(!r.ok)throw new Error(d.detail||'Помилка');
+    authToken=d.token; curUser=d.user; saveSession();
+    updateAuthUI(); closeAuth(); showN('Вітаємо, '+name+'!');
+  }catch(e){showN(e.message||'Помилка реєстрації',true);}
+}
+document.getElementById('btn-logout').onclick=()=>{authToken=null;curUser=null;saveSession();updateAuthUI();showN('До побачення!');};
+document.getElementById('btn-auth').onclick=openAuth;
+document.getElementById('btn-add').onclick=onAdd;
+
+// ── Add Memorial ───────────────────────────────────────
+function onAdd(){
+  if(!authToken){showN('Спочатку увійдіть або зареєструйтесь',true);openAuth();return;}
+  openAdd();
+}
+function openAdd(){document.getElementById('madd').classList.add('open');}
+function closeAdd(){
+  document.getElementById('madd').classList.remove('open');
+  stopPick();
+  // Очистити форму
+  ['flast','ffirst','fmid','fgrp','fphoto','floc','fbury','fdesc'].forEach(id=>{
+    const el=document.getElementById(id); if(el)el.value='';
+  });
+  const fb=document.getElementById('fbirth'); if(fb)fb.value='';
+  const fd=document.getElementById('fdeath'); if(fd)fd.value='';
+  document.getElementById('fcirc').value='';
+  document.getElementById('fpx').value=''; document.getElementById('fpy').value='';
+  document.getElementById('pstatus').textContent='не обрано';
+  document.querySelectorAll('.csw').forEach(s=>s.classList.remove('sel'));
+  document.querySelector('.csw[data-c="#4fc3f7"]')?.classList.add('sel');
+  selColor='#4fc3f7';
+}
+
+document.getElementById('crow').addEventListener('click',e=>{
+  const sw=e.target.closest('.csw');if(!sw)return;
+  document.querySelectorAll('.csw').forEach(s=>s.classList.remove('sel'));sw.classList.add('sel');selColor=sw.dataset.c;
+});
+
+function startPick(){closeAdd();isPick=true;mw.classList.add('picking');document.getElementById('pick-bar').classList.add('on');
+  pickCb=w=>{document.getElementById('fpx').value=w.x.toFixed(4);document.getElementById('fpy').value=w.y.toFixed(4);document.getElementById('pstatus').textContent=`x=${w.x.toFixed(3)}, y=${w.y.toFixed(3)}`;stopPick();openAdd();};
+}
+function stopPick(){isPick=false;pickCb=null;mw.classList.remove('picking');document.getElementById('pick-bar').classList.remove('on');}
+
+async function submitAdd(){
+  const last=document.getElementById('flast').value.trim();
+  const first=document.getElementById('ffirst').value.trim();
+  const px=document.getElementById('fpx').value;
+  const py=document.getElementById('fpy').value;
+  const photoVal=document.getElementById('fphoto').value.trim();
+  if(!last||!first){showN('Введіть прізвище та ім'я',true);return;}
+  if(px===''||py===''){showN('Оберіть місце поховання на карті',true);return;}
+  if(photoVal&&!photoVal.startsWith('https://')){showN('Фото: тільки https:// посилання',true);return;}
+  const body={
+    last,first,
+    mid:document.getElementById('fmid').value.trim(),
+    grp:document.getElementById('fgrp').value.trim(),
+    birth:document.getElementById('fbirth').value||null,
+    death:document.getElementById('fdeath').value||null,
+    loc:document.getElementById('floc').value.trim(),
+    bury:document.getElementById('fbury').value.trim(),
+    circ:document.getElementById('fcirc').value,
+    descr:document.getElementById('fdesc').value.trim(),
+    photo:photoVal,
+    color:selColor, pos_x:+px, pos_y:+py,
+    added_by:curUser?.name||''
+  };
+  try{
+    const r=await fetch(API+'/api/people',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+authToken},
+      body:JSON.stringify(body)
+    });
+    const d=await r.json();
+    if(!r.ok)throw new Error(d.detail||'Помилка');
+    showN(d.message||'Надіслано на модерацію');
+  }catch(e){showN(e.message||'Надіслано на модерацію (офлайн)');}
+  closeAdd();
+  setTimeout(loadData,500);
+}
+
+// ── WebSocket ──────────────────────────────────────────
+function connectWS(){
+  try{
+    const wsProto=location.protocol==='https:'?'wss:':'ws:';
+    const ws=new WebSocket(`${wsProto}//${location.host}/ws/online`);
+    ws.onopen=()=>{if(curUser)ws.send('user:'+curUser.name);};
+    ws.onmessage=e=>{try{const d=JSON.parse(e.data);if(d.online!==undefined)document.getElementById('stonline').textContent=d.online;}catch{}};
+    ws.onclose=()=>{document.getElementById('stonline').textContent='—';setTimeout(connectWS,3000);};
+    ws.onerror=()=>ws.close();
+    setInterval(()=>{if(ws.readyState===1)ws.send('ping');},25000);
+  }catch{document.getElementById('stonline').textContent='—';}
+}
+
+// ── Notification ───────────────────────────────────────
+let nt=null;
+function showN(msg,err=false){
+  const el=document.getElementById('notif');
+  el.textContent=msg; // textContent — safe
+  el.classList.toggle('err',err); el.classList.add('show');
+  clearTimeout(nt); nt=setTimeout(()=>el.classList.remove('show'),3200);
+}
+
+// ── INIT ───────────────────────────────────────────────
+(async()=>{
+  loadSession();
+  await loadColors();
+  await loadSVGMap();
+  await loadData();
+  await loadLabels();
+  updateAuthUI();
+  connectWS();
+})();
+</script>
+
+<canvas></canvas>
+<video id="videoBackground" muted loop style="display:none"></video>
+<script src="/js/script.js"></script>
+</body>
+</html>

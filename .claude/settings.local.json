@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -c \"import bcrypt, jose, slowapi, fastapi, uvicorn, dotenv, pydantic\")",
+      "Bash(venv/Scripts/pip list:*)",
+      "Bash(venv/Scripts/pip install:*)",
+      "Bash(../venv/Scripts/python -c \"import app; print\\('app.py imports OK'\\)\")",
+      "Bash(../venv/Scripts/python -c ':*)",
+      "Bash(\"d:/OSPanel/OpenServer/modules/database/MySQL-8.0/bin/mysql.exe\" -u root -e \"SELECT VERSION\\(\\); SHOW DATABASES;\")",
+      "Bash(\"d:/OSPanel/OpenServer/modules/database/MySQL-8.0/bin/mysql.exe\" -u root -proot -e \"SELECT VERSION\\(\\);\")",
+      "Bash(\"d:/OSPanel/OpenServer/domains/localhost/treetex/venv/Scripts/pip\" install:*)",
+      "Bash(venv/Scripts/python -c \"import ast; ast.parse\\(open\\('Paskal.py'\\).read\\(\\)\\); print\\('OK — синтаксичних помилок немає'\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\('Paskal.py'\\).read\\(\\)\\); print\\('OK'\\)\")",
+      "Bash(C:\\\\Users\\\\Paskal\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\python.exe -m pip install dbutils psutil)",
+      "Bash(where python *)",
+      "Bash(python -c \"import dbutils; print\\(dbutils.__file__\\)\")",
+      "Bash(python -c \"import sys; print\\(sys.executable\\)\")",
+      "Bash(ls \"d:/OSPanel/OpenServer/domains/localhost/treetex/\"*.html)",
+      "Bash(python3 -c ' *)"
+    ]
+  }
+}

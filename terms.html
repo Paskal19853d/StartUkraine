@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Правила використання — Зоряна Памʼять</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=PT+Serif:ital,wght@0,400;0,700;1,400&family=Roboto+Condensed:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --doc-bg:      #e8e8e8;
+  --doc-paper:   #ffffff;
+  --doc-border:  #aaaaaa;
+  --doc-accent:  #111111;
+  --doc-accent2: #555555;
+  --doc-text:    #111111;
+  --doc-text2:   #444444;
+  --doc-muted:   #777777;
+  --doc-nav-bg:  #111111;
+  --doc-nav-txt: #cccccc;
+  --doc-nav-act: #ffffff;
+  --doc-nav-hov: rgba(255,255,255,.07);
+  --doc-stamp:   rgba(0,0,0,.05);
+  --font-doc:    'PT Serif', 'Times New Roman', Georgia, serif;
+  --font-head:   'Roboto Condensed', 'Arial Narrow', Arial, sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  min-height: 100%;
+  font-family: var(--font-doc);
+  background: var(--doc-bg);
+  color: var(--doc-text);
+  -webkit-font-smoothing: antialiased;
+}
+
+.layout { display: flex; min-height: 100vh; }
+
+.doc-nav {
+  width: 240px;
+  min-height: 100vh;
+  background: var(--doc-nav-bg);
+  color: var(--doc-nav-txt);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  z-index: 100;
+  box-shadow: 2px 0 12px rgba(0,0,0,.25);
+}
+
+.doc-nav__logo {
+  padding: 24px 20px 16px;
+  border-bottom: 1px solid rgba(255,255,255,.1);
+}
+
+.doc-nav__logo-title {
+  font-family: var(--font-head);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: #00c8ff;
+  line-height: 1.4;
+}
+
+.doc-nav__logo-sub {
+  font-size: 10px;
+  color: rgba(255,255,255,.4);
+  letter-spacing: .06em;
+  margin-top: 4px;
+}
+
+.doc-nav__label {
+  font-size: 9px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.3);
+  padding: 18px 20px 8px;
+}
+
+.doc-nav__list { list-style: none; flex: 1; }
+
+.doc-nav__item a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px;
+  color: var(--doc-nav-txt);
+  text-decoration: none;
+  font-size: 12.5px;
+  font-weight: 400;
+  letter-spacing: .02em;
+  transition: background .15s, color .15s;
+  border-left: 3px solid transparent;
+}
+
+.doc-nav__item a:hover { background: var(--doc-nav-hov); }
+
+.doc-nav__item a.active {
+  background: rgba(0,200,255,.1);
+  border-left-color: var(--doc-nav-act);
+  color: var(--doc-nav-act);
+  font-weight: 500;
+}
+
+.doc-nav__item a .nav-icon { font-size: 14px; opacity: .7; flex-shrink: 0; }
+
+.doc-nav__footer {
+  padding: 16px 20px;
+  border-top: 1px solid rgba(255,255,255,.08);
+  font-size: 10px;
+  color: rgba(255,255,255,.25);
+  line-height: 1.6;
+}
+
+.doc-main {
+  margin-left: 240px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.doc-topbar {
+  background: #fff;
+  border-bottom: 1px solid var(--doc-border);
+  padding: 14px 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.doc-topbar__breadcrumb {
+  font-size: 11px;
+  color: var(--doc-muted);
+  letter-spacing: .05em;
+}
+
+.doc-topbar__breadcrumb span { color: var(--doc-accent); font-weight: 500; }
+
+.doc-topbar__meta {
+  font-size: 11px;
+  color: var(--doc-muted);
+  display: flex;
+  gap: 16px;
+}
+
+.doc-topbar__meta .badge {
+  background: #dddddd;
+  color: #111111;
+  border-radius: 3px;
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .06em;
+}
+
+.doc-wrapper {
+  flex: 1;
+  padding: 40px 48px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.doc-sheet {
+  width: 100%;
+  max-width: 820px;
+  background: var(--doc-paper);
+  border: 1px solid var(--doc-border);
+  box-shadow: 0 2px 24px rgba(0,0,0,.1), 0 1px 4px rgba(0,0,0,.08);
+  padding: 60px 72px;
+  position: relative;
+  min-height: 600px;
+}
+
+.doc-sheet::before {
+  content: 'ЗОРЯНА ПАМʼЯТЬ';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%,-50%) rotate(-35deg);
+  font-family: var(--font-head);
+  font-size: 52px;
+  font-weight: 600;
+  letter-spacing: .2em;
+  color: var(--doc-stamp);
+  pointer-events: none;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.doc-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+  padding-bottom: 28px;
+  border-bottom: 2px solid var(--doc-accent);
+  margin-bottom: 32px;
+}
+
+.doc-header__emblem {
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--doc-accent);
+  border-radius: 4px;
+  color: #fff;
+  font-size: 26px;
+}
+
+.doc-header__info { flex: 1; }
+
+.doc-header__org {
+  font-size: 10px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--doc-muted);
+  margin-bottom: 4px;
+}
+
+.doc-header__title {
+  font-family: var(--font-head);
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--doc-accent);
+  letter-spacing: .03em;
+  line-height: 1.3;
+  margin-bottom: 6px;
+}
+
+.doc-header__code {
+  font-size: 10px;
+  color: var(--doc-muted);
+  letter-spacing: .08em;
+  font-family: 'Courier New', monospace;
+}
+
+.doc-requisites {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 24px;
+  background: #f8f8f6;
+  border: 1px solid #e8e4dc;
+  border-left: 3px solid var(--doc-accent);
+  padding: 16px 20px;
+  margin-bottom: 32px;
+  font-size: 11.5px;
+}
+
+.doc-req-row { display: flex; gap: 8px; }
+
+.doc-req-label {
+  color: var(--doc-muted);
+  font-size: 10.5px;
+  min-width: 100px;
+  flex-shrink: 0;
+}
+
+.doc-req-value { color: var(--doc-text); font-weight: 500; }
+
+.doc-section { margin-bottom: 28px; }
+
+.doc-section-title {
+  font-family: var(--font-head);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--doc-accent);
+  margin-bottom: 14px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #e0dcd4;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.doc-section-title::before {
+  content: '§';
+  font-size: 14px;
+  color: var(--doc-accent2);
+}
+
+.doc-text {
+  font-size: 13.5px;
+  line-height: 1.85;
+  color: var(--doc-text);
+  text-align: justify;
+  hyphens: auto;
+}
+
+.doc-text + .doc-text { margin-top: 10px; }
+
+.doc-list {
+  margin: 12px 0;
+  padding-left: 0;
+  list-style: none;
+}
+
+.doc-list li {
+  font-size: 13.5px;
+  line-height: 1.8;
+  color: var(--doc-text);
+  padding-left: 24px;
+  position: relative;
+  margin-bottom: 4px;
+}
+
+.doc-list li::before {
+  content: '—';
+  position: absolute;
+  left: 0;
+  color: var(--doc-accent2);
+  font-weight: 600;
+}
+
+.doc-list.numbered { counter-reset: doc-counter; }
+
+.doc-list.numbered li {
+  counter-increment: doc-counter;
+  padding-left: 32px;
+}
+
+.doc-list.numbered li::before {
+  content: counter(doc-counter) '.';
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--doc-accent);
+}
+
+.doc-highlight {
+  background: #f0f0f0;
+  border-left: 3px solid #555555;
+  padding: 12px 16px;
+  margin: 16px 0;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--doc-text2);
+}
+
+.doc-highlight strong { color: #111111; }
+
+.doc-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 16px 0;
+  font-size: 12.5px;
+}
+
+.doc-table th {
+  background: #222222;
+  color: #ffffff;
+  padding: 10px 14px;
+  text-align: left;
+  font-weight: 600;
+  letter-spacing: .04em;
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.doc-table td {
+  padding: 10px 14px;
+  border-bottom: 1px solid #e8e4dc;
+  color: var(--doc-text);
+  line-height: 1.5;
+}
+
+.doc-table tr:nth-child(even) td { background: #f8f8f6; }
+
+.doc-sign {
+  margin-top: 48px;
+  padding-top: 24px;
+  border-top: 1px solid #e0dcd4;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.doc-sign__left {
+  font-size: 11px;
+  color: var(--doc-muted);
+  line-height: 1.8;
+}
+
+.doc-sign__right { text-align: right; font-size: 11px; color: var(--doc-muted); }
+
+.doc-sign__stamp {
+  width: 80px;
+  height: 80px;
+  border: 2px solid var(--doc-accent);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-align: center;
+  color: var(--doc-accent);
+  text-transform: uppercase;
+  line-height: 1.3;
+  margin-left: auto;
+  margin-bottom: 8px;
+  opacity: .5;
+}
+
+.doc-footer {
+  background: #1a2540;
+  color: rgba(255,255,255,.5);
+  padding: 20px 48px 20px 288px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 10.5px;
+  letter-spacing: .04em;
+  border-top: 2px solid #444444;
+}
+
+.doc-footer__left { display: flex; flex-direction: column; gap: 4px; }
+
+.doc-footer__doc-id {
+  font-family: 'Courier New', monospace;
+  font-size: 10px;
+  color: rgba(255,255,255,.3);
+}
+
+.doc-footer__right { text-align: right; }
+
+.doc-footer a { color: #cccccc; text-decoration: none; }
+
+@media (max-width: 900px) {
+  .doc-nav { width: 56px; overflow: hidden; }
+  .doc-nav__logo-title,.doc-nav__logo-sub,.doc-nav__label,.doc-nav__item a span,.doc-nav__footer { display: none; }
+  .doc-nav__item a { justify-content: center; padding: 14px 0; }
+  .doc-main { margin-left: 56px; }
+  .doc-footer { padding-left: 72px; }
+  .doc-sheet { padding: 32px 28px; }
+  .doc-wrapper { padding: 24px 16px; }
+}
+</style>
+</head>
+<body>
+
+<div class="layout">
+
+  <nav class="doc-nav">
+    <div class="doc-nav__logo">
+      <div class="doc-nav__logo-title">Зоряна Памʼять</div>
+      <div class="doc-nav__logo-sub">Офіційний портал</div>
+    </div>
+
+    <div class="doc-nav__label">Документи</div>
+
+    <ul class="doc-nav__list">
+      <li class="doc-nav__item">
+        <a href="rules.html">
+          <span class="nav-icon">📋</span>
+          <span>Правила сайту</span>
+        </a>
+      </li>
+      <li class="doc-nav__item">
+        <a href="terms.html" class="active">
+          <span class="nav-icon">📜</span>
+          <span>Правила використання</span>
+        </a>
+      </li>
+      <li class="doc-nav__item">
+        <a href="faq.html">
+          <span class="nav-icon">❓</span>
+          <span>Питання та відповіді</span>
+        </a>
+      </li>
+    </ul>
+
+    <div class="doc-nav__label">Головна</div>
+    <ul class="doc-nav__list">
+      <li class="doc-nav__item">
+        <a href="index.html">
+          <span class="nav-icon">🏠</span>
+          <span>На головну</span>
+        </a>
+      </li>
+    </ul>
+
+    <div class="doc-nav__footer">
+      © 2025 Зоряна Памʼять<br>
+      Усі права захищено
+    </div>
+  </nav>
+
+  <div class="doc-main">
+
+    <div class="doc-topbar">
+      <div class="doc-topbar__breadcrumb">
+        Головна &rsaquo; Документи &rsaquo; <span>Правила використання</span>
+      </div>
+      <div class="doc-topbar__meta">
+        <span class="badge">ЧИННИЙ</span>
+        <span>Документ № ЗП-02-2025</span>
+      </div>
+    </div>
+
+    <div class="doc-wrapper">
+      <div class="doc-sheet">
+
+        <div class="doc-header">
+          <div class="doc-header__emblem">📜</div>
+          <div class="doc-header__info">
+            <div class="doc-header__org">Меморіальний вебпортал</div>
+            <div class="doc-header__title">Правила використання порталу «Зоряна Памʼять»</div>
+            <div class="doc-header__code">Документ № ЗП-02-2025 · Версія 1.0 · Угода користувача</div>
+          </div>
+        </div>
+
+        <div class="doc-requisites">
+          <div class="doc-req-row">
+            <span class="doc-req-label">Набрання чинності:</span>
+            <span class="doc-req-value">01 травня 2025 р.</span>
+          </div>
+          <div class="doc-req-row">
+            <span class="doc-req-label">Остання редакція:</span>
+            <span class="doc-req-value">01 травня 2025 р.</span>
+          </div>
+          <div class="doc-req-row">
+            <span class="doc-req-label">Мова документа:</span>
+            <span class="doc-req-value">Українська</span>
+          </div>
+          <div class="doc-req-row">
+            <span class="doc-req-label">Статус:</span>
+            <span class="doc-req-value">Чинний</span>
+          </div>
+        </div>
+
+        <!-- SECTION 1 -->
+        <div class="doc-section">
+          <div class="doc-section-title">1. Визначення термінів</div>
+          <p class="doc-text">
+            У цьому документі наведені терміни вживаються у таких значеннях:
+          </p>
+          <ul class="doc-list numbered">
+            <li><strong>Портал</strong> — вебсайт «Зоряна Памʼять», що розміщений за адресою, визначеною адміністрацією.</li>
+            <li><strong>Користувач</strong> — будь-яка фізична особа, яка здійснює доступ до Порталу через мережу Інтернет.</li>
+            <li><strong>Адміністрація</strong> — команда осіб, що здійснює технічне та змістовне управління Порталом.</li>
+            <li><strong>Меморіальний запис</strong> — сторінка Порталу, що містить відомості про конкретного загиблого захисника або захисницю.</li>
+            <li><strong>Персональні дані</strong> — відомості, що дозволяють ідентифікувати фізичну особу.</li>
+          </ul>
+        </div>
+
+        <!-- SECTION 2 -->
+        <div class="doc-section">
+          <div class="doc-section-title">2. Умови доступу</div>
+          <p class="doc-text">
+            Доступ до Порталу є безкоштовним та відкритим для всіх користувачів без реєстрації. Окремі функції (подання заявок, коментування, редагування) можуть вимагати ідентифікації відповідно до вимог чинного законодавства України.
+          </p>
+          <div class="doc-highlight">
+            <strong>Важливо:</strong> Використовуючи Портал, ви підтверджуєте, що досягли 14-річного віку або маєте дозвіл батьків чи законних представників.
+          </div>
+        </div>
+
+        <!-- SECTION 3 -->
+        <div class="doc-section">
+          <div class="doc-section-title">3. Обробка персональних даних</div>
+          <p class="doc-text">
+            Адміністрація Порталу дотримується вимог Закону України «Про захист персональних даних» та Регламенту (ЄС) 2016/679 (GDPR) щодо обробки персональних даних.
+          </p>
+
+          <table class="doc-table">
+            <thead>
+              <tr>
+                <th>Категорія даних</th>
+                <th>Мета обробки</th>
+                <th>Термін зберігання</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Технічні дані (IP, браузер)</td>
+                <td>Забезпечення безпеки та аналітика</td>
+                <td>90 днів</td>
+              </tr>
+              <tr>
+                <td>Контактні дані (email)</td>
+                <td>Зворотний зв'язок з адміністрацією</td>
+                <td>До відкликання згоди</td>
+              </tr>
+              <tr>
+                <td>Дані про загиблих</td>
+                <td>Формування меморіального реєстру</td>
+                <td>Безстроково</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <p class="doc-text">
+            Персональні дані, надані добровільно, не передаються третім особам без письмової згоди особи, яка їх надала, крім випадків, передбачених законодавством.
+          </p>
+        </div>
+
+        <!-- SECTION 4 -->
+        <div class="doc-section">
+          <div class="doc-section-title">4. Інтелектуальна власність</div>
+          <p class="doc-text">
+            Всі матеріали Порталу — тексти, зображення, дизайн, програмний код — є власністю Адміністрації або правовласників, які надали дозвіл на їх використання. Копіювання та відтворення матеріалів допускається виключно з посиланням на джерело та за некомерційного використання.
+          </p>
+          <ul class="doc-list">
+            <li>Фотографії загиблих публікуються за згодою родичів або на підставі відкритих джерел.</li>
+            <li>Текстові матеріали, створені користувачами, залишаються їхньою власністю з наданням Порталу невиключної ліцензії на публікацію.</li>
+          </ul>
+        </div>
+
+        <!-- SECTION 5 -->
+        <div class="doc-section">
+          <div class="doc-section-title">5. Відповідальність сторін</div>
+          <p class="doc-text">
+            Адміністрація не несе відповідальності за:
+          </p>
+          <ul class="doc-list">
+            <li>тимчасову недоступність Порталу з технічних причин;</li>
+            <li>достовірність інформації, наданої третіми особами;</li>
+            <li>збитки, що виникли внаслідок несанкціонованого доступу до облікових даних користувача.</li>
+          </ul>
+          <p class="doc-text" style="margin-top:14px;">
+            Користувач несе повну відповідальність за зміст інформації, яку він подає до розміщення на Порталі, відповідно до чинного законодавства України.
+          </p>
+        </div>
+
+        <!-- SECTION 6 -->
+        <div class="doc-section">
+          <div class="doc-section-title">6. Вирішення спорів</div>
+          <p class="doc-text">
+            Всі суперечки, що виникають у звʼязку з використанням Порталу, вирішуються шляхом переговорів. У разі неможливості досягнення згоди спір передається на розгляд до судових органів відповідно до законодавства України.
+          </p>
+        </div>
+
+        <!-- SECTION 7 -->
+        <div class="doc-section">
+          <div class="doc-section-title">7. Зв'язок з адміністрацією</div>
+          <p class="doc-text">
+            З питань, що стосуються цих Правил, персональних даних або скарг на контент, звертайтеся до Адміністрації:
+          </p>
+          <ul class="doc-list">
+            <li>Електронна пошта: <a href="mailto:admin@zoryana.ua" style="color:var(--doc-accent);">admin@zoryana.ua</a></li>
+            <li>Термін розгляду звернення: до 14 робочих днів.</li>
+          </ul>
+        </div>
+
+        <div class="doc-sign">
+          <div class="doc-sign__left">
+            Адміністрація Порталу «Зоряна Памʼять»<br>
+            Контакт: <a href="mailto:admin@zoryana.ua" style="color:var(--doc-accent);">admin@zoryana.ua</a>
+          </div>
+          <div class="doc-sign__right">
+            <div class="doc-sign__stamp">ЗОРЯНА<br>ПАМʼЯТЬ<br>ПОРТАЛ</div>
+            <div>Документ підписано<br>електронним підписом</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <footer class="doc-footer">
+      <div class="doc-footer__left">
+        <span>Документ № ЗП-02-2025 · Версія 1.0 · Правила використання</span>
+        <span class="doc-footer__doc-id">Дата створення документа: 01.04.2025 · Дата публікації: 01.05.2025</span>
+      </div>
+      <div class="doc-footer__right">
+        Також перегляньте:
+        <a href="rules.html">Правила сайту</a> ·
+        <a href="faq.html">Питання та відповіді</a>
+      </div>
+    </footer>
+
+  </div>
+</div>
+
+</body>
+</html>

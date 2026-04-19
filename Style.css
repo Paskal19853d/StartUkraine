@@ -317,14 +317,117 @@ mark.shl {
 }
 #btn-add:active { transform: scale(.96); }
 
+/* Smoke toggle switch */
+#smoke-ctrl {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-shrink: 0;
+  cursor: pointer;
+  user-select: none;
+}
+#smoke-lbl {
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+  transition: color .25s;
+}
+#smoke-ctrl:has(.smoke-toggle.active) #smoke-lbl {
+  color: var(--accent);
+}
+.smoke-toggle {
+  width: 38px;
+  height: 20px;
+  background: rgba(255,255,255,.08);
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  position: relative;
+  flex-shrink: 0;
+  transition: background .25s, border-color .25s, box-shadow .25s;
+}
+.smoke-toggle.active {
+  background: rgba(0,200,255,.2);
+  border-color: rgba(0,200,255,.55);
+  box-shadow: 0 0 10px rgba(0,200,255,.2);
+}
+.smoke-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  background: var(--muted);
+  border-radius: 50%;
+  transition: transform .25s cubic-bezier(.4,0,.2,1), background .25s;
+}
+.smoke-toggle.active .smoke-thumb {
+  transform: translateX(18px);
+  background: var(--accent);
+}
+#smoke-ctrl:hover .smoke-toggle { opacity: .85; }
+
+/* Coffee button — патріотичний жовтий */
+#btn-coffee {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: linear-gradient(135deg, #b8860b, #ffd700);
+  border: none;
+  border-radius: 8px;
+  color: #1a0d00;
+  font-family: 'Unbounded', sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 8px 14px;
+  cursor: pointer;
+  white-space: nowrap;
+  letter-spacing: .04em;
+  text-decoration: none;
+  transition: opacity .2s, transform .1s, box-shadow .2s;
+  box-shadow: 0 0 8px rgba(255,215,0,.3);
+  flex-shrink: 0;
+}
+#btn-coffee:hover {
+  opacity: .9;
+  transform: translateY(-1px);
+  box-shadow: 0 0 20px rgba(255,215,0,.55);
+}
+#btn-coffee:active { transform: scale(.96); }
+
+/* Планшет/телефон ≤768px: тільки символи, компактний топбар */
+@media (max-width: 768px) {
+  #topbar { gap: 8px; padding: 0 10px; }
+
+  /* Ховаємо текст — залишаємо іконки */
+  .cf-txt  { display: none; }
+  .add-txt { display: none; }
+
+  /* + ДОДАТИ → тільки "+" */
+  #btn-add {
+    padding: 7px 11px;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 0;
+  }
+
+  /* ☕ — квадратна іконка */
+  #btn-coffee { padding: 7px 9px; font-size: 16px; gap: 0; }
+
+  /* Увійти / Вийти — менший падінг */
+  #btn-auth, #btn-logout { padding: 5px 8px; font-size: 10px; }
+
+  /* Пошук не розтягується занадто */
+  #sw { max-width: 140px; }
+}
+
 /* ── MAP ───────────────────────────────────────────── */
 #map-wrap {
-	z-index: 600;
+  z-index: 600;
   position: fixed;
   top: var(--bar); left: 0; right: 0; bottom: 0;
-  overflow: hidden;
+  overflow: visible; /* body { overflow:hidden } кліпує viewport — тут треба visible щоб зовнішнє свічення не обрізалось */
   cursor: grab;
-      background: transparent; /* щоб fluid просвічував знизу */
+  background: #03070e;
 }
 #map-wrap.grabbing { cursor: grabbing; }
 #map-wrap.picking  { cursor: crosshair; }
@@ -341,30 +444,26 @@ mark.shl {
 /* Oblast styles */
 #ukraine-svg g path,
 #ukraine-svg g polygon {
-  fill: #040f1e;
-  /*stroke: rgba(90,110,130,.3);*/
-  stroke-width: 1.5;
+  fill: #0d2240;
+  stroke: #1e4a7a;
+  stroke-width: 2;
   transition: fill .25s;
   cursor: default;
-  
-  
-  
 }
 #ukraine-svg g path:hover,
-#ukraine-svg g polygon:hover { 
-fill: #071a30; 
+#ukraine-svg g polygon:hover {
+  fill: #143060;
 }
-#ukraine-svg g path,
-#ukraine-svg g polygon {
-    stroke: #040f1e;
-    stroke-width: 2;
-
+/* Свічення по контуру країни — фолбек до завантаження JS/кольорів */
+#ukraine-svg #contours path {
+    stroke: #ffd700;
+    stroke-width: 5px;
 }
-#ukraine-svg { /* Oblast efects */
+#ukraine-svg #contours {
     filter:
-        drop-shadow(0 0 6px rgba(255, 215, 0, 0.8))
-        drop-shadow(0 0 12px rgba(255, 215, 0, 0.6))
-        drop-shadow(0 0 54px rgba(255, 215, 0, 0.4));
+        drop-shadow(0 0 4px  #ffd700)
+        drop-shadow(0 0 12px #ffd700cc)
+        drop-shadow(0 0 28px #ffd70077);
 }
 
 /* Oblast labels */
@@ -440,27 +539,97 @@ fill: #071a30;
 }
 .zbtn:active { transform: scale(.9); }
 
-/* Count badge */
-#count {
+/* ── Нижні блоки карти ──────────────────────────────── */
+#bottom-blocks {
   position: absolute;
-  bottom: 22px; left: 22px;
-  background: rgba(7,13,26,.9);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 10px 16px;
+  bottom: clamp(12px, 2.2vw, 22px);
+  left:   clamp(12px, 2.2vw, 22px);
   z-index: 50;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-align-items: stretch;
+  align-items: stretch;
+  gap: clamp(6px, 1vw, 10px);
   animation: fadeIn .5s .4s var(--ease) both;
 }
+
+#count,
+#site-rules {
+  background: rgba(7,13,26,.92);
+  border-radius: var(--radius);
+  padding: clamp(8px, 1.2vw, 12px) clamp(10px, 1.6vw, 18px);
+  cursor: pointer;
+  transition: background .22s, border-color .22s, box-shadow .22s, transform .15s;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-flex-direction: column;
+  flex-direction: column;
+  -webkit-justify-content: center;
+  justify-content: center;
+}
+
+#count      { border: 1px solid rgba(240,192,48,.25); }
+#site-rules { border: 1px solid rgba(0,200,255,.2); }
+
+#count:hover {
+  background: rgba(14,24,48,.97);
+  border-color: rgba(240,192,48,.6);
+  box-shadow: 0 0 22px rgba(240,192,48,.25);
+  transform: translateY(-2px);
+}
+#site-rules:hover {
+  background: rgba(5,18,38,.97);
+  border-color: rgba(0,200,255,.5);
+  box-shadow: 0 0 22px rgba(0,200,255,.2);
+  transform: translateY(-2px);
+}
+
+/* Count — вміст */
 #count strong {
   display: block;
   font-family: 'Unbounded', sans-serif;
-  font-size: 22px;
+  font-size: clamp(16px, 2.8vw, 22px);
   color: var(--yellow2);
   text-shadow: 0 0 14px rgba(212,168,0,.4);
   line-height: 1;
   margin-bottom: 2px;
 }
-#count span { font-size: 11px; color: var(--muted); }
+#count span {
+  font-size: clamp(9px, 1.2vw, 11px);
+  color: var(--muted);
+}
+
+/* Site rules — вміст */
+#site-rules { gap: clamp(2px, .5vw, 4px); }
+.sr-title {
+  font-family: 'Unbounded', sans-serif;
+  font-size: clamp(7px, 1vw, 8px);
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  margin-bottom: clamp(2px, .4vw, 4px);
+  opacity: .7;
+}
+.sr-link {
+  font-size: clamp(9px, 1.2vw, 11px);
+  color: var(--text2);
+  text-decoration: none;
+  line-height: 1.5;
+  transition: color .18s;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.sr-link:hover { color: #00e5ff; }
+
+/* Мобільна адаптація блоків */
+@media (max-width: 480px) {
+  #bottom-blocks { gap: 5px; }
+  #count strong  { font-size: 14px; }
+  #count span,
+  .sr-link       { font-size: 8px; }
+  .sr-title      { font-size: 6px; }
+}
 
 /* Tooltip */
 #tip {
@@ -660,6 +829,18 @@ fill: #071a30;
   from { transform: translateY(40px) scale(.97); opacity: 0; }
   to   { transform: translateY(0) scale(1);      opacity: 1; }
 }
+
+/* Info modals content */
+.info-body { margin-top: 16px; }
+.info-body p { color: var(--text2); font-size: 13px; line-height: 1.7; margin-bottom: 14px; }
+.info-body h3 { font-family: 'Unbounded', sans-serif; font-size: 10px; font-weight: 700; color: var(--accent); letter-spacing: .06em; text-transform: uppercase; margin: 16px 0 8px; }
+.info-body ul { padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }
+.info-body li { color: var(--text2); font-size: 13px; line-height: 1.6; }
+
+.faq-item { border-bottom: 1px solid var(--border); padding: 12px 0; }
+.faq-item:last-child { border-bottom: none; }
+.faq-q { font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 6px; }
+.faq-a { font-size: 12px; color: var(--text2); line-height: 1.65; }
 
 .mo h2 {
   font-family: 'Unbounded', sans-serif;
