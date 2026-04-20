@@ -241,6 +241,8 @@ def init_db():
         ("map_photo_opacity",     "0.35",     "Фото на карті — прозорість (0.05–0.5)"),
         ("map_photo_blend",       "normal",   "Фото на карті — режим змішування (normal / screen / overlay / soft-light / luminosity)"),
         ("map_photo_feather",     "55",       "Фото на карті — розмитість країв % (20–80)"),
+        ("map_photo_scale",       "100",      "Фото на карті — масштаб відображення % (10–100)"),
+        ("admin_theme",           "dark",     "Тема адмін-панелі (dark / light)"),
     ]
     with db.cursor() as c:
         for key, val, label in defaults:

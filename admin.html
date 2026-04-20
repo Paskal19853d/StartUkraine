@@ -13,6 +13,23 @@
   --accent:#00aadd;--yellow:#c09000;--red:#c04040;--green:#2a8050;
   --radius:6px;
 }
+/* ── СВІТЛА ТЕМА ── */
+html.theme-light{
+  --bg:#f0f4f8;--surface:#ffffff;--surface2:#f5f8fb;--surface3:#eaf0f6;
+  --border:rgba(0,0,0,.08);--border2:rgba(0,0,0,.13);--border3:rgba(0,0,0,.2);
+  --text:#1a2a38;--text2:#4a6070;--muted:#8099ae;
+  --accent:#0088bb;--yellow:#9a7800;--red:#a03030;--green:#1e7040;
+}
+html.theme-light ::-webkit-scrollbar-thumb{background:rgba(0,0,0,.18)}
+html.theme-light .lf input{background:rgba(0,0,0,.04);color:var(--text)}
+html.theme-light #btn-adm-login{background:#f0f4f8;color:var(--text)}
+html.theme-light .lb{background:#ffffff;box-shadow:0 16px 48px rgba(0,0,0,.15)}
+html.theme-light #login-screen{background:#e8eef4}
+html.theme-light .map-tool-btn{background:rgba(240,244,248,.95);color:var(--text2)}
+html.theme-light #map-canvas-wrap{background:#c8daea}
+html.theme-light .cr{background:var(--surface)}
+html.theme-light .cinp{background:rgba(0,0,0,.04);color:var(--text);border-color:var(--border2)}
+html.theme-light .sec-cat-hdr{background:rgba(0,0,0,.04);border-color:var(--border2);color:var(--text2)}
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;font-family:"Segoe UI",sans-serif;background:var(--bg);color:var(--text);font-size:13px}
 ::-webkit-scrollbar{width:3px}::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:3px}
@@ -270,6 +287,8 @@ tr:hover td{background:rgba(255,255,255,.02)}
     <div class="nav-item"        onclick="showSec('users')"   data-s="users">  <span class="nav-ico">👥</span>Користувачі</div>
     <div class="nav-item"        onclick="showSec('mapeditor')" data-s="mapeditor"><span class="nav-ico">🗺</span>Редактор карти</div>
     <div class="nav-item"        onclick="showSec('colors')"  data-s="colors"> <span class="nav-ico">🎨</span>Кольори</div>
+    <div class="nav-item"        onclick="showSec('smoke')"   data-s="smoke">  <span class="nav-ico">💨</span>Ефект диму</div>
+    <div class="nav-item"        onclick="showSec('photo')"   data-s="photo">  <span class="nav-ico">🖼</span>Фото на карті</div>
     <div class="sb-bottom">
       <p>Адмін: <strong id="adm-name">—</strong></p>
       <p style="margin-top:4px">Онлайн: <strong id="adm-online">—</strong></p>
@@ -285,10 +304,11 @@ tr:hover td{background:rgba(255,255,255,.02)}
       <div class="adm-stat">Юзерів: <strong id="tb-users">—</strong></div>
       <div class="adm-stat"><span class="dot"></span>Онлайн: <strong id="tb-online">—</strong></div>
       <div class="spacer"></div>
+      <button id="btn-theme" onclick="toggleAdminTheme()" title="Змінити тему" style="display:flex;align-items:center;gap:6px;background:var(--surface3);border:1px solid var(--border2);border-radius:20px;padding:5px 13px;cursor:pointer;font-size:11px;color:var(--text2);transition:all .2s">
+        <span id="theme-ico">🌙</span><span id="theme-lbl">Темна</span>
+      </button>
       <a class="link-btn" href="/" target="_blank">🌐 Відкрити сайт</a>
-      <a id="btn-coffee" href="https://www.buymeacoffee.com" target="_blank" title="Підтримати розробника">
-        <span class="cf-ico">☕</span><span>Кава адміну</span>
-      </a>
+    
     </div>
 
     <div id="content-area">
@@ -2518,6 +2538,26 @@ tr:hover td{background:rgba(255,255,255,.02)}
         <div class="colors-grid" id="colors-grid"></div>
       </div>
 
+      <!-- SMOKE SECTION -->
+      <div id="sec-smoke" class="section">
+        <div class="sec-title">💨 Ефект диму</div>
+        <div style="display:flex;gap:10px;margin-bottom:16px">
+          <button class="btn btn-p" onclick="saveAllColors()">💾 Зберегти</button>
+          <button class="btn" onclick="loadColors()">↺ Скасувати</button>
+        </div>
+        <div id="smoke-grid"></div>
+      </div>
+
+      <!-- PHOTO SECTION -->
+      <div id="sec-photo" class="section">
+        <div class="sec-title">🖼 Фото на карті</div>
+        <div style="display:flex;gap:10px;margin-bottom:16px">
+          <button class="btn btn-p" onclick="saveAllColors()">💾 Зберегти</button>
+          <button class="btn" onclick="loadColors()">↺ Скасувати</button>
+        </div>
+        <div id="photo-grid"></div>
+      </div>
+
     </div><!-- /content-area -->
   </div><!-- /main -->
 </div><!-- /layout -->
@@ -3124,10 +3164,91 @@ async function saveEdit(){
   const rp=await fetch(`${API}/api/people`);people=await rp.json();renderDots();
 }
 
+/* ══════════ COOKIE HELPERS (admin draft) ══════════ */
+const DRAFT_COOKIE = 'zp_admin_draft';
+const DRAFT_DAYS   = 5;
+
+function _admCookieSet(name, value, days) {
+  const d = new Date();
+  d.setTime(d.getTime() + days * 864e5);
+  document.cookie = `${name}=${encodeURIComponent(value)};expires=${d.toUTCString()};path=/;SameSite=Lax`;
+}
+function _admCookieGet(name) {
+  const found = document.cookie.split(';').map(c=>c.trim()).find(c=>c.startsWith(name+'='));
+  return found ? decodeURIComponent(found.slice(name.length + 1)) : null;
+}
+function _admCookieDel(name) {
+  document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/`;
+}
+
+// Зберігаємо чорновик в куку (всі поточні значення + незбережені зміни)
+function _saveDraftCookie() {
+  const snap = {};
+  Object.entries(COLORS).forEach(([k, info]) => { snap[k] = info.value; });
+  Object.entries(pendColors).forEach(([k, v]) => { snap[k] = v; });
+  snap.__ts = Date.now();
+  try { _admCookieSet(DRAFT_COOKIE, JSON.stringify(snap), DRAFT_DAYS); } catch(e){}
+}
+
+// Завантажуємо чорновик з куки і повертаємо об'єкт {key:value} або null
+function _loadDraftCookie() {
+  const raw = _admCookieGet(DRAFT_COOKIE);
+  if (!raw) return null;
+  try { return JSON.parse(raw); } catch(e) { return null; }
+}
+
+// Показує смужку "незбережені зміни завантажено з куки"
+function _showDraftBanner(ts) {
+  let bar = document.getElementById('draft-banner');
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.id = 'draft-banner';
+    bar.style.cssText = 'position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#1a3a1a;border:1px solid #2a8050;border-radius:8px;padding:10px 18px;font-size:12px;color:#6ec88a;z-index:9999;display:flex;align-items:center;gap:12px;box-shadow:0 4px 20px rgba(0,0,0,.5)';
+    bar.innerHTML = `<span>📋 Чорновик завантажено з куки (<span id="draft-ts"></span>)</span>
+      <button onclick="discardDraft()" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:5px;color:#c8d4e0;padding:3px 10px;cursor:pointer;font-size:11px">Відхилити</button>
+      <button onclick="saveAllColors()" style="background:rgba(42,128,80,.3);border:1px solid #2a8050;border-radius:5px;color:#6ec88a;padding:3px 10px;cursor:pointer;font-size:11px">Зберегти в БД</button>`;
+    document.body.appendChild(bar);
+  }
+  const d = new Date(ts);
+  const fmt = `${d.toLocaleDateString('uk')} ${d.toLocaleTimeString('uk',{hour:'2-digit',minute:'2-digit'})}`;
+  const el = document.getElementById('draft-ts');
+  if (el) el.textContent = fmt;
+}
+
+function discardDraft() {
+  _admCookieDel(DRAFT_COOKIE);
+  const bar = document.getElementById('draft-banner');
+  if (bar) bar.remove();
+  pendColors = {};
+  loadColors();
+}
+
 /* ══════════ COLORS ══════════ */
 async function loadColors(){
-  const r=await fetch(`${API}/api/colors`);
-  COLORS=await r.json(); pendColors={};
+  const r = await fetch(`${API}/api/colors`);
+  COLORS = await r.json();
+  pendColors = {};
+
+  // Застосовуємо тему
+  applyAdminTheme(COLORS['admin_theme']?.value || 'dark');
+
+  // Перевіряємо чорновик з куки
+  const draft = _loadDraftCookie();
+  if (draft && draft.__ts) {
+    // Застосовуємо збережені зміни поверх даних БД
+    const {__ts, ...settings} = draft;
+    const DRAFT_EXCLUDE = ['admin_theme']; // тема управляється окремо
+    let hasDiff = false;
+    Object.entries(settings).forEach(([k, v]) => {
+      if (DRAFT_EXCLUDE.includes(k)) return;
+      if (COLORS[k] && COLORS[k].value !== v) {
+        pendColors[k] = v;
+        hasDiff = true;
+      }
+    });
+    if (hasDiff) _showDraftBanner(__ts);
+  }
+
   renderColors(); updatePreview();
 }
 // Ключі які є числами (не кольором), з діапазонами
@@ -3159,8 +3280,9 @@ function renderColors(){
 
   const zoomKeys  =['zoom_min','zoom_max','city_border','city_border_zoom'];
   const smokeKeys =['smoke_density','smoke_velocity','smoke_splat_radius','smoke_splat_force','smoke_curl','smoke_opacity','smoke_color_from','smoke_color_to'];
-  const photoKeys =['map_photo_url','map_photo_opacity','map_photo_blend','map_photo_feather'];
+  const photoKeys =['map_photo_url','map_photo_opacity','map_photo_blend','map_photo_feather','map_photo_scale'];
   const boolKeys  =['use_cookies'];
+  // smokeBlock і photoBlock — тепер окремі секції (renderSmokeSection/renderPhotoSection)
 
   const zoomBlock=`
   <div style="grid-column:1/-1;background:rgba(0,200,255,.06);border:1px solid rgba(0,200,255,.2);border-radius:8px;padding:14px 16px;margin-bottom:4px">
@@ -3170,91 +3292,120 @@ function renderColors(){
     </div>
   </div>`;
 
-  const cookieOn = (COLORS['use_cookies']?.value ?? '1') === '1';
-  const smokeBlock=`
-  <div style="grid-column:1/-1;background:rgba(100,200,255,.05);border:1px solid rgba(100,200,255,.18);border-radius:8px;padding:14px 16px;margin-bottom:4px">
-    <div style="font-size:11px;color:#4fc3f7;font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px">💨 Ефект диму</div>
+
+  const otherEntries=Object.entries(COLORS).filter(([k])=>
+    !glowKeys.includes(k)&&!zoomKeys.includes(k)&&!smokeKeys.includes(k)&&
+    !photoKeys.includes(k)&&!boolKeys.includes(k)&&k!=='admin_theme');
+  document.getElementById('colors-grid').innerHTML=glowBlock+zoomBlock+otherEntries.map(([k,info])=>renderColorRow(k,info)).join('');
+  renderSmokeSection();
+  renderPhotoSection();
+}
+
+function renderSmokeSection(){
+  const smokeKeys=['smoke_density','smoke_velocity','smoke_splat_radius','smoke_splat_force','smoke_curl','smoke_opacity','smoke_color_from','smoke_color_to'];
+  const boolKeys=['use_cookies'];
+  const cookieOn=(COLORS['use_cookies']?.value??'1')==='1';
+  const grid=document.getElementById('smoke-grid');
+  if(!grid)return;
+  grid.innerHTML=`
+  <div style="background:rgba(100,200,255,.05);border:1px solid rgba(100,200,255,.18);border-radius:10px;padding:18px 20px;margin-bottom:12px">
+    <div style="font-size:11px;color:#4fc3f7;font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:16px">Параметри диму</div>
     <div style="display:flex;flex-wrap:wrap;gap:10px">
       ${smokeKeys.map(k=>COLORS[k]?renderColorRow(k,COLORS[k]):'').join('')}
     </div>
-    <div style="margin-top:14px;padding-top:12px;border-top:1px solid rgba(100,200,255,.12);display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+  </div>
+  <div style="background:rgba(0,200,255,.04);border:1px solid rgba(0,200,255,.15);border-radius:10px;padding:18px 20px">
+    <div style="font-size:11px;color:#00c8ff;font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:14px">Кукі налаштувань</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
       <div>
-        <div style="font-size:12px;color:#d0dce8;font-weight:500">Кукі налаштувань користувача</div>
-        <div style="font-size:11px;color:#3a5068;margin-top:2px">${COLORS['use_cookies']?.label||'Зберігати налаштування у браузері'}</div>
+        <div style="font-size:12px;color:var(--text);font-weight:500">Зберігати вибір користувача у браузері</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:3px">${COLORS['use_cookies']?.label||'Якщо увімкнено — дим запамʼятовується між сесіями'}</div>
       </div>
       <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
-        <span id="cookie-toggle-lbl" style="font-size:12px;color:${cookieOn?'#00c8ff':'#3a5068'};transition:color .2s">${cookieOn?'Увімкнено':'Вимкнено'}</span>
+        <span id="cookie-toggle-lbl" style="font-size:12px;color:${cookieOn?'#00c8ff':'var(--muted)'};transition:color .2s">${cookieOn?'Увімкнено':'Вимкнено'}</span>
         <div id="cookie-toggle" onclick="adminToggleCookies()"
-          style="width:44px;height:24px;background:${cookieOn?'rgba(0,200,255,.25)':'rgba(255,255,255,.08)'};border:1px solid ${cookieOn?'rgba(0,200,255,.55)':'rgba(255,255,255,.12)'};border-radius:12px;position:relative;cursor:pointer;transition:background .25s,border-color .25s,box-shadow .25s;${cookieOn?'box-shadow:0 0 10px rgba(0,200,255,.2)':''}">
-          <div style="position:absolute;top:3px;left:${cookieOn?'18':'3'}px;width:16px;height:16px;background:${cookieOn?'#00c8ff':'#3a5068'};border-radius:50%;transition:left .25s,background .25s"></div>
+          style="width:44px;height:24px;background:${cookieOn?'rgba(0,200,255,.25)':'rgba(255,255,255,.08)'};border:1px solid ${cookieOn?'rgba(0,200,255,.55)':'var(--border2)'};border-radius:12px;position:relative;cursor:pointer;transition:all .25s;${cookieOn?'box-shadow:0 0 10px rgba(0,200,255,.2)':''}">
+          <div style="position:absolute;top:3px;left:${cookieOn?'18':'3'}px;width:16px;height:16px;background:${cookieOn?'#00c8ff':'var(--muted)'};border-radius:50%;transition:left .25s,background .25s"></div>
         </div>
       </div>
     </div>
   </div>`;
+}
 
-  const photoUrl     = COLORS['map_photo_url']?.value     || '';
-  const photoOp      = COLORS['map_photo_opacity']?.value  || '0.18';
-  const photoBlend   = COLORS['map_photo_blend']?.value    || 'screen';
-  const photoFeather = COLORS['map_photo_feather']?.value  || '55';
-  const blendOptions = ['screen','overlay','soft-light','multiply','luminosity','color-dodge'];
-  const photoBlock=`
-  <div style="grid-column:1/-1;background:rgba(0,200,100,.04);border:1px solid rgba(0,200,100,.18);border-radius:8px;padding:14px 16px;margin-bottom:4px">
-    <div style="font-size:11px;color:#4fc3a1;font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:14px">🖼 Фото на карті (розмиті краї)</div>
-    <div style="display:flex;flex-direction:column;gap:12px">
-
-      <div style="display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap">
-        <div style="flex:1;min-width:260px">
-          <div style="font-size:11px;color:#8a9cb0;margin-bottom:5px">URL зображення <span style="color:#3a5068">(порожньо = вимкнено)</span></div>
-          <input id="photo-url-inp" value="${photoUrl}"
-            placeholder="https://example.com/photo.jpg"
-            style="width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:6px;padding:7px 10px;color:#d0dce8;font-size:12px;box-sizing:border-box"
-            oninput="onClrChange('map_photo_url',this.value);adminPhotoPreview()">
+function renderPhotoSection(){
+  const photoUrl    =COLORS['map_photo_url']?.value     ||'';
+  const photoOp     =COLORS['map_photo_opacity']?.value ||'0.35';
+  const photoBlend  =COLORS['map_photo_blend']?.value   ||'normal';
+  const photoFeather=COLORS['map_photo_feather']?.value ||'55';
+  const photoScale  =COLORS['map_photo_scale']?.value   ||'100';
+  const blendOptions=['normal','screen','overlay','soft-light','multiply','luminosity','color-dodge'];
+  const grid=document.getElementById('photo-grid');
+  if(!grid)return;
+  grid.innerHTML=`
+  <div style="background:rgba(0,200,100,.04);border:1px solid rgba(0,200,100,.18);border-radius:10px;padding:18px 20px">
+    <div style="font-size:11px;color:#4fc3a1;font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:16px">Налаштування фото</div>
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:6px">URL зображення <span style="color:var(--muted)">(порожньо = вимкнено)</span></div>
+        <input id="photo-url-inp" value="${photoUrl}" placeholder="https://example.com/photo.jpg"
+          style="width:100%;max-width:600px;background:var(--surface3);border:1px solid var(--border2);border-radius:6px;padding:8px 11px;color:var(--text);font-size:12px;box-sizing:border-box;outline:none"
+          oninput="onClrChange('map_photo_url',this.value);adminPhotoPreview()">
+      </div>
+      <div style="display:flex;gap:20px;align-items:flex-end;flex-wrap:wrap">
+        <div>
+          <div style="font-size:11px;color:var(--text2);margin-bottom:6px">Прозорість</div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <input type="range" min="0.03" max="0.99" step="0.01" value="${photoOp}"
+              style="width:120px;accent-color:#4fc3a1"
+              oninput="document.getElementById('photo-op-val').textContent=parseFloat(this.value).toFixed(2);onClrChange('map_photo_opacity',this.value);adminPhotoPreview()">
+            <span id="photo-op-val" style="font-size:12px;color:var(--text);min-width:30px">${parseFloat(photoOp).toFixed(2)}</span>
+          </div>
         </div>
-        <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
-          <div>
-            <div style="font-size:11px;color:#8a9cb0;margin-bottom:5px">Прозорість</div>
-            <div style="display:flex;align-items:center;gap:6px">
-              <input type="range" min="0.03" max="0.6" step="0.01" value="${photoOp}"
-                style="width:100px;accent-color:#4fc3a1"
-                oninput="document.getElementById('photo-op-val').textContent=parseFloat(this.value).toFixed(2);onClrChange('map_photo_opacity',this.value);adminPhotoPreview()">
-              <span id="photo-op-val" style="font-size:11px;color:#d0dce8;min-width:28px">${parseFloat(photoOp).toFixed(2)}</span>
-            </div>
+        <div>
+          <div style="font-size:11px;color:var(--text2);margin-bottom:6px">Розмиття країв %</div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <input type="range" min="10" max="80" step="1" value="${photoFeather}"
+              style="width:120px;accent-color:#4fc3a1"
+              oninput="document.getElementById('photo-ft-val').textContent=this.value;onClrChange('map_photo_feather',this.value);adminPhotoPreview()">
+            <span id="photo-ft-val" style="font-size:12px;color:var(--text);min-width:30px">${photoFeather}</span>
           </div>
-          <div>
-            <div style="font-size:11px;color:#8a9cb0;margin-bottom:5px">Розмиття країв %</div>
-            <div style="display:flex;align-items:center;gap:6px">
-              <input type="range" min="10" max="80" step="1" value="${photoFeather}"
-                style="width:100px;accent-color:#4fc3a1"
-                oninput="document.getElementById('photo-ft-val').textContent=this.value;onClrChange('map_photo_feather',this.value);adminPhotoPreview()">
-              <span id="photo-ft-val" style="font-size:11px;color:#d0dce8;min-width:28px">${photoFeather}</span>
-            </div>
+        </div>
+        <div>
+          <div style="font-size:11px;color:var(--text2);margin-bottom:6px">Масштаб %</div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <input type="range" min="10" max="100" step="5" value="${photoScale}"
+              style="width:120px;accent-color:#4fc3a1"
+              oninput="document.getElementById('photo-sc-val').textContent=this.value+'%';onClrChange('map_photo_scale',this.value);adminPhotoPreview()">
+            <span id="photo-sc-val" style="font-size:12px;color:var(--text);min-width:36px">${photoScale}%</span>
           </div>
-          <div>
-            <div style="font-size:11px;color:#8a9cb0;margin-bottom:5px">Режим</div>
-            <select style="background:#0a1220;border:1px solid rgba(255,255,255,.1);border-radius:6px;padding:5px 8px;color:#d0dce8;font-size:12px"
-              onchange="onClrChange('map_photo_blend',this.value);adminPhotoPreview()">
-              ${blendOptions.map(b=>`<option value="${b}" ${b===photoBlend?'selected':''}>${b}</option>`).join('')}
-            </select>
+        </div>
+        <div>
+          <div style="font-size:11px;color:var(--text2);margin-bottom:6px">Режим змішування</div>
+          <select style="background:var(--surface3);border:1px solid var(--border2);border-radius:6px;padding:6px 10px;color:var(--text);font-size:12px"
+            onchange="onClrChange('map_photo_blend',this.value);adminPhotoPreview()">
+            ${blendOptions.map(b=>`<option value="${b}" ${b===photoBlend?'selected':''}>${b}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:6px">
+          Попередній перегляд <span style="color:var(--muted)">(оригінальні пропорції, ~50% розміру)</span>
+        </div>
+        <div id="photo-preview-wrap" style="max-width:600px;background:var(--surface3);border:1px solid var(--border2);border-radius:8px;overflow:hidden;min-height:72px;display:flex;align-items:center;justify-content:center;position:relative;padding:${photoUrl?'0':'20px 0'}">
+          <img id="photo-preview"
+            src="${photoUrl}"
+            onload="adminPhotoPreviewFit(this)"
+            style="display:${photoUrl?'block':'none'};max-width:100%;height:auto;mix-blend-mode:${photoBlend};opacity:${photoUrl?photoOp:0};
+            mask-image:radial-gradient(ellipse 90% 85% at 50% 50%,black 0%,black ${photoFeather}%,transparent 100%);
+            -webkit-mask-image:radial-gradient(ellipse 90% 85% at 50% 50%,black 0%,black ${photoFeather}%,transparent 100%);
+            border-radius:4px">
+          <div id="photo-preview-hint" style="font-size:11px;color:var(--muted);display:${photoUrl?'none':'block'}">
+            ← Введіть URL для попереднього перегляду
           </div>
         </div>
       </div>
-
-      <div style="position:relative;height:90px;background:#03070e;border:1px solid rgba(255,255,255,.06);border-radius:8px;overflow:hidden">
-        <div id="photo-preview"
-          style="position:absolute;top:0;left:0;width:100%;height:100%;background-size:cover;background-position:center;mix-blend-mode:${photoBlend};opacity:${photoUrl?photoOp:0};
-          mask-image:radial-gradient(ellipse 90% 80% at 50% 50%,black 0%,black ${photoFeather}%,transparent 100%);
-          -webkit-mask-image:radial-gradient(ellipse 90% 80% at 50% 50%,black 0%,black ${photoFeather}%,transparent 100%);
-          ${photoUrl?`background-image:url('${photoUrl}')`:''}">
-        </div>
-        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;color:#3a5068;pointer-events:none"
-          id="photo-preview-hint">${photoUrl?'':'← Введіть URL для попереднього перегляду'}</div>
-      </div>
-
     </div>
   </div>`;
-
-  const otherEntries=Object.entries(COLORS).filter(([k])=>!glowKeys.includes(k)&&!zoomKeys.includes(k)&&!smokeKeys.includes(k)&&!photoKeys.includes(k)&&!boolKeys.includes(k));
-  document.getElementById('colors-grid').innerHTML=glowBlock+zoomBlock+smokeBlock+photoBlock+otherEntries.map(([k,info])=>renderColorRow(k,info)).join('');
 }
 
 function renderColorRow(k,info){
@@ -3291,11 +3442,38 @@ function renderColorRow(k,info){
     ${isHex?`<input type="color" class="cclr" id="cclr-${k}" value="${val.slice(0,7)}" oninput="document.getElementById('ci-${k}').value=this.value;onClrChange('${k}',this.value)">`:'' }
   </div>`;
 }
-function onClrChange(k,v){
-  pendColors[k]=v;
-  const cp=document.getElementById('cp-'+k);if(cp)cp.style.background=v;
-  const cv=document.getElementById('cv-'+k);if(cv)cv.textContent=v;
+let _autoSaveTimer = null;
+
+function onClrChange(k, v){
+  pendColors[k] = v;
+  const cp = document.getElementById('cp-'+k); if(cp) cp.style.background = v;
+  const cv = document.getElementById('cv-'+k); if(cv) cv.textContent = v;
   updatePreview();
+
+  // 1. Одразу зберігаємо чорновик у куку (5 днів)
+  _saveDraftCookie();
+
+  // 2. Авто-збереження в БД через 1.5с після останньої зміни
+  clearTimeout(_autoSaveTimer);
+  _autoSaveTimer = setTimeout(_autoSaveToDb, 1500);
+}
+
+async function _autoSaveToDb() {
+  const batch = Object.entries(pendColors).map(([k,v])=>({key:k,value:v}));
+  if (!batch.length || !AE || !AP) return;
+  try {
+    await fetch(`${API}/api/admin/colors/batch?email=${e(AE)}&password=${e(AP)}`, {
+      method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(batch)
+    });
+    // Оновлюємо COLORS локально (не перемальовуємо щоб не зламати UI)
+    batch.forEach(({key, value}) => { if(COLORS[key]) COLORS[key].value = value; });
+    pendColors = {};
+    // Оновлюємо куку з вже збереженими даними
+    _saveDraftCookie();
+    showN('💾 Автозбережено');
+  } catch(err) {
+    console.warn('Автозбереження не вдалось:', err);
+  }
 }
 function gc(k){return pendColors[k]||COLORS[k]?.value||'';}
 function updatePreview(){
@@ -3328,30 +3506,97 @@ function adminToggleCookies(){
   if (lbl) { lbl.textContent = on ? 'Увімкнено' : 'Вимкнено'; lbl.style.color = on ? '#00c8ff' : '#3a5068'; }
 }
 
+// ── ТЕМА АДМІНКИ ──
+let _adminTheme = 'dark';
+
+function applyAdminTheme(t) {
+  _adminTheme = t;
+  document.documentElement.classList.toggle('theme-light', t === 'light');
+  const ico = document.getElementById('theme-ico');
+  const lbl = document.getElementById('theme-lbl');
+  if (ico) ico.textContent = t === 'light' ? '☀️' : '🌙';
+  if (lbl) lbl.textContent = t === 'light' ? 'Світла' : 'Темна';
+}
+
+async function toggleAdminTheme() {
+  const next = _adminTheme === 'dark' ? 'light' : 'dark';
+  applyAdminTheme(next);
+  // Оновлюємо локально щоб кука не конфліктувала
+  if (COLORS['admin_theme']) COLORS['admin_theme'].value = next;
+  else COLORS['admin_theme'] = {value: next, label: ''};
+  _saveDraftCookie();
+  // Зберігаємо в БД
+  try {
+    await fetch(`${API}/api/admin/colors/batch?email=${e(AE)}&password=${e(AP)}`, {
+      method: 'PUT',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify([{key: 'admin_theme', value: next}])
+    });
+  } catch(err) { console.warn('Не вдалось зберегти тему:', err); }
+}
+
+// Після завантаження — встановлюємо ширину пропорційно масштабу
+function adminPhotoPreviewFit(img) {
+  const wrap  = document.getElementById('photo-preview-wrap');
+  const nat   = img.naturalWidth;
+  if (!nat || !wrap) return;
+  const scale = Math.max(10, Math.min(100, parseInt(
+    pendColors['map_photo_scale'] ?? COLORS['map_photo_scale']?.value ?? '100'
+  ))) / 100;
+  const wrapW = wrap.clientWidth || 600;
+  // Ширина превью = scale% від контейнера (відображає пропорцію на карті)
+  // плюс обмежуємо до 50% від натурального розміру щоб не розтягувати
+  const byScale  = wrapW * scale;
+  const byNat    = nat * 0.5;
+  const target   = Math.min(byScale, byNat, wrapW);
+  img.style.width  = Math.round(target) + 'px';
+  img.style.height = 'auto';
+}
+
 function adminPhotoPreview() {
-  const prev  = document.getElementById('photo-preview');
-  const hint  = document.getElementById('photo-preview-hint');
-  if (!prev) return;
-  const url     = (pendColors['map_photo_url']     ?? COLORS['map_photo_url']?.value     ?? '').trim();
-  const opacity = pendColors['map_photo_opacity']  ?? COLORS['map_photo_opacity']?.value  ?? '0.18';
-  const blend   = pendColors['map_photo_blend']    ?? COLORS['map_photo_blend']?.value    ?? 'screen';
-  const feather = pendColors['map_photo_feather']  ?? COLORS['map_photo_feather']?.value  ?? '55';
-  const mask = `radial-gradient(ellipse 90% 80% at 50% 50%,black 0%,black ${feather}%,transparent 100%)`;
-  prev.style.backgroundImage    = url ? `url('${url}')` : 'none';
-  prev.style.opacity            = url ? opacity : '0';
-  prev.style.mixBlendMode       = blend;
-  prev.style.maskImage          = mask;
-  prev.style.webkitMaskImage    = mask;
-  if (hint) hint.textContent    = url ? '' : '← Введіть URL для попереднього перегляду';
+  const img  = document.getElementById('photo-preview');
+  const hint = document.getElementById('photo-preview-hint');
+  const wrap = document.getElementById('photo-preview-wrap');
+  if (!img) return;
+
+  const url     = (pendColors['map_photo_url']    ?? COLORS['map_photo_url']?.value    ?? '').trim();
+  const opacity = pendColors['map_photo_opacity'] ?? COLORS['map_photo_opacity']?.value ?? '0.35';
+  const blend   = pendColors['map_photo_blend']   ?? COLORS['map_photo_blend']?.value   ?? 'normal';
+  const feather = pendColors['map_photo_feather'] ?? COLORS['map_photo_feather']?.value ?? '55';
+  const mask    = `radial-gradient(ellipse 90% 85% at 50% 50%,black 0%,black ${feather}%,transparent 100%)`;
+
+  if (!url) {
+    img.style.display = 'none';
+    img.src = '';
+    if (hint) hint.style.display = 'block';
+    if (wrap) wrap.style.padding = '20px 0';
+    return;
+  }
+
+  if (img.src !== url) img.src = url;
+  img.style.display         = 'block';
+  img.style.opacity         = opacity;
+  img.style.mixBlendMode    = blend;
+  img.style.maskImage       = mask;
+  img.style.webkitMaskImage = mask;
+  if (hint) hint.style.display = 'none';
+  if (wrap) wrap.style.padding = '0';
+
+  if (img.complete && img.naturalWidth) adminPhotoPreviewFit(img);
 }
 
 async function saveAllColors(){
   const batch=Object.entries(pendColors).map(([k,v])=>({key:k,value:v}));
-  if(!batch.length){showN('Немає змін');return;}
+  if(!batch.length){ showN('Немає змін'); return; }
   await fetch(`${API}/api/admin/colors/batch?email=${e(AE)}&password=${e(AP)}`,
     {method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(batch)});
-  showN('💾 Кольори збережено! Оновіть сайт.');
-  pendColors={};loadColors();
+  showN('💾 Збережено в БД!');
+  pendColors = {};
+  // Прибираємо баннер чорновика і оновлюємо куку
+  const bar = document.getElementById('draft-banner');
+  if (bar) bar.remove();
+  await loadColors();
+  _saveDraftCookie(); // оновлюємо куку вже з актуальними даними БД
 }
 
 /* ══════════ HELPERS ══════════ */

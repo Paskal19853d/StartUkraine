@@ -2426,6 +2426,7 @@ function applyMapPhoto() {
   const opacity = getC('map_photo_opacity', '0.35');
   const blend   = getC('map_photo_blend',   'normal');
   const feather = parseInt(getC('map_photo_feather', '55'));
+  const scale   = Math.max(1, Math.min(100, parseInt(getC('map_photo_scale', '100')))) / 100;
 
   if (!url) {
     el.style.opacity = '0';
@@ -2435,7 +2436,18 @@ function applyMapPhoto() {
 
   setupMapPhotoClip();
 
-  // Оновлюємо градієнт відповідно до значення feather
+  // Масштаб: центруємо зображення в SVG-координатах (14000 x 9500)
+  const SVG_W = 14000, SVG_H = 9500;
+  const imgW = SVG_W * scale;
+  const imgH = SVG_H * scale;
+  const imgX = (SVG_W - imgW) / 2;
+  const imgY = (SVG_H - imgH) / 2;
+  el.setAttribute('x',      imgX);
+  el.setAttribute('y',      imgY);
+  el.setAttribute('width',  imgW);
+  el.setAttribute('height', imgH);
+
+  // Оновлюємо градієнт маски відповідно до feather
   const s1 = document.querySelector('#ua-fade-g stop:first-child');
   const s2 = document.querySelector('#ua-fade-g stop:last-child');
   if (s1) s1.setAttribute('offset', feather + '%');
@@ -2443,8 +2455,8 @@ function applyMapPhoto() {
 
   el.setAttribute('href', url);
   el.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', url);
-  el.setAttribute('clip-path', 'url(#ua-clip)');  // обрізаємо по контуру України
-  el.setAttribute('mask', 'url(#ua-photo-mask)'); // розмиваємо краї
+  el.setAttribute('clip-path', 'url(#ua-clip)');
+  el.setAttribute('mask', 'url(#ua-photo-mask)');
   el.style.opacity      = opacity;
   el.style.mixBlendMode = blend;
 }
@@ -3012,7 +3024,7 @@ si.addEventListener('focus', () => {
 /* ── Auth ── */
 function updateAuthUI(){
   const un=document.getElementById('un'),ba=document.getElementById('btn-auth'),bl=document.getElementById('btn-logout');
-  if(curUser){un.textContent='&#128100; '+curUser.name;un.style.display='block';bl.style.display='block';ba.style.display='none';}
+  if(curUser){un.textContent=curUser.name;un.style.display='block';bl.style.display='block';ba.style.display='none';}
   else{un.style.display='none';bl.style.display='none';ba.style.display='block';}
 }
 function openAuth(){document.getElementById('mauth').classList.add('open');}
