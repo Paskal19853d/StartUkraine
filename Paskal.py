@@ -148,10 +148,22 @@ def init_db():
         c.execute("""
             CREATE TABLE IF NOT EXISTS colors (
                 `key`   VARCHAR(50)  PRIMARY KEY,
-                value   VARCHAR(100) NOT NULL,
-                label   VARCHAR(100) DEFAULT ''
+                value   TEXT         NOT NULL,
+                label   VARCHAR(200) DEFAULT ''
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
         """)
+        # Миграция: расширяем value если ещё VARCHAR(100)
+        c.execute("""
+            SELECT DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME   = 'colors'
+              AND COLUMN_NAME  = 'value'
+        """)
+        row = c.fetchone()
+        if row:
+            dtype = list(row.values())[0] if isinstance(row, dict) else row[0]
+            if dtype.lower() != 'text':
+                c.execute("ALTER TABLE colors MODIFY COLUMN value TEXT NOT NULL")
 
         # ── map_labels ────────────────────────────────────
         c.execute("""
@@ -225,6 +237,10 @@ def init_db():
         ("smoke_color_from",      "#0057B7",  "Дим — колір від"),
         ("smoke_color_to",        "#00BFFF",  "Дим — колір до"),
         ("use_cookies",           "1",        "Зберігати налаштування користувача в куках (1=так, 0=ні)"),
+        ("map_photo_url",         "",         "Фото на карті — URL зображення (порожньо = вимкнено)"),
+        ("map_photo_opacity",     "0.35",     "Фото на карті — прозорість (0.05–0.5)"),
+        ("map_photo_blend",       "normal",   "Фото на карті — режим змішування (normal / screen / overlay / soft-light / luminosity)"),
+        ("map_photo_feather",     "55",       "Фото на карті — розмитість країв % (20–80)"),
     ]
     with db.cursor() as c:
         for key, val, label in defaults:
@@ -883,7 +899,11 @@ def update_color(c_body: ColorUpdate, email: str, password: str):
     require_admin(email, password)
     db = get_db()
     with db.cursor() as c:
-        c.execute("UPDATE colors SET value=%s WHERE `key`=%s", (c_body.value, c_body.key))
+        c.execute(
+            "INSERT INTO colors (`key`,value,label) VALUES (%s,%s,'') "
+            "ON DUPLICATE KEY UPDATE value=%s",
+            (c_body.key, c_body.value, c_body.value)
+        )
     db.commit()
     db.close()
     return {"ok": True}
@@ -894,7 +914,11 @@ def update_colors_batch(colors: List[ColorUpdate], email: str, password: str):
     db = get_db()
     with db.cursor() as c:
         for col in colors:
-            c.execute("UPDATE colors SET value=%s WHERE `key`=%s", (col.value, col.key))
+            c.execute(
+                "INSERT INTO colors (`key`,value,label) VALUES (%s,%s,'') "
+                "ON DUPLICATE KEY UPDATE value=%s",
+                (col.key, col.value, col.value)
+            )
     db.commit()
     db.close()
     return {"ok": True}

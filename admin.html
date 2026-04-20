@@ -3157,9 +3157,10 @@ function renderColors(){
     </div>
   </div>`;
 
-  const zoomKeys =['zoom_min','zoom_max','city_border','city_border_zoom'];
-  const smokeKeys=['smoke_density','smoke_velocity','smoke_splat_radius','smoke_splat_force','smoke_curl','smoke_opacity','smoke_color_from','smoke_color_to'];
-  const boolKeys =['use_cookies'];
+  const zoomKeys  =['zoom_min','zoom_max','city_border','city_border_zoom'];
+  const smokeKeys =['smoke_density','smoke_velocity','smoke_splat_radius','smoke_splat_force','smoke_curl','smoke_opacity','smoke_color_from','smoke_color_to'];
+  const photoKeys =['map_photo_url','map_photo_opacity','map_photo_blend','map_photo_feather'];
+  const boolKeys  =['use_cookies'];
 
   const zoomBlock=`
   <div style="grid-column:1/-1;background:rgba(0,200,255,.06);border:1px solid rgba(0,200,255,.2);border-radius:8px;padding:14px 16px;margin-bottom:4px">
@@ -3191,8 +3192,69 @@ function renderColors(){
     </div>
   </div>`;
 
-  const otherEntries=Object.entries(COLORS).filter(([k])=>!glowKeys.includes(k)&&!zoomKeys.includes(k)&&!smokeKeys.includes(k)&&!boolKeys.includes(k));
-  document.getElementById('colors-grid').innerHTML=glowBlock+zoomBlock+smokeBlock+otherEntries.map(([k,info])=>renderColorRow(k,info)).join('');
+  const photoUrl     = COLORS['map_photo_url']?.value     || '';
+  const photoOp      = COLORS['map_photo_opacity']?.value  || '0.18';
+  const photoBlend   = COLORS['map_photo_blend']?.value    || 'screen';
+  const photoFeather = COLORS['map_photo_feather']?.value  || '55';
+  const blendOptions = ['screen','overlay','soft-light','multiply','luminosity','color-dodge'];
+  const photoBlock=`
+  <div style="grid-column:1/-1;background:rgba(0,200,100,.04);border:1px solid rgba(0,200,100,.18);border-radius:8px;padding:14px 16px;margin-bottom:4px">
+    <div style="font-size:11px;color:#4fc3a1;font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:14px">🖼 Фото на карті (розмиті краї)</div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+
+      <div style="display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap">
+        <div style="flex:1;min-width:260px">
+          <div style="font-size:11px;color:#8a9cb0;margin-bottom:5px">URL зображення <span style="color:#3a5068">(порожньо = вимкнено)</span></div>
+          <input id="photo-url-inp" value="${photoUrl}"
+            placeholder="https://example.com/photo.jpg"
+            style="width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:6px;padding:7px 10px;color:#d0dce8;font-size:12px;box-sizing:border-box"
+            oninput="onClrChange('map_photo_url',this.value);adminPhotoPreview()">
+        </div>
+        <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
+          <div>
+            <div style="font-size:11px;color:#8a9cb0;margin-bottom:5px">Прозорість</div>
+            <div style="display:flex;align-items:center;gap:6px">
+              <input type="range" min="0.03" max="0.6" step="0.01" value="${photoOp}"
+                style="width:100px;accent-color:#4fc3a1"
+                oninput="document.getElementById('photo-op-val').textContent=parseFloat(this.value).toFixed(2);onClrChange('map_photo_opacity',this.value);adminPhotoPreview()">
+              <span id="photo-op-val" style="font-size:11px;color:#d0dce8;min-width:28px">${parseFloat(photoOp).toFixed(2)}</span>
+            </div>
+          </div>
+          <div>
+            <div style="font-size:11px;color:#8a9cb0;margin-bottom:5px">Розмиття країв %</div>
+            <div style="display:flex;align-items:center;gap:6px">
+              <input type="range" min="10" max="80" step="1" value="${photoFeather}"
+                style="width:100px;accent-color:#4fc3a1"
+                oninput="document.getElementById('photo-ft-val').textContent=this.value;onClrChange('map_photo_feather',this.value);adminPhotoPreview()">
+              <span id="photo-ft-val" style="font-size:11px;color:#d0dce8;min-width:28px">${photoFeather}</span>
+            </div>
+          </div>
+          <div>
+            <div style="font-size:11px;color:#8a9cb0;margin-bottom:5px">Режим</div>
+            <select style="background:#0a1220;border:1px solid rgba(255,255,255,.1);border-radius:6px;padding:5px 8px;color:#d0dce8;font-size:12px"
+              onchange="onClrChange('map_photo_blend',this.value);adminPhotoPreview()">
+              ${blendOptions.map(b=>`<option value="${b}" ${b===photoBlend?'selected':''}>${b}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div style="position:relative;height:90px;background:#03070e;border:1px solid rgba(255,255,255,.06);border-radius:8px;overflow:hidden">
+        <div id="photo-preview"
+          style="position:absolute;top:0;left:0;width:100%;height:100%;background-size:cover;background-position:center;mix-blend-mode:${photoBlend};opacity:${photoUrl?photoOp:0};
+          mask-image:radial-gradient(ellipse 90% 80% at 50% 50%,black 0%,black ${photoFeather}%,transparent 100%);
+          -webkit-mask-image:radial-gradient(ellipse 90% 80% at 50% 50%,black 0%,black ${photoFeather}%,transparent 100%);
+          ${photoUrl?`background-image:url('${photoUrl}')`:''}">
+        </div>
+        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;color:#3a5068;pointer-events:none"
+          id="photo-preview-hint">${photoUrl?'':'← Введіть URL для попереднього перегляду'}</div>
+      </div>
+
+    </div>
+  </div>`;
+
+  const otherEntries=Object.entries(COLORS).filter(([k])=>!glowKeys.includes(k)&&!zoomKeys.includes(k)&&!smokeKeys.includes(k)&&!photoKeys.includes(k)&&!boolKeys.includes(k));
+  document.getElementById('colors-grid').innerHTML=glowBlock+zoomBlock+smokeBlock+photoBlock+otherEntries.map(([k,info])=>renderColorRow(k,info)).join('');
 }
 
 function renderColorRow(k,info){
@@ -3264,6 +3326,23 @@ function adminToggleCookies(){
     if (thumb) { thumb.style.left = on ? '18px' : '3px'; thumb.style.background = on ? '#00c8ff' : '#3a5068'; }
   }
   if (lbl) { lbl.textContent = on ? 'Увімкнено' : 'Вимкнено'; lbl.style.color = on ? '#00c8ff' : '#3a5068'; }
+}
+
+function adminPhotoPreview() {
+  const prev  = document.getElementById('photo-preview');
+  const hint  = document.getElementById('photo-preview-hint');
+  if (!prev) return;
+  const url     = (pendColors['map_photo_url']     ?? COLORS['map_photo_url']?.value     ?? '').trim();
+  const opacity = pendColors['map_photo_opacity']  ?? COLORS['map_photo_opacity']?.value  ?? '0.18';
+  const blend   = pendColors['map_photo_blend']    ?? COLORS['map_photo_blend']?.value    ?? 'screen';
+  const feather = pendColors['map_photo_feather']  ?? COLORS['map_photo_feather']?.value  ?? '55';
+  const mask = `radial-gradient(ellipse 90% 80% at 50% 50%,black 0%,black ${feather}%,transparent 100%)`;
+  prev.style.backgroundImage    = url ? `url('${url}')` : 'none';
+  prev.style.opacity            = url ? opacity : '0';
+  prev.style.mixBlendMode       = blend;
+  prev.style.maskImage          = mask;
+  prev.style.webkitMaskImage    = mask;
+  if (hint) hint.textContent    = url ? '' : '← Введіть URL для попереднього перегляду';
 }
 
 async function saveAllColors(){

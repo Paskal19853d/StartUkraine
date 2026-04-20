@@ -480,6 +480,14 @@ mark.shl {
   top: 0; left: 0;
   pointer-events: none;
   will-change: contents;
+  z-index: 5;                    /* над фото, під димом (#fluid z:900) */
+}
+
+/* #map-photo — SVG <image> всередині <svg>, позиціонується SVG-атрибутами x/y/width/height */
+/* clip-path та mask-image встановлюються через JS в applyMapPhoto() */
+#map-photo {
+  pointer-events: none;
+  transition: opacity .4s ease;
 }
 
 /* Pick bar */
@@ -1091,5 +1099,6 @@ box-shadow: 3px -4px 28px 0px rgba(142
   top: 0; left: 0;
   pointer-events: none;
   will-change: contents;
+  z-index: 5;
 }
  
