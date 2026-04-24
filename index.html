@@ -105,6 +105,22 @@
 
 <div id="map-wrap">
   <div id="svg-layer">
+<!-- Море — окремий SVG, поза #ukraine-svg, щоб drop-shadow країни не впливав -->
+<svg id="sea-svg" xmlns="http://www.w3.org/2000/svg"
+     viewBox="0 0 14000 9500" preserveAspectRatio="xMidYMid meet"
+     style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:visible;display:none">
+  <defs>
+    <filter id="sea-filter" x="-15%" y="-50%" width="130%" height="200%" color-interpolation-filters="sRGB">
+      <feTurbulence id="sea-turb" type="turbulence" baseFrequency="0.0012 0.0008" numOctaves="3" seed="4" result="turb"/>
+      <feDisplacementMap id="sea-disp" in="SourceGraphic" in2="turb" scale="500" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+  </defs>
+  <g id="sea-group" opacity="0.55" filter="url(#sea-filter)">
+    <ellipse id="sea-black" cx="6050"  cy="8450" rx="4950" ry="1050" fill="#a0d7ff"/>
+    <ellipse id="sea-azov"  cx="11350" cy="7725" rx="2050" ry="1225" fill="#a0d7ff"/>
+  </g>
+</svg>
+
 <svg id="ukraine-svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 14000 9500" preserveAspectRatio="xMidYMid meet" style="position:absolute;top:0;left:0;width:100%;height:100%" >
 <defs id="ua-defs"></defs>
 
@@ -2158,7 +2174,7 @@
     <div id="count"><strong id="btotal">0</strong><span>у памʼяті</span></div>
     <div id="site-rules">
       <div class="sr-title">Інформація</div>
-      <a class="sr-link" href="/rules.html=" target="_blank">📋 Правила сайту</a>
+      <a class="sr-link" href="/rules.html" target="_blank">📋 Правила сайту</a>
       <a class="sr-link" href="/terms.html" target="_blank">📄 Правила використання</a>
       <a class="sr-link" href="/faq.html" target="_blank">❓ Питання — відповідь</a>
     </div>
@@ -2268,6 +2284,7 @@
 
 <script>
 const API = 'http://127.0.0.1:8000';
+window.API = API;
 let people = [], curUser = JSON.parse(localStorage.getItem('mu')||'null');
 let selColor = '#4fc3f7', isPick = false, pickCb = null, activePerson = null;
 let W = 0, H = 0, animT = 0, particles = [];
@@ -2281,6 +2298,7 @@ async function loadColors() {
   try {
     const r = await fetch(API+'/api/colors');
     COLORS = await r.json();
+    window.COLORS = COLORS;   // expose для зовнішніх скриптів (sea.js тощо)
     applyColors();
   } catch { console.warn('Кольори не завантажено — використовуємо типові'); }
 }
@@ -2860,10 +2878,12 @@ let sT = null, sIdx = -1, sResults = [], searchActive = false;
 
 /* --- Highlight: підсвічує збіг у рядку --- */
 function hlText(str, q) {
-  if (!q || !str) return str || '';
+  if (!str) return '';
+  // HTML-escape перед вставкою — запобігає XSS через дані з бази
+  const safe = String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  if (!q) return safe;
   const esc = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  return str.replace(new RegExp(`(${esc})`, 'gi'),
-    '<mark class="shl">$1</mark>');
+  return safe.replace(new RegExp(`(${esc})`, 'gi'), '<mark class="shl">$1</mark>');
 }
 
 /* --- Fuzzy score (клієнтська копія для сортування) --- */
@@ -3187,6 +3207,7 @@ window.addEventListener('load', () => {
     <video id="videoBackground" muted loop></video>
     <div id="overlay"></div>
     <script src="js/script.js?v=20260419"></script>
+    <script src="js/sea.js?v=20260422e"></script>
 
 <!-- INFO MODALS -->
 <div class="mov" id="m-rules">

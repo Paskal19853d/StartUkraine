@@ -36,7 +36,7 @@ html,body{height:100%;font-family:"Segoe UI",sans-serif;background:var(--bg);col
 
 /* ── LAYOUT ── */
 #layout{display:flex;height:100vh}
-#sidebar{width:200px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}
+#sidebar{width:200px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto}
 #main{flex:1;overflow:hidden;display:flex;flex-direction:column}
 
 /* ── SIDEBAR ── */
@@ -289,6 +289,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
     <div class="nav-item"        onclick="showSec('colors')"  data-s="colors"> <span class="nav-ico">🎨</span>Кольори</div>
     <div class="nav-item"        onclick="showSec('smoke')"   data-s="smoke">  <span class="nav-ico">💨</span>Ефект диму</div>
     <div class="nav-item"        onclick="showSec('photo')"   data-s="photo">  <span class="nav-ico">🖼</span>Фото на карті</div>
+    <div class="nav-item"        onclick="showSec('sea')"     data-s="sea">    <span class="nav-ico">🌊</span>Хвилі морів</div>
     <div class="sb-bottom">
       <p>Адмін: <strong id="adm-name">—</strong></p>
       <p style="margin-top:4px">Онлайн: <strong id="adm-online">—</strong></p>
@@ -2548,6 +2549,16 @@ tr:hover td{background:rgba(255,255,255,.02)}
         <div id="smoke-grid"></div>
       </div>
 
+      <!-- SEA SECTION -->
+      <div id="sec-sea" class="section">
+        <div class="sec-title">🌊 Хвилі морів</div>
+        <div style="display:flex;gap:10px;margin-bottom:16px">
+          <button class="btn btn-p" onclick="saveAllColors()">💾 Зберегти</button>
+          <button class="btn" onclick="loadColors()">↺ Скасувати</button>
+        </div>
+        <div id="sea-grid"></div>
+      </div>
+
       <!-- PHOTO SECTION -->
       <div id="sec-photo" class="section">
         <div class="sec-title">🖼 Фото на карті</div>
@@ -2597,6 +2608,13 @@ tr:hover td{background:rgba(255,255,255,.02)}
 
 <script>
 const API = 'http://127.0.0.1:8000';
+const AUTH_COOKIE = 'zp_admin_auth';
+const AUTH_DAYS   = 30;
+
+/* HTML-escape: запобігає XSS при вставці даних через innerHTML */
+function h(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
 let AE = '', AP = '';
 let COLORS = {}, pendColors = {};
 let labels = [], people = [];
@@ -2612,23 +2630,65 @@ let dotDrag=false, dotDragEl=null, dotDragId=null;
 let dragOffSVG={x:0,y:0};
 
 /* ══════════ LOGIN ══════════ */
+let _loginAttempts = 0;
+let _loginLocked   = false;
+
 async function adminLogin() {
+  if (_loginLocked) return;
   const email = document.getElementById('adm-email').value.trim();
   const pass  = document.getElementById('adm-pass').value;
+  const errEl = document.getElementById('lerr');
   try {
     const r = await fetch(`${API}/api/auth/login`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:pass})});
+    if (r.status === 429) {
+      const d = await r.json().catch(()=>({}));
+      const msg = d.detail || 'Забагато спроб. Зачекайте.';
+      errEl.textContent = '🔒 ' + msg;
+      errEl.style.display = 'block';
+      _loginLocked = true;
+      setTimeout(()=>{ _loginLocked=false; errEl.style.display='none'; errEl.textContent='❌ Невірний логін або пароль'; }, 60000);
+      return;
+    }
     const d = await r.json();
     if (!d.ok || !d.user.is_admin) throw new Error('not admin');
+    _loginAttempts = 0;
     AE=email; AP=pass;
+    _admCookieSet(AUTH_COOKIE, JSON.stringify({e:email,p:pass}), AUTH_DAYS);
     document.getElementById('login-screen').style.display='none';
     document.getElementById('layout').style.display='flex';
     document.getElementById('adm-name').textContent=d.user.name;
     initAll();
   } catch {
-    document.getElementById('lerr').style.display='block';
+    _loginAttempts++;
+    errEl.textContent = `❌ Невірний логін або пароль (спроба ${_loginAttempts})`;
+    errEl.style.display='block';
   }
 }
-function adminLogout(){AE='';AP='';document.getElementById('login-screen').style.display='flex';document.getElementById('layout').style.display='none';}
+function adminLogout(){
+  AE='';AP='';
+  _admCookieDel(AUTH_COOKIE);
+  document.getElementById('login-screen').style.display='flex';
+  document.getElementById('layout').style.display='none';
+}
+
+async function tryAutoLogin() {
+  const raw = _admCookieGet(AUTH_COOKIE);
+  if (!raw) return;
+  try {
+    const {e:email, p:pass} = JSON.parse(raw);
+    if (!email || !pass) return;
+    const r = await fetch(`${API}/api/auth/login`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:pass})});
+    const d = await r.json();
+    if (!d.ok || !d.user.is_admin) { _admCookieDel(AUTH_COOKIE); return; }
+    AE=email; AP=pass;
+    document.getElementById('adm-email').value = email;
+    document.getElementById('login-screen').style.display='none';
+    document.getElementById('layout').style.display='flex';
+    document.getElementById('adm-name').textContent=d.user.name;
+    initAll();
+  } catch { _admCookieDel(AUTH_COOKIE); }
+}
+document.addEventListener('DOMContentLoaded', tryAutoLogin);
 
 /* ══════════ NAV ══════════ */
 function showSec(id) {
@@ -2641,6 +2701,7 @@ function showSec(id) {
   if(id==='users')     loadUsers();
   if(id==='mapeditor') initMapEditor();
   if(id==='colors')    loadColors();
+  if(id==='sea')      { if(Object.keys(COLORS).length>0) renderSeaSection(); else loadColors(); }
 }
 
 /* ══════════ STATS ══════════ */
@@ -2762,10 +2823,10 @@ function renderMemPage() {
   document.getElementById('mem-tb').innerHTML = slice.map(p => `
     <tr>
       <td style="color:var(--muted)">${p.id}</td>
-      <td><strong>${p.last} ${p.first}</strong><br><small style="color:var(--muted)">${p.mid||''}</small></td>
-      <td style="font-size:11px;color:#4fc3f7">${p.grp||'—'}</td>
-      <td style="font-size:11px">${p.bury||'—'}</td>
-      <td><span class="badge bb">${p.circ||'—'}</span></td>
+      <td><strong>${h(p.last)} ${h(p.first)}</strong><br><small style="color:var(--muted)">${h(p.mid)}</small></td>
+      <td style="font-size:11px;color:#4fc3f7">${h(p.grp)||'—'}</td>
+      <td style="font-size:11px">${h(p.bury)||'—'}</td>
+      <td><span class="badge bb">${h(p.circ)||'—'}</span></td>
       <td><span class="badge ${p.approved?'bg':'by'}">${p.approved?'OK':'Мод.'}</span></td>
       <td>⭐${p.likes||0}</td>
       <td style="display:flex;gap:5px">
@@ -2794,9 +2855,9 @@ async function loadPend() {
     :pend.map(p=>`
     <tr>
       <td style="color:var(--muted)">${p.id}</td>
-      <td><strong>${p.last} ${p.first} ${p.mid||''}</strong></td>
-      <td style="font-size:11px">${p.bury||'—'}</td>
-      <td style="font-size:11px">${p.added_by||'—'}</td>
+      <td><strong>${h(p.last)} ${h(p.first)} ${h(p.mid)}</strong></td>
+      <td style="font-size:11px">${h(p.bury)||'—'}</td>
+      <td style="font-size:11px">${h(p.added_by)||'—'}</td>
       <td style="display:flex;gap:5px">
         <button class="btn btn-g" onclick="approveMem(${p.id})">✅</button>
         <button class="btn btn-b" onclick="openEditById(${p.id})">✏️</button>
@@ -2815,8 +2876,8 @@ async function loadUsers() {
   document.getElementById('users-tb').innerHTML=users.map(u=>`
     <tr>
       <td style="color:var(--muted)">${u.id}</td>
-      <td><strong>${u.name}</strong></td>
-      <td style="font-size:11px;color:var(--text2)">${u.email}</td>
+      <td><strong>${h(u.name)}</strong></td>
+      <td style="font-size:11px;color:var(--text2)">${h(u.email)}</td>
       <td><span class="badge ${u.is_banned?'br':'bg'}">${u.is_banned?'Бан':'Актив'}</span></td>
       <td>${u.online?'<span class="online-dot"></span>Онлайн':'<span style="color:var(--muted)">Офлайн</span>'}</td>
       <td><span class="badge ${u.is_admin?'by':'bb'}">${u.is_admin?'Адмін':'Юзер'}</span></td>
@@ -3281,6 +3342,13 @@ function renderColors(){
   const zoomKeys  =['zoom_min','zoom_max','city_border','city_border_zoom'];
   const smokeKeys =['smoke_density','smoke_velocity','smoke_splat_radius','smoke_splat_force','smoke_curl','smoke_opacity','smoke_color_from','smoke_color_to'];
   const photoKeys =['map_photo_url','map_photo_opacity','map_photo_blend','map_photo_feather','map_photo_scale'];
+  const seaKeys   =['sea_enabled',
+                    'sea_wave_color','sea_wave_count','sea_wave_intensity','sea_size_x','sea_size_y','sea_shore_impact','sea_blur',
+                    'sea_wave_dir','sea_wave_speed',
+                    'sea_glow_on','sea_glow_color','sea_glow_spread',
+                    'sea_svg_tx','sea_svg_ty','sea_svg_scale',
+                    'sea_black_cx','sea_black_cy','sea_black_rx','sea_black_ry',
+                    'sea_azov_cx','sea_azov_cy','sea_azov_rx','sea_azov_ry'];
   const boolKeys  =['use_cookies'];
   // smokeBlock і photoBlock — тепер окремі секції (renderSmokeSection/renderPhotoSection)
 
@@ -3295,10 +3363,11 @@ function renderColors(){
 
   const otherEntries=Object.entries(COLORS).filter(([k])=>
     !glowKeys.includes(k)&&!zoomKeys.includes(k)&&!smokeKeys.includes(k)&&
-    !photoKeys.includes(k)&&!boolKeys.includes(k)&&k!=='admin_theme');
+    !photoKeys.includes(k)&&!seaKeys.includes(k)&&!boolKeys.includes(k)&&k!=='admin_theme');
   document.getElementById('colors-grid').innerHTML=glowBlock+zoomBlock+otherEntries.map(([k,info])=>renderColorRow(k,info)).join('');
   renderSmokeSection();
   renderPhotoSection();
+  renderSeaSection();
 }
 
 function renderSmokeSection(){
@@ -3406,6 +3475,298 @@ function renderPhotoSection(){
       </div>
     </div>
   </div>`;
+}
+
+function renderSeaSection(){
+  const g = k => COLORS[k]?.value;
+  const seaEnabled  = (g('sea_enabled') ?? '1') !== '0';
+  const waveColor   = g('sea_wave_color')    || '#a0d7ff';
+  const waveCount   = g('sea_wave_count')    || '3';
+  const waveInt     = g('sea_wave_intensity')|| '42';
+  const sizeX       = g('sea_size_x')        || '100';
+  const sizeY       = g('sea_size_y')        || '100';
+  const shoreImpact = g('sea_shore_impact')  || '50';
+  const blur        = g('sea_blur')          || '0';
+  const waveDir     = g('sea_wave_dir')      || '45';
+  const waveSpeed   = g('sea_wave_speed')    || '5';
+  const glowOn      = g('sea_glow_on')       ?? '1';
+  const glowColor   = g('sea_glow_color')    || '#60b8ff';
+  const glowSpread  = g('sea_glow_spread')   || '30';
+  const svgTx       = g('sea_svg_tx')        || '0';
+  const svgTy       = g('sea_svg_ty')        || '0';
+  const svgScale    = g('sea_svg_scale')     || '1';
+  const hasSvg      = !!(COLORS['sea_svg_content']?.value);
+  const blackCx     = g('sea_black_cx')      || '6050';
+  const blackCy     = g('sea_black_cy')      || '8450';
+  const blackRx     = g('sea_black_rx')      || '4950';
+  const blackRy     = g('sea_black_ry')      || '1050';
+  const azovCx      = g('sea_azov_cx')       || '11350';
+  const azovCy      = g('sea_azov_cy')       || '7725';
+  const azovRx      = g('sea_azov_rx')       || '2050';
+  const azovRy      = g('sea_azov_ry')       || '1225';
+
+  const grid = document.getElementById('sea-grid');
+  if (!grid) return;
+
+  const sl = (id, min, max, step, val, key, lbl, sfx='') => `
+    <div>
+      <div style="font-size:11px;color:var(--text2);margin-bottom:6px">${lbl}</div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <input type="range" min="${min}" max="${max}" step="${step}" value="${val}"
+          style="width:130px;accent-color:#38bdf8"
+          oninput="document.getElementById('${id}').textContent=this.value+'${sfx}';onClrChange('${key}',this.value);applySeaSettings()">
+        <span id="${id}" style="font-size:12px;color:var(--text);min-width:42px">${val}${sfx}</span>
+      </div>
+    </div>`;
+
+  const nm = (id, min, max, step, val, key, lbl, sfx='') => `
+    <div>
+      <div style="font-size:11px;color:var(--text2);margin-bottom:6px">${lbl}</div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <input type="number" min="${min}" max="${max}" step="${step}" value="${val}"
+          style="width:80px;background:var(--surface2);border:1px solid var(--border2);border-radius:5px;color:var(--text);padding:4px 8px;font-size:12px"
+          oninput="onClrChange('${key}',this.value);applySeaSettings()">
+        <span style="font-size:11px;color:var(--muted)">${sfx}</span>
+      </div>
+    </div>`;
+
+  grid.innerHTML = `
+  <div style="background:rgba(30,140,220,.06);border:1px solid rgba(30,140,220,.22);border-radius:10px;padding:20px 22px;display:flex;flex-direction:column;gap:22px">
+
+    <!-- ── Головний перемикач морів ── -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:14px;border-bottom:1px solid rgba(56,189,248,.15)">
+      <div>
+        <div style="font-size:13px;font-weight:700;color:${seaEnabled?'#38bdf8':'var(--muted)'}">Море на карті</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">Чорне та Азовське море з хвильовим ефектом</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span id="sea-enabled-lbl" style="font-size:12px;color:${seaEnabled?'#38bdf8':'var(--muted)'}">
+          ${seaEnabled?'Увімкнено':'Вимкнено'}
+        </span>
+        <div id="sea-enabled-tog" onclick="adminToggleSea()"
+          style="width:44px;height:24px;background:${seaEnabled?'rgba(56,189,248,.25)':'rgba(255,255,255,.08)'};
+                 border:1px solid ${seaEnabled?'rgba(56,189,248,.55)':'var(--border2)'};
+                 border-radius:12px;position:relative;cursor:pointer;transition:all .25s;
+                 ${seaEnabled?'box-shadow:0 0 10px rgba(56,189,248,.2)':''}">
+          <div style="position:absolute;top:3px;left:${seaEnabled?'18':'3'}px;width:16px;height:16px;
+                      background:${seaEnabled?'#38bdf8':'var(--muted)'};border-radius:50%;transition:all .25s"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Всі налаштування (ховаються при вимкненому морі) ── -->
+    <div id="sea-settings-body" style="${seaEnabled?'':'opacity:.35;pointer-events:none'}">
+    <div style="display:flex;flex-direction:column;gap:22px">
+
+    <div style="font-size:11px;color:#38bdf8;font-weight:700;text-transform:uppercase;letter-spacing:.07em">🗂 SVG-карта морів</div>
+    <div style="display:flex;flex-wrap:wrap;gap:14px;align-items:flex-start">
+      <div style="flex:1;min-width:260px">
+        <div style="font-size:11px;color:var(--text2);margin-bottom:8px">
+          Завантажте SVG-файл з контурами Чорного та Азовського морів.<br>
+          Файл замінить стандартні еліпси. Макс. 500 КБ.
+        </div>
+        <label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;
+               background:rgba(56,189,248,.12);border:1px solid rgba(56,189,248,.35);
+               border-radius:7px;padding:9px 16px;font-size:12px;color:#38bdf8;transition:background .2s"
+               onmouseover="this.style.background='rgba(56,189,248,.22)'"
+               onmouseout="this.style.background='rgba(56,189,248,.12)'">
+          📂 Обрати SVG файл
+          <input type="file" accept=".svg,image/svg+xml" style="display:none"
+            onchange="uploadSeaSvg(this)">
+        </label>
+        <div id="sea-svg-status" style="margin-top:8px;font-size:11px;color:var(--text2)">
+          ${hasSvg
+            ? '<span style="color:#4ade80">✓ SVG завантажено</span>'
+            : '<span style="color:var(--muted)">Файл не завантажено — використовуються еліпси</span>'}
+        </div>
+        ${hasSvg ? `<button onclick="deleteSeaSvg()" style="margin-top:8px;background:rgba(192,64,64,.15);
+          border:1px solid rgba(192,64,64,.4);border-radius:6px;color:#f87171;font-size:11px;
+          padding:5px 12px;cursor:pointer">🗑 Видалити SVG → повернути еліпси</button>` : ''}
+      </div>
+
+      <div id="sea-svg-transform" style="${hasSvg ? '' : 'opacity:.4;pointer-events:none'}">
+        <div style="font-size:11px;color:var(--text2);margin-bottom:10px">Позиція та масштаб SVG (в одиницях Ukraine viewBox 0 0 14000 9500)</div>
+        <div style="display:flex;flex-wrap:wrap;gap:12px">
+          ${sl('sea-tx-v',-7000,7000,10,svgTx,'sea_svg_tx','Зміщення X')}
+          ${sl('sea-ty-v',-4500,4500,10,svgTy,'sea_svg_ty','Зміщення Y')}
+          <div>
+            <div style="font-size:11px;color:var(--text2);margin-bottom:6px">Масштаб</div>
+            <div style="display:flex;align-items:center;gap:6px">
+              <input type="number" min="0.01" max="20" step="0.01" value="${svgScale}"
+                style="width:80px;background:var(--surface2);border:1px solid var(--border2);
+                       border-radius:5px;color:var(--text);padding:4px 8px;font-size:12px"
+                oninput="onClrChange('sea_svg_scale',this.value);applySeaSettings()">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="font-size:11px;color:#38bdf8;font-weight:700;text-transform:uppercase;letter-spacing:.07em">🎨 Колір та видимість</div>
+    <div style="display:flex;flex-wrap:wrap;gap:18px;align-items:flex-end">
+      <div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:6px">Колір хвиль</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <input type="color" value="${waveColor}"
+            style="width:38px;height:32px;border:1px solid var(--border2);border-radius:6px;background:none;cursor:pointer;padding:2px"
+            oninput="document.getElementById('sea-clr-hex').textContent=this.value;onClrChange('sea_wave_color',this.value);applySeaSettings()">
+          <span id="sea-clr-hex" style="font-size:11px;color:var(--muted);font-family:monospace">${waveColor}</span>
+        </div>
+      </div>
+      ${sl('sea-wi-v',  10, 100, 1, waveInt,     'sea_wave_intensity', 'Непрозорість %', '%')}
+      ${sl('sea-wc-v',   1,   8, 1, waveCount,   'sea_wave_count',     'Деталізація (октави)')}
+      ${sl('sea-bl-v',   0,  12, 1, blur,        'sea_blur',           'Розмитість px', 'px')}
+    </div>
+
+    <div style="font-size:11px;color:#38bdf8;font-weight:700;text-transform:uppercase;letter-spacing:.07em">🌊 Хвилі</div>
+    <div style="display:flex;flex-wrap:wrap;gap:18px;align-items:flex-end">
+      ${sl('sea-dir-v',  0, 360,  5, waveDir,     'sea_wave_dir',   'Напрямок °', '°')}
+      ${sl('sea-spd-v',  1,  20,  1, waveSpeed,   'sea_wave_speed', 'Швидкість')}
+      ${sl('sea-sh-v',   0, 100,  1, shoreImpact, 'sea_shore_impact','Амплітуда %', '%')}
+    </div>
+
+    <div style="font-size:11px;color:#38bdf8;font-weight:700;text-transform:uppercase;letter-spacing:.07em">✨ Свічення моря</div>
+    <div style="display:flex;flex-wrap:wrap;gap:18px;align-items:flex-end">
+      <div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:6px">Увімк / Вимк</div>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+          <input type="checkbox" ${glowOn !== '0' ? 'checked' : ''}
+            style="width:18px;height:18px;accent-color:#38bdf8;cursor:pointer"
+            onchange="onClrChange('sea_glow_on',this.checked?'1':'0');applySeaSettings()">
+          <span style="font-size:12px;color:var(--text)">Свічення</span>
+        </label>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:6px">Колір свічення</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <input type="color" value="${glowColor}"
+            style="width:38px;height:32px;border:1px solid var(--border2);border-radius:6px;background:none;cursor:pointer;padding:2px"
+            oninput="document.getElementById('sea-glow-hex').textContent=this.value;onClrChange('sea_glow_color',this.value);applySeaSettings()">
+          <span id="sea-glow-hex" style="font-size:11px;color:var(--muted);font-family:monospace">${glowColor}</span>
+        </div>
+      </div>
+      ${sl('sea-gs-v', 0, 80, 2, glowSpread, 'sea_glow_spread', 'Розмах px', 'px')}
+    </div>
+
+    <div style="font-size:11px;color:#38bdf8;font-weight:700;text-transform:uppercase;letter-spacing:.07em">📐 Масштаб зон</div>
+    <div style="display:flex;flex-wrap:wrap;gap:18px;align-items:flex-end">
+      ${sl('sea-sx-v', 50, 200, 5, sizeX, 'sea_size_x', 'Ширина % (обидва моря)', '%')}
+      ${sl('sea-sy-v', 50, 200, 5, sizeY, 'sea_size_y', 'Висота % (обидва моря)', '%')}
+    </div>
+
+    <div style="font-size:11px;color:#38bdf8;font-weight:700;text-transform:uppercase;letter-spacing:.07em">🗺 Чорне море — координати (SVG 0…14000 × 0…9500)</div>
+    <div style="display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end">
+      ${nm('',4000,8500, 10, blackCx, 'sea_black_cx', 'Центр X')}
+      ${nm('',6500,9500, 10, blackCy, 'sea_black_cy', 'Центр Y')}
+      ${nm('',2000,7000, 50, blackRx, 'sea_black_rx', 'Радіус X (ширина)')}
+      ${nm('', 300,2500, 50, blackRy, 'sea_black_ry', 'Радіус Y (висота)')}
+    </div>
+
+    <div style="font-size:11px;color:#38bdf8;font-weight:700;text-transform:uppercase;letter-spacing:.07em">🗺 Азовське море — координати</div>
+    <div style="display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end">
+      ${nm('',9000,13500, 10, azovCx, 'sea_azov_cx', 'Центр X')}
+      ${nm('',5500, 9000, 10, azovCy, 'sea_azov_cy', 'Центр Y')}
+      ${nm('', 500, 3500, 50, azovRx, 'sea_azov_rx', 'Радіус X (ширина)')}
+      ${nm('', 300, 2000, 50, azovRy, 'sea_azov_ry', 'Радіус Y (висота)')}
+    </div>
+
+    </div></div><!-- /sea-settings-body -->
+  </div>`;
+}
+
+/* Завантажує SVG-файл на сервер */
+async function uploadSeaSvg(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 500_000) { showN('❌ SVG файл занадто великий (макс 500 КБ)'); return; }
+  const status = document.getElementById('sea-svg-status');
+  if (status) status.innerHTML = '<span style="color:#facc15">⏳ Завантаження…</span>';
+  try {
+    const fd = new FormData();
+    fd.append('file', file);
+    const r = await fetch(`${API}/api/admin/sea-svg?email=${e(AE)}&password=${e(AP)}`,
+      { method:'POST', body: fd });
+    if (!r.ok) { const err = await r.json(); throw new Error(err.detail||r.status); }
+    const data = await r.json();
+    if (status) status.innerHTML = `<span style="color:#4ade80">✓ ${file.name} (${Math.round(data.bytes/1024)} КБ)</span>`;
+    showN('✅ SVG карту морів збережено');
+    /* Сповіщаємо index.html перезавантажити COLORS */
+    try { const bc=new BroadcastChannel('zoryana_sea'); bc.postMessage({type:'sea_reload'}); bc.close(); } catch(_){}
+    /* Оновлюємо локальний кеш COLORS щоб hasSvg відображався без перезавантаження */
+    if (!COLORS['sea_svg_content']) COLORS['sea_svg_content'] = { value: '1', label: '' };
+    else COLORS['sea_svg_content'].value = '1';
+  } catch(err) {
+    if (status) status.innerHTML = `<span style="color:#f87171">❌ ${err.message}</span>`;
+    showN('❌ Помилка завантаження: ' + err.message);
+  }
+}
+
+/* Видаляє кастомний SVG, повертає еліпси */
+async function deleteSeaSvg() {
+  try {
+    await fetch(`${API}/api/admin/sea-svg?email=${e(AE)}&password=${e(AP)}`, { method:'DELETE' });
+    delete COLORS['sea_svg_content'];
+    showN('🗑 SVG видалено — активні дефолтні еліпси');
+    try { const bc=new BroadcastChannel('zoryana_sea'); bc.postMessage({type:'sea_reload'}); bc.close(); } catch(_){}
+    renderSeaSection();
+  } catch(err) { showN('❌ ' + err.message); }
+}
+
+/* Передає поточні sea-налаштування на головну сторінку через BroadcastChannel */
+function applySeaSettings() {
+  /* Збираємо актуальні значення: база з COLORS + поточні зміни з pendColors */
+  const seaAllKeys = ['sea_enabled',
+    'sea_wave_color','sea_wave_count','sea_wave_intensity',
+    'sea_size_x','sea_size_y','sea_shore_impact','sea_blur',
+    'sea_wave_dir','sea_wave_speed',
+    'sea_glow_on','sea_glow_color','sea_glow_spread',
+    'sea_svg_tx','sea_svg_ty','sea_svg_scale',
+    'sea_black_cx','sea_black_cy','sea_black_rx','sea_black_ry',
+    'sea_azov_cx','sea_azov_cy','sea_azov_rx','sea_azov_ry'];
+  const config = {};
+  seaAllKeys.forEach(k => {
+    config[k] = pendColors[k] ?? COLORS[k]?.value ?? '';
+  });
+  try {
+    const bc = new BroadcastChannel('zoryana_sea');
+    bc.postMessage({ type: 'sea_update', config });
+    bc.close();
+  } catch(_) {}
+}
+
+async function adminToggleSea() {
+  const cur = pendColors['sea_enabled'] ?? COLORS['sea_enabled']?.value ?? '1';
+  const next = cur === '0' ? '1' : '0';
+
+  // Оновлюємо UI перемикача без повного перемальовування
+  const tog = document.getElementById('sea-enabled-tog');
+  const lbl = document.getElementById('sea-enabled-lbl');
+  const body = document.getElementById('sea-settings-body');
+  const on = next === '1';
+  if (tog) {
+    tog.style.background = on ? 'rgba(56,189,248,.25)' : 'rgba(255,255,255,.08)';
+    tog.style.border = `1px solid ${on ? 'rgba(56,189,248,.55)' : 'var(--border2)'}`;
+    tog.style.boxShadow = on ? '0 0 10px rgba(56,189,248,.2)' : '';
+    tog.querySelector('div').style.left = on ? '18px' : '3px';
+    tog.querySelector('div').style.background = on ? '#38bdf8' : 'var(--muted)';
+  }
+  if (lbl) { lbl.textContent = on ? 'Увімкнено' : 'Вимкнено'; lbl.style.color = on ? '#38bdf8' : 'var(--muted)'; }
+  if (body) { body.style.opacity = on ? '' : '.35'; body.style.pointerEvents = on ? '' : 'none'; }
+
+  // Зберігаємо в БД одразу (не чекаємо кнопки "Зберегти")
+  try {
+    await fetch(`${API}/api/admin/colors/batch?email=${e(AE)}&password=${e(AP)}`, {
+      method: 'PUT',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify([{key:'sea_enabled', value:next}])
+    });
+    if (!COLORS['sea_enabled']) COLORS['sea_enabled'] = {value: next, label: 'Море — показувати на карті'};
+    else COLORS['sea_enabled'].value = next;
+    delete pendColors['sea_enabled'];
+  } catch(_) {}
+
+  // Передаємо на index.html через BroadcastChannel
+  applySeaSettings();
 }
 
 function renderColorRow(k,info){

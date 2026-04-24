@@ -3,7 +3,8 @@
 Запуск: python -m uvicorn Paskal:app --reload --port 8000
 БД:     MySQL / MariaDB (налаштування у .env)
 """
-import os, time, asyncio, hashlib
+import os, time, asyncio, hashlib, threading, re
+import bcrypt
 from typing import Optional, List
 
 import pymysql
@@ -17,9 +18,9 @@ try:
 except ImportError:
     _HAS_PSUTIL = False
 
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Depends
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Depends, UploadFile, File, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -70,7 +71,20 @@ def get_db():
 
 
 def hash_pass(p: str) -> str:
-    return hashlib.sha256(p.encode()).hexdigest()
+    """Hash password with bcrypt (new standard)."""
+    return bcrypt.hashpw(p.encode(), bcrypt.gensalt(rounds=12)).decode()
+
+def _is_sha256_hash(h: str) -> bool:
+    return len(h) == 64 and all(c in '0123456789abcdef' for c in h)
+
+def verify_pass(plain: str, stored: str) -> bool:
+    """Verify password against bcrypt or legacy SHA256 hash."""
+    if _is_sha256_hash(stored):
+        return hashlib.sha256(plain.encode()).hexdigest() == stored
+    try:
+        return bcrypt.checkpw(plain.encode(), stored.encode())
+    except Exception:
+        return False
 
 
 # ── Ініціалізація БД ─────────────────────────────────────
@@ -190,11 +204,18 @@ def init_db():
 
     # ── Admin user ──────────────────────────────────────
     with db.cursor() as c:
-        c.execute("SELECT id FROM users WHERE email=%s", ("admin@admin.com",))
-        if not c.fetchone():
+        c.execute("SELECT id, password FROM users WHERE email=%s", ("admin@admin.com",))
+        admin_row = c.fetchone()
+        if not admin_row:
             c.execute(
                 "INSERT INTO users (name,email,password,is_admin) VALUES (%s,%s,%s,1)",
                 ("Admin", "admin@admin.com", hash_pass("Admin"))
+            )
+        elif _is_sha256_hash(admin_row["password"]):
+            # Міграція: оновлюємо SHA256 → bcrypt при старті сервера
+            c.execute(
+                "UPDATE users SET password=%s WHERE email=%s",
+                (hash_pass("Admin"), "admin@admin.com")
             )
 
     # ── Default colors ──────────────────────────────────
@@ -243,6 +264,14 @@ def init_db():
         ("map_photo_feather",     "55",       "Фото на карті — розмитість країв % (20–80)"),
         ("map_photo_scale",       "100",      "Фото на карті — масштаб відображення % (10–100)"),
         ("admin_theme",           "dark",     "Тема адмін-панелі (dark / light)"),
+        ("sea_enabled",           "1",        "Море — показувати на карті (1=так, 0=ні)"),
+        ("sea_wave_color",        "#a0d7ff",  "Море — колір хвиль (hex)"),
+        ("sea_wave_count",        "20",       "Море — кількість хвиль (5–40)"),
+        ("sea_wave_intensity",    "42",       "Море — інтенсивність (10–100)"),
+        ("sea_size_x",            "100",      "Море — розмір по горизонталі % (50–150)"),
+        ("sea_size_y",            "100",      "Море — розмір по вертикалі % (50–150)"),
+        ("sea_shore_impact",      "50",       "Море — удар об сушу (0–100)"),
+        ("sea_blur",              "0",        "Море — розмитість px (0–8)"),
     ]
     with db.cursor() as c:
         for key, val, label in defaults:
@@ -397,6 +426,93 @@ _visits_hourly: dict = {}   # {hour_ts: count}
 _request_count: int  = 0
 _server_start: float = time.time()
 
+
+# ── Rate limiter ─────────────────────────────────────────
+class _RateLimiter:
+    """Thread-safe sliding-window in-memory rate limiter with bounded key count."""
+    _MAX_KEYS = 50_000
+
+    def __init__(self):
+        self._data: dict = {}
+        self._lock = threading.Lock()
+
+    def check(self, key: str, limit: int, window: int) -> bool:
+        """Return True if request is allowed, False if rate-limited."""
+        now = time.time()
+        with self._lock:
+            if len(self._data) > self._MAX_KEYS:
+                # Evict 10% oldest keys to stay bounded
+                evict = list(self._data.keys())[:self._MAX_KEYS // 10]
+                for k in evict:
+                    del self._data[k]
+            ts = [t for t in self._data.get(key, []) if now - t < window]
+            if len(ts) >= limit:
+                self._data[key] = ts
+                return False
+            ts.append(now)
+            self._data[key] = ts
+            return True
+
+    def purge(self, max_age: int = 3600):
+        now = time.time()
+        with self._lock:
+            for k in list(self._data):
+                self._data[k] = [t for t in self._data[k] if now - t < max_age]
+                if not self._data[k]:
+                    del self._data[k]
+
+_rl = _RateLimiter()
+
+
+# ── Login failure tracker (brute-force lockout) ──────────
+_fail_data: dict = {}
+_fail_lock = threading.Lock()
+_LOCKOUT_MAX    = 5    # невдалих спроб
+_LOCKOUT_WINDOW = 900  # 15 хвилин
+
+def _record_fail(ip: str, email: str):
+    key = f"{ip}:{email.lower()}"
+    now = time.time()
+    with _fail_lock:
+        ts = [t for t in _fail_data.get(key, []) if now - t < _LOCKOUT_WINDOW]
+        ts.append(now)
+        _fail_data[key] = ts
+
+def _is_locked(ip: str, email: str) -> bool:
+    key = f"{ip}:{email.lower()}"
+    now = time.time()
+    with _fail_lock:
+        ts = [t for t in _fail_data.get(key, []) if now - t < _LOCKOUT_WINDOW]
+        _fail_data[key] = ts
+        return len(ts) >= _LOCKOUT_MAX
+
+def _clear_fails(ip: str, email: str):
+    with _fail_lock:
+        _fail_data.pop(f"{ip}:{email.lower()}", None)
+
+
+# ── SVG sanitizer ────────────────────────────────────────
+def _sanitize_svg(svg: str) -> str:
+    """Remove script tags, event handlers, javascript: URIs from SVG."""
+    svg = re.sub(r'<script[\s\S]*?</script>', '', svg, flags=re.IGNORECASE)
+    svg = re.sub(r'<script[^>]*/>', '', svg, flags=re.IGNORECASE)
+    svg = re.sub(r'\s+on\w+\s*=\s*(?:"[^"]*"|\'[^\']*\'|[^\s>]*)', '', svg, flags=re.IGNORECASE)
+    svg = re.sub(r'(href|xlink:href|src)\s*=\s*["\']?\s*javascript:[^"\'>\s]*["\']?', '', svg, flags=re.IGNORECASE)
+    svg = re.sub(r'<foreignObject[\s\S]*?</foreignObject>', '', svg, flags=re.IGNORECASE)
+    return svg
+
+
+_TRUSTED_PROXIES = {"127.0.0.1", "::1"}
+
+def _get_ip(request: Request) -> str:
+    client_host = request.client.host if request.client else "unknown"
+    # Only trust X-Forwarded-For when the direct connection comes from a known proxy
+    if client_host in _TRUSTED_PROXIES:
+        forwarded = request.headers.get("X-Forwarded-For")
+        if forwarded:
+            return forwarded.split(",")[0].strip()
+    return client_host
+
 # ── APP ──────────────────────────────────────────────────
 app = FastAPI(title="Зоряна Памʼять API", version="2.0")
 app.add_middleware(
@@ -416,6 +532,9 @@ async def track_visits(request, call_next):
     cutoff = hour - 48 * 3600
     for k in [k for k in _visits_hourly if k < cutoff]:
         del _visits_hourly[k]
+    # Periodically purge rate-limiter (every ~1000 requests)
+    if _request_count % 1000 == 0:
+        _rl.purge(3600)
     return await call_next(request)
 
 # Статичні файли (img)
@@ -430,7 +549,18 @@ def startup():
 
 # ── Static routes ─────────────────────────────────────────
 @app.get("/")
-def index(): return FileResponse("index.html")
+def index():
+    db = get_db()
+    with db.cursor() as c:
+        c.execute("SELECT value FROM colors WHERE `key`='sea_enabled'")
+        row = c.fetchone()
+    db.close()
+    sea_on = (row["value"] if row else "1") != "0"
+    with open("index.html", "r", encoding="utf-8") as f:
+        html = f.read()
+    script = f'<script>window.SEA_ENABLED={str(sea_on).lower()};</script>'
+    html = html.replace("</head>", f"{script}\n</head>", 1)
+    return HTMLResponse(content=html, headers={"Cache-Control": "no-store"})
 
 @app.get("/admin")
 def admin_page(): return FileResponse("admin.html")
@@ -519,15 +649,24 @@ class LabelUpdate(BaseModel):
 
 # ── AUTH helpers ──────────────────────────────────────────
 def get_user(email: str, password: str):
+    """Fetch user by email and verify password (supports bcrypt and legacy SHA256)."""
     db = get_db()
     with db.cursor() as c:
-        c.execute(
-            "SELECT * FROM users WHERE email=%s AND password=%s",
-            (email.lower(), hash_pass(password))
-        )
+        c.execute("SELECT * FROM users WHERE email=%s", (email.lower(),))
         row = c.fetchone()
     db.close()
+    if not row or not verify_pass(password, row["password"]):
+        return None
     return row
+
+def _upgrade_to_bcrypt(email: str, plain: str):
+    """Lazily migrate a SHA256 password hash to bcrypt after successful login."""
+    new_hash = hash_pass(plain)
+    db = get_db()
+    with db.cursor() as c:
+        c.execute("UPDATE users SET password=%s WHERE email=%s", (new_hash, email.lower()))
+    db.commit()
+    db.close()
 
 def get_admin(email: str, password: str):
     u = get_user(email, password)
@@ -600,8 +739,12 @@ def get_people():
     return rows
 
 @app.get("/api/search")
-def search(q: str = ""):
-    q = q.strip()
+def search(q: str = "", request: Request = None):
+    ip = _get_ip(request) if request else "unknown"
+    # 30 запитів / хв з одного IP
+    if not _rl.check(f"search:{ip}", 30, 60):
+        raise HTTPException(429, "Забагато пошукових запитів. Зачекайте хвилину.")
+    q = q.strip()[:200]
     if len(q) < 2:
         return []
     db = get_db()
@@ -728,7 +871,18 @@ def get_labels():
     return rows
 
 @app.post("/api/people")
-def add_person(p: PersonIn):
+def add_person(p: PersonIn, request: Request):
+    ip = _get_ip(request)
+    # 5 заявок / год з одного IP
+    if not _rl.check(f"addperson:{ip}", 5, 3600):
+        raise HTTPException(429, "Забагато заявок. Спробуйте пізніше.")
+    # Базова валідація довжин
+    if not p.last.strip() or len(p.last) > 100:
+        raise HTTPException(400, "Прізвище обов'язкове (макс. 100 символів)")
+    if not p.first.strip() or len(p.first) > 100:
+        raise HTTPException(400, "Ім'я обов'язкове (макс. 100 символів)")
+    if p.descr and len(p.descr) > 5000:
+        raise HTTPException(400, "Опис занадто довгий (макс. 5000 символів)")
     db = get_db()
     with db.cursor() as c:
         c.execute("""
@@ -743,7 +897,11 @@ def add_person(p: PersonIn):
     return {"ok": True, "id": new_id, "message": "Надіслано на модерацію. Дякуємо!"}
 
 @app.post("/api/like/{mid}")
-def like(mid: int, fp: Optional[str] = "anon"):
+def like(mid: int, fp: Optional[str] = "anon", request: Request = None):
+    ip = _get_ip(request) if request else "unknown"
+    # 60 лайків / год з одного IP (проти накрутки)
+    if not _rl.check(f"like:{ip}", 60, 3600):
+        raise HTTPException(429, "Забагато лайків з одного IP. Зачекайте.")
     now = int(time.time())
     fp  = (fp or "anon")[:64]
     db  = get_db()
@@ -767,9 +925,17 @@ def like(mid: int, fp: Optional[str] = "anon"):
     return {"ok": True, "likes": row["likes"] if row else 0}
 
 @app.post("/api/auth/register")
-def register(u: UserReg):
+def register(u: UserReg, request: Request):
+    ip = _get_ip(request)
+    # 3 реєстрації / год з одного IP
+    if not _rl.check(f"reg:{ip}", 3, 3600):
+        raise HTTPException(429, "Забагато реєстрацій. Спробуйте пізніше.")
     if len(u.password) < 6:
         raise HTTPException(400, "Пароль мінімум 6 символів")
+    if len(u.name.strip()) < 2 or len(u.name) > 100:
+        raise HTTPException(400, "Ім'я має бути від 2 до 100 символів")
+    if len(u.email) > 120:
+        raise HTTPException(400, "Email занадто довгий")
     db = get_db()
     with db.cursor() as c:
         c.execute("SELECT id FROM users WHERE email=%s", (u.email,))
@@ -789,25 +955,44 @@ def register(u: UserReg):
     return {"ok": True, "user": row}
 
 @app.post("/api/auth/login")
-def login(u: UserLogin):
+def login(u: UserLogin, request: Request):
+    ip = _get_ip(request)
+
+    # IP-rate-limit: 10 спроб / 5 хв
+    if not _rl.check(f"login_ip:{ip}", 10, 300):
+        raise HTTPException(429, "Забагато спроб входу. Зачекайте 5 хвилин.")
+
+    # Lockout по email+IP після 5 невдалих спроб
+    if _is_locked(ip, u.email):
+        raise HTTPException(429, "Акаунт тимчасово заблоковано через підозрілу активність. Зачекайте 15 хвилин.")
+
     db = get_db()
     with db.cursor() as c:
         c.execute(
-            "SELECT id,name,email,is_admin,is_banned FROM users WHERE email=%s AND password=%s",
-            (u.email.lower(), hash_pass(u.password))
+            "SELECT id,name,email,is_admin,is_banned,password FROM users WHERE email=%s",
+            (u.email.lower(),)
         )
         row = c.fetchone()
-    if not row:
-        db.close()
+    if not row or not verify_pass(u.password, row["password"]):
+        if row:
+            db.close()
+        _record_fail(ip, u.email)
         raise HTTPException(401, "Невірний email або пароль")
     if row["is_banned"]:
         db.close()
         raise HTTPException(403, "Акаунт заблоковано")
+    _clear_fails(ip, u.email)
+    stored_hash = row["password"]
     with db.cursor() as c:
         c.execute("UPDATE users SET last_seen=%s WHERE email=%s",
                   (int(time.time()), u.email.lower()))
+        # Lazy migration: якщо пароль ще SHA256 — одразу оновлюємо до bcrypt
+        if _is_sha256_hash(stored_hash):
+            c.execute("UPDATE users SET password=%s WHERE email=%s",
+                      (hash_pass(u.password), u.email.lower()))
     db.commit()
     db.close()
+    row.pop("password", None)  # не повертаємо хеш у відповіді
     return {"ok": True, "user": row}
 
 
@@ -843,12 +1028,19 @@ def delete_memorial(mid: int, email: str, password: str):
     db.close()
     return {"ok": True}
 
+_MEMORIAL_ALLOWED_FIELDS = {
+    'last','first','mid','birth','death','loc','bury',
+    'circ','descr','photo','color','pos_x','pos_y','approved','grp'
+}
+
 @app.put("/api/admin/memorial/{mid}")
 def update_memorial(mid: int, p: PersonUpdate, email: str, password: str):
     require_admin(email, password)
     db = get_db()
     fields, vals = [], []
     for f, v in p.dict(exclude_none=True).items():
+        if f not in _MEMORIAL_ALLOWED_FIELDS:
+            raise HTTPException(400, f"Поле '{f}' не дозволено")
         fields.append(f"`{f}`=%s")
         vals.append(v)
     if not fields:
@@ -921,6 +1113,44 @@ def update_colors_batch(colors: List[ColorUpdate], email: str, password: str):
                 "ON DUPLICATE KEY UPDATE value=%s",
                 (col.key, col.value, col.value)
             )
+    db.commit()
+    db.close()
+    return {"ok": True}
+
+@app.post("/api/admin/sea-svg")
+async def upload_sea_svg(
+    email: str = Query(...),
+    password: str = Query(...),
+    file: UploadFile = File(...)
+):
+    require_admin(email, password)
+    raw = await file.read()
+    if len(raw) > 500_000:
+        raise HTTPException(400, "SVG файл занадто великий (макс 500 КБ)")
+    try:
+        svg_text = raw.decode("utf-8")
+    except UnicodeDecodeError:
+        raise HTTPException(400, "Файл не є валідним UTF-8 SVG")
+    if "<svg" not in svg_text.lower():
+        raise HTTPException(400, "Файл не є SVG")
+    svg_text = _sanitize_svg(svg_text)
+    db = get_db()
+    with db.cursor() as c:
+        c.execute(
+            "INSERT INTO colors (`key`,value,label) VALUES (%s,%s,'SVG карта морів') "
+            "ON DUPLICATE KEY UPDATE value=%s",
+            ("sea_svg_content", svg_text, svg_text)
+        )
+    db.commit()
+    db.close()
+    return {"ok": True, "bytes": len(raw)}
+
+@app.delete("/api/admin/sea-svg")
+def delete_sea_svg(email: str, password: str):
+    require_admin(email, password)
+    db = get_db()
+    with db.cursor() as c:
+        c.execute("DELETE FROM colors WHERE `key`='sea_svg_content'")
     db.commit()
     db.close()
     return {"ok": True}
