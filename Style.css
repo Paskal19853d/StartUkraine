@@ -52,6 +52,7 @@ html, body {
   padding: 0 16px;
   background: rgba(3,7,14,.96);
   border-bottom: 1px solid var(--border);
+  -webkit-backdrop-filter: blur(16px);
   backdrop-filter: blur(16px);
   z-index: 700;
   animation: fadeDown .5s var(--ease);
@@ -429,16 +430,14 @@ mark.shl {
   cursor: grab;
   background: #03070e;
 }
-#map-wrap.grabbing { cursor: grabbing; }
-#map-wrap.picking  { cursor: crosshair; }
+#map-wrap.grabbing { cursor: grabbing !important; }
+#map-wrap.picking  { cursor: crosshair !important; }
 
 #svg-layer {
   position: absolute;
   top: 0; left: 0;
   width: 100%; height: 100%;
-  transform-origin: 0 0;
-  will-change: transform;
-  pointer-events: none; /* SVG не перехоплює мишу */
+  pointer-events: none;
 }
 
 /* Море — canvas під SVG, хвилі без заливки */
@@ -513,6 +512,7 @@ mark.shl {
   color: var(--accent);
   display: none;
   pointer-events: none;
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   white-space: nowrap;
   z-index: 60;
@@ -677,6 +677,7 @@ mark.shl {
   bottom: 0;
   background: rgba(4,9,18,.98);
   border-left: 1px solid var(--border);
+  -webkit-backdrop-filter: blur(16px);
   backdrop-filter: blur(16px);
   z-index: 800;
   transform: translateX(100%);
@@ -778,12 +779,14 @@ mark.shl {
   margin-top: 4px;
 }
 .dupe-chip {
+  display: inline-block;
   font-size: 10px;
   padding: 2px 8px;
   border-radius: 12px;
   background: rgba(212,168,0,.08);
   border: 1px solid rgba(212,168,0,.2);
   color: var(--yellow);
+  margin: 2px 2px 0 0;
   animation: fadeIn .3s var(--ease);
 }
 
@@ -822,6 +825,7 @@ mark.shl {
   position: fixed;
   inset: 0;
   background: rgba(0,0,0,.75);
+  -webkit-backdrop-filter: blur(5px);
   backdrop-filter: blur(5px);
   z-index: 900;
   display: none;
@@ -1040,58 +1044,16 @@ mark.shl {
   from { transform: translateX(20px); opacity: 0; }
   to   { transform: translateX(0);    opacity: 1; }
 }
-/* ── ДОПОВНЕННЯ ДО STYLE.CSS ────────────────────────── */
 
-/* Dupe chips */
-.dupe-chip {
-  display: inline-block;
-  font-size: 10px;
-  padding: 2px 8px;
-  border-radius: 12px;
-  background: rgba(212,168,0,.08);
-  border: 1px solid rgba(212,168,0,.2);
-  color: var(--yellow);
-  margin: 2px 2px 0 0;
-  animation: fadeIn .3s var(--ease);
-}
-
-/* Pick bar animation */
-#pick-bar.on {
-  display: block;
-  animation: pickBarIn .3s var(--ease) forwards;
-}
-@keyframes pickBarIn {
-  from { transform: translateX(-50%) translateY(-10px); opacity: 0; }
-  to   { transform: translateX(-50%) translateY(0); opacity: 1; }
-}
-
-/* Map wrap cursor states */
-#map-wrap.grabbing { cursor: grabbing !important; }
-#map-wrap.picking  { cursor: crosshair !important; }
-
-/* Burst animation for like button */
-#lbtn.burst { animation: burst .4s var(--ease); }
-@keyframes burst {
-  0%  { transform: scale(1); }
-  35% { transform: scale(1.18); }
-  100%{ transform: scale(1); }
-}
-
-/* Dynamic colors tag */
-#dynamic-colors { /* managed by JS */ }
 
 /* SVG oblast base styles */
 #ukraine-svg g path,
 #ukraine-svg g polygon {
   fill: #040f1e;
   stroke: rgba(90,110,130,.3);
-  stroke-width: 2;  /* Внутреняя граница */ }
+  stroke-width: 2;
   transition: fill .25s;
   cursor: default;
-  
- 
-box-shadow: 3px -4px 28px 0px rgba(142
-  
 }
 #ukraine-svg g path:hover,
 #ukraine-svg g polygon:hover { fill: #071a30; }
@@ -1102,6 +1064,20 @@ box-shadow: 3px -4px 28px 0px rgba(142
   fill: rgba(160,195,220,.45);
   font-weight: 400;
 }
+
+/* Oblast labels: fade and shrink at city zoom */
+#oblast-labels {
+  transition: opacity .5s ease;
+}
+#svg-layer.zoom-city #oblast-labels {
+  opacity: 0.12;
+}
+#svg-layer.zoom-deep #oblast-labels {
+  opacity: 0;
+}
+
+/* City overlay lives outside #svg-layer — never CSS-scaled, always crisp */
+#city-overlay { font-family: Arial, sans-serif; }
 
 /* Canvas */
 #canvas-layer {

@@ -21,8 +21,6 @@ const CFG = {
   waveColor:   '#a0d7ff',
   intensity:   42,
   numOctaves:  3,
-  sizeX:       100,
-  sizeY:       100,
   shoreImpact: 50,
   blur:        0,
   waveDir:     45,
@@ -33,24 +31,28 @@ const CFG = {
   svgTx:       0,
   svgTy:       0,
   svgScale:    1,
-  /* дефолтні еліпси */
-  blackCx: 6050,  blackCy: 8450, blackRx: 4950, blackRy: 1050,
-  azovCx:  11350, azovCy:  7725, azovRx:  2050, azovRy:  1225,
 };
 
 let currentSvgContent = '';   // останній застосований SVG
 
 /* ── АНІМАЦІЯ ─────────────────────────────────────────────────────────── */
 let t = 0;
-function animate() {
-  t += 0.003 + CFG.waveSpeed * 0.0007;
+let _lastSeaFrame = 0;
+function animate(ts) {
+  if (!document.hidden) requestAnimationFrame(animate);
+  // Throttle to ~12fps — sea waves are slow, imperceptible above 10fps
+  if (ts - _lastSeaFrame < 80) return;
+  _lastSeaFrame = ts;
+  t += 0.013;
   const rad  = (CFG.waveDir * Math.PI) / 180;
   const base = 0.0008 + (CFG.waveSpeed / 20) * 0.0006;
   const bfX  = (base * Math.max(0.25, Math.abs(Math.cos(rad))) + Math.sin(t * 0.4) * base * 0.3).toFixed(6);
   const bfY  = (base * Math.max(0.25, Math.abs(Math.sin(rad))) + Math.cos(t * 0.3) * base * 0.25).toFixed(6);
   turb.setAttribute('baseFrequency', `${bfX} ${bfY}`);
-  requestAnimationFrame(animate);
 }
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) requestAnimationFrame(animate);
+});
 
 /* ── SVG-КОНТЕНТ: вставляє шляхи завантаженого файлу ─────────────────── */
 function applyCustomSvg(svgText) {
@@ -71,27 +73,27 @@ function applyCustomSvg(svgText) {
   group.innerHTML = '';
   const pathsG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
   pathsG.id = 'sea-paths';
-  nodes.forEach(n => pathsG.appendChild(document.importNode(n, true)));
+  nodes.forEach(n => {
+    const imported = document.importNode(n, true);
+    /* Знімаємо власні fill/stroke щоб успадковувалось від групи */
+    [imported, ...imported.querySelectorAll('*')].forEach(el => {
+      if (el.removeAttribute) {
+        el.removeAttribute('fill');
+        el.removeAttribute('stroke');
+        el.removeAttribute('stroke-width');
+      }
+      if (el.style) { el.style.fill = ''; el.style.stroke = ''; }
+    });
+    pathsG.appendChild(imported);
+  });
   group.appendChild(pathsG);
 
   currentSvgContent = svgText;
   return true;
 }
 
-/* ── ДЕФОЛТНІ ЕЛІПСИ ─────────────────────────────────────────────────── */
-function applyDefaultEllipses() {
-  const sx = CFG.sizeX / 100, sy = CFG.sizeY / 100;
-  group.innerHTML = `
-    <ellipse id="sea-black" cx="${CFG.blackCx}" cy="${CFG.blackCy}"
-             rx="${CFG.blackRx * sx}" ry="${CFG.blackRy * sy}" fill="${CFG.waveColor}"/>
-    <ellipse id="sea-azov"  cx="${CFG.azovCx}"  cy="${CFG.azovCy}"
-             rx="${CFG.azovRx * sx}" ry="${CFG.azovRy * sy}" fill="${CFG.waveColor}"/>`;
-  currentSvgContent = '';
-}
-
 /* ── ЗАСТОСУВАННЯ КОНФІГУ ─────────────────────────────────────────────── */
 function applyConfig(svgContent) {
-  /* Якщо кастомний SVG — вставляємо або оновлюємо трансформ */
   if (svgContent) {
     if (svgContent !== currentSvgContent) applyCustomSvg(svgContent);
     const pathsG = document.getElementById('sea-paths');
@@ -102,22 +104,8 @@ function applyConfig(svgContent) {
       pathsG.setAttribute('stroke', 'none');
     }
   } else {
-    if (currentSvgContent) {
-      applyDefaultEllipses();   /* SVG видалено → повертаємо еліпси */
-    } else if (!document.getElementById('sea-black')) {
-      applyDefaultEllipses();   /* перший старт без попереднього малювання */
-    } else {
-      /* Оновлюємо атрибути еліпсів без перемальовування */
-      const sx = CFG.sizeX / 100, sy = CFG.sizeY / 100;
-      const elB = document.getElementById('sea-black');
-      const elA = document.getElementById('sea-azov');
-      if (elB) { elB.setAttribute('cx',CFG.blackCx); elB.setAttribute('cy',CFG.blackCy);
-                 elB.setAttribute('rx',CFG.blackRx*sx); elB.setAttribute('ry',CFG.blackRy*sy);
-                 elB.setAttribute('fill',CFG.waveColor); }
-      if (elA) { elA.setAttribute('cx',CFG.azovCx); elA.setAttribute('cy',CFG.azovCy);
-                 elA.setAttribute('rx',CFG.azovRx*sx); elA.setAttribute('ry',CFG.azovRy*sy);
-                 elA.setAttribute('fill',CFG.waveColor); }
-    }
+    group.innerHTML = '';
+    currentSvgContent = '';
   }
 
   /* Прозорість */
@@ -153,8 +141,6 @@ function syncCfg(src) {
   CFG.waveColor   = g('sea_wave_color')    || '#a0d7ff';
   CFG.intensity   = parseFloat(g('sea_wave_intensity') ?? 42);
   CFG.numOctaves  = parseInt(g('sea_wave_count')       ?? 3);
-  CFG.sizeX       = parseFloat(g('sea_size_x')         ?? 100);
-  CFG.sizeY       = parseFloat(g('sea_size_y')         ?? 100);
   CFG.shoreImpact = parseFloat(g('sea_shore_impact')   ?? 50);
   CFG.blur        = parseFloat(g('sea_blur')           ?? 0);
   CFG.waveDir     = parseFloat(g('sea_wave_dir')       ?? 45);
@@ -167,14 +153,6 @@ function syncCfg(src) {
   CFG.svgTx       = parseFloat(g('sea_svg_tx')         ?? 0);
   CFG.svgTy       = parseFloat(g('sea_svg_ty')         ?? 0);
   CFG.svgScale    = parseFloat(g('sea_svg_scale')      ?? 1);
-  CFG.blackCx = parseFloat(g('sea_black_cx') ?? 6050);
-  CFG.blackCy = parseFloat(g('sea_black_cy') ?? 8450);
-  CFG.blackRx = parseFloat(g('sea_black_rx') ?? 4950);
-  CFG.blackRy = parseFloat(g('sea_black_ry') ?? 1050);
-  CFG.azovCx  = parseFloat(g('sea_azov_cx')  ?? 11350);
-  CFG.azovCy  = parseFloat(g('sea_azov_cy')  ?? 7725);
-  CFG.azovRx  = parseFloat(g('sea_azov_rx')  ?? 2050);
-  CFG.azovRy  = parseFloat(g('sea_azov_ry')  ?? 1225);
 
   applyConfig(g('sea_svg_content') || '');
 }
@@ -199,6 +177,7 @@ try {
     if (e.data.type !== 'sea_update') return;
     if (!window.COLORS) window.COLORS = {};
     Object.entries(e.data.config).forEach(([k, v]) => {
+      if (v === '' || v === null || v === undefined) return;
       if (!window.COLORS[k]) window.COLORS[k] = { value: v, label: k };
       else window.COLORS[k].value = v;
     });
@@ -212,16 +191,14 @@ try {
 
 /* ── ЗАПУСК ────────────────────────────────────────────────────────────── */
 function init() {
-  // Миттєва перевірка значення з сервера (вбудовано в HTML до завантаження COLORS)
-  if (window.SEA_ENABLED === false) {
-    seaSvg.style.display = 'none';
-  }
-  animate();
-  const waitColors = () => {
+  /* Одразу застосовуємо стан з сервера (window.SEA_ENABLED вбудовано в <head>) */
+  seaSvg.style.display = (window.SEA_ENABLED === false) ? 'none' : '';
+  requestAnimationFrame(animate);
+  const waitColors = (attempts = 0) => {
     if (window.COLORS && Object.keys(window.COLORS).length > 0) {
       syncCfg();
-    } else {
-      setTimeout(waitColors, 50);
+    } else if (attempts < 100) {
+      setTimeout(() => waitColors(attempts + 1), 50);
     }
   };
   waitColors();

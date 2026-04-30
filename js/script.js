@@ -28,29 +28,29 @@ const canvas = document.getElementById("fluid");
 resizeCanvas();
 
 let config = {
-  SIM_RESOLUTION: 256,
-  DYE_RESOLUTION: 1024,
+  SIM_RESOLUTION: 128,
+  DYE_RESOLUTION: 512,
   CAPTURE_RESOLUTION: 512,
-  DENSITY_DISSIPATION: 0.995,
-  VELOCITY_DISSIPATION: 0.98,
+  DENSITY_DISSIPATION: 1,
+  VELOCITY_DISSIPATION: 0.9,
   PRESSURE: 0.8,
   PRESSURE_ITERATIONS: 20,
-  CURL: 35,
-  SPLAT_RADIUS: 0.22,
-  SPLAT_FORCE: 14000,
+  CURL: 30,
+  SPLAT_RADIUS: 0.25,
+  SPLAT_FORCE: 6000,
   SHADING: false,
   COLORFUL: true,
   COLOR_UPDATE_SPEED: 10,
   PAUSED: false,
   BACK_COLOR: { r: 0, g: 0, b: 0 },
-  TRANSPARENT: true,
-  BLOOM: false,
+  TRANSPARENT: false,
+  BLOOM: true,
   BLOOM_ITERATIONS: 8,
   BLOOM_RESOLUTION: 12,
   BLOOM_INTENSITY: 0.2,
   BLOOM_THRESHOLD: 0.6,
   BLOOM_SOFT_KNEE: 0.7,
-  SUNRAYS: false,
+  SUNRAYS: true,
   SUNRAYS_RESOLUTION: 196,
   SUNRAYS_WEIGHT: 1.0,
   SOUND_SENSITIVITY: 0,
@@ -58,9 +58,6 @@ let config = {
   FREQ_MULTI: 0.1,
   CUSTOM_COLOR: true
 };
-
-// Доступний одразу для index.html (кнопка-перемикач)
-window._fluidConfig = config;
 
 var timer = setInterval(randomSplat, 3500);
 var _runRandom = true;
@@ -124,8 +121,7 @@ function multipleSplats(amount) {
 
 let _randomSplats = false;
 let _audioReact = false;
-let colorRange = ["#0057B7","#00BFFF"];
-window.colorRange = colorRange; // доступ з index.html для керування кольором диму
+let colorRange = ["#0057B7","#0057B7"];
  
 
 let colorConfig = null;
@@ -380,10 +376,10 @@ pointers.push(new pointerPrototype());
 const { gl, ext } = getWebGLContext(canvas);
 
 if (isMobile()) {
-  config.DYE_RESOLUTION = 512;
+  config.DYE_RESOLUTION = 256;
 }
 if (!ext.supportLinearFiltering) {
-  config.DYE_RESOLUTION = 512;
+  config.DYE_RESOLUTION = 256;
   config.SHADING = false;
   config.BLOOM = false;
   config.SUNRAYS = false;
@@ -1183,7 +1179,7 @@ let bloomFramebuffers = [];
 let sunrays;
 let sunraysTemp;
 
-let ditheringTexture = createTextureAsync("js/LDR_LLL1_0.png");
+let ditheringTexture = createTextureAsync("LDR_LLL1_0.png");
 
 const blurProgram = new Program(blurVertexShader, blurShader);
 const copyProgram = new Program(baseVertexShader, copyShader);
@@ -1750,16 +1746,6 @@ window.addEventListener("keydown", (e) => {
   if (e.key === " ") splatStack.push(parseInt(Math.random() * 20) + 5);
 });
 
-// Хелпер для виклику диму з touch-хендлера карти (index.html)
-window._touchSplat = function(clientX, clientY) {
-  let p = pointers[1] || (pointers[1] = new pointerPrototype());
-  let posX = scaleByPixelRatio(clientX);
-  let posY = scaleByPixelRatio(clientY);
-  if (!p.down) { updatePointerDownData(p, 1, posX, posY); return; }
-  updatePointerMoveData(p, posX, posY);
-  if (p.moved) { p.moved = false; splatPointer(p); }
-};
-
 function updatePointerDownData(pointer, id, posX, posY) {
   pointer.id = id;
   pointer.down = true;
@@ -1835,17 +1821,14 @@ function generateColor() {
         l.v = x;
       }
       if(r.h < l.h){
-        if (l.h - r.h > 0.5) {
-          r.h += 1; // довгий шлях (напр. червоний→помаранчевий через 360°)
-        } else {
-          x = r.h; r.h = l.h; l.h = x; // короткий шлях (напр. синій→блакитний)
-        }
+        r.h += 1;
       }
 
       x = Math.random()*(r.h-l.h) + l.h;
       if(x>1){
         x -= 1;
       }
+	  /*Math.random()*/
     c = HSVtoRGB(x, Math.random()*(r.s-l.s)+l.s, (Math.random()*(r.v-l.v)+l.v)*0.1);
     } catch (error) {
       console.log("Invalid color config",error);

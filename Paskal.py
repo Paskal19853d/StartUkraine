@@ -3,7 +3,7 @@
 Запуск: python -m uvicorn Paskal:app --reload --port 8000
 БД:     MySQL / MariaDB (налаштування у .env)
 """
-import os, time, asyncio, hashlib, threading, re
+import os, time, asyncio, hashlib, threading, re, base64
 import bcrypt
 from typing import Optional, List
 
@@ -22,7 +22,7 @@ from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Depe
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 load_dotenv()
 
@@ -202,6 +202,18 @@ def init_db():
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
         """)
 
+        # ── cities ────────────────────────────────────────
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS cities (
+                id    INT PRIMARY KEY AUTO_INCREMENT,
+                name  VARCHAR(100) NOT NULL,
+                pos_x DOUBLE NOT NULL DEFAULT 0,
+                pos_y DOUBLE NOT NULL DEFAULT 0,
+                tier  INT NOT NULL DEFAULT 0,
+                INDEX idx_shown (pos_x)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        """)
+
     # ── Admin user ──────────────────────────────────────
     with db.cursor() as c:
         c.execute("SELECT id, password FROM users WHERE email=%s", ("admin@admin.com",))
@@ -268,10 +280,16 @@ def init_db():
         ("sea_wave_color",        "#a0d7ff",  "Море — колір хвиль (hex)"),
         ("sea_wave_count",        "20",       "Море — кількість хвиль (5–40)"),
         ("sea_wave_intensity",    "42",       "Море — інтенсивність (10–100)"),
-        ("sea_size_x",            "100",      "Море — розмір по горизонталі % (50–150)"),
-        ("sea_size_y",            "100",      "Море — розмір по вертикалі % (50–150)"),
         ("sea_shore_impact",      "50",       "Море — удар об сушу (0–100)"),
         ("sea_blur",              "0",        "Море — розмитість px (0–8)"),
+        ("sea_wave_dir",          "45",       "Море — напрямок хвиль (градуси 0–360)"),
+        ("sea_wave_speed",        "5",        "Море — швидкість хвиль (0–10)"),
+        ("sea_glow_on",           "1",        "Море — свічення (1=увімк, 0=вимк)"),
+        ("sea_glow_color",        "#60b8ff",  "Море — колір свічення (hex)"),
+        ("sea_glow_spread",       "30",       "Море — розмах свічення px"),
+        ("sea_svg_tx",            "0",        "Море SVG — зміщення X"),
+        ("sea_svg_ty",            "0",        "Море SVG — зміщення Y"),
+        ("sea_svg_scale",         "1",        "Море SVG — масштаб"),
     ]
     with db.cursor() as c:
         for key, val, label in defaults:
@@ -282,6 +300,12 @@ def init_db():
         # Синхронізуємо кольори областей із новою схемою (як в адмінці)
         c.execute("UPDATE colors SET value=%s WHERE `key`='oblast_fill'  AND value IN ('#03070e','#040f1e')", ("#0d2240",))
         c.execute("UPDATE colors SET value=%s WHERE `key`='oblast_stroke' AND value IN ('rgba(90,110,130,.3)','rgba(90,110,130,0.3)')", ("#1e4a7a",))
+        # Видаляємо застарілі sea-ключі (еліпси прибрано в favor SVG-режиму)
+        c.execute("""DELETE FROM colors WHERE `key` IN (
+            'sea_size_x','sea_size_y',
+            'sea_black_cx','sea_black_cy','sea_black_rx','sea_black_ry',
+            'sea_azov_cx','sea_azov_cy','sea_azov_rx','sea_azov_ry'
+        )""")
 
     # ── Default map labels ───────────────────────────────
     with db.cursor() as c:
@@ -327,6 +351,222 @@ def init_db():
                 "INSERT INTO map_labels (name,x,y,type) VALUES (%s,%s,%s,'oblast')",
                 ("АР Крим", 9700, 8100)
             )
+
+    # ── Default cities ───────────────────────────────────
+    with db.cursor() as c:
+        c.execute("SELECT COUNT(*) AS cnt FROM cities")
+        if c.fetchone()["cnt"] == 0:
+            # pos_x, pos_y (0-1 normalized), tier (3=столиця,2=велике,1=обл.центр,0=місто)
+            # Координати калібровані по SVG viewBox 0 0 14000 9500
+            _C = {
+                'Авдіївка':(0.826,0.574,0),'Алчевськ':(0.915,0.526,0),
+                'Амвросіївка':(0.872,0.643,0),'Антрацит':(0.913,0.542,0),
+                'Апостолове':(0.662,0.617,0),'Балаклія':(0.759,0.377,0),
+                'Балта':(0.409,0.757,0),'Бар':(0.307,0.402,0),
+                'Бахмут':(0.848,0.511,0),'Бердичів':(0.357,0.341,0),
+                'Бердянськ':(0.777,0.753,0),'Берислав':(0.616,0.668,0),
+                'Білгород-Дністровський':(0.451,0.810,0),
+                'Білопілля':(0.684,0.141,0),'Богодухів':(0.716,0.288,0),
+                'Богуслав':(0.529,0.355,0),'Болград':(0.358,0.898,0),
+                'Бориспіль':(0.484,0.283,0),'Боярка':(0.449,0.304,0),
+                'Бровари':(0.487,0.251,0),'Буча':(0.446,0.256,0),
+                'Бучач':(0.270,0.486,0),'Біла Церква':(0.459,0.326,0),
+                'Вараш':(0.209,0.130,0),'Василівка':(0.718,0.624,0),
+                'Васильків':(0.449,0.305,0),'Вилкове':(0.424,0.951,0),
+                'Вінниця':(0.361,0.428,1),'Вишгород':(0.455,0.228,0),
+                'Вовчанськ':(0.766,0.291,0),'Вознесенськ':(0.503,0.644,0),
+                'Волноваха':(0.818,0.670,0),'Вугледар':(0.805,0.634,0),
+                'Гадяч':(0.648,0.280,0),'Гайсин':(0.399,0.485,0),
+                'Генічеськ':(0.693,0.830,0),'Глухів':(0.642,0.108,0),
+                'Горлівка':(0.854,0.524,0),"Горішні Плавні":(0.629,0.460,0),
+                'Дебальцеве':(0.851,0.531,0),'Дергачі':(0.757,0.295,0),
+                'Дніпро':(0.690,0.529,2),'Дніпрорудне':(0.694,0.572,0),
+                'Добропілля':(0.790,0.553,0),'Довжанськ':(0.915,0.539,0),
+                'Долинська':(0.574,0.505,0),'Донецьк':(0.829,0.590,1),
+                'Дрогобич':(0.111,0.412,0),'Дружківка':(0.805,0.499,0),
+                'Дубно':(0.202,0.273,0),'Єнакієве':(0.851,0.547,0),
+                'Енергодар':(0.687,0.656,0),'Житомир':(0.370,0.292,1),
+                'Жмеринка':(0.331,0.455,0),'Жовті Води':(0.667,0.532,0),
+                'Запоріжжя':(0.697,0.611,1),'Звягель':(0.304,0.250,0),
+                "Знам'янка":(0.559,0.542,0),'Золотоноша':(0.544,0.409,0),
+                'Ізмаїл':(0.370,0.934,0),'Ізюм':(0.825,0.432,0),
+                'Ірпінь':(0.446,0.261,0),'Ічня':(0.562,0.205,0),
+                'Іллічівськ (Чорноморськ)':(0.468,0.800,0),
+                'Івано-Франківськ':(0.172,0.469,1),
+                'Кагарлик':(0.479,0.309,0),'Калуш':(0.127,0.488,0),
+                "Кам'янець-Подільський":(0.260,0.489,0),
+                "Кам'янка":(0.547,0.441,0),
+                "Кам'янка-Дніпровська":(0.693,0.636,0),
+                "Кам'янське":(0.681,0.493,0),
+                'Канів':(0.511,0.431,0),'Каховка':(0.616,0.701,0),
+                'Керч':(0.904,0.893,0),'Київ':(0.463,0.267,3),
+                'Кілія':(0.392,0.925,0),'Ковель':(0.145,0.167,0),
+                'Козятин':(0.369,0.363,0),'Коломия':(0.164,0.525,0),
+                'Конотоп':(0.598,0.164,0),'Коростень':(0.360,0.202,0),
+                'Коростишів':(0.386,0.269,0),'Корсунь-Шевченківський':(0.500,0.432,0),
+                'Костянтинівка':(0.818,0.523,0),'Краматорськ':(0.811,0.495,0),
+                'Кременчук':(0.609,0.449,0),'Кремінна':(0.876,0.404,0),
+                'Кривий Ріг':(0.640,0.600,1),'Кропивницький':(0.551,0.523,1),
+                'Кролевець':(0.615,0.112,0),"Куп'янськ":(0.832,0.365,0),
+                'Ладижин':(0.390,0.498,0),'Лебедин':(0.674,0.252,0),
+                'Лиман':(0.831,0.452,0),'Лисичанськ':(0.888,0.471,0),
+                'Лозова':(0.747,0.472,0),'Лубни':(0.594,0.326,0),
+                'Луганськ':(0.905,0.515,1),'Лутугине':(0.931,0.481,0),
+                'Луцьк':(0.203,0.229,1),'Львів':(0.137,0.347,2),
+                'Люботин':(0.754,0.294,0),'Макіївка':(0.851,0.590,0),
+                'Малин':(0.394,0.202,0),'Марганець':(0.674,0.592,0),
+                'Маріуполь':(0.816,0.709,1),"Мар'їнка":(0.819,0.597,0),
+                'Мелітополь':(0.707,0.742,0),'Мена':(0.521,0.128,0),
+                'Мерефа':(0.759,0.332,0),'Миколаїв':(0.575,0.742,1),
+                'Миргород':(0.628,0.324,0),'Мирноград':(0.791,0.570,0),
+                'Миронівка':(0.484,0.336,0),'Могилів-Подільський':(0.314,0.475,0),
+                'Мукачево':(0.072,0.532,0),'Надвірна':(0.139,0.543,0),
+                'Немирів':(0.369,0.463,0),'Ніжин':(0.544,0.187,0),
+                'Нікополь':(0.658,0.647,0),'Нова Каховка':(0.616,0.754,0),
+                'Нова Одеса':(0.529,0.681,0),'Новгород-Сіверський':(0.598,0.092,0),
+                'Нова Каховка':(0.616,0.754,0),'Нововолинськ':(0.115,0.210,0),
+                'Обухів':(0.466,0.316,0),'Овруч':(0.368,0.139,0),
+                'Одеса':(0.474,0.790,2),'Олевськ':(0.306,0.150,0),
+                'Олександрія':(0.600,0.501,0),'Олешки':(0.580,0.769,0),
+                'Оріхів':(0.745,0.583,0),'Остер':(0.488,0.183,0),
+                'Острог':(0.244,0.256,0),'Охтирка':(0.654,0.286,0),
+                'Очаків':(0.516,0.768,0),'Павлоград':(0.749,0.467,0),
+                'Первомайськ':(0.479,0.587,0),'Переяслав':(0.514,0.307,0),
+                'Пирятин':(0.568,0.296,0),'Покровськ':(0.786,0.554,0),
+                'Пологи':(0.755,0.624,0),'Полтава':(0.665,0.380,1),
+                'Прилуки':(0.561,0.250,0),'Рахів':(0.111,0.562,0),
+                'Рені':(0.341,0.934,0),'Рівне':(0.249,0.245,1),
+                'Ровеньки':(0.932,0.536,0),'Ромни':(0.620,0.228,0),
+                'Рубіжне':(0.884,0.459,0),'Самбір':(0.064,0.402,0),
+                'Сарни':(0.249,0.137,0),'Сватове':(0.914,0.364,0),
+                'Світловодськ':(0.603,0.448,0),'Святогірськ':(0.819,0.406,0),
+                'Севастополь':(0.622,0.929,0),'Селидове':(0.794,0.585,0),
+                'Сєвєродонецьк':(0.890,0.467,0),'Сімферополь':(0.765,0.884,0),
+                'Скадовськ':(0.590,0.751,0),'Сквира':(0.418,0.323,0),
+                "Слов'янськ":(0.812,0.477,0),'Сміла':(0.534,0.482,0),
+                'Снігурівка':(0.555,0.685,0),'Сновськ':(0.536,0.093,0),
+                'Соледар':(0.859,0.499,0),'Старобільськ':(0.914,0.380,0),
+                'Стрий':(0.099,0.432,0),'Суми':(0.678,0.207,1),
+                'Тальне':(0.469,0.474,0),'Тернівка':(0.681,0.507,0),
+                'Тернопіль':(0.217,0.384,1),'Токмак':(0.741,0.736,0),
+                'Торецьк':(0.836,0.513,0),'Тростянець':(0.702,0.263,0),
+                'Трускавець':(0.081,0.426,0),'Тульчин':(0.370,0.475,0),
+                'Тячів':(0.062,0.510,0),'Ужгород':(0.051,0.508,1),
+                'Умань':(0.456,0.480,0),'Фастів':(0.428,0.316,0),
+                'Феодосія':(0.836,0.935,0),'Харків':(0.750,0.328,2),
+                'Харцизьк':(0.859,0.597,0),'Херсон':(0.569,0.768,1),
+                'Хмельницький':(0.286,0.403,1),'Хмільник':(0.322,0.384,0),
+                'Хорол':(0.643,0.412,0),'Хотин':(0.243,0.558,0),
+                'Христинівка':(0.429,0.433,0),'Хрустальний':(0.915,0.503,0),
+                'Хуст':(0.070,0.510,0),'Часів Яр':(0.862,0.485,0),
+                'Черкаси':(0.541,0.400,1),'Чернівці':(0.234,0.552,1),
+                'Чернігів':(0.503,0.129,1),'Чигирин':(0.535,0.446,0),
+                'Чоп':(0.019,0.519,0),'Чорнобиль':(0.470,0.176,0),
+                'Чорноморськ':(0.468,0.800,0),'Чортків':(0.205,0.455,0),
+                'Чугуїв':(0.777,0.332,0),'Шостка':(0.607,0.164,0),
+                'Шпола':(0.535,0.460,0),'Щастя':(0.931,0.445,0),
+                'Яворів':(0.092,0.358,0),'Яготин':(0.505,0.263,0),
+                'Ялта':(0.732,0.941,0),'Ямпіль':(0.319,0.518,0),
+                'Яремче':(0.138,0.543,0),'Ясинувата':(0.841,0.562,0),
+            }
+            _NAMES = [
+                'Авдіївка','Алмазна','Алупка','Алушта','Алчевськ',
+                'Амвросіївка','Ананьїв','Андрушівка','Антрацит','Апостолове',
+                'Армянськ','Арциз','Багачеве','Балаклія','Балта','Бар',
+                'Баранівка','Барвінкове','Батурин','Бахмач','Бахмут',
+                'Бахчисарай','Баштанка','Белз','Бердичів','Бердянськ',
+                'Берегове','Бережани','Березань','Березівка','Березне',
+                'Берестечко','Берестин','Берислав','Бершадь','Бібрка',
+                'Біла Церква','Білгород-Дністровський','Білицьке','Білогірськ',
+                'Білозерське','Білопілля','Біляївка','Благовіщенське',
+                'Бобринець','Бобровиця','Богодухів','Богуслав','Боково-Хрустальне',
+                'Болград','Болехів','Борзна','Борислав','Бориспіль','Борщів',
+                'Боярка','Бровари','Броди','Брянка','Бунге','Буринь',
+                'Бурштин','Буськ','Буча','Бучач','Валки','Вараш','Василівка',
+                'Васильків','Вашківці','Великі Мости','Верхівцеве',
+                'Верхньодніпровськ','Вижниця','Вилкове','Винники','Виноградів',
+                'Вишгород','Вишневе','Вільногірськ','Вільнянськ','Вінниця',
+                'Вовчанськ','Вознесенівка','Вознесенськ','Волноваха','Володимир',
+                'Волочиськ','Ворожба','Вуглегірськ','Вугледар','Гадяч',
+                'Гайворон','Гайсин','Галич','Генічеськ','Герца','Гірник',
+                'Гірське','Глиняни','Глобине','Глухів','Гнівань','Гола Пристань',
+                'Голубівка','Горішні Плавні','Горлівка','Городенка','Городище',
+                'Городня','Городок','Городок','Горохів','Гребінка','Гуляйполе',
+                'Дебальцеве','Деражня','Дергачі','Джанкой','Дніпро',
+                'Дніпрорудне','Добромиль','Добропілля','Довжанськ','Докучаєвськ',
+                'Долина','Долинська','Донецьк','Дрогобич','Дружківка','Дубляни',
+                'Дубно','Дубровиця','Дунаївці','Енергодар','Євпаторія',
+                'Єнакієве','Жашків','Жданівка','Жидачів','Житомир','Жмеринка',
+                'Жовква','Жовті Води','Заводське','Залізне','Заліщики',
+                'Запоріжжя','Заставна','Збараж','Зборів','Звенигородка',
+                'Звягель','Здолбунів','Зеленодольськ',"Зимогір'я",'Зіньків',
+                'Златопіль','Зміїв',"Знам'янка",'Золоте','Золотоноша',
+                'Золочів','Зоринськ','Зугрес','Івано-Франківськ','Ізмаїл',
+                'Ізюм','Ізяслав','Іллінці','Іловайськ','Інкерман','Ірміно',
+                'Ірпінь','Іршава','Ічня','Кагарлик','Кадіївка','Калинівка',
+                'Калуш','Кальміуське','Камінь-Каширський',
+                "Кам'янець-Подільський","Кам'янка","Кам'янка-Бузька",
+                "Кам'янка-Дніпровська","Кам'янське",'Канів','Карлівка',
+                'Каховка','Керч','Київ','Кипуче','Ківерці','Кілія','Кіцмань',
+                'Кобеляки','Ковель','Кодима','Козятин','Коломия','Комарно',
+                'Конотоп','Копичинці','Корець','Коростень','Коростишів',
+                'Корсунь-Шевченківський','Корюківка','Косів','Костопіль',
+                'Костянтинівка','Краматорськ','Красилів','Красногорівка',
+                'Кременець','Кременчук','Кремінна','Кривий Ріг','Кролевець',
+                'Кропивницький',"Куп'янськ",'Курахове','Ладижин','Ланівці',
+                'Лебедин','Лиман','Липовець','Лисичанськ','Лозова','Лохвиця',
+                'Лубни','Луганськ','Лутугине','Луцьк','Львів','Любомль',
+                'Люботин','Макіївка','Мала Виска','Малин','Марганець',
+                'Маріуполь',"Мар'їнка",'Мелітополь','Мена','Мерефа',
+                'Миколаїв','Миколаїв','Миколаївка','Миргород','Мирноград',
+                'Миронівка','Міусинськ','Могилів-Подільський','Молочанськ',
+                'Монастириська','Монастирище','Моршин','Моспине','Мостиська',
+                'Мукачево','Надвірна','Немирів','Нетішин','Ніжин','Нікополь',
+                'Нова Каховка','Нова Одеса','Новгород-Сіверський','Новий Буг',
+                'Новий Калинів','Новий Розділ','Новоазовськ','Нововолинськ',
+                'Новогродівка','Новодністровськ','Новодружеськ','Новомиргород',
+                'Новоселиця','Новоукраїнка','Новояворівськ','Носівка','Обухів',
+                'Овруч','Одеса','Олевськ','Олександрівськ','Олександрія',
+                'Олешки','Олика','Оріхів','Остер','Острог','Отаманівка',
+                'Охтирка','Очаків','Павлоград','Первомайськ','Перевальськ',
+                'Перемишляни','Перечин','Перещепине','Переяслав',
+                'Петрово-Красносілля','Пирятин','Південне','Південне',
+                'Південноукраїнськ','Підгайці','Підгороднє','Погребище',
+                'Подільськ','Покров','Покровськ','Пологи','Полонне','Полтава',
+                'Помічна','Попасна','Почаїв','Привілля','Прилуки','Приморськ',
+                "Прип'ять",'Пустомити','Путивль',"П'ятихатки",'Рава-Руська',
+                'Радехів','Радивилів','Радомишль','Рахів','Рені','Решетилівка',
+                'Ржищів','Рівне','Ровеньки','Рогатин','Родинське','Рожище',
+                'Роздільна','Ромни','Рубіжне','Рудки','Саки','Самар','Самбір',
+                'Сарни','Свалява','Сватове','Світловодськ','Світлодарськ',
+                'Святогірськ','Севастополь','Селидове','Семенівка',
+                'Середина-Буда','Синельникове','Сіверськ','Сєвєродонецьк',
+                'Сімферополь','Скадовськ','Скалат','Сквира','Сколе','Славута',
+                'Славутич','Слобожанське',"Слов'янськ",'Сміла','Снігурівка',
+                'Сніжне','Сновськ','Снятин','Сокаль','Сокиряни','Сокологірськ',
+                'Соледар','Сорокине','Соснівка','Старий Крим','Старий Самбір',
+                'Старобільськ','Старокостянтинів','Стебник','Сторожинець',
+                'Стрий','Судак','Судова Вишня','Суми','Суходільськ','Таврійськ',
+                'Тальне','Тараща','Татарбунари','Теплодар','Теребовля',
+                'Тернівка','Тернопіль','Тетіїв','Тисмениця','Тлумач','Токмак',
+                'Торецьк','Тростянець','Трускавець','Тульчин','Турка','Тячів',
+                'Угнів','Ужгород','Узин','Українка','Українськ','Умань',
+                'Устилуг','Фастів','Феодосія','Харків','Харцизьк','Херсон',
+                'Хирів','Хмельницький','Хмільник','Ходорів','Хорол',
+                'Хоростків','Хотин','Хрестівка','Христинівка','Хрустальний',
+                'Хуст','Хутір-Михайлівський','Часів Яр','Черкаси','Чернівці',
+                'Чернігів','Чигирин','Чистякове','Чоп','Чорнобиль',
+                'Чорноморськ','Чортків','Чугуїв','Чуднів','Шаргород',
+                'Шахтарськ','Шахтарське','Шепетівка','Шептицький','Шостка',
+                'Шпола','Шумськ','Щастя','Щолкіне','Яворів','Яготин','Ялта',
+                'Ямпіль','Яни Капу','Яремче','Ясинувата',
+            ]
+            rows = [(n, *_C.get(n, (0.0, 0.0, 0))) for n in _NAMES]
+            c.executemany(
+                "INSERT INTO cities (name,pos_x,pos_y,tier) VALUES (%s,%s,%s,%s)",
+                rows
+            )
+    db.commit()
 
     # ── Seed memorials ───────────────────────────────────
     with db.cursor() as c:
@@ -499,6 +739,9 @@ def _sanitize_svg(svg: str) -> str:
     svg = re.sub(r'\s+on\w+\s*=\s*(?:"[^"]*"|\'[^\']*\'|[^\s>]*)', '', svg, flags=re.IGNORECASE)
     svg = re.sub(r'(href|xlink:href|src)\s*=\s*["\']?\s*javascript:[^"\'>\s]*["\']?', '', svg, flags=re.IGNORECASE)
     svg = re.sub(r'<foreignObject[\s\S]*?</foreignObject>', '', svg, flags=re.IGNORECASE)
+    svg = re.sub(r'<use[^>]*/>', '', svg, flags=re.IGNORECASE)
+    svg = re.sub(r'<use[\s\S]*?</use>', '', svg, flags=re.IGNORECASE)
+    svg = re.sub(r'data:[^;"\'\s]*;base64', 'data:text/plain;base64', svg, flags=re.IGNORECASE)
     return svg
 
 
@@ -515,9 +758,10 @@ def _get_ip(request: Request) -> str:
 
 # ── APP ──────────────────────────────────────────────────
 app = FastAPI(title="Зоряна Памʼять API", version="2.0")
+_ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://127.0.0.1:8000,http://localhost:8000").split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_ALLOWED_ORIGINS,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -536,6 +780,15 @@ async def track_visits(request, call_next):
     if _request_count % 1000 == 0:
         _rl.purge(3600)
     return await call_next(request)
+
+@app.middleware("http")
+async def security_headers(request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Referrer-Policy"] = "no-referrer"
+    return response
 
 # Статичні файли (img)
 app.mount("/img", StaticFiles(directory="img"), name="img")
@@ -564,6 +817,9 @@ def index():
 
 @app.get("/admin")
 def admin_page(): return FileResponse("admin.html")
+
+@app.get("/favicon.ico", include_in_schema=False)
+def favicon(): return FileResponse("favicon.ico")
 
 @app.get("/Style.css")
 def css_file(): return FileResponse("Style.css", media_type="text/css")
@@ -614,10 +870,14 @@ async def ws_online(ws: WebSocket):
 
 # ── Schemas ───────────────────────────────────────────────
 class PersonIn(BaseModel):
-    last: str; first: str; mid: Optional[str] = ""
+    last: str = Field(..., max_length=200)
+    first: str = Field(..., max_length=200)
+    mid: Optional[str] = Field("", max_length=200)
     birth: Optional[str] = None; death: Optional[str] = None
-    loc: Optional[str] = ""; bury: Optional[str] = ""
-    circ: Optional[str] = ""; descr: Optional[str] = ""
+    loc: Optional[str] = Field("", max_length=200)
+    bury: Optional[str] = Field("", max_length=200)
+    circ: Optional[str] = Field("", max_length=200)
+    descr: Optional[str] = ""
     photo: Optional[str] = ""; color: Optional[str] = "#4fc3f7"
     pos_x: float; pos_y: float; grp: Optional[str] = ""
     added_by: Optional[str] = ""
@@ -645,6 +905,12 @@ class LabelUpdate(BaseModel):
     id: int; x: float; y: float
     name:  Optional[str] = None
     color: Optional[str] = None; size: Optional[int] = None
+
+class CityUpdate(BaseModel):
+    name:  Optional[str]   = None
+    pos_x: Optional[float] = None
+    pos_y: Optional[float] = None
+    tier:  Optional[int]   = None
 
 
 # ── AUTH helpers ──────────────────────────────────────────
@@ -674,7 +940,15 @@ def get_admin(email: str, password: str):
         return None
     return u
 
-def require_admin(email: str, password: str):
+def require_admin(request: Request):
+    auth = request.headers.get("Authorization", "")
+    if not auth.startswith("Basic "):
+        raise HTTPException(403, "Доступ заборонено")
+    try:
+        decoded = base64.b64decode(auth[6:]).decode("utf-8")
+        email, password = decoded.split(":", 1)
+    except Exception:
+        raise HTTPException(403, "Доступ заборонено")
     u = get_admin(email, password)
     if not u:
         raise HTTPException(403, "Доступ заборонено")
@@ -728,7 +1002,10 @@ def _score_person(row: dict, q: str) -> float:
 # ── PUBLIC API ────────────────────────────────────────────
 
 @app.get("/api/people")
-def get_people():
+def get_people(request: Request):
+    ip = _get_ip(request)
+    if not _rl.check(f"pub:{ip}", 60, 60):
+        raise HTTPException(429, "Забагато запитів. Зачекайте.")
     db = get_db()
     with db.cursor() as c:
         c.execute(
@@ -817,7 +1094,8 @@ def search_log(data: dict):
     return {"ok": True}
 
 @app.get("/api/search/stats")
-def search_stats():
+def search_stats(request: Request):
+    require_admin(request)
     db = get_db()
     with db.cursor() as c:
         c.execute("SELECT COUNT(*) AS cnt FROM search_logs")
@@ -853,7 +1131,10 @@ def get_stats():
     return {"total": total, "likes": likes}
 
 @app.get("/api/colors")
-def get_colors():
+def get_colors(request: Request):
+    ip = _get_ip(request)
+    if not _rl.check(f"pub:{ip}", 60, 60):
+        raise HTTPException(429, "Забагато запитів. Зачекайте.")
     db = get_db()
     with db.cursor() as c:
         c.execute("SELECT `key`, value, label FROM colors")
@@ -862,13 +1143,55 @@ def get_colors():
     return {r["key"]: {"value": r["value"], "label": r["label"]} for r in rows}
 
 @app.get("/api/labels")
-def get_labels():
+def get_labels(request: Request):
+    ip = _get_ip(request)
+    if not _rl.check(f"pub:{ip}", 60, 60):
+        raise HTTPException(429, "Забагато запитів. Зачекайте.")
     db = get_db()
     with db.cursor() as c:
         c.execute("SELECT * FROM map_labels ORDER BY id")
         rows = c.fetchall()
     db.close()
     return rows
+
+@app.get("/api/cities")
+def get_cities(request: Request):
+    ip = _get_ip(request)
+    if not _rl.check(f"pub:{ip}", 60, 60):
+        raise HTTPException(429, "Забагато запитів. Зачекайте.")
+    db = get_db()
+    with db.cursor() as c:
+        c.execute("SELECT id,name,pos_x,pos_y,tier FROM cities WHERE pos_x > 0 ORDER BY tier DESC, name")
+        rows = c.fetchall()
+    db.close()
+    return rows
+
+@app.get("/api/admin/cities")
+def admin_get_cities(request: Request):
+    require_admin(request)
+    db = get_db()
+    with db.cursor() as c:
+        c.execute("SELECT id,name,pos_x,pos_y,tier FROM cities ORDER BY name")
+        rows = c.fetchall()
+    db.close()
+    return rows
+
+@app.put("/api/admin/city/{cid}")
+def admin_update_city(cid: int, u: CityUpdate, request: Request):
+    require_admin(request)
+    fields, vals = [], []
+    if u.name  is not None: fields.append("name=%s");  vals.append(u.name[:100])
+    if u.pos_x is not None: fields.append("pos_x=%s"); vals.append(u.pos_x)
+    if u.pos_y is not None: fields.append("pos_y=%s"); vals.append(u.pos_y)
+    if u.tier  is not None: fields.append("tier=%s");  vals.append(u.tier)
+    if not fields:
+        raise HTTPException(400, "Нічого оновлювати")
+    vals.append(cid)
+    db = get_db()
+    with db.cursor() as c:
+        c.execute(f"UPDATE cities SET {','.join(fields)} WHERE id=%s", vals)
+    db.commit(); db.close()
+    return {"ok": True}
 
 @app.post("/api/people")
 def add_person(p: PersonIn, request: Request):
@@ -999,8 +1322,8 @@ def login(u: UserLogin, request: Request):
 # ── ADMIN API ─────────────────────────────────────────────
 
 @app.get("/api/admin/pending")
-def pending(email: str, password: str):
-    require_admin(email, password)
+def pending(request: Request):
+    require_admin(request)
     db = get_db()
     with db.cursor() as c:
         c.execute("SELECT * FROM memorials WHERE approved=0 ORDER BY id DESC")
@@ -1009,8 +1332,8 @@ def pending(email: str, password: str):
     return rows
 
 @app.post("/api/admin/approve/{mid}")
-def approve(mid: int, email: str, password: str):
-    require_admin(email, password)
+def approve(mid: int, request: Request):
+    require_admin(request)
     db = get_db()
     with db.cursor() as c:
         c.execute("UPDATE memorials SET approved=1 WHERE id=%s", (mid,))
@@ -1018,9 +1341,26 @@ def approve(mid: int, email: str, password: str):
     db.close()
     return {"ok": True}
 
+@app.post("/api/admin/memorial")
+def admin_add_person(p: PersonIn, request: Request):
+    require_admin(request)
+    db = get_db()
+    with db.cursor() as c:
+        c.execute("""
+            INSERT INTO memorials
+            (last,first,mid,birth,death,loc,bury,circ,descr,photo,color,pos_x,pos_y,grp,added_by,approved)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,1)
+        """, (p.last.strip(), p.first.strip(), p.mid or '', p.birth or None, p.death or None,
+              p.loc or '', p.bury or '', p.circ or '', p.descr or '', p.photo or '',
+              p.color or '#4fc3f7', p.pos_x, p.pos_y, p.grp or '', 'admin'))
+        new_id = c.lastrowid
+    db.commit()
+    db.close()
+    return {"ok": True, "id": new_id}
+
 @app.delete("/api/admin/memorial/{mid}")
-def delete_memorial(mid: int, email: str, password: str):
-    require_admin(email, password)
+def delete_memorial(mid: int, request: Request):
+    require_admin(request)
     db = get_db()
     with db.cursor() as c:
         c.execute("DELETE FROM memorials WHERE id=%s", (mid,))
@@ -1028,34 +1368,38 @@ def delete_memorial(mid: int, email: str, password: str):
     db.close()
     return {"ok": True}
 
-_MEMORIAL_ALLOWED_FIELDS = {
-    'last','first','mid','birth','death','loc','bury',
-    'circ','descr','photo','color','pos_x','pos_y','approved','grp'
+_MEMORIAL_COL_MAP = {
+    'last':    '`last`=%s',    'first': '`first`=%s', 'mid':    '`mid`=%s',
+    'birth':   '`birth`=%s',   'death': '`death`=%s', 'loc':    '`loc`=%s',
+    'bury':    '`bury`=%s',    'circ':  '`circ`=%s',  'descr':  '`descr`=%s',
+    'photo':   '`photo`=%s',   'color': '`color`=%s', 'pos_x':  '`pos_x`=%s',
+    'pos_y':   '`pos_y`=%s',   'approved':'`approved`=%s', 'grp': '`grp`=%s',
 }
+_MEMORIAL_ALLOWED_FIELDS = set(_MEMORIAL_COL_MAP)
 
 @app.put("/api/admin/memorial/{mid}")
-def update_memorial(mid: int, p: PersonUpdate, email: str, password: str):
-    require_admin(email, password)
+def update_memorial(mid: int, p: PersonUpdate, request: Request):
+    require_admin(request)
     db = get_db()
     fields, vals = [], []
     for f, v in p.dict(exclude_none=True).items():
-        if f not in _MEMORIAL_ALLOWED_FIELDS:
+        if f not in _MEMORIAL_COL_MAP:
             raise HTTPException(400, f"Поле '{f}' не дозволено")
-        fields.append(f"`{f}`=%s")
+        fields.append(_MEMORIAL_COL_MAP[f])
         vals.append(v)
     if not fields:
         db.close()
         return {"ok": False}
     vals.append(mid)
     with db.cursor() as c:
-        c.execute(f"UPDATE memorials SET {','.join(fields)} WHERE id=%s", vals)
+        c.execute("UPDATE memorials SET " + ",".join(fields) + " WHERE id=%s", vals)
     db.commit()
     db.close()
     return {"ok": True}
 
 @app.get("/api/admin/users")
-def get_users(email: str, password: str):
-    require_admin(email, password)
+def get_users(request: Request):
+    require_admin(request)
     db = get_db()
     with db.cursor() as c:
         c.execute(
@@ -1069,8 +1413,8 @@ def get_users(email: str, password: str):
     return rows
 
 @app.post("/api/admin/ban/{uid}")
-def ban_user(uid: int, email: str, password: str):
-    require_admin(email, password)
+def ban_user(uid: int, request: Request):
+    require_admin(request)
     db = get_db()
     with db.cursor() as c:
         c.execute("UPDATE users SET is_banned=1 WHERE id=%s", (uid,))
@@ -1079,8 +1423,8 @@ def ban_user(uid: int, email: str, password: str):
     return {"ok": True}
 
 @app.post("/api/admin/unban/{uid}")
-def unban_user(uid: int, email: str, password: str):
-    require_admin(email, password)
+def unban_user(uid: int, request: Request):
+    require_admin(request)
     db = get_db()
     with db.cursor() as c:
         c.execute("UPDATE users SET is_banned=0 WHERE id=%s", (uid,))
@@ -1089,8 +1433,8 @@ def unban_user(uid: int, email: str, password: str):
     return {"ok": True}
 
 @app.put("/api/admin/color")
-def update_color(c_body: ColorUpdate, email: str, password: str):
-    require_admin(email, password)
+def update_color(c_body: ColorUpdate, request: Request):
+    require_admin(request)
     db = get_db()
     with db.cursor() as c:
         c.execute(
@@ -1103,8 +1447,8 @@ def update_color(c_body: ColorUpdate, email: str, password: str):
     return {"ok": True}
 
 @app.put("/api/admin/colors/batch")
-def update_colors_batch(colors: List[ColorUpdate], email: str, password: str):
-    require_admin(email, password)
+def update_colors_batch(colors: List[ColorUpdate], request: Request):
+    require_admin(request)
     db = get_db()
     with db.cursor() as c:
         for col in colors:
@@ -1119,11 +1463,10 @@ def update_colors_batch(colors: List[ColorUpdate], email: str, password: str):
 
 @app.post("/api/admin/sea-svg")
 async def upload_sea_svg(
-    email: str = Query(...),
-    password: str = Query(...),
+    request: Request,
     file: UploadFile = File(...)
 ):
-    require_admin(email, password)
+    require_admin(request)
     raw = await file.read()
     if len(raw) > 500_000:
         raise HTTPException(400, "SVG файл занадто великий (макс 500 КБ)")
@@ -1146,8 +1489,8 @@ async def upload_sea_svg(
     return {"ok": True, "bytes": len(raw)}
 
 @app.delete("/api/admin/sea-svg")
-def delete_sea_svg(email: str, password: str):
-    require_admin(email, password)
+def delete_sea_svg(request: Request):
+    require_admin(request)
     db = get_db()
     with db.cursor() as c:
         c.execute("DELETE FROM colors WHERE `key`='sea_svg_content'")
@@ -1156,8 +1499,8 @@ def delete_sea_svg(email: str, password: str):
     return {"ok": True}
 
 @app.put("/api/admin/label/{lid}")
-def update_label(lid: int, lbl: LabelUpdate, email: str, password: str):
-    require_admin(email, password)
+def update_label(lid: int, lbl: LabelUpdate, request: Request):
+    require_admin(request)
     db = get_db()
     fields, vals = ["x=%s", "y=%s"], [lbl.x, lbl.y]
     if lbl.name  is not None: fields.append("name=%s");  vals.append(lbl.name)
@@ -1165,14 +1508,14 @@ def update_label(lid: int, lbl: LabelUpdate, email: str, password: str):
     if lbl.size  is not None: fields.append("size=%s");  vals.append(lbl.size)
     vals.append(lid)
     with db.cursor() as c:
-        c.execute(f"UPDATE map_labels SET {','.join(fields)} WHERE id=%s", vals)
+        c.execute("UPDATE map_labels SET " + ",".join(fields) + " WHERE id=%s", vals)
     db.commit()
     db.close()
     return {"ok": True}
 
 @app.get("/api/admin/stats")
-def admin_stats(email: str, password: str):
-    require_admin(email, password)
+def admin_stats(request: Request):
+    require_admin(request)
     db = get_db()
     with db.cursor() as c:
         c.execute("SELECT COUNT(*) AS cnt FROM memorials");              total    = c.fetchone()["cnt"]
@@ -1188,8 +1531,8 @@ def admin_stats(email: str, password: str):
 
 
 @app.get("/api/admin/server-stats")
-def server_stats(email: str, password: str):
-    require_admin(email, password)
+def server_stats(request: Request):
+    require_admin(request)
     # CPU / RAM
     if _HAS_PSUTIL:
         cpu   = round(_psutil.cpu_percent(interval=0.2), 1)

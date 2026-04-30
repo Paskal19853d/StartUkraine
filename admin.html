@@ -4,7 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Адмін — Зоряна Памʼять</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"
+        integrity="sha256-Mh46P6mNpKqpV9EL5Xy7UU3gmJ7tj51ya10FkCzQGQQ="
+        crossorigin="anonymous"></script>
 <style>
 :root{
   --bg:#080808;--surface:#111111;--surface2:#181818;--surface3:#1e1e1e;
@@ -49,6 +51,12 @@ html,body{height:100%;font-family:"Segoe UI",sans-serif;background:var(--bg);col
 .nav-ico{font-size:14px;width:17px;text-align:center;opacity:.7}
 .nav-item.active .nav-ico{opacity:1}
 .nb{margin-left:auto;background:rgba(192,144,0,.2);color:var(--yellow);border-radius:10px;padding:1px 6px;font-size:10px;display:none}
+/* Drag-and-drop nav */
+#nav-list{display:flex;flex-direction:column}
+.nav-drag{font-size:13px;color:var(--muted);opacity:0;cursor:grab;margin-right:-2px;flex-shrink:0;transition:opacity .15s;user-select:none}
+.nav-item:hover .nav-drag{opacity:.5}
+.nav-item.nav-dragging{opacity:.35;background:rgba(0,170,221,.05)}
+.nav-item.nav-over{border-top:2px solid var(--accent);margin-top:-2px}
 .sb-bottom{margin-top:auto;padding:12px 16px;border-top:1px solid var(--border)}
 .sb-bottom p{font-size:10px;color:var(--muted);margin-bottom:4px}
 .sb-bottom strong{color:var(--text2)}
@@ -98,25 +106,38 @@ html,body{height:100%;font-family:"Segoe UI",sans-serif;background:var(--bg);col
 .map-tool-btn:hover{background:rgba(0,200,255,.1);color:var(--accent);border-color:rgba(0,200,255,.3)}
 .map-tool-btn.active{background:rgba(0,200,255,.15);color:var(--accent);border-color:rgba(0,200,255,.4)}
 #map-hint{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);background:rgba(0,200,255,.1);border:1px solid rgba(0,200,255,.3);border-radius:8px;padding:8px 16px;font-size:11px;color:var(--accent);pointer-events:none;white-space:nowrap}
-#admin-map-svg-container{position:absolute;inset:0;transform-origin:0 0;will-change:transform;cursor:grab}
+#admin-map-svg-container{position:absolute;inset:0;cursor:grab}
 #admin-map-svg-container.grabbing{cursor:grabbing}
 
-/* SVG admin — контрастна схема для зручності редагування */
+/* SVG admin — viewBox zoom, межі чіткі на будь-якому масштабі */
 #admin-map-svg g path,
 #admin-map-svg g polygon {
   fill: #0d2240;
-  stroke: #1e4a7a;
-  stroke-width: 3;
+  stroke: rgba(30,74,122,.6);
+  stroke-width: 0.6;
+  vector-effect: non-scaling-stroke;
   transition: fill .15s;
 }
 #admin-map-svg g path:hover,
 #admin-map-svg g polygon:hover {
   fill: #143060;
 }
+/* Прогресивна деталізація: при зумі межі стають контрастнішими */
+#admin-map-svg.map-zoom-2 g path,
+#admin-map-svg.map-zoom-2 g polygon {
+  stroke: rgba(30,90,160,.8);
+  stroke-width: 0.8;
+}
+#admin-map-svg.map-zoom-4 g path,
+#admin-map-svg.map-zoom-4 g polygon {
+  stroke: rgba(40,110,190,.95);
+  stroke-width: 1;
+}
 /* Контури країни — яскраво, щоб виділялись */
 #admin-map-svg #contours path {
   stroke: rgba(0,200,255,.7);
-  stroke-width: 6;
+  stroke-width: 3;
+  vector-effect: non-scaling-stroke;
   fill: none;
 }
 
@@ -265,8 +286,8 @@ tr:hover td{background:rgba(255,255,255,.02)}
   <div class="lb">
     <h2>🔐 Адміністратор</h2>
     <p>Вхід до панелі управління Зоряна Памʼять</p>
-    <div class="lf"><label>Email</label><input type="email" id="adm-email" value="admin@admin.com"></div>
-    <div class="lf"><label>Пароль</label><input type="password" id="adm-pass" value="Admin" onkeydown="if(event.key==='Enter')adminLogin()"></div>
+    <div class="lf"><label>Email</label><input type="email" id="adm-email"></div>
+    <div class="lf"><label>Пароль</label><input type="password" id="adm-pass" onkeydown="if(event.key==='Enter')adminLogin()"></div>
     <button id="btn-adm-login" onclick="adminLogin()">Увійти в панель</button>
     <div id="lerr">❌ Невірний логін або пароль</div>
   </div>
@@ -281,15 +302,19 @@ tr:hover td{background:rgba(255,255,255,.02)}
       <h1>★ Адмін-панель</h1>
       <p>Зоряна Памʼять v2.0</p>
     </div>
-    <div class="nav-item active" onclick="showSec('stats')"   data-s="stats">  <span class="nav-ico">📊</span>Статистика</div>
-    <div class="nav-item"        onclick="showSec('mem')"     data-s="mem">    <span class="nav-ico">📋</span>Записи</div>
-    <div class="nav-item"        onclick="showSec('pend')"    data-s="pend">   <span class="nav-ico">⏳</span>Модерація<span class="nb" id="pend-nb"></span></div>
-    <div class="nav-item"        onclick="showSec('users')"   data-s="users">  <span class="nav-ico">👥</span>Користувачі</div>
-    <div class="nav-item"        onclick="showSec('mapeditor')" data-s="mapeditor"><span class="nav-ico">🗺</span>Редактор карти</div>
-    <div class="nav-item"        onclick="showSec('colors')"  data-s="colors"> <span class="nav-ico">🎨</span>Кольори</div>
-    <div class="nav-item"        onclick="showSec('smoke')"   data-s="smoke">  <span class="nav-ico">💨</span>Ефект диму</div>
-    <div class="nav-item"        onclick="showSec('photo')"   data-s="photo">  <span class="nav-ico">🖼</span>Фото на карті</div>
-    <div class="nav-item"        onclick="showSec('sea')"     data-s="sea">    <span class="nav-ico">🌊</span>Хвилі морів</div>
+    <div id="nav-list">
+    <div class="nav-item active" draggable="true" onclick="showSec('stats')"     data-s="stats">     <span class="nav-drag">⠿</span><span class="nav-ico">📊</span>Статистика</div>
+    <div class="nav-item"        draggable="true" onclick="showSec('mem')"       data-s="mem">       <span class="nav-drag">⠿</span><span class="nav-ico">📋</span>Записи</div>
+    <div class="nav-item"        draggable="true" onclick="showSec('pend')"      data-s="pend">      <span class="nav-drag">⠿</span><span class="nav-ico">⏳</span>Модерація<span class="nb" id="pend-nb"></span></div>
+    <div class="nav-item"        draggable="true" onclick="showSec('users')"     data-s="users">     <span class="nav-drag">⠿</span><span class="nav-ico">👥</span>Користувачі</div>
+    <div class="nav-item"        draggable="true" onclick="showSec('mapeditor')" data-s="mapeditor"> <span class="nav-drag">⠿</span><span class="nav-ico">🗺</span>Редактор карти</div>
+    <div class="nav-item"        draggable="true" onclick="showSec('colors')"    data-s="colors">    <span class="nav-drag">⠿</span><span class="nav-ico">🎨</span>Кольори</div>
+    <div class="nav-item"        draggable="true" onclick="showSec('smoke')"     data-s="smoke">     <span class="nav-drag">⠿</span><span class="nav-ico">💨</span>Ефект диму</div>
+    <div class="nav-item"        draggable="true" onclick="showSec('photo')"     data-s="photo">     <span class="nav-drag">⠿</span><span class="nav-ico">🖼</span>Фото на карті</div>
+    <div class="nav-item"        draggable="true" onclick="showSec('sea')"       data-s="sea">       <span class="nav-drag">⠿</span><span class="nav-ico">🌊</span>Хвилі морів</div>
+    <div class="nav-item"        draggable="true" onclick="showSec('icons')"     data-s="icons">     <span class="nav-drag">⠿</span><span class="nav-ico">🎭</span>Іконки</div>
+    <div class="nav-item"        draggable="true" onclick="showSec('cities')"    data-s="cities">    <span class="nav-drag">⠿</span><span class="nav-ico">🏙</span>Міста</div>
+    </div>
     <div class="sb-bottom">
       <p>Адмін: <strong id="adm-name">—</strong></p>
       <p style="margin-top:4px">Онлайн: <strong id="adm-online">—</strong></p>
@@ -308,7 +333,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
       <button id="btn-theme" onclick="toggleAdminTheme()" title="Змінити тему" style="display:flex;align-items:center;gap:6px;background:var(--surface3);border:1px solid var(--border2);border-radius:20px;padding:5px 13px;cursor:pointer;font-size:11px;color:var(--text2);transition:all .2s">
         <span id="theme-ico">🌙</span><span id="theme-lbl">Темна</span>
       </button>
-      <a class="link-btn" href="/" target="_blank">🌐 Відкрити сайт</a>
+      <a class="link-btn" href="/" target="_blank" rel="noopener noreferrer">🌐 Відкрити сайт</a>
     
     </div>
 
@@ -360,6 +385,9 @@ tr:hover td{background:rgba(255,255,255,.02)}
       <!-- MEMORIALS -->
       <div id="sec-mem" class="section">
         <div class="sec-title">📋 Всі записи</div>
+        <div style="margin-bottom:12px">
+          <button class="btn btn-p" onclick="openCreateModal()">＋ Додати запис</button>
+        </div>
         <div class="tbl-wrap"><table>
 		  <thead><tr><th>ID</th><th>ПІБ</th><th>Позивний</th><th>Місце пох.</th><th>Обст.</th><th>Статус</th><th>★</th><th>Дії</th></tr></thead>
           <tbody id="mem-tb"></tbody>
@@ -400,9 +428,13 @@ tr:hover td{background:rgba(255,255,255,.02)}
             <div id="map-toolbar">
               <button class="map-tool-btn active" id="tool-labels" onclick="setTool('labels')">🏷 Підписи областей</button>
               <button class="map-tool-btn" id="tool-dots" onclick="setTool('dots')">📍 Точки меморіалів</button>
+              <button class="map-tool-btn" id="tool-cities" onclick="setTool('cities')">🏙 Міста</button>
               <button class="map-tool-btn" onclick="resetMapView()">⌂ Скинути вигляд</button>
-              <button class="map-tool-btn" onclick="zoomMapIn()">+</button>
               <button class="map-tool-btn" onclick="zoomMapOut()">−</button>
+              <span id="map-zoom-lbl" title="Подвійний клік — скинути зум" ondblclick="resetMapView()"
+                style="font-size:11px;color:var(--accent);min-width:36px;text-align:center;cursor:pointer;padding:4px 6px;border-radius:5px;border:1px solid rgba(0,200,255,.25);user-select:none">1.0×</span>
+              <button class="map-tool-btn" onclick="zoomMapIn()">+</button>
+              <span style="font-size:10px;color:var(--muted);padding:0 4px">Макс: 50×</span>
             </div>
             <!-- SVG Map -->
             <div id="admin-map-svg-container">
@@ -2443,11 +2475,18 @@ tr:hover td{background:rgba(255,255,255,.02)}
 
 </svg>
 
-              <!-- Labels layer -->
-              <svg id="adm-labels-svg" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none" viewBox="0 0 14000 9500" preserveAspectRatio="xMidYMid meet"></svg>
-              <!-- Dots layer -->
-              <svg id="adm-dots-svg" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none" viewBox="0 0 14000 9500" preserveAspectRatio="xMidYMid meet"></svg>
             </div>
+            <!-- Overlay SVGs live OUTSIDE the scaled container → always crisp at any zoom.
+                 viewBox is updated dynamically in updateOverlayViewBoxes(). -->
+            <svg id="adm-labels-svg" xmlns="http://www.w3.org/2000/svg"
+                 style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:visible"
+                 viewBox="0 0 14000 9500" preserveAspectRatio="none"></svg>
+            <svg id="adm-dots-svg" xmlns="http://www.w3.org/2000/svg"
+                 style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:visible"
+                 viewBox="0 0 14000 9500" preserveAspectRatio="none"></svg>
+            <svg id="adm-cities-svg" xmlns="http://www.w3.org/2000/svg"
+                 style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:visible"
+                 viewBox="0 0 14000 9500" preserveAspectRatio="none"></svg>
             <div id="map-hint">Виберіть режим редагування вгорі</div>
           </div>
 
@@ -2455,10 +2494,10 @@ tr:hover td{background:rgba(255,255,255,.02)}
           <div id="map-sidebar">
             <div id="map-sidebar-title">
               <span id="map-sidebar-mode">🏷 Підписи</span>
-              <button class="btn btn-p" onclick="saveSelected()" style="font-size:10px;padding:5px 10px">💾 Зберегти</button>
+              <button class="btn btn-p" onclick="saveAny()" style="font-size:10px;padding:5px 10px">💾 Зберегти</button>
             </div>
             <div id="map-props-panel">
-              <div class="no-sel" id="no-sel-msg">👆 Клікніть на підпис або точку щоб редагувати</div>
+              <div class="no-sel" id="no-sel-msg">👆 Клікніть на підпис, точку або місто щоб редагувати</div>
               <!-- Label props -->
               <div id="label-props" style="display:none">
                 <div class="prop-group">
@@ -2518,6 +2557,38 @@ tr:hover td{background:rgba(255,255,255,.02)}
                 <button class="prop-save-btn" onclick="saveSelectedDot()">💾 Зберегти в базу</button>
                 <button class="prop-save-btn" style="background:rgba(0,200,255,.15);border:1px solid rgba(0,200,255,.3);color:#00c8ff;margin-top:6px" onclick="openEditModal()">✏️ Редагувати повністю</button>
               </div>
+              <!-- City props -->
+              <div id="city-props" style="display:none">
+                <div class="prop-group">
+                  <div class="prop-label">Назва міста</div>
+                  <input class="prop-input" id="cprop-name" style="width:100%" readonly>
+                </div>
+                <div class="prop-group">
+                  <div class="prop-label">Координата X (0–1)</div>
+                  <input class="prop-input" id="cprop-x" type="number" step="0.0001" min="0" max="1" oninput="updateCityFromProps()">
+                </div>
+                <div class="prop-group">
+                  <div class="prop-label">Координата Y (0–1)</div>
+                  <input class="prop-input" id="cprop-y" type="number" step="0.0001" min="0" max="1" oninput="updateCityFromProps()">
+                </div>
+                <div class="prop-group">
+                  <div class="prop-label">Тип міста</div>
+                  <select class="prop-input" id="cprop-tier" style="width:100%;background:var(--panel);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:4px 6px">
+                    <option value="0">0 — Місто</option>
+                    <option value="1">1 — Обласний центр</option>
+                    <option value="2">2 — Велике місто</option>
+                    <option value="3">3 — Столиця</option>
+                  </select>
+                </div>
+                <button class="prop-save-btn" onclick="saveSelectedCity()">💾 Зберегти в базу</button>
+              </div>
+              <!-- Unplaced cities -->
+              <div id="unplaced-cities" style="display:none">
+                <div class="prop-label" style="padding:10px 12px 6px;color:var(--muted);font-size:11px">Нерозміщені міста — натисніть щоб поставити на карту:</div>
+                <input id="unplaced-search" placeholder="🔍 Фільтр..." oninput="filterUnplaced(this.value)"
+                  style="width:calc(100% - 24px);margin:0 12px 6px;box-sizing:border-box;padding:5px 8px;background:var(--panel);border:1px solid var(--border);color:var(--text);border-radius:4px;font-size:12px;outline:none">
+                <div id="unplaced-list" style="max-height:220px;overflow-y:auto"></div>
+              </div>
             </div>
           </div>
         </div>
@@ -2559,6 +2630,16 @@ tr:hover td{background:rgba(255,255,255,.02)}
         <div id="sea-grid"></div>
       </div>
 
+      <!-- ICONS SECTION -->
+      <div id="sec-icons" class="section">
+        <div class="sec-title">🎭 Іконки сайту</div>
+        <div style="display:flex;gap:10px;margin-bottom:16px">
+          <button class="btn btn-p" onclick="saveAllColors()">💾 Зберегти</button>
+          <button class="btn" onclick="loadColors()">↺ Скасувати</button>
+        </div>
+        <div id="icons-grid"></div>
+      </div>
+
       <!-- PHOTO SECTION -->
       <div id="sec-photo" class="section">
         <div class="sec-title">🖼 Фото на карті</div>
@@ -2567,6 +2648,20 @@ tr:hover td{background:rgba(255,255,255,.02)}
           <button class="btn" onclick="loadColors()">↺ Скасувати</button>
         </div>
         <div id="photo-grid"></div>
+      </div>
+
+      <!-- CITIES SECTION -->
+      <div id="sec-cities" class="section">
+        <div class="sec-title">🏙 Міста України</div>
+        <input type="text" id="city-search" oninput="filterCities(this.value)"
+          placeholder="🔍 Пошук міста або області..."
+          style="width:100%;box-sizing:border-box;padding:8px 12px;margin-bottom:14px;background:var(--panel);border:1px solid var(--border);color:var(--text);border-radius:6px;font-size:13px;outline:none">
+        <div class="tbl-wrap">
+          <table id="cities-table">
+            <thead><tr><th style="width:48px;text-align:center">№</th><th>Місто</th><th>Область</th></tr></thead>
+            <tbody id="cities-tbody"></tbody>
+          </table>
+        </div>
       </div>
 
     </div><!-- /content-area -->
@@ -2615,12 +2710,18 @@ const AUTH_DAYS   = 30;
 function h(s) {
   return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
+function authH(extra = {}) {
+  const creds = btoa(unescape(encodeURIComponent(AE + ':' + AP)));
+  return Object.assign({'Authorization': 'Basic ' + creds}, extra);
+}
 let AE = '', AP = '';
 let COLORS = {}, pendColors = {};
 let labels = [], people = [];
-let selLabel = null, selDot = null;
+let selLabel = null, selDot = null, selCity = null;
 let curTool = 'labels';
-let editId = null;
+let editId = null, editMode = 'edit';
+let citiesAdmin = [];
+let cityDrag = false, cityDragEl = null, cityDragId = null;
 
 // MAP state
 const mtr = {x:0, y:0, s:1};
@@ -2653,7 +2754,7 @@ async function adminLogin() {
     if (!d.ok || !d.user.is_admin) throw new Error('not admin');
     _loginAttempts = 0;
     AE=email; AP=pass;
-    _admCookieSet(AUTH_COOKIE, JSON.stringify({e:email,p:pass}), AUTH_DAYS);
+    _admCookieSet(AUTH_COOKIE, JSON.stringify({e:email}), AUTH_DAYS);
     document.getElementById('login-screen').style.display='none';
     document.getElementById('layout').style.display='flex';
     document.getElementById('adm-name').textContent=d.user.name;
@@ -2675,17 +2776,10 @@ async function tryAutoLogin() {
   const raw = _admCookieGet(AUTH_COOKIE);
   if (!raw) return;
   try {
-    const {e:email, p:pass} = JSON.parse(raw);
-    if (!email || !pass) return;
-    const r = await fetch(`${API}/api/auth/login`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:pass})});
-    const d = await r.json();
-    if (!d.ok || !d.user.is_admin) { _admCookieDel(AUTH_COOKIE); return; }
-    AE=email; AP=pass;
+    const {e:email} = JSON.parse(raw);
+    if (!email) return;
     document.getElementById('adm-email').value = email;
-    document.getElementById('login-screen').style.display='none';
-    document.getElementById('layout').style.display='flex';
-    document.getElementById('adm-name').textContent=d.user.name;
-    initAll();
+    document.getElementById('adm-pass').focus();
   } catch { _admCookieDel(AUTH_COOKIE); }
 }
 document.addEventListener('DOMContentLoaded', tryAutoLogin);
@@ -2702,12 +2796,85 @@ function showSec(id) {
   if(id==='mapeditor') initMapEditor();
   if(id==='colors')    loadColors();
   if(id==='sea')      { if(Object.keys(COLORS).length>0) renderSeaSection(); else loadColors(); }
+  if(id==='icons')    { if(Object.keys(COLORS).length>0) renderIconsSection(); else loadColors(); }
+  if(id==='cities')   { document.getElementById('city-search').value=''; renderCities(CITIES); }
+}
+
+/* ══════════ NAV DRAG-AND-DROP ══════════ */
+(function initNavDrag(){
+  const list = document.getElementById('nav-list');
+  if (!list) return;
+  let dragEl = null;
+
+  list.addEventListener('dragstart', e => {
+    dragEl = e.target.closest('.nav-item');
+    if (!dragEl) return;
+    dragEl.classList.add('nav-dragging');
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', dragEl.dataset.s);
+  });
+
+  list.addEventListener('dragend', () => {
+    if (dragEl) dragEl.classList.remove('nav-dragging');
+    list.querySelectorAll('.nav-over').forEach(el => el.classList.remove('nav-over'));
+    dragEl = null;
+  });
+
+  list.addEventListener('dragover', e => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    const target = e.target.closest('.nav-item');
+    if (!target || target === dragEl) return;
+    list.querySelectorAll('.nav-over').forEach(el => el.classList.remove('nav-over'));
+    target.classList.add('nav-over');
+  });
+
+  list.addEventListener('dragleave', e => {
+    if (!list.contains(e.relatedTarget))
+      list.querySelectorAll('.nav-over').forEach(el => el.classList.remove('nav-over'));
+  });
+
+  list.addEventListener('drop', e => {
+    e.preventDefault();
+    const target = e.target.closest('.nav-item');
+    if (!target || target === dragEl || !dragEl) return;
+    // Вставляємо перед або після залежно від позиції курсора
+    const rect = target.getBoundingClientRect();
+    const after = e.clientY > rect.top + rect.height / 2;
+    if (after) target.after(dragEl);
+    else target.before(dragEl);
+    list.querySelectorAll('.nav-over').forEach(el => el.classList.remove('nav-over'));
+    saveNavOrder();
+  });
+})();
+
+async function saveNavOrder() {
+  const items = document.querySelectorAll('#nav-list .nav-item');
+  const order = [...items].map(el => el.dataset.s).join(',');
+  try {
+    await fetch(`${API}/api/admin/colors/batch`, {
+      method: 'PUT',
+      headers: authH({'Content-Type':'application/json'}),
+      body: JSON.stringify([{key:'admin_nav_order', value: order}])
+    });
+  } catch(_) {}
+}
+
+function applyNavOrder(orderStr) {
+  if (!orderStr) return;
+  const list = document.getElementById('nav-list');
+  if (!list) return;
+  const keys = orderStr.split(',').map(s => s.trim()).filter(Boolean);
+  keys.forEach(key => {
+    const el = list.querySelector(`[data-s="${key}"]`);
+    if (el) list.appendChild(el); // move to end in order
+  });
 }
 
 /* ══════════ STATS ══════════ */
 async function loadStats() {
   try {
-    const r=await fetch(`${API}/api/admin/stats?email=${e(AE)}&password=${e(AP)}`);
+    const r=await fetch(`${API}/api/admin/stats`, {headers: authH()});
     const d=await r.json();
     ['total','appr','pend','users','likes','online'].forEach(k=>{
       const el=document.getElementById('st-'+k); if(el) el.textContent=d[k==='appr'?'approved':k==='pend'?'pending':k]??'—';
@@ -2727,7 +2894,7 @@ let _visitsChart = null;
 
 async function loadServerStats() {
   try {
-    const r = await fetch(`${API}/api/admin/server-stats?email=${e(AE)}&password=${e(AP)}`);
+    const r = await fetch(`${API}/api/admin/server-stats`, {headers: authH()});
     const d = await r.json();
 
     // CPU bar
@@ -2798,7 +2965,7 @@ async function loadServerStats() {
         }
       });
     }
-  } catch(err){ console.warn('server-stats error', err); }
+  } catch{ }
 }
 
 /* ══════════ MEMORIALS ══════════ */
@@ -2848,7 +3015,7 @@ function memPage(dir) {
 }
 
 async function loadPend() {
-  const r=await fetch(`${API}/api/admin/pending?email=${e(AE)}&password=${e(AP)}`);
+  const r=await fetch(`${API}/api/admin/pending`, {headers: authH()});
   const pend=await r.json();
   document.getElementById('pend-tb').innerHTML=!pend.length
     ?'<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px">Немає записів</td></tr>'
@@ -2866,12 +3033,12 @@ async function loadPend() {
     </tr>`).join('');
 }
 
-async function approveMem(id){await fetch(`${API}/api/admin/approve/${id}?email=${e(AE)}&password=${e(AP)}`,{method:'POST'});showN('✅ Схвалено');loadPend();loadStats();}
-async function delMem(id){if(!confirm('Видалити?'))return;await fetch(`${API}/api/admin/memorial/${id}?email=${e(AE)}&password=${e(AP)}`,{method:'DELETE'});showN('🗑 Видалено');loadMem();loadStats();}
+async function approveMem(id){try{const r=await fetch(`${API}/api/admin/approve/${id}`,{method:'POST',headers:authH()});if(!r.ok)throw new Error(r.status);showN('✅ Схвалено');loadPend();loadStats();}catch{showN('❌ Помилка схвалення',true);}}
+async function delMem(id){if(!confirm('Видалити?'))return;try{const r=await fetch(`${API}/api/admin/memorial/${id}`,{method:'DELETE',headers:authH()});if(!r.ok)throw new Error(r.status);showN('🗑 Видалено');loadMem();loadStats();}catch{showN('❌ Помилка видалення',true);}}
 
 /* ══════════ USERS ══════════ */
 async function loadUsers() {
-  const r=await fetch(`${API}/api/admin/users?email=${e(AE)}&password=${e(AP)}`);
+  const r=await fetch(`${API}/api/admin/users`, {headers: authH()});
   const users=await r.json();
   document.getElementById('users-tb').innerHTML=users.map(u=>`
     <tr>
@@ -2884,8 +3051,8 @@ async function loadUsers() {
       <td>${u.is_admin?'':`<button class="btn ${u.is_banned?'btn-g':'btn-r'}" onclick="${u.is_banned?'unban':'ban'}User(${u.id})">${u.is_banned?'✅ Розблок':'🚫 Бан'}</button>`}</td>
     </tr>`).join('');
 }
-async function banUser(id){await fetch(`${API}/api/admin/ban/${id}?email=${e(AE)}&password=${e(AP)}`,{method:'POST'});showN('🚫 Заблоковано');loadUsers();}
-async function unbanUser(id){await fetch(`${API}/api/admin/unban/${id}?email=${e(AE)}&password=${e(AP)}`,{method:'POST'});showN('✅ Розблоковано');loadUsers();}
+async function banUser(id){if(!confirm('Заблокувати цього користувача?'))return;try{const r=await fetch(`${API}/api/admin/ban/${id}`,{method:'POST',headers:authH()});if(!r.ok)throw new Error(r.status);showN('🚫 Заблоковано');loadUsers();}catch{showN('❌ Помилка блокування',true);}}
+async function unbanUser(id){if(!confirm('Розблокувати цього користувача?'))return;try{const r=await fetch(`${API}/api/admin/unban/${id}`,{method:'POST',headers:authH()});if(!r.ok)throw new Error(r.status);showN('✅ Розблоковано');loadUsers();}catch{showN('❌ Помилка розблокування',true);}}
 
 /* ══════════════════════════════════
    MAP EDITOR
@@ -2894,46 +3061,127 @@ const mapWrap = document.getElementById('admin-map-svg-container');
 const mapCont = document.getElementById('map-canvas-wrap');
 const lblSVG  = document.getElementById('adm-labels-svg');
 const dotSVG  = document.getElementById('adm-dots-svg');
+const citySVG = document.getElementById('adm-cities-svg');
+
+/* Letterbox bounds — аналог getSvgBounds() в index.html */
+function getAdminMapBounds(){
+  const W=mapCont.clientWidth, H=mapCont.clientHeight;
+  const asp=14000/9500;
+  if(W/H>asp){const bw=H*asp;return{x:(W-bw)/2,y:0,w:bw,h:H};}
+  const bh=W/asp;return{x:0,y:(H-bh)/2,w:W,h:bh};
+}
 
 function applyMapTr(){
-  mapWrap.style.transform=`translate(${mtr.x}px,${mtr.y}px) scale(${mtr.s})`;
-  mapWrap.style.transformOrigin='0 0';
+  const W=mapCont.clientWidth, H=mapCont.clientHeight;
+  if(!W||!H)return;
+  const b=getAdminMapBounds();
+  const s=mtr.s;
+  // Формула ідентична updateMapSvgViewBox в index.html — враховує letterbox
+  const vbx=(-(b.x*(s-1)+mtr.x)*14000/(b.w*s)).toFixed(2);
+  const vby=(-(b.y*(s-1)+mtr.y)*9500 /(b.h*s)).toFixed(2);
+  const vbw=(14000/s).toFixed(2);
+  const vbh=(9500/s).toFixed(2);
+  const vb=`${vbx} ${vby} ${vbw} ${vbh}`;
+  const mapSvg=document.getElementById('admin-map-svg');
+  if(mapSvg){
+    mapSvg.setAttribute('viewBox',vb);
+    mapSvg.classList.toggle('map-zoom-2',s>=2);
+    mapSvg.classList.toggle('map-zoom-4',s>=4);
+  }
+  [lblSVG,dotSVG,citySVG].forEach(sv=>{if(sv)sv.setAttribute('viewBox',vb);});
+  updateDotSizes();
+  const zl=document.getElementById('map-zoom-lbl');
+  if(zl) zl.textContent=mtr.s.toFixed(1)+'×';
 }
-function resetMapView(){mtr.x=0;mtr.y=0;mtr.s=1;applyMapTr();}
-function zoomMapIn() {const c=mapCont.getBoundingClientRect();zoomMap(c.width/2,c.height/2,1.28);}
-function zoomMapOut(){const c=mapCont.getBoundingClientRect();zoomMap(c.width/2,c.height/2,.78);}
-function zoomMap(cx,cy,f){mtr.x=cx-(cx-mtr.x)*f;mtr.y=cy-(cy-mtr.y)*f;mtr.s*=f;mtr.s=Math.max(.3,Math.min(12,mtr.s));applyMapTr();}
 
-// Screen → SVG coords
+/* Перераховує розміри точок так щоб вони залишались фіксованого екранного розміру при зумі */
+function updateDotSizes(){
+  const s=mtr.s;
+  // Точки меморіалів
+  if(dotSVG) dotSVG.querySelectorAll('.adm-dot').forEach(g=>{
+    const cc=g.querySelectorAll('circle');
+    const tx=g.querySelector('text');
+    if(cc[0]) cc[0].setAttribute('r',(120/s).toFixed(1));
+    if(cc[1]){
+      cc[1].setAttribute('r',(70/s).toFixed(1));
+      const isSel=String(g.getAttribute('data-id'))===String(selDot);
+      cc[1].style.strokeWidth=((isSel?40:20)/s).toFixed(1);
+    }
+    if(tx&&cc[0]){
+      tx.setAttribute('y',(parseFloat(cc[0].getAttribute('cy'))-(100/s)).toFixed(1));
+      tx.setAttribute('font-size',(90/Math.pow(s,0.6)).toFixed(1));
+    }
+  });
+  // Точки міст
+  if(citySVG) citySVG.querySelectorAll('.adm-city').forEach(g=>{
+    const dot=g.querySelector('circle');
+    const txt=g.querySelector('text');
+    if(dot){
+      dot.setAttribute('r',(80/s).toFixed(1));
+      dot.style.strokeWidth=(16/s).toFixed(1);
+    }
+    if(txt&&dot){
+      txt.setAttribute('y',(parseFloat(dot.getAttribute('cy'))-(100/s)).toFixed(1));
+      txt.setAttribute('font-size',(75/Math.pow(s,0.6)).toFixed(1));
+    }
+  });
+  // Назви областей
+  if(lblSVG) lblSVG.querySelectorAll('.adm-label').forEach(t=>{
+    const base=parseFloat(t.dataset.baseSize||145);
+    t.setAttribute('font-size',(base/Math.pow(s,0.6)).toFixed(1));
+  });
+}
+
+function updateOverlayViewBoxes(){ applyMapTr(); }
+function resetMapView(){mtr.x=0;mtr.y=0;mtr.s=1;applyMapTr();}
+function zoomMapIn() {zoomMap(mapCont.clientWidth/2,mapCont.clientHeight/2,1.28);}
+function zoomMapOut(){zoomMap(mapCont.clientWidth/2,mapCont.clientHeight/2,.78);}
+const MAP_MAX_S=50, MAP_MIN_S=0.3;
+function zoomMap(cx,cy,f){
+  const newS=Math.max(MAP_MIN_S,Math.min(MAP_MAX_S,mtr.s*f));
+  const af=newS/mtr.s;   // фактичний коефіцієнт після обмеження
+  mtr.x=cx-(cx-mtr.x)*af;
+  mtr.y=cy-(cy-mtr.y)*af;
+  mtr.s=newS;
+  applyMapTr();
+}
+
+// Screen → SVG user coords (враховує letterbox — аналог s2w в index.html)
 function screen2svg(sx,sy) {
   const r=mapCont.getBoundingClientRect();
+  const b=getAdminMapBounds();
+  const lx=(sx-r.left)-mtr.x, ly=(sy-r.top)-mtr.y;
   return {
-    x:((sx-r.left)-mtr.x)/mtr.s * 14000 / mapCont.clientWidth,
-    y:((sy-r.top)-mtr.y)/mtr.s * 9500 / mapCont.clientHeight,
+    x:(lx/mtr.s - b.x)/b.w * 14000,
+    y:(ly/mtr.s - b.y)/b.h * 9500,
   };
 }
 
-// SVG → screen coords (for display)
+// SVG user coords → screen (враховує letterbox)
 function svg2screen(svgX,svgY){
   const r=mapCont.getBoundingClientRect();
+  const b=getAdminMapBounds();
   return {
-    x: svgX/14000*mapCont.clientWidth*mtr.s + mtr.x + r.left,
-    y: svgY/9500*mapCont.clientHeight*mtr.s + mtr.y + r.top,
+    x:(b.x + svgX/14000*b.w)*mtr.s + mtr.x + r.left,
+    y:(b.y + svgY/9500 *b.h)*mtr.s + mtr.y + r.top,
   };
 }
 
 async function initMapEditor() {
-  // Завантажити підписи і точки
-  const [rl,rp] = await Promise.all([
+  const [rl,rp,rc] = await Promise.all([
     fetch(`${API}/api/labels`),
-    fetch(`${API}/api/people`)
+    fetch(`${API}/api/people`),
+    fetch(`${API}/api/admin/cities`,{headers:authH()})
   ]);
-  labels  = await rl.json();
-  people  = await rp.json();
+  labels       = await rl.json();
+  people       = await rp.json();
+  citiesAdmin  = await rc.json();
   renderLabels();
   renderDots();
+  renderCitiesAdmin();
   setTool('labels');
   applyMapBorders();
+  updateOverlayViewBoxes();
 }
 
 function applyMapBorders(){
@@ -2942,22 +3190,35 @@ function applyMapBorders(){
   const gs=[...svg.querySelectorAll('g[data-rid]')];
   const fps=gs.map(g=>g.querySelector('path')).filter(Boolean);
   fps.sort((a,b)=>{try{return b.getTotalLength()-a.getTotalLength();}catch{return 0;}});
-  fps.slice(0,6).forEach(p=>{p.style.stroke='#00ccff';p.style.strokeWidth='5';p.style.filter='drop-shadow(0 0 5px #00ccff)';});
-  fps.slice(6).forEach(p=>{p.style.stroke='#d4a800';p.style.strokeWidth='3';p.style.filter='drop-shadow(0 0 4px #d4a800)';});
+  // strokeWidth in screen px (vector-effect:non-scaling-stroke is set via CSS)
+  fps.slice(0,6).forEach(p=>{
+    p.style.stroke='#00ccff';p.style.strokeWidth='2';
+    p.style.filter='drop-shadow(0 0 4px rgba(0,200,255,.7))';
+  });
+  fps.slice(6).forEach(p=>{
+    p.style.stroke='#d4a800';p.style.strokeWidth='1';
+    p.style.filter='drop-shadow(0 0 3px rgba(212,168,0,.55))';
+  });
 }
 
 function setTool(t){
   curTool=t;
-  selLabel=null;selDot=null;
+  selLabel=null;selDot=null;selCity=null;
   document.getElementById('tool-labels').classList.toggle('active',t==='labels');
   document.getElementById('tool-dots').classList.toggle('active',t==='dots');
-  document.getElementById('map-sidebar-mode').textContent=t==='labels'?'🏷 Підписи областей':'📍 Точки меморіалів';
-  document.getElementById('map-hint').textContent=t==='labels'?'Перетягуйте назви областей — збережіть позицію':'Перетягуйте точки меморіалів — збережіть позицію';
+  document.getElementById('tool-cities').classList.toggle('active',t==='cities');
+  const modeMap={labels:'🏷 Підписи областей',dots:'📍 Точки меморіалів',cities:'🏙 Міста'};
+  const hintMap={labels:'Перетягуйте назви областей — збережіть позицію',dots:'Перетягуйте точки меморіалів — збережіть позицію',cities:'Перетягуйте міста щоб встановити координати'};
+  document.getElementById('map-sidebar-mode').textContent=modeMap[t]||'';
+  document.getElementById('map-hint').textContent=hintMap[t]||'';
   document.getElementById('no-sel-msg').style.display='';
   document.getElementById('label-props').style.display='none';
   document.getElementById('dot-props').style.display='none';
+  document.getElementById('city-props').style.display='none';
+  document.getElementById('unplaced-cities').style.display=t==='cities'?'':'none';
   lblSVG.style.pointerEvents=t==='labels'?'all':'none';
   dotSVG.style.pointerEvents=t==='dots'?'all':'none';
+  citySVG.style.pointerEvents=t==='cities'?'all':'none';
 }
 
 /* ── LABELS ── */
@@ -2968,8 +3229,9 @@ function renderLabels(){
     t.setAttribute('x',l.x);t.setAttribute('y',l.y);
     t.setAttribute('text-anchor','middle');
     t.setAttribute('data-id',l.id);
+    t.dataset.baseSize = l.size||145;
     t.style.fontFamily='Arial,sans-serif';
-    t.style.fontSize=(l.size||145)+'px';
+    t.setAttribute('font-size', l.size||145);
     t.style.fill=l.color||'rgba(160,195,220,0.65)';
     t.style.fontWeight='400';
     t.style.cursor='move';
@@ -3013,7 +3275,7 @@ function updateLabelFromProps(){
   const t=lblSVG.querySelector(`[data-id="${selLabel}"]`);
   if(t){
     t.setAttribute('x',l.x);t.setAttribute('y',l.y);
-    t.style.fontSize=l.size+'px';t.style.fill=l.color;
+    t.setAttribute('font-size', l.size);t.style.fill=l.color;
     if(nameVal) t.textContent=l.name;
   }
 }
@@ -3048,7 +3310,7 @@ function renderDots(){
     // Label
     const tx=document.createElementNS('http://www.w3.org/2000/svg','text');
     tx.setAttribute('x',px);tx.setAttribute('y',py-100);tx.setAttribute('text-anchor','middle');
-    tx.style.fill='#fff';tx.style.fontSize='90px';tx.style.fontFamily='Arial,sans-serif';tx.style.pointerEvents='none';
+    tx.style.fill='#fff';tx.setAttribute('font-size',90);tx.style.fontFamily='Arial,sans-serif';tx.style.pointerEvents='none';
     tx.textContent=p.last;
     g.appendChild(glow);g.appendChild(c);g.appendChild(tx);
     g.addEventListener('mousedown',ev=>startDotDrag(ev,p.id,g,px,py));
@@ -3059,8 +3321,9 @@ function renderDots(){
 
 function selectDot(id,el){
   selDot=id;selLabel=null;
-  document.querySelectorAll('.adm-dot circle:nth-child(2)').forEach(c=>c.style.strokeWidth='20');
-  const c=el.querySelector('circle:nth-child(2)');if(c)c.style.strokeWidth='40';
+  const sw=mtr.s||1;
+  document.querySelectorAll('.adm-dot circle:nth-child(2)').forEach(c=>c.style.strokeWidth=(20/sw).toFixed(1));
+  const c=el.querySelector('circle:nth-child(2)');if(c)c.style.strokeWidth=(40/sw).toFixed(1);
   const p=people.find(x=>x.id===id);if(!p)return;
   document.getElementById('no-sel-msg').style.display='none';
   document.getElementById('dot-props').style.display='';
@@ -3128,6 +3391,18 @@ window.addEventListener('mousemove',e=>{
     document.getElementById('dprop-y').value=ry.toFixed(4);
     return;
   }
+  if(cityDrag&&cityDragEl){
+    const p=screen2svg(e.clientX,e.clientY);
+    const nx=p.x-dragOffSVG.x, ny=p.y-dragOffSVG.y;
+    const rx=Math.max(0,Math.min(1,nx/14000)), ry=Math.max(0,Math.min(1,ny/9500));
+    const city=citiesAdmin.find(x=>x.id===cityDragId);if(city){city.pos_x=rx;city.pos_y=ry;}
+    const dot=cityDragEl.querySelector('circle');const txt=cityDragEl.querySelector('text');
+    if(dot){dot.setAttribute('cx',nx);dot.setAttribute('cy',ny);}
+    if(txt){txt.setAttribute('x',nx);txt.setAttribute('y',ny-110);}
+    document.getElementById('cprop-x').value=rx.toFixed(4);
+    document.getElementById('cprop-y').value=ry.toFixed(4);
+    return;
+  }
   if(mDrag){
     mtr.x=mTrS.x+(e.clientX-mDragS.x);
     mtr.y=mTrS.y+(e.clientY-mDragS.y);
@@ -3148,8 +3423,9 @@ window.addEventListener('mouseup', e => {
   if(dotDrag) {
     dotDrag = false;
     const autoCb = document.getElementById('autosave-dot-cb');
-    if(autoCb && autoCb.checked) saveSelectedDot(); // ← автосохранение
+    if(autoCb && autoCb.checked) saveSelectedDot();
   }
+  if(cityDrag) cityDrag = false;
   if(mDrag) { mDrag = false; mapWrap.classList.remove('grabbing'); }
 });
 
@@ -3163,19 +3439,127 @@ mapCont.addEventListener('wheel',e=>{
 async function saveSelected(){
   if(!selLabel)return;
   const l=labels.find(x=>x.id===selLabel);if(!l)return;
-  await fetch(`${API}/api/admin/label/${l.id}?email=${e(AE)}&password=${e(AP)}`,
-    {method:'PUT',headers:{'Content-Type':'application/json'},
-     body:JSON.stringify({id:l.id,name:l.name,x:l.x,y:l.y,color:l.color,size:l.size})});
-  showN('💾 Підпис збережено');
+  try{
+    const r=await fetch(`${API}/api/admin/label/${l.id}`,
+      {method:'PUT',headers:authH({'Content-Type':'application/json'}),
+       body:JSON.stringify({id:l.id,name:l.name,x:l.x,y:l.y,color:l.color,size:l.size})});
+    if(!r.ok)throw new Error(r.status);
+    showN('💾 Підпис збережено');
+  }catch{showN('❌ Помилка збереження підпису',true);}
 }
 
 async function saveSelectedDot(){
   if(!selDot)return;
   const p=people.find(x=>x.id===selDot);if(!p)return;
-  await fetch(`${API}/api/admin/memorial/${p.id}?email=${e(AE)}&password=${e(AP)}`,
-    {method:'PUT',headers:{'Content-Type':'application/json'},
-     body:JSON.stringify({pos_x:p.pos_x,pos_y:p.pos_y,color:p.color})});
-  showN('💾 Точку збережено');
+  try{
+    const r=await fetch(`${API}/api/admin/memorial/${p.id}`,
+      {method:'PUT',headers:authH({'Content-Type':'application/json'}),
+       body:JSON.stringify({pos_x:p.pos_x,pos_y:p.pos_y,color:p.color})});
+    if(!r.ok)throw new Error(r.status);
+    showN('💾 Точку збережено');
+  }catch{showN('❌ Помилка збереження точки',true);}
+}
+
+function saveAny(){
+  if(curTool==='labels') saveSelected();
+  else if(curTool==='dots') saveSelectedDot();
+  else if(curTool==='cities') saveSelectedCity();
+}
+
+/* ══════════ CITIES MAP ══════════ */
+let _unplacedAll = [];
+
+function renderCitiesAdmin(){
+  citySVG.innerHTML='';
+  const placed=citiesAdmin.filter(c=>c.pos_x>0);
+  placed.forEach(c=>{
+    const cx=c.pos_x*14000, cy=c.pos_y*9500;
+    const g=document.createElementNS('http://www.w3.org/2000/svg','g');
+    g.setAttribute('data-id',c.id);g.classList.add('adm-city');g.style.cursor='move';
+    const dot=document.createElementNS('http://www.w3.org/2000/svg','circle');
+    dot.setAttribute('cx',cx);dot.setAttribute('cy',cy);dot.setAttribute('r','80');
+    dot.style.fill='#a0d7ff';dot.style.stroke='rgba(0,30,80,0.7)';dot.style.strokeWidth='16';
+    const txt=document.createElementNS('http://www.w3.org/2000/svg','text');
+    txt.setAttribute('x',cx);txt.setAttribute('y',cy-100);txt.setAttribute('text-anchor','middle');
+    txt.style.fill='#e8f4ff';txt.setAttribute('font-size',75);txt.style.fontFamily='Arial,sans-serif';txt.style.pointerEvents='none';
+    txt.textContent=c.name;
+    g.appendChild(dot);g.appendChild(txt);
+    g.addEventListener('mousedown',ev=>startCityDrag(ev,c.id,g,cx,cy));
+    g.addEventListener('click',ev=>{ev.stopPropagation();selectCity(c.id,g);});
+    citySVG.appendChild(g);
+  });
+  _unplacedAll=citiesAdmin.filter(c=>!(c.pos_x>0));
+  filterUnplaced(document.getElementById('unplaced-search')?.value||'');
+}
+
+function filterUnplaced(q){
+  const list=document.getElementById('unplaced-list');if(!list)return;
+  const filtered=q?_unplacedAll.filter(c=>c.name.toLowerCase().includes(q.toLowerCase())):_unplacedAll;
+  list.innerHTML=filtered.slice(0,80).map(c=>
+    `<div onclick="placeCity(${c.id})" style="padding:4px 12px;cursor:pointer;font-size:12px;color:var(--text2);border-bottom:1px solid rgba(255,255,255,0.04)" onmouseover="this.style.background='rgba(0,200,255,.07)'" onmouseout="this.style.background=''">${h(c.name)}</div>`
+  ).join('')+(filtered.length>80?`<div style="padding:4px 12px;font-size:11px;color:var(--muted)">…ще ${filtered.length-80}</div>`:'');
+}
+
+function selectCity(id,el){
+  selCity=id;selLabel=null;selDot=null;
+  citySVG.querySelectorAll('.adm-city circle').forEach(c=>c.style.strokeWidth='16');
+  const dc=el.querySelector('circle');if(dc)dc.style.strokeWidth='36';
+  const c=citiesAdmin.find(x=>x.id===id);if(!c)return;
+  document.getElementById('no-sel-msg').style.display='none';
+  document.getElementById('city-props').style.display='';
+  document.getElementById('label-props').style.display='none';
+  document.getElementById('dot-props').style.display='none';
+  document.getElementById('cprop-name').value=c.name;
+  document.getElementById('cprop-x').value=(c.pos_x||0).toFixed(4);
+  document.getElementById('cprop-y').value=(c.pos_y||0).toFixed(4);
+  document.getElementById('cprop-tier').value=String(c.tier||0);
+}
+
+function updateCityFromProps(){
+  if(!selCity)return;
+  const c=citiesAdmin.find(x=>x.id===selCity);if(!c)return;
+  c.pos_x=parseFloat(document.getElementById('cprop-x').value)||0;
+  c.pos_y=parseFloat(document.getElementById('cprop-y').value)||0;
+  c.tier=parseInt(document.getElementById('cprop-tier').value)||0;
+  const g=citySVG.querySelector(`[data-id="${selCity}"]`);if(!g)return;
+  const nx=c.pos_x*14000,ny=c.pos_y*9500;
+  const dot=g.querySelector('circle');const txt=g.querySelector('text');
+  if(dot){dot.setAttribute('cx',nx);dot.setAttribute('cy',ny);}
+  if(txt){txt.setAttribute('x',nx);txt.setAttribute('y',ny-100);}
+}
+
+function startCityDrag(e,id,el,svgX,svgY){
+  if(curTool!=='cities')return;
+  e.stopPropagation();
+  selectCity(id,el);
+  cityDrag=true;cityDragEl=el;cityDragId=id;
+  const p=screen2svg(e.clientX,e.clientY);
+  dragOffSVG={x:p.x-svgX,y:p.y-svgY};
+}
+
+function placeCity(id){
+  const c=citiesAdmin.find(x=>x.id===id);if(!c)return;
+  const r=mapCont.getBoundingClientRect();
+  const center=screen2svg(r.left+r.width/2,r.top+r.height/2);
+  c.pos_x=Math.max(0.01,Math.min(0.99,center.x/14000));
+  c.pos_y=Math.max(0.01,Math.min(0.99,center.y/9500));
+  c.tier=c.tier||0;
+  renderCitiesAdmin();
+  const g=citySVG.querySelector(`[data-id="${id}"]`);
+  if(g)selectCity(id,g);
+}
+
+async function saveSelectedCity(){
+  if(!selCity)return;
+  const c=citiesAdmin.find(x=>x.id===selCity);if(!c)return;
+  try{
+    const r=await fetch(`${API}/api/admin/city/${c.id}`,
+      {method:'PUT',headers:authH({'Content-Type':'application/json'}),
+       body:JSON.stringify({pos_x:c.pos_x,pos_y:c.pos_y,tier:c.tier})});
+    if(!r.ok)throw new Error(r.status);
+    showN('💾 Місто збережено');
+    renderCitiesAdmin();
+  }catch{showN('❌ Помилка збереження міста',true);}
 }
 
 /* ══════════ EDIT MODAL ══════════ */
@@ -3200,12 +3584,29 @@ function openEditById(id){
   document.getElementById('edit-modal').classList.add('open');
 }
 function openEditModal(){if(selDot)openEditById(selDot);}
-function closeEdit(){document.getElementById('edit-modal').classList.remove('open');editId=null;}
+function openCreateModal(){
+  editId=null; editMode='create';
+  document.getElementById('em-title').textContent='Новий запис';
+  document.getElementById('e-last').value='';
+  document.getElementById('e-first').value='';
+  document.getElementById('e-mid').value='';
+  document.getElementById('e-color').value='#4fc3f7';
+  document.getElementById('e-birth').value='';
+  document.getElementById('e-death').value='';
+  document.getElementById('e-loc').value='';
+  document.getElementById('e-bury').value='';
+  document.getElementById('e-circ').value='Інше';
+  document.getElementById('e-approved').value='1';
+  document.getElementById('e-grp').value='';
+  document.getElementById('e-photo').value='';
+  document.getElementById('e-desc').value='';
+  document.getElementById('edit-modal').classList.add('open');
+}
+function closeEdit(){document.getElementById('edit-modal').classList.remove('open');editId=null;editMode='edit';}
 async function saveEdit(){
-  if(!editId)return;
   const body={
-    last:document.getElementById('e-last').value,
-    first:document.getElementById('e-first').value,
+    last:document.getElementById('e-last').value.trim(),
+    first:document.getElementById('e-first').value.trim(),
     mid:document.getElementById('e-mid').value,
     color:document.getElementById('e-color').value,
     birth:document.getElementById('e-birth').value||null,
@@ -3218,11 +3619,23 @@ async function saveEdit(){
     photo:document.getElementById('e-photo').value,
     descr:document.getElementById('e-desc').value,
   };
-  await fetch(`${API}/api/admin/memorial/${editId}?email=${e(AE)}&password=${e(AP)}`,
-    {method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-  showN('💾 Збережено'); closeEdit(); loadMem(); loadPend();
-  // refresh map dots if in mapeditor
-  const rp=await fetch(`${API}/api/people`);people=await rp.json();renderDots();
+  if(!body.last||!body.first){showN('❌ Вкажіть прізвище та імʼя',true);return;}
+  try{
+    let r;
+    if(editMode==='create'){
+      r=await fetch(`${API}/api/admin/memorial`,
+        {method:'POST',headers:authH({'Content-Type':'application/json'}),
+         body:JSON.stringify({...body,pos_x:0,pos_y:0,added_by:'admin'})});
+    } else {
+      if(!editId)return;
+      r=await fetch(`${API}/api/admin/memorial/${editId}`,
+        {method:'PUT',headers:authH({'Content-Type':'application/json'}),body:JSON.stringify(body)});
+    }
+    if(!r.ok)throw new Error(r.status);
+    showN(editMode==='create'?'✅ Запис додано':'💾 Збережено');
+    closeEdit(); loadMem(); loadPend();
+    const rp=await fetch(`${API}/api/people`);people=await rp.json();renderDots();
+  }catch{showN('❌ Помилка збереження',true);}
 }
 
 /* ══════════ COOKIE HELPERS (admin draft) ══════════ */
@@ -3311,6 +3724,8 @@ async function loadColors(){
   }
 
   renderColors(); updatePreview();
+  // Відновлюємо збережений порядок меню
+  applyNavOrder(COLORS['admin_nav_order']?.value || '');
 }
 // Ключі які є числами (не кольором), з діапазонами
 const RANGE_KEYS={
@@ -3343,13 +3758,12 @@ function renderColors(){
   const smokeKeys =['smoke_density','smoke_velocity','smoke_splat_radius','smoke_splat_force','smoke_curl','smoke_opacity','smoke_color_from','smoke_color_to'];
   const photoKeys =['map_photo_url','map_photo_opacity','map_photo_blend','map_photo_feather','map_photo_scale'];
   const seaKeys   =['sea_enabled',
-                    'sea_wave_color','sea_wave_count','sea_wave_intensity','sea_size_x','sea_size_y','sea_shore_impact','sea_blur',
+                    'sea_wave_color','sea_wave_count','sea_wave_intensity','sea_shore_impact','sea_blur',
                     'sea_wave_dir','sea_wave_speed',
                     'sea_glow_on','sea_glow_color','sea_glow_spread',
-                    'sea_svg_tx','sea_svg_ty','sea_svg_scale',
-                    'sea_black_cx','sea_black_cy','sea_black_rx','sea_black_ry',
-                    'sea_azov_cx','sea_azov_cy','sea_azov_rx','sea_azov_ry'];
+                    'sea_svg_tx','sea_svg_ty','sea_svg_scale','sea_svg_content'];
   const boolKeys  =['use_cookies'];
+  const iconKeys  =['icon_logo','icon_likes','icon_people'];
   // smokeBlock і photoBlock — тепер окремі секції (renderSmokeSection/renderPhotoSection)
 
   const zoomBlock=`
@@ -3361,43 +3775,147 @@ function renderColors(){
   </div>`;
 
 
-  const otherEntries=Object.entries(COLORS).filter(([k])=>
-    !glowKeys.includes(k)&&!zoomKeys.includes(k)&&!smokeKeys.includes(k)&&
-    !photoKeys.includes(k)&&!seaKeys.includes(k)&&!boolKeys.includes(k)&&k!=='admin_theme');
-  document.getElementById('colors-grid').innerHTML=glowBlock+zoomBlock+otherEntries.map(([k,info])=>renderColorRow(k,info)).join('');
+  const knownKeys = new Set([...glowKeys,...zoomKeys,...smokeKeys,...photoKeys,...seaKeys,...boolKeys,...iconKeys,'admin_theme','admin_nav_order']);
+
+  const grp = (keys) => keys.filter(k=>COLORS[k]).map(k=>renderColorRow(k,COLORS[k])).join('');
+
+  const mkBlock = (icon, title, color, keys) => {
+    const rows = grp(keys);
+    if (!rows) return '';
+    return `<div style="grid-column:1/-1;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:14px 16px;margin-bottom:4px">
+      <div style="font-size:11px;color:${color};font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px">${icon} ${title}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:10px">${rows}</div>
+    </div>`;
+  };
+
+  const bgBlock   = mkBlock('🎨','Фон та поверхні',   '#7dd3fc', ['bg','surface','map_bg','bar_bg','card_bg']);
+  const txtBlock  = mkBlock('📝','Текст та акценти',   '#a5b4fc', ['text_primary','text_secondary','accent','yellow','yellow2']);
+  const mapBlock  = mkBlock('🗺','Карта',              '#86efac', ['oblast_fill','oblast_stroke','neon_blue','neon_yellow','thread_color','label_opacity']);
+  const logoBlock = mkBlock('🔤','Логотип',            '#fcd34d', ['logo_star','logo_text','logo_accent']);
+  const uiBlock   = mkBlock('🔘','Кнопки',             '#f9a8d4', ['btn_add_bg','btn_add_text']);
+
+  // sea_* і icon_* — тільки у власних секціях, не тут
+  const extraEntries = Object.entries(COLORS).filter(([k])=>!knownKeys.has(k) && !k.startsWith('sea_') && !k.startsWith('icon_'));
+  const extraBlock = extraEntries.length
+    ? `<div style="grid-column:1/-1;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:14px 16px;margin-bottom:4px">
+        <div style="font-size:11px;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px">⚙️ Інші параметри</div>
+        <div style="display:flex;flex-wrap:wrap;gap:10px">${extraEntries.map(([k,info])=>renderColorRow(k,info)).join('')}</div>
+       </div>`
+    : '';
+
+  document.getElementById('colors-grid').innerHTML = glowBlock+zoomBlock+bgBlock+txtBlock+mapBlock+logoBlock+uiBlock+extraBlock;
   renderSmokeSection();
   renderPhotoSection();
   renderSeaSection();
+  renderIconsSection();
 }
 
 function renderSmokeSection(){
-  const smokeKeys=['smoke_density','smoke_velocity','smoke_splat_radius','smoke_splat_force','smoke_curl','smoke_opacity','smoke_color_from','smoke_color_to'];
-  const boolKeys=['use_cookies'];
-  const cookieOn=(COLORS['use_cookies']?.value??'1')==='1';
-  const grid=document.getElementById('smoke-grid');
-  if(!grid)return;
-  grid.innerHTML=`
-  <div style="background:rgba(100,200,255,.05);border:1px solid rgba(100,200,255,.18);border-radius:10px;padding:18px 20px;margin-bottom:12px">
-    <div style="font-size:11px;color:#4fc3f7;font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:16px">Параметри диму</div>
-    <div style="display:flex;flex-wrap:wrap;gap:10px">
-      ${smokeKeys.map(k=>COLORS[k]?renderColorRow(k,COLORS[k]):'').join('')}
-    </div>
-  </div>
-  <div style="background:rgba(0,200,255,.04);border:1px solid rgba(0,200,255,.15);border-radius:10px;padding:18px 20px">
-    <div style="font-size:11px;color:#00c8ff;font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:14px">Кукі налаштувань</div>
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
-      <div>
-        <div style="font-size:12px;color:var(--text);font-weight:500">Зберігати вибір користувача у браузері</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:3px">${COLORS['use_cookies']?.label||'Якщо увімкнено — дим запамʼятовується між сесіями'}</div>
+  const g = k => COLORS[k]?.value;
+  const smokeEnabled = (g('smoke_enabled') ?? '1') !== '0';
+  const density    = g('smoke_density')       || '0.995';
+  const velocity   = g('smoke_velocity')      || '0.98';
+  const splatR     = g('smoke_splat_radius')  || '0.22';
+  const splatF     = g('smoke_splat_force')   || '14000';
+  const curl       = g('smoke_curl')          || '35';
+  const opacity    = g('smoke_opacity')       || '0.85';
+  const colorFrom  = g('smoke_color_from')    || '#0057B7';
+  const colorTo    = g('smoke_color_to')      || '#00BFFF';
+  const cookieOn   = (g('use_cookies') ?? '1') === '1';
+
+  const grid = document.getElementById('smoke-grid');
+  if (!grid) return;
+
+  const sl = (id, min, max, step, val, key, lbl, sfx='') => `
+    <div>
+      <div style="font-size:11px;color:var(--text2);margin-bottom:6px">${lbl}</div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <input type="range" min="${min}" max="${max}" step="${step}" value="${val}"
+          style="width:130px;accent-color:#4fc3f7"
+          oninput="document.getElementById('${id}').textContent=parseFloat(this.value)${sfx?'':''};document.getElementById('${id}').textContent=this.value+'${sfx}';onClrChange('${key}',this.value);applySmokeSettings()">
+        <span id="${id}" style="font-size:12px;color:var(--text);min-width:48px">${val}${sfx}</span>
       </div>
-      <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
-        <span id="cookie-toggle-lbl" style="font-size:12px;color:${cookieOn?'#00c8ff':'var(--muted)'};transition:color .2s">${cookieOn?'Увімкнено':'Вимкнено'}</span>
-        <div id="cookie-toggle" onclick="adminToggleCookies()"
-          style="width:44px;height:24px;background:${cookieOn?'rgba(0,200,255,.25)':'rgba(255,255,255,.08)'};border:1px solid ${cookieOn?'rgba(0,200,255,.55)':'var(--border2)'};border-radius:12px;position:relative;cursor:pointer;transition:all .25s;${cookieOn?'box-shadow:0 0 10px rgba(0,200,255,.2)':''}">
-          <div style="position:absolute;top:3px;left:${cookieOn?'18':'3'}px;width:16px;height:16px;background:${cookieOn?'#00c8ff':'var(--muted)'};border-radius:50%;transition:left .25s,background .25s"></div>
+    </div>`;
+
+  grid.innerHTML = `
+  <div style="background:rgba(79,195,247,.06);border:1px solid rgba(79,195,247,.2);border-radius:10px;padding:20px 22px;display:flex;flex-direction:column;gap:22px">
+
+    <!-- ── Головний перемикач диму ── -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:14px;border-bottom:1px solid rgba(79,195,247,.15)">
+      <div>
+        <div style="font-size:13px;font-weight:700;color:${smokeEnabled?'#4fc3f7':'var(--muted)'}">Синій дим</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">WebGL-ефект рідини — реагує на курсор миші</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span id="smoke-enabled-lbl" style="font-size:12px;color:${smokeEnabled?'#4fc3f7':'var(--muted)'}">
+          ${smokeEnabled?'Увімкнено':'Вимкнено'}
+        </span>
+        <div id="smoke-enabled-tog" onclick="adminToggleSmoke()"
+          style="width:44px;height:24px;background:${smokeEnabled?'rgba(79,195,247,.25)':'rgba(255,255,255,.08)'};
+                 border:1px solid ${smokeEnabled?'rgba(79,195,247,.55)':'var(--border2)'};
+                 border-radius:12px;position:relative;cursor:pointer;transition:all .25s;
+                 ${smokeEnabled?'box-shadow:0 0 10px rgba(79,195,247,.2)':''}">
+          <div style="position:absolute;top:3px;left:${smokeEnabled?'18':'3'}px;width:16px;height:16px;
+                      background:${smokeEnabled?'#4fc3f7':'var(--muted)'};border-radius:50%;transition:all .25s"></div>
         </div>
       </div>
     </div>
+
+    <!-- ── Налаштування (затемнюються при вимкненому димі) ── -->
+    <div id="smoke-settings-body" style="${smokeEnabled?'':'opacity:.35;pointer-events:none'}">
+    <div style="display:flex;flex-direction:column;gap:22px">
+
+    <div style="font-size:11px;color:#4fc3f7;font-weight:700;text-transform:uppercase;letter-spacing:.07em">🎨 Колір диму</div>
+    <div style="display:flex;flex-wrap:wrap;gap:18px;align-items:flex-end">
+      <div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:6px">Колір «від»</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <input type="color" value="${colorFrom}"
+            style="width:38px;height:32px;border:1px solid var(--border2);border-radius:6px;background:none;cursor:pointer;padding:2px"
+            oninput="document.getElementById('smk-cfrom-hex').textContent=this.value;onClrChange('smoke_color_from',this.value);applySmokeSettings()">
+          <span id="smk-cfrom-hex" style="font-size:11px;color:var(--muted);font-family:monospace">${colorFrom}</span>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:6px">Колір «до»</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <input type="color" value="${colorTo}"
+            style="width:38px;height:32px;border:1px solid var(--border2);border-radius:6px;background:none;cursor:pointer;padding:2px"
+            oninput="document.getElementById('smk-cto-hex').textContent=this.value;onClrChange('smoke_color_to',this.value);applySmokeSettings()">
+          <span id="smk-cto-hex" style="font-size:11px;color:var(--muted);font-family:monospace">${colorTo}</span>
+        </div>
+      </div>
+      ${sl('smk-op-v', 0.1, 1.0, 0.05, opacity, 'smoke_opacity', 'Непрозорість canvas')}
+    </div>
+
+    <div style="font-size:11px;color:#4fc3f7;font-weight:700;text-transform:uppercase;letter-spacing:.07em">⚙️ Фізика симуляції</div>
+    <div style="display:flex;flex-wrap:wrap;gap:18px;align-items:flex-end">
+      ${sl('smk-den-v', 0.90, 1.0,   0.001, density,  'smoke_density',      'Розсіювання')}
+      ${sl('smk-vel-v', 0.80, 1.0,   0.01,  velocity, 'smoke_velocity',     'Загасання швидкості')}
+      ${sl('smk-rad-v', 0.05, 0.8,   0.01,  splatR,   'smoke_splat_radius', 'Радіус сплеска')}
+      ${sl('smk-frc-v', 1000, 20000, 500,   splatF,   'smoke_splat_force',  'Сила сплеска')}
+      ${sl('smk-crl-v', 0,    60,    1,     curl,     'smoke_curl',         'Завихрення')}
+    </div>
+
+    <!-- Cookie toggle -->
+    <div style="border-top:1px solid rgba(79,195,247,.12);padding-top:18px">
+      <div style="font-size:11px;color:#4fc3f7;font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:14px">🍪 Куки користувача</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+        <div>
+          <div style="font-size:12px;color:var(--text);font-weight:500">Зберігати вибір диму у браузері</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:3px">Якщо увімкнено — користувач може вимкнути дим і це запамʼятається</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
+          <span id="cookie-toggle-lbl" style="font-size:12px;color:${cookieOn?'#00c8ff':'var(--muted)'};transition:color .2s">${cookieOn?'Увімкнено':'Вимкнено'}</span>
+          <div id="cookie-toggle" onclick="adminToggleCookies()"
+            style="width:44px;height:24px;background:${cookieOn?'rgba(0,200,255,.25)':'rgba(255,255,255,.08)'};border:1px solid ${cookieOn?'rgba(0,200,255,.55)':'var(--border2)'};border-radius:12px;position:relative;cursor:pointer;transition:all .25s;${cookieOn?'box-shadow:0 0 10px rgba(0,200,255,.2)':''}">
+            <div style="position:absolute;top:3px;left:${cookieOn?'18':'3'}px;width:16px;height:16px;background:${cookieOn?'#00c8ff':'var(--muted)'};border-radius:50%;transition:left .25s,background .25s"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    </div></div><!-- /smoke-settings-body -->
   </div>`;
 }
 
@@ -3483,8 +4001,6 @@ function renderSeaSection(){
   const waveColor   = g('sea_wave_color')    || '#a0d7ff';
   const waveCount   = g('sea_wave_count')    || '3';
   const waveInt     = g('sea_wave_intensity')|| '42';
-  const sizeX       = g('sea_size_x')        || '100';
-  const sizeY       = g('sea_size_y')        || '100';
   const shoreImpact = g('sea_shore_impact')  || '50';
   const blur        = g('sea_blur')          || '0';
   const waveDir     = g('sea_wave_dir')      || '45';
@@ -3496,14 +4012,6 @@ function renderSeaSection(){
   const svgTy       = g('sea_svg_ty')        || '0';
   const svgScale    = g('sea_svg_scale')     || '1';
   const hasSvg      = !!(COLORS['sea_svg_content']?.value);
-  const blackCx     = g('sea_black_cx')      || '6050';
-  const blackCy     = g('sea_black_cy')      || '8450';
-  const blackRx     = g('sea_black_rx')      || '4950';
-  const blackRy     = g('sea_black_ry')      || '1050';
-  const azovCx      = g('sea_azov_cx')       || '11350';
-  const azovCy      = g('sea_azov_cy')       || '7725';
-  const azovRx      = g('sea_azov_rx')       || '2050';
-  const azovRy      = g('sea_azov_ry')       || '1225';
 
   const grid = document.getElementById('sea-grid');
   if (!grid) return;
@@ -3563,7 +4071,7 @@ function renderSeaSection(){
       <div style="flex:1;min-width:260px">
         <div style="font-size:11px;color:var(--text2);margin-bottom:8px">
           Завантажте SVG-файл з контурами Чорного та Азовського морів.<br>
-          Файл замінить стандартні еліпси. Макс. 500 КБ.
+          Макс. 500 КБ.
         </div>
         <label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;
                background:rgba(56,189,248,.12);border:1px solid rgba(56,189,248,.35);
@@ -3577,11 +4085,11 @@ function renderSeaSection(){
         <div id="sea-svg-status" style="margin-top:8px;font-size:11px;color:var(--text2)">
           ${hasSvg
             ? '<span style="color:#4ade80">✓ SVG завантажено</span>'
-            : '<span style="color:var(--muted)">Файл не завантажено — використовуються еліпси</span>'}
+            : '<span style="color:var(--muted)">Файл не завантажено — море не відображається</span>'}
         </div>
         ${hasSvg ? `<button onclick="deleteSeaSvg()" style="margin-top:8px;background:rgba(192,64,64,.15);
           border:1px solid rgba(192,64,64,.4);border-radius:6px;color:#f87171;font-size:11px;
-          padding:5px 12px;cursor:pointer">🗑 Видалити SVG → повернути еліпси</button>` : ''}
+          padding:5px 12px;cursor:pointer">🗑 Видалити SVG</button>` : ''}
       </div>
 
       <div id="sea-svg-transform" style="${hasSvg ? '' : 'opacity:.4;pointer-events:none'}">
@@ -3648,27 +4156,16 @@ function renderSeaSection(){
       ${sl('sea-gs-v', 0, 80, 2, glowSpread, 'sea_glow_spread', 'Розмах px', 'px')}
     </div>
 
-    <div style="font-size:11px;color:#38bdf8;font-weight:700;text-transform:uppercase;letter-spacing:.07em">📐 Масштаб зон</div>
-    <div style="display:flex;flex-wrap:wrap;gap:18px;align-items:flex-end">
-      ${sl('sea-sx-v', 50, 200, 5, sizeX, 'sea_size_x', 'Ширина % (обидва моря)', '%')}
-      ${sl('sea-sy-v', 50, 200, 5, sizeY, 'sea_size_y', 'Висота % (обидва моря)', '%')}
-    </div>
-
-    <div style="font-size:11px;color:#38bdf8;font-weight:700;text-transform:uppercase;letter-spacing:.07em">🗺 Чорне море — координати (SVG 0…14000 × 0…9500)</div>
-    <div style="display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end">
-      ${nm('',4000,8500, 10, blackCx, 'sea_black_cx', 'Центр X')}
-      ${nm('',6500,9500, 10, blackCy, 'sea_black_cy', 'Центр Y')}
-      ${nm('',2000,7000, 50, blackRx, 'sea_black_rx', 'Радіус X (ширина)')}
-      ${nm('', 300,2500, 50, blackRy, 'sea_black_ry', 'Радіус Y (висота)')}
-    </div>
-
-    <div style="font-size:11px;color:#38bdf8;font-weight:700;text-transform:uppercase;letter-spacing:.07em">🗺 Азовське море — координати</div>
-    <div style="display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end">
-      ${nm('',9000,13500, 10, azovCx, 'sea_azov_cx', 'Центр X')}
-      ${nm('',5500, 9000, 10, azovCy, 'sea_azov_cy', 'Центр Y')}
-      ${nm('', 500, 3500, 50, azovRx, 'sea_azov_rx', 'Радіус X (ширина)')}
-      ${nm('', 300, 2000, 50, azovRy, 'sea_azov_ry', 'Радіус Y (висота)')}
-    </div>
+    ${(()=>{
+      const knownSea = new Set(['sea_enabled','sea_wave_color','sea_wave_count','sea_wave_intensity',
+        'sea_shore_impact','sea_blur','sea_wave_dir','sea_wave_speed',
+        'sea_glow_on','sea_glow_color','sea_glow_spread',
+        'sea_svg_tx','sea_svg_ty','sea_svg_scale','sea_svg_content']);
+      const extra = Object.entries(COLORS).filter(([k])=>k.startsWith('sea_')&&!knownSea.has(k));
+      if (!extra.length) return '';
+      return `<div style="font-size:11px;color:#38bdf8;font-weight:700;text-transform:uppercase;letter-spacing:.07em">⚙️ Додаткові</div>
+        <div style="display:flex;flex-wrap:wrap;gap:10px">${extra.map(([k,info])=>renderColorRow(k,info)).join('')}</div>`;
+    })()}
 
     </div></div><!-- /sea-settings-body -->
   </div>`;
@@ -3684,8 +4181,8 @@ async function uploadSeaSvg(input) {
   try {
     const fd = new FormData();
     fd.append('file', file);
-    const r = await fetch(`${API}/api/admin/sea-svg?email=${e(AE)}&password=${e(AP)}`,
-      { method:'POST', body: fd });
+    const r = await fetch(`${API}/api/admin/sea-svg`,
+      { method:'POST', headers: authH(), body: fd });
     if (!r.ok) { const err = await r.json(); throw new Error(err.detail||r.status); }
     const data = await r.json();
     if (status) status.innerHTML = `<span style="color:#4ade80">✓ ${file.name} (${Math.round(data.bytes/1024)} КБ)</span>`;
@@ -3701,15 +4198,109 @@ async function uploadSeaSvg(input) {
   }
 }
 
-/* Видаляє кастомний SVG, повертає еліпси */
 async function deleteSeaSvg() {
   try {
-    await fetch(`${API}/api/admin/sea-svg?email=${e(AE)}&password=${e(AP)}`, { method:'DELETE' });
+    await fetch(`${API}/api/admin/sea-svg`, { method:'DELETE', headers: authH() });
     delete COLORS['sea_svg_content'];
-    showN('🗑 SVG видалено — активні дефолтні еліпси');
+    showN('🗑 SVG видалено — море не відображається');
     try { const bc=new BroadcastChannel('zoryana_sea'); bc.postMessage({type:'sea_reload'}); bc.close(); } catch(_){}
     renderSeaSection();
   } catch(err) { showN('❌ ' + err.message); }
+}
+
+/* ══════════ ICONS SECTION ══════════ */
+function renderIconsSection() {
+  const g = k => pendColors[k] ?? COLORS[k]?.value;
+  const logoIcon   = g('icon_logo')   || '★';
+  const likesIcon  = g('icon_likes')  || '⭐';
+  const peopleIcon = g('icon_people') || '👥';
+
+  const logoSet   = ['★','✦','✧','⭐','🌟','🕯','✝','☦','💙','💛','🌻','🇺🇦','⚡','🦅'];
+  const likesSet  = ['⭐','★','🌟','💙','💛','❤️','🕯','✝','☦','🌻','💫','✨','🔥','🏵'];
+  const peopleSet = ['👥','👤','💙','❤️','🫂','💛','🧑','🤝','👫'];
+
+  const grid = document.getElementById('icons-grid');
+  if (!grid) return;
+
+  const makeRow = (title, desc, key, current, set) => `
+    <div style="padding:18px 20px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px">
+      <div style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.07em;margin-bottom:3px">${title}</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:12px">${desc} — зараз: <span style="font-size:18px;vertical-align:middle">${current}</span></div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px">
+        ${set.map(ico => `<div class="ico-opt" data-key="${key}" data-ico="${ico}"
+          style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;font-size:24px;
+                 border-radius:10px;cursor:pointer;transition:all .15s;user-select:none;
+                 border:2px solid ${ico===current?'var(--accent)':'var(--border)'};
+                 background:${ico===current?'rgba(0,200,255,.12)':'rgba(255,255,255,.03)'}">${ico}</div>`).join('')}
+      </div>
+    </div>`;
+
+  grid.innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:14px;max-width:720px">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:4px">Натисніть на іконку — зміни застосуються одразу і збережуться при натисканні «Зберегти».</div>
+      ${makeRow('Іконка логотипу','Символ у назві сайту «Зоряна Памʼять»','icon_logo',logoIcon,logoSet)}
+      ${makeRow('Іконка «Зірок»','Символ поряд з лічильником зірок у шапці','icon_likes',likesIcon,likesSet)}
+      ${makeRow('Іконка «Людей»','Символ поряд з лічильником записів у шапці','icon_people',peopleIcon,peopleSet)}
+    </div>`;
+
+  grid.querySelectorAll('.ico-opt').forEach(el => {
+    el.addEventListener('click', () => {
+      const key = el.dataset.key;
+      const ico = el.dataset.ico;
+      onClrChange(key, ico);
+      try {
+        const bc = new BroadcastChannel('zoryana_colors');
+        bc.postMessage({ type: 'colors_update', colors: { [key]: ico } });
+        bc.close();
+      } catch(_) {}
+      renderIconsSection();
+    });
+  });
+}
+
+/* Передає поточні smoke-налаштування на index.html через BroadcastChannel */
+function applySmokeSettings() {
+  const keys = ['smoke_enabled','smoke_density','smoke_velocity','smoke_splat_radius',
+                 'smoke_splat_force','smoke_curl','smoke_opacity','smoke_color_from','smoke_color_to'];
+  const colors = {};
+  keys.forEach(k => { colors[k] = pendColors[k] ?? COLORS[k]?.value ?? ''; });
+  try {
+    const bc = new BroadcastChannel('zoryana_colors');
+    bc.postMessage({ type: 'colors_update', colors });
+    bc.close();
+  } catch(_) {}
+}
+
+async function adminToggleSmoke() {
+  const cur = pendColors['smoke_enabled'] ?? COLORS['smoke_enabled']?.value ?? '1';
+  const next = cur === '0' ? '1' : '0';
+
+  const tog  = document.getElementById('smoke-enabled-tog');
+  const lbl  = document.getElementById('smoke-enabled-lbl');
+  const body = document.getElementById('smoke-settings-body');
+  const on   = next === '1';
+  if (tog) {
+    tog.style.background  = on ? 'rgba(79,195,247,.25)' : 'rgba(255,255,255,.08)';
+    tog.style.border      = `1px solid ${on ? 'rgba(79,195,247,.55)' : 'var(--border2)'}`;
+    tog.style.boxShadow   = on ? '0 0 10px rgba(79,195,247,.2)' : '';
+    tog.querySelector('div').style.left       = on ? '18px' : '3px';
+    tog.querySelector('div').style.background = on ? '#4fc3f7' : 'var(--muted)';
+  }
+  if (lbl)  { lbl.textContent = on ? 'Увімкнено' : 'Вимкнено'; lbl.style.color = on ? '#4fc3f7' : 'var(--muted)'; }
+  if (body) { body.style.opacity = on ? '' : '.35'; body.style.pointerEvents = on ? '' : 'none'; }
+
+  try {
+    await fetch(`${API}/api/admin/colors/batch`, {
+      method: 'PUT',
+      headers: authH({'Content-Type':'application/json'}),
+      body: JSON.stringify([{key:'smoke_enabled', value:next}])
+    });
+    if (!COLORS['smoke_enabled']) COLORS['smoke_enabled'] = {value: next, label: 'Дим — показувати на сайті'};
+    else COLORS['smoke_enabled'].value = next;
+    delete pendColors['smoke_enabled'];
+  } catch(_) {}
+
+  applySmokeSettings();
 }
 
 /* Передає поточні sea-налаштування на головну сторінку через BroadcastChannel */
@@ -3717,12 +4308,11 @@ function applySeaSettings() {
   /* Збираємо актуальні значення: база з COLORS + поточні зміни з pendColors */
   const seaAllKeys = ['sea_enabled',
     'sea_wave_color','sea_wave_count','sea_wave_intensity',
-    'sea_size_x','sea_size_y','sea_shore_impact','sea_blur',
+    'sea_shore_impact','sea_blur',
     'sea_wave_dir','sea_wave_speed',
     'sea_glow_on','sea_glow_color','sea_glow_spread',
     'sea_svg_tx','sea_svg_ty','sea_svg_scale',
-    'sea_black_cx','sea_black_cy','sea_black_rx','sea_black_ry',
-    'sea_azov_cx','sea_azov_cy','sea_azov_rx','sea_azov_ry'];
+    'sea_svg_content'];
   const config = {};
   seaAllKeys.forEach(k => {
     config[k] = pendColors[k] ?? COLORS[k]?.value ?? '';
@@ -3755,9 +4345,9 @@ async function adminToggleSea() {
 
   // Зберігаємо в БД одразу (не чекаємо кнопки "Зберегти")
   try {
-    await fetch(`${API}/api/admin/colors/batch?email=${e(AE)}&password=${e(AP)}`, {
+    await fetch(`${API}/api/admin/colors/batch`, {
       method: 'PUT',
-      headers: {'Content-Type':'application/json'},
+      headers: authH({'Content-Type':'application/json'}),
       body: JSON.stringify([{key:'sea_enabled', value:next}])
     });
     if (!COLORS['sea_enabled']) COLORS['sea_enabled'] = {value: next, label: 'Море — показувати на карті'};
@@ -3793,7 +4383,7 @@ function renderColorRow(k,info){
     </div>`;
   }
   return `<div class="cr">
-    <div class="cprev" id="cp-${k}" style="background:${val}" onclick="document.getElementById('cclr-${k}').click()"></div>
+    <div class="cprev" id="cp-${k}" style="background:${val}" ${isHex?`onclick="document.getElementById('cclr-${k}').click()"`:''} ></div>
     <div class="cinfo">
       <div class="ckey">${k}</div>
       <div class="clbl">${info.label}</div>
@@ -3823,18 +4413,25 @@ async function _autoSaveToDb() {
   const batch = Object.entries(pendColors).map(([k,v])=>({key:k,value:v}));
   if (!batch.length || !AE || !AP) return;
   try {
-    await fetch(`${API}/api/admin/colors/batch?email=${e(AE)}&password=${e(AP)}`, {
-      method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(batch)
+    await fetch(`${API}/api/admin/colors/batch`, {
+      method:'PUT', headers:authH({'Content-Type':'application/json'}), body:JSON.stringify(batch)
     });
-    // Оновлюємо COLORS локально (не перемальовуємо щоб не зламати UI)
     batch.forEach(({key, value}) => { if(COLORS[key]) COLORS[key].value = value; });
     pendColors = {};
-    // Оновлюємо куку з вже збереженими даними
     _saveDraftCookie();
     showN('💾 Автозбережено');
-  } catch(err) {
-    console.warn('Автозбереження не вдалось:', err);
-  }
+    _broadcastColors(batch);
+  } catch{ }
+}
+
+function _broadcastColors(batch) {
+  try {
+    const changed = {};
+    batch.forEach(({key, value}) => { changed[key] = value; });
+    const bc = new BroadcastChannel('zoryana_colors');
+    bc.postMessage({ type: 'colors_update', colors: changed });
+    bc.close();
+  } catch(_) {}
 }
 function gc(k){return pendColors[k]||COLORS[k]?.value||'';}
 function updatePreview(){
@@ -3888,12 +4485,12 @@ async function toggleAdminTheme() {
   _saveDraftCookie();
   // Зберігаємо в БД
   try {
-    await fetch(`${API}/api/admin/colors/batch?email=${e(AE)}&password=${e(AP)}`, {
+    await fetch(`${API}/api/admin/colors/batch`, {
       method: 'PUT',
-      headers: {'Content-Type': 'application/json'},
+      headers: authH({'Content-Type': 'application/json'}),
       body: JSON.stringify([{key: 'admin_theme', value: next}])
     });
-  } catch(err) { console.warn('Не вдалось зберегти тему:', err); }
+  } catch{ }
 }
 
 // Після завантаження — встановлюємо ширину пропорційно масштабу
@@ -3949,15 +4546,18 @@ function adminPhotoPreview() {
 async function saveAllColors(){
   const batch=Object.entries(pendColors).map(([k,v])=>({key:k,value:v}));
   if(!batch.length){ showN('Немає змін'); return; }
-  await fetch(`${API}/api/admin/colors/batch?email=${e(AE)}&password=${e(AP)}`,
-    {method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(batch)});
-  showN('💾 Збережено в БД!');
-  pendColors = {};
-  // Прибираємо баннер чорновика і оновлюємо куку
-  const bar = document.getElementById('draft-banner');
-  if (bar) bar.remove();
-  await loadColors();
-  _saveDraftCookie(); // оновлюємо куку вже з актуальними даними БД
+  try{
+    const r=await fetch(`${API}/api/admin/colors/batch`,
+      {method:'PUT',headers:authH({'Content-Type':'application/json'}),body:JSON.stringify(batch)});
+    if(!r.ok)throw new Error(r.status);
+    showN('💾 Збережено в БД!');
+    _broadcastColors(batch);
+    pendColors = {};
+    const bar = document.getElementById('draft-banner');
+    if (bar) bar.remove();
+    await loadColors();
+    _saveDraftCookie();
+  }catch{showN('❌ Помилка збереження кольорів',true);}
 }
 
 /* ══════════ HELPERS ══════════ */
@@ -3977,7 +4577,8 @@ function showN(msg,err=false){
 // WS
 function connectWS(){
   try{
-    const ws=new WebSocket('ws://127.0.0.1:8000/ws/online');
+    const wsUrl=(window.API||'http://127.0.0.1:8000').replace(/^http/,'ws');
+    const ws=new WebSocket(`${wsUrl}/ws/online`);
     ws.onmessage=e=>{try{const d=JSON.parse(e.data);if(d.online!==undefined){document.getElementById('adm-online').textContent=d.online;document.getElementById('tb-online').textContent=d.online;}}catch{}};
     ws.onclose=()=>setTimeout(connectWS,3000);ws.onerror=()=>ws.close();
     setInterval(()=>{if(ws.readyState===1)ws.send('ping');},25000);
@@ -3998,6 +4599,487 @@ document.querySelectorAll('.nav-item').forEach(el=>{
   el.addEventListener('click',()=>{ if(window.innerWidth<=768) closeSidebar(); });
 });
 
+/* ══════════ МІСТА УКРАЇНИ ══════════ */
+const CITIES = [
+  [1,'Авдіївка','Донецька'],
+  [2,'Алмазна','Луганська'],
+  [3,'Алупка','АРК'],
+  [4,'Алушта','АРК'],
+  [5,'Алчевськ','Луганська'],
+  [6,'Амвросіївка','Донецька'],
+  [7,'Ананьїв','Одеська'],
+  [8,'Андрушівка','Житомирська'],
+  [9,'Антрацит','Луганська'],
+  [10,'Апостолове','Дніпропетровська'],
+  [11,'Армянськ','АРК'],
+  [12,'Арциз','Одеська'],
+  [13,'Багачеве','Черкаська'],
+  [14,'Балаклія','Харківська'],
+  [15,'Балта','Одеська'],
+  [16,'Бар','Вінницька'],
+  [17,'Баранівка','Житомирська'],
+  [18,'Барвінкове','Харківська'],
+  [19,'Батурин','Чернігівська'],
+  [20,'Бахмач','Чернігівська'],
+  [21,'Бахмут','Донецька'],
+  [22,'Бахчисарай','АРК'],
+  [23,'Баштанка','Миколаївська'],
+  [24,'Белз','Львівська'],
+  [25,'Бердичів','Житомирська'],
+  [26,'Бердянськ','Запорізька'],
+  [27,'Берегове','Закарпатська'],
+  [28,'Бережани','Тернопільська'],
+  [29,'Березань','Київська'],
+  [30,'Березівка','Одеська'],
+  [31,'Березне','Рівненська'],
+  [32,'Берестечко','Волинська'],
+  [33,'Берестин','Харківська'],
+  [34,'Берислав','Херсонська'],
+  [35,'Бершадь','Вінницька'],
+  [36,'Бібрка','Львівська'],
+  [37,'Біла Церква','Київська'],
+  [38,'Білгород-Дністровський','Одеська'],
+  [39,'Білицьке','Донецька'],
+  [40,'Білогірськ','АРК'],
+  [41,'Білозерське','Донецька'],
+  [42,'Білопілля','Сумська'],
+  [43,'Біляївка','Одеська'],
+  [44,'Благовіщенське','Кіровоградська'],
+  [45,'Бобринець','Кіровоградська'],
+  [46,'Бобровиця','Чернігівська'],
+  [47,'Богодухів','Харківська'],
+  [48,'Богуслав','Київська'],
+  [49,'Боково-Хрустальне','Луганська'],
+  [50,'Болград','Одеська'],
+  [51,'Болехів','Івано-Франківська'],
+  [52,'Борзна','Чернігівська'],
+  [53,'Борислав','Львівська'],
+  [54,'Бориспіль','Київська'],
+  [55,'Борщів','Тернопільська'],
+  [56,'Боярка','Київська'],
+  [57,'Бровари','Київська'],
+  [58,'Броди','Львівська'],
+  [59,'Брянка','Луганська'],
+  [60,'Бунге','Донецька'],
+  [61,'Буринь','Сумська'],
+  [62,'Бурштин','Івано-Франківська'],
+  [63,'Буськ','Львівська'],
+  [64,'Буча','Київська'],
+  [65,'Бучач','Тернопільська'],
+  [66,'Валки','Харківська'],
+  [67,'Вараш','Рівненська'],
+  [68,'Василівка','Запорізька'],
+  [69,'Васильків','Київська'],
+  [70,'Вашківці','Чернівецька'],
+  [71,'Великі Мости','Львівська'],
+  [72,'Верхівцеве','Дніпропетровська'],
+  [73,'Верхньодніпровськ','Дніпропетровська'],
+  [74,'Вижниця','Чернівецька'],
+  [75,'Вилкове','Одеська'],
+  [76,'Винники','Львівська'],
+  [77,'Виноградів','Закарпатська'],
+  [78,'Вишгород','Київська'],
+  [79,'Вишневе','Київська'],
+  [80,'Вільногірськ','Дніпропетровська'],
+  [81,'Вільнянськ','Запорізька'],
+  [82,'Вінниця','Вінницька'],
+  [83,'Вовчанськ','Харківська'],
+  [84,'Вознесенівка','Луганська'],
+  [85,'Вознесенськ','Миколаївська'],
+  [86,'Волноваха','Донецька'],
+  [87,'Володимир','Волинська'],
+  [88,'Волочиськ','Хмельницька'],
+  [89,'Ворожба','Сумська'],
+  [90,'Вуглегірськ','Донецька'],
+  [91,'Вугледар','Донецька'],
+  [92,'Гадяч','Полтавська'],
+  [93,'Гайворон','Кіровоградська'],
+  [94,'Гайсин','Вінницька'],
+  [95,'Галич','Івано-Франківська'],
+  [96,'Генічеськ','Херсонська'],
+  [97,'Герца','Чернівецька'],
+  [98,'Гірник','Донецька'],
+  [99,'Гірське','Луганська'],
+  [100,'Глиняни','Львівська'],
+  [101,'Глобине','Полтавська'],
+  [102,'Глухів','Сумська'],
+  [103,'Гнівань','Вінницька'],
+  [104,'Гола Пристань','Херсонська'],
+  [105,'Голубівка','Луганська'],
+  [106,'Горішні Плавні','Полтавська'],
+  [107,'Горлівка','Донецька'],
+  [108,'Городенка','Івано-Франківська'],
+  [109,'Городище','Черкаська'],
+  [110,'Городня','Чернігівська'],
+  [111,'Городок','Львівська'],
+  [112,'Городок','Хмельницька'],
+  [113,'Горохів','Волинська'],
+  [114,'Гребінка','Полтавська'],
+  [115,'Гуляйполе','Запорізька'],
+  [116,'Дебальцеве','Донецька'],
+  [117,'Деражня','Хмельницька'],
+  [118,'Дергачі','Харківська'],
+  [119,'Джанкой','АРК'],
+  [120,'Дніпро','Дніпропетровська'],
+  [121,'Дніпрорудне','Запорізька'],
+  [122,'Добромиль','Львівська'],
+  [123,'Добропілля','Донецька'],
+  [124,'Довжанськ','Луганська'],
+  [125,'Докучаєвськ','Донецька'],
+  [126,'Долина','Івано-Франківська'],
+  [127,'Долинська','Кіровоградська'],
+  [128,'Донецьк','Донецька'],
+  [129,'Дрогобич','Львівська'],
+  [130,'Дружківка','Донецька'],
+  [131,'Дубляни','Львівська'],
+  [132,'Дубно','Рівненська'],
+  [133,'Дубровиця','Рівненська'],
+  [134,'Дунаївці','Хмельницька'],
+  [135,'Енергодар','Запорізька'],
+  [136,'Євпаторія','АРК'],
+  [137,'Єнакієве','Донецька'],
+  [138,'Жашків','Черкаська'],
+  [139,'Жданівка','Донецька'],
+  [140,'Жидачів','Львівська'],
+  [141,'Житомир','Житомирська'],
+  [142,'Жмеринка','Вінницька'],
+  [143,'Жовква','Львівська'],
+  [144,'Жовті Води','Дніпропетровська'],
+  [145,'Заводське','Полтавська'],
+  [146,'Залізне','Донецька'],
+  [147,'Заліщики','Тернопільська'],
+  [148,'Запоріжжя','Запорізька'],
+  [149,'Заставна','Чернівецька'],
+  [150,'Збараж','Тернопільська'],
+  [151,'Зборів','Тернопільська'],
+  [152,'Звенигородка','Черкаська'],
+  [153,'Звягель','Житомирська'],
+  [154,'Здолбунів','Рівненська'],
+  [155,'Зеленодольськ','Дніпропетровська'],
+  [156,'Зимогір\'я','Луганська'],
+  [157,'Зіньків','Полтавська'],
+  [158,'Златопіль','Харківська'],
+  [159,'Зміїв','Харківська'],
+  [160,'Знам\'янка','Кіровоградська'],
+  [161,'Золоте','Луганська'],
+  [162,'Золотоноша','Черкаська'],
+  [163,'Золочів','Львівська'],
+  [164,'Зоринськ','Луганська'],
+  [165,'Зугрес','Донецька'],
+  [166,'Івано-Франківськ','Івано-Франківська'],
+  [167,'Ізмаїл','Одеська'],
+  [168,'Ізюм','Харківська'],
+  [169,'Ізяслав','Хмельницька'],
+  [170,'Іллінці','Вінницька'],
+  [171,'Іловайськ','Донецька'],
+  [172,'Інкерман','АРК'],
+  [173,'Ірміно','Луганська'],
+  [174,'Ірпінь','Київська'],
+  [175,'Іршава','Закарпатська'],
+  [176,'Ічня','Чернігівська'],
+  [177,'Кагарлик','Київська'],
+  [178,'Кадіївка','Луганська'],
+  [179,'Калинівка','Вінницька'],
+  [180,'Калуш','Івано-Франківська'],
+  [181,'Кальміуське','Донецька'],
+  [182,'Камінь-Каширський','Волинська'],
+  [183,'Кам\'янець-Подільський','Хмельницька'],
+  [184,'Кам\'янка','Черкаська'],
+  [185,'Кам\'янка-Бузька','Львівська'],
+  [186,'Кам\'янка-Дніпровська','Запорізька'],
+  [187,'Кам\'янське','Дніпропетровська'],
+  [188,'Канів','Черкаська'],
+  [189,'Карлівка','Полтавська'],
+  [190,'Каховка','Херсонська'],
+  [191,'Керч','АРК'],
+  [192,'Київ','Київ (місто)'],
+  [193,'Кипуче','Луганська'],
+  [194,'Ківерці','Волинська'],
+  [195,'Кілія','Одеська'],
+  [196,'Кіцмань','Чернівецька'],
+  [197,'Кобеляки','Полтавська'],
+  [198,'Ковель','Волинська'],
+  [199,'Кодима','Одеська'],
+  [200,'Козятин','Вінницька'],
+  [201,'Коломия','Івано-Франківська'],
+  [202,'Комарно','Львівська'],
+  [203,'Конотоп','Сумська'],
+  [204,'Копичинці','Тернопільська'],
+  [205,'Корець','Рівненська'],
+  [206,'Коростень','Житомирська'],
+  [207,'Коростишів','Житомирська'],
+  [208,'Корсунь-Шевченківський','Черкаська'],
+  [209,'Корюківка','Чернігівська'],
+  [210,'Косів','Івано-Франківська'],
+  [211,'Костопіль','Рівненська'],
+  [212,'Костянтинівка','Донецька'],
+  [213,'Краматорськ','Донецька'],
+  [214,'Красилів','Хмельницька'],
+  [215,'Красногорівка','Донецька'],
+  [216,'Кременець','Тернопільська'],
+  [217,'Кременчук','Полтавська'],
+  [218,'Кремінна','Луганська'],
+  [219,'Кривий Ріг','Дніпропетровська'],
+  [220,'Кролевець','Сумська'],
+  [221,'Кропивницький','Кіровоградська'],
+  [222,'Куп\'янськ','Харківська'],
+  [223,'Курахове','Донецька'],
+  [224,'Ладижин','Вінницька'],
+  [225,'Ланівці','Тернопільська'],
+  [226,'Лебедин','Сумська'],
+  [227,'Лиман','Донецька'],
+  [228,'Липовець','Вінницька'],
+  [229,'Лисичанськ','Луганська'],
+  [230,'Лозова','Харківська'],
+  [231,'Лохвиця','Полтавська'],
+  [232,'Лубни','Полтавська'],
+  [233,'Луганськ','Луганська'],
+  [234,'Лутугине','Луганська'],
+  [235,'Луцьк','Волинська'],
+  [236,'Львів','Львівська'],
+  [237,'Любомль','Волинська'],
+  [238,'Люботин','Харківська'],
+  [239,'Макіївка','Донецька'],
+  [240,'Мала Виска','Кіровоградська'],
+  [241,'Малин','Житомирська'],
+  [242,'Марганець','Дніпропетровська'],
+  [243,'Маріуполь','Донецька'],
+  [244,'Мар\'їнка','Донецька'],
+  [245,'Мелітополь','Запорізька'],
+  [246,'Мена','Чернігівська'],
+  [247,'Мерефа','Харківська'],
+  [248,'Миколаїв','Львівська'],
+  [249,'Миколаїв','Миколаївська'],
+  [250,'Миколаївка','Донецька'],
+  [251,'Миргород','Полтавська'],
+  [252,'Мирноград','Донецька'],
+  [253,'Миронівка','Київська'],
+  [254,'Міусинськ','Луганська'],
+  [255,'Могилів-Подільський','Вінницька'],
+  [256,'Молочанськ','Запорізька'],
+  [257,'Монастириська','Тернопільська'],
+  [258,'Монастирище','Черкаська'],
+  [259,'Моршин','Львівська'],
+  [260,'Моспине','Донецька'],
+  [261,'Мостиська','Львівська'],
+  [262,'Мукачево','Закарпатська'],
+  [263,'Надвірна','Івано-Франківська'],
+  [264,'Немирів','Вінницька'],
+  [265,'Нетішин','Хмельницька'],
+  [266,'Ніжин','Чернігівська'],
+  [267,'Нікополь','Дніпропетровська'],
+  [268,'Нова Каховка','Херсонська'],
+  [269,'Нова Одеса','Миколаївська'],
+  [270,'Новгород-Сіверський','Чернігівська'],
+  [271,'Новий Буг','Миколаївська'],
+  [272,'Новий Калинів','Львівська'],
+  [273,'Новий Розділ','Львівська'],
+  [274,'Новоазовськ','Донецька'],
+  [275,'Нововолинськ','Волинська'],
+  [276,'Новогродівка','Донецька'],
+  [277,'Новодністровськ','Чернівецька'],
+  [278,'Новодружеськ','Луганська'],
+  [279,'Новомиргород','Кіровоградська'],
+  [280,'Новоселиця','Чернівецька'],
+  [281,'Новоукраїнка','Кіровоградська'],
+  [282,'Новояворівськ','Львівська'],
+  [283,'Носівка','Чернігівська'],
+  [284,'Обухів','Київська'],
+  [285,'Овруч','Житомирська'],
+  [286,'Одеса','Одеська'],
+  [287,'Олевськ','Житомирська'],
+  [288,'Олександрівськ','Луганська'],
+  [289,'Олександрія','Кіровоградська'],
+  [290,'Олешки','Херсонська'],
+  [291,'Олика','Волинська'],
+  [292,'Оріхів','Запорізька'],
+  [293,'Остер','Чернігівська'],
+  [294,'Острог','Рівненська'],
+  [295,'Отаманівка','Луганська'],
+  [296,'Охтирка','Сумська'],
+  [297,'Очаків','Миколаївська'],
+  [298,'Павлоград','Дніпропетровська'],
+  [299,'Первомайськ','Миколаївська'],
+  [300,'Перевальськ','Луганська'],
+  [301,'Перемишляни','Львівська'],
+  [302,'Перечин','Закарпатська'],
+  [303,'Перещепине','Дніпропетровська'],
+  [304,'Переяслав','Київська'],
+  [305,'Петрово-Красносілля','Луганська'],
+  [306,'Пирятин','Полтавська'],
+  [307,'Південне','Одеська'],
+  [308,'Південне','Харківська'],
+  [309,'Південноукраїнськ','Миколаївська'],
+  [310,'Підгайці','Тернопільська'],
+  [311,'Підгороднє','Дніпропетровська'],
+  [312,'Погребище','Вінницька'],
+  [313,'Подільськ','Одеська'],
+  [314,'Покров','Дніпропетровська'],
+  [315,'Покровськ','Донецька'],
+  [316,'Пологи','Запорізька'],
+  [317,'Полонне','Хмельницька'],
+  [318,'Полтава','Полтавська'],
+  [319,'Помічна','Кіровоградська'],
+  [320,'Попасна','Луганська'],
+  [321,'Почаїв','Тернопільська'],
+  [322,'Привілля','Луганська'],
+  [323,'Прилуки','Чернігівська'],
+  [324,'Приморськ','Запорізька'],
+  [325,'Прип\'ять','Київська'],
+  [326,'Пустомити','Львівська'],
+  [327,'Путивль','Сумська'],
+  [328,'П\'ятихатки','Дніпропетровська'],
+  [329,'Рава-Руська','Львівська'],
+  [330,'Радехів','Львівська'],
+  [331,'Радивилів','Рівненська'],
+  [332,'Радомишль','Житомирська'],
+  [333,'Рахів','Закарпатська'],
+  [334,'Рені','Одеська'],
+  [335,'Решетилівка','Полтавська'],
+  [336,'Ржищів','Київська'],
+  [337,'Рівне','Рівненська'],
+  [338,'Ровеньки','Луганська'],
+  [339,'Рогатин','Івано-Франківська'],
+  [340,'Родинське','Донецька'],
+  [341,'Рожище','Волинська'],
+  [342,'Роздільна','Одеська'],
+  [343,'Ромни','Сумська'],
+  [344,'Рубіжне','Луганська'],
+  [345,'Рудки','Львівська'],
+  [346,'Саки','АРК'],
+  [347,'Самар','Дніпропетровська'],
+  [348,'Самбір','Львівська'],
+  [349,'Сарни','Рівненська'],
+  [350,'Свалява','Закарпатська'],
+  [351,'Сватове','Луганська'],
+  [352,'Світловодськ','Кіровоградська'],
+  [353,'Світлодарськ','Донецька'],
+  [354,'Святогірськ','Донецька'],
+  [355,'Севастополь','Севастополь'],
+  [356,'Селидове','Донецька'],
+  [357,'Семенівка','Чернігівська'],
+  [358,'Середина-Буда','Сумська'],
+  [359,'Синельникове','Дніпропетровська'],
+  [360,'Сіверськ','Донецька'],
+  [361,'Сєвєродонецьк','Луганська'],
+  [362,'Сімферополь','АРК'],
+  [363,'Скадовськ','Херсонська'],
+  [364,'Скалат','Тернопільська'],
+  [365,'Сквира','Київська'],
+  [366,'Сколе','Львівська'],
+  [367,'Славута','Хмельницька'],
+  [368,'Славутич','Київська'],
+  [369,'Слобожанське','Харківська'],
+  [370,'Слов\'янськ','Донецька'],
+  [371,'Сміла','Черкаська'],
+  [372,'Снігурівка','Миколаївська'],
+  [373,'Сніжне','Донецька'],
+  [374,'Сновськ','Чернігівська'],
+  [375,'Снятин','Івано-Франківська'],
+  [376,'Сокаль','Львівська'],
+  [377,'Сокиряни','Чернівецька'],
+  [378,'Сокологірськ','Луганська'],
+  [379,'Соледар','Донецька'],
+  [380,'Сорокине','Луганська'],
+  [381,'Соснівка','Львівська'],
+  [382,'Старий Крим','АРК'],
+  [383,'Старий Самбір','Львівська'],
+  [384,'Старобільськ','Луганська'],
+  [385,'Старокостянтинів','Хмельницька'],
+  [386,'Стебник','Львівська'],
+  [387,'Сторожинець','Чернівецька'],
+  [388,'Стрий','Львівська'],
+  [389,'Судак','АРК'],
+  [390,'Судова Вишня','Львівська'],
+  [391,'Суми','Сумська'],
+  [392,'Суходільськ','Луганська'],
+  [393,'Таврійськ','Херсонська'],
+  [394,'Тальне','Черкаська'],
+  [395,'Тараща','Київська'],
+  [396,'Татарбунари','Одеська'],
+  [397,'Теплодар','Одеська'],
+  [398,'Теребовля','Тернопільська'],
+  [399,'Тернівка','Дніпропетровська'],
+  [400,'Тернопіль','Тернопільська'],
+  [401,'Тетіїв','Київська'],
+  [402,'Тисмениця','Івано-Франківська'],
+  [403,'Тлумач','Івано-Франківська'],
+  [404,'Токмак','Запорізька'],
+  [405,'Торецьк','Донецька'],
+  [406,'Тростянець','Сумська'],
+  [407,'Трускавець','Львівська'],
+  [408,'Тульчин','Вінницька'],
+  [409,'Турка','Львівська'],
+  [410,'Тячів','Закарпатська'],
+  [411,'Угнів','Львівська'],
+  [412,'Ужгород','Закарпатська'],
+  [413,'Узин','Київська'],
+  [414,'Українка','Київська'],
+  [415,'Українськ','Донецька'],
+  [416,'Умань','Черкаська'],
+  [417,'Устилуг','Волинська'],
+  [418,'Фастів','Київська'],
+  [419,'Феодосія','АРК'],
+  [420,'Харків','Харківська'],
+  [421,'Харцизьк','Донецька'],
+  [422,'Херсон','Херсонська'],
+  [423,'Хирів','Львівська'],
+  [424,'Хмельницький','Хмельницька'],
+  [425,'Хмільник','Вінницька'],
+  [426,'Ходорів','Львівська'],
+  [427,'Хорол','Полтавська'],
+  [428,'Хоростків','Тернопільська'],
+  [429,'Хотин','Чернівецька'],
+  [430,'Хрестівка','Донецька'],
+  [431,'Христинівка','Черкаська'],
+  [432,'Хрустальний','Луганська'],
+  [433,'Хуст','Закарпатська'],
+  [434,'Хутір-Михайлівський','Сумська'],
+  [435,'Часів Яр','Донецька'],
+  [436,'Черкаси','Черкаська'],
+  [437,'Чернівці','Чернівецька'],
+  [438,'Чернігів','Чернігівська'],
+  [439,'Чигирин','Черкаська'],
+  [440,'Чистякове','Донецька'],
+  [441,'Чоп','Закарпатська'],
+  [442,'Чорнобиль','Київська'],
+  [443,'Чорноморськ','Одеська'],
+  [444,'Чортків','Тернопільська'],
+  [445,'Чугуїв','Харківська'],
+  [446,'Чуднів','Житомирська'],
+  [447,'Шаргород','Вінницька'],
+  [448,'Шахтарськ','Донецька'],
+  [449,'Шахтарське','Дніпропетровська'],
+  [450,'Шепетівка','Хмельницька'],
+  [451,'Шептицький','Львівська'],
+  [452,'Шостка','Сумська'],
+  [453,'Шпола','Черкаська'],
+  [454,'Шумськ','Тернопільська'],
+  [455,'Щастя','Луганська'],
+  [456,'Щолкіне','АРК'],
+  [457,'Яворів','Львівська'],
+  [458,'Яготин','Київська'],
+  [459,'Ялта','АРК'],
+  [460,'Ямпіль','Вінницька'],
+  [461,'Яни Капу','АРК'],
+  [462,'Яремче','Івано-Франківська'],
+  [463,'Ясинувата','Донецька'],
+];
+
+function renderCities(list) {
+  document.getElementById('cities-tbody').innerHTML =
+    list.map(([n,c,o]) =>
+      `<tr><td style="text-align:center;color:var(--muted)">${n}</td><td>${c}</td><td style="color:var(--muted)">${o}</td></tr>`
+    ).join('') || '<tr><td colspan="3" style="text-align:center;color:var(--muted);padding:20px">Нічого не знайдено</td></tr>';
+}
+
+function filterCities(q) {
+  const s = q.trim().toLowerCase();
+  renderCities(s
+    ? CITIES.filter(([,c,o]) => c.toLowerCase().includes(s) || o.toLowerCase().includes(s))
+    : CITIES);
+}
+
 /* ══════════ INIT ══════════ */
 async function initAll(){
   loadStats();
@@ -4005,6 +5087,13 @@ async function initAll(){
   setInterval(loadStats, 10000);
   setInterval(loadServerStats, 15000);
   connectWS();
+  // Завантажуємо COLORS щоб відновити тему та порядок меню одразу після логіну
+  try {
+    const r = await fetch(`${API}/api/colors`);
+    const c = await r.json();
+    applyAdminTheme(c['admin_theme']?.value || 'dark');
+    applyNavOrder(c['admin_nav_order']?.value || '');
+  } catch(_) {}
 }
 </script>
 

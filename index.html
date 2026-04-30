@@ -83,8 +83,8 @@
 <canvas width="1365" height="953"></canvas>
 <header id="topbar">
   <div id="logo"><span id="logo-star">&#9733;</span> <em id="logo-em">Зоряна</em> Памʼять</div>
-  <div class="tstat">&#128101; <strong id="sttotal">0</strong>&nbsp;людей</div>
-  <div class="tstat">&#11088; <strong id="stlikes">0</strong>&nbsp;зірок</div>
+  <div class="tstat"><span id="icon-people">👥</span> <strong id="sttotal">0</strong>&nbsp;людей</div>
+  <div class="tstat"><span id="icon-likes">⭐</span> <strong id="stlikes">0</strong>&nbsp;зірок</div>
   <div class="tstat"><span class="tdot"></span><strong id="stonline">—</strong>&nbsp;онлайн</div>
   <div id="smoke-ctrl" onclick="toggleSmoke()" title="Ефект диму вкл/викл">
     <span id="smoke-lbl">Дим увімкнено</span>
@@ -100,7 +100,7 @@
   <button id="btn-logout" onclick="doLogout()">Вийти</button>
   <button id="btn-auth" onclick="openAuth()">Увійти</button>
   <button id="btn-add" onclick="onAdd()"><span class="add-ico">+</span><span class="add-txt"> ДОДАТИ</span></button>
-  <a id="btn-coffee" href="https://www.buymeacoffee.com" target="_blank" title="Підтримати розробника"><span class="cf-ico">☕</span><span class="cf-txt">Кава адміну</span></a>
+  <a id="btn-coffee" href="https://www.buymeacoffee.com" target="_blank" rel="noopener noreferrer" title="Підтримати розробника"><span class="cf-ico">☕</span><span class="cf-txt">Кава адміну</span></a>
 </header>
 
 <div id="map-wrap">
@@ -108,17 +108,14 @@
 <!-- Море — окремий SVG, поза #ukraine-svg, щоб drop-shadow країни не впливав -->
 <svg id="sea-svg" xmlns="http://www.w3.org/2000/svg"
      viewBox="0 0 14000 9500" preserveAspectRatio="xMidYMid meet"
-     style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:visible;display:none">
+     style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:visible;display:none;transform-origin:0 0">
   <defs>
-    <filter id="sea-filter" x="-15%" y="-50%" width="130%" height="200%" color-interpolation-filters="sRGB">
+    <filter id="sea-filter" x="-5%" y="-5%" width="110%" height="110%" color-interpolation-filters="sRGB">
       <feTurbulence id="sea-turb" type="turbulence" baseFrequency="0.0012 0.0008" numOctaves="3" seed="4" result="turb"/>
       <feDisplacementMap id="sea-disp" in="SourceGraphic" in2="turb" scale="500" xChannelSelector="R" yChannelSelector="G"/>
     </filter>
   </defs>
-  <g id="sea-group" opacity="0.55" filter="url(#sea-filter)">
-    <ellipse id="sea-black" cx="6050"  cy="8450" rx="4950" ry="1050" fill="#a0d7ff"/>
-    <ellipse id="sea-azov"  cx="11350" cy="7725" rx="2050" ry="1225" fill="#a0d7ff"/>
-  </g>
+  <g id="sea-group" opacity="0.55" filter="url(#sea-filter)"></g>
 </svg>
 
 <svg id="ukraine-svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 14000 9500" preserveAspectRatio="xMidYMid meet" style="position:absolute;top:0;left:0;width:100%;height:100%" >
@@ -2163,6 +2160,8 @@
     style="pointer-events:none;opacity:0;transition:opacity .4s ease"/>
 </svg>
   </div>
+  <svg id="city-overlay" xmlns="http://www.w3.org/2000/svg"
+       style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:visible;opacity:0;transition:opacity .5s ease"></svg>
   <canvas id="canvas-layer"></canvas>
   <div id="pick-bar">&#128205; Клікніть на карті — місце поховання</div>
   <div id="zoom">
@@ -2174,9 +2173,9 @@
     <div id="count"><strong id="btotal">0</strong><span>у памʼяті</span></div>
     <div id="site-rules">
       <div class="sr-title">Інформація</div>
-      <a class="sr-link" href="/rules.html" target="_blank">📋 Правила сайту</a>
-      <a class="sr-link" href="/terms.html" target="_blank">📄 Правила використання</a>
-      <a class="sr-link" href="/faq.html" target="_blank">❓ Питання — відповідь</a>
+      <a class="sr-link" href="/rules.html" target="_blank" rel="noopener noreferrer">📋 Правила сайту</a>
+      <a class="sr-link" href="/terms.html" target="_blank" rel="noopener noreferrer">📄 Правила використання</a>
+      <a class="sr-link" href="/faq.html" target="_blank" rel="noopener noreferrer">❓ Питання — відповідь</a>
     </div>
   </div>
   <div id="tip"></div>
@@ -2285,6 +2284,7 @@
 <script>
 const API = 'http://127.0.0.1:8000';
 window.API = API;
+function h(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 let people = [], curUser = JSON.parse(localStorage.getItem('mu')||'null');
 let selColor = '#4fc3f7', isPick = false, pickCb = null, activePerson = null;
 let W = 0, H = 0, animT = 0, particles = [];
@@ -2309,6 +2309,19 @@ function getC(key, fallback='') {
 
 function applyColors() {
   const c = k => getC(k);
+
+  /* Оновлюємо CSS-змінні щоб Style.css теж отримував актуальні значення */
+  const root = document.documentElement.style;
+  root.setProperty('--bg',       c('bg')             || '#03070e');
+  root.setProperty('--surface',  c('surface')        || '#070d1a');
+  root.setProperty('--text',     c('text_primary')   || '#d0dce8');
+  root.setProperty('--text2',    c('text_secondary') || '#8a9cb0');
+  root.setProperty('--accent',   c('accent')         || '#00c8ff');
+  root.setProperty('--yellow',   c('yellow')         || '#d4a800');
+  root.setProperty('--yellow2',  c('yellow2')        || '#f0c030');
+  root.setProperty('--neon-blue',c('neon_blue')      || '#00ccff');
+  root.setProperty('--neon-yel', c('neon_yellow')    || '#d4a800');
+
   const style = document.getElementById('dynamic-colors');
   style.textContent = `
     body { background: ${c('bg') || '#03070e'}; }
@@ -2333,6 +2346,13 @@ function applyColors() {
       stroke-width: 1px;
     }
   `;
+  // Іконки сайту
+  const ls = document.getElementById('logo-star');
+  if (ls) ls.textContent = c('icon_logo') || '★';
+  const ip = document.getElementById('icon-people');
+  if (ip) ip.textContent = c('icon_people') || '👥';
+  const il = document.getElementById('icon-likes');
+  if (il) il.textContent = c('icon_likes') || '⭐';
   // SVG нитки
   window.THREAD_COLOR = c('thread_color') || 'rgba(0,200,255,1)';
   window.NEON_BLUE    = c('neon_blue') || '#00ccff';
@@ -2356,7 +2376,7 @@ function applyColors() {
   } else {
     _applyCookiePrefs(); // читаємо збережений стан з куки
   }
-  _applySmokeState();   // застосовуємо до UI і WebGL
+  _applySmokeState();   // застосовуємо до UI і WebGL (враховує smoke_enabled)
 }
 function applySmokeConfig() {
   const fc = window._fluidConfig;
@@ -2485,8 +2505,10 @@ const sl  = document.getElementById('svg-layer');
 const cv  = document.getElementById('canvas-layer');
 const ctx = cv.getContext('2d');
 
-function resize() { const r=mw.getBoundingClientRect(); W=cv.width=r.width; H=cv.height=r.height; }
+function resize() { const r=mw.getBoundingClientRect(); W=cv.width=r.width; H=cv.height=r.height; _svgBoundsCache=null; updateMapSvgViewBox(); }
+let _svgBoundsCache = null;
 function getSvgBounds() {
+  if (_svgBoundsCache) return _svgBoundsCache;
   // SVG viewBox: 14000 x 9500, preserveAspectRatio = xMidYMid meet
   const SVG_W = 14000, SVG_H = 9500;
   const svgAspect = SVG_W / SVG_H;  // ≈ 1.4737
@@ -2495,28 +2517,58 @@ function getSvgBounds() {
   let svgDrawW, svgDrawH, svgOffX, svgOffY;
 
   if (canvasAspect > svgAspect) {
-    // Canvas шире — пустые полосы слева и справа
     svgDrawH = H;
     svgDrawW = H * svgAspect;
     svgOffX = (W - svgDrawW) / 2;
     svgOffY = 0;
   } else {
-    // Canvas выше — пустые полосы сверху и снизу
     svgDrawW = W;
     svgDrawH = W / svgAspect;
     svgOffX = 0;
     svgOffY = (H - svgDrawH) / 2;
   }
 
-  return { x: svgOffX, y: svgOffY, w: svgDrawW, h: svgDrawH };
+  return _svgBoundsCache = { x: svgOffX, y: svgOffY, w: svgDrawW, h: svgDrawH };
 }
 window.addEventListener('resize',resize); resize();
 
+const _cityOverlay=document.getElementById('city-overlay');
+
+// Update Ukraine+sea SVG viewBoxes to match the current tr (pan/zoom).
+// This replaces CSS transform on #svg-layer — SVG paths render at full
+// screen resolution at any zoom level instead of being rasterized at
+// layout size and then scaled up.
+function updateMapSvgViewBox() {
+  const b=getSvgBounds();
+  const s=tr.s;
+  const vbx=(-(b.x*(s-1)+tr.x)*14000/(b.w*s)).toFixed(2);
+  const vby=(-(b.y*(s-1)+tr.y)*9500 /(b.h*s)).toFixed(2);
+  const vbw=(14000/s).toFixed(2);
+  const vbh=(9500 /s).toFixed(2);
+  const vb=`${vbx} ${vby} ${vbw} ${vbh}`;
+  const uaSvg=document.getElementById('ukraine-svg');
+  const seaSvg=document.getElementById('sea-svg');
+  if(uaSvg)uaSvg.setAttribute('viewBox',vb);
+  // Sea SVG використовує CSS transform (GPU) замість viewBox —
+  // feTurbulence фільтр не перераховується при кожному pan/zoom
+  if(seaSvg)seaSvg.style.transform=`translate(${tr.x.toFixed(1)}px,${tr.y.toFixed(1)}px) scale(${tr.s})`;
+}
+
 function applyTr() {
-  sl.style.transform=`translate(${tr.x}px,${tr.y}px) scale(${tr.s})`;
-  sl.style.transformOrigin='0 0';
-  // Показуємо межі районів при достатньому збільшенні
-  sl.classList.toggle('zoom-city', tr.s >= (window.CITY_BORDER_ZOOM || 2.5));
+  // No CSS transform on #svg-layer — use viewBox zoom instead for crisp rendering.
+  updateMapSvgViewBox();
+  const zc=tr.s>=(window.CITY_BORDER_ZOOM||2.5);
+  sl.classList.toggle('zoom-city',zc);
+  sl.classList.toggle('zoom-deep',tr.s>=5);
+  scaleCityLabels();
+  if(_cityOverlay)_cityOverlay.style.opacity=zc?'1':'0';
+}
+// Throttle applyTr to one call per rAF frame — avoids SVG layout storm during drag/wheel
+let _applyTrPending = false;
+function scheduleApplyTr() {
+  if (_applyTrPending) return;
+  _applyTrPending = true;
+  requestAnimationFrame(() => { _applyTrPending = false; applyTr(); });
 }
 function clampTr() {
   const zMin = window.ZOOM_MIN || 0.4;
@@ -2533,7 +2585,7 @@ function zoomAt(cx,cy,f) {
   tr.x=cx-(cx-tr.x)*af;
   tr.y=cy-(cy-tr.y)*af;
   tr.s=newS;
-  clampTr();applyTr();
+  clampTr();scheduleApplyTr();
 }
 function w2s(xr, yr) {
   const b = getSvgBounds();
@@ -2566,7 +2618,7 @@ function flyTo(xr,yr,ts) {
   })(t0);
 }
 
-function dotR(p) { const rn=Math.min(((p.rating||0)+(p.likes||0)/150)/12,1); return(2+rn*3.5)*Math.min(Math.sqrt(tr.s),2.5); }
+function dotR(p) { return(2+(p._rn??0)*3.5)*_cachedSqrtS; }
 function hit(sx,sy) {
   let best=null,bd=Infinity;
   for(const p of people){const pos=w2s(p.x,p.y);const d=Math.hypot(sx-pos.x,sy-pos.y);const r=dotR(p)*3+10;if(d<r&&d<bd){best=p;bd=d;}}
@@ -2578,14 +2630,21 @@ mw.addEventListener('mousedown',e=>{
   if(isPick){const r=mw.getBoundingClientRect();const w=s2w(e.clientX-r.left,e.clientY-r.top);if(pickCb)pickCb(w);return;}
   drag=true;dragS={x:e.clientX,y:e.clientY};trS={x:tr.x,y:tr.y};mw.classList.add('grabbing');
 });
+let _mousePending=false,_lastMX=0,_lastMY=0;
 window.addEventListener('mousemove',e=>{
-  if(drag){tr.x=trS.x+(e.clientX-dragS.x);tr.y=trS.y+(e.clientY-dragS.y);clampTr();applyTr();document.getElementById('tip').style.display='none';return;}
-  const r=mw.getBoundingClientRect();const sx=e.clientX-r.left,sy=e.clientY-r.top;
-  const p=hit(sx,sy);const tip=document.getElementById('tip');
-  if(p){hovId=p.id;mw.style.cursor='pointer';tip.style.display='block';tip.style.left=(sx+16)+'px';tip.style.top=(sy-10)+'px';
-    const dupes=people.filter(x=>x._dupKey&&x._dupKey===p._dupKey&&x.id!==p.id);
-    tip.innerHTML=`<div class="tn">${p.last} ${p.first}</div><div class="tl">&#9875; ${p.bury||'—'}</div><div class="ts">&#11088; ${p.likes||0}${dupes.length?' &nbsp;&#128279;'+dupes.length+' збіг':''}</div>`;}
-  else{hovId=null;mw.style.cursor=isPick?'crosshair':'grab';tip.style.display='none';}
+  if(drag){tr.x=trS.x+(e.clientX-dragS.x);tr.y=trS.y+(e.clientY-dragS.y);clampTr();scheduleApplyTr();document.getElementById('tip').style.display='none';return;}
+  _lastMX=e.clientX;_lastMY=e.clientY;
+  if(_mousePending)return;
+  _mousePending=true;
+  requestAnimationFrame(()=>{
+    _mousePending=false;
+    const r=mw.getBoundingClientRect();const sx=_lastMX-r.left,sy=_lastMY-r.top;
+    const p=hit(sx,sy);const tip=document.getElementById('tip');
+    if(p){hovId=p.id;mw.style.cursor='pointer';tip.style.display='block';tip.style.left=(sx+16)+'px';tip.style.top=(sy-10)+'px';
+      const dupes=people.filter(x=>x._dupKey&&x._dupKey===p._dupKey&&x.id!==p.id);
+      tip.innerHTML=`<div class="tn">${h(p.last)} ${h(p.first)}</div><div class="tl">&#9875; ${h(p.bury)||'—'}</div><div class="ts">&#11088; ${p.likes||0}${dupes.length?' &nbsp;&#128279;'+dupes.length+' збіг':''}</div>`;}
+    else{hovId=null;mw.style.cursor=isPick?'crosshair':'grab';tip.style.display='none';}
+  });
 });
 window.addEventListener('mouseup',e=>{
   const was=drag;drag=false;mw.classList.remove('grabbing');
@@ -2616,7 +2675,7 @@ mw.addEventListener('touchstart',e=>{
 mw.addEventListener('touchmove',e=>{
   e.preventDefault();
   if(e.touches.length===2){const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);const r=mw.getBoundingClientRect();zoomAt(lC.x-r.left,lC.y-r.top,d/lD);lD=d;}
-  else if(drag){tr.x=trS.x+(e.touches[0].clientX-dragS.x);tr.y=trS.y+(e.touches[0].clientY-dragS.y);clampTr();applyTr();
+  else if(drag){tr.x=trS.x+(e.touches[0].clientX-dragS.x);tr.y=trS.y+(e.touches[0].clientY-dragS.y);clampTr();scheduleApplyTr();
     // Дим при свайпі одним пальцем
     if(window._fluidConfig&&!window._fluidConfig.PAUSED){
       const t=e.touches[0];
@@ -2634,16 +2693,10 @@ function h2r(h,a){
 }
 
 function drawNeonThreads() {
+  if(!window._neonGroups||!window._neonGroups.length)return;
   ctx.save();
   ctx.globalAlpha = 1;
-  const groups = {};
-  for (const p of people) {
-    if (!p._dupKey) continue;
-    if (!groups[p._dupKey]) groups[p._dupKey] = [];
-    groups[p._dupKey].push(p);
-  }
-  for (const grp of Object.values(groups)) {
-    if (grp.length < 2) continue;
+  for (const grp of window._neonGroups) {
     for (let i = 0; i < grp.length; i++) {
       for (let j = i+1; j < grp.length; j++) {
         const a = w2s(grp[i].x, grp[i].y);
@@ -2671,42 +2724,68 @@ function drawNeonThreads() {
   ctx.restore();
 }
 
-function drawDot(p) {
-  if(!p||!isFinite(p.x)||!isFinite(p.y))return;
-  const pos=w2s(p.x,p.y);if(!isFinite(pos.x)||!isFinite(pos.y))return;
-  const rn=Math.min(((p.rating||0)+(p.likes||0)/150)/12,1);
+function drawDotFX(p, pos) {
+  const rn=p._rn??0;
   const r=dotR(p),sp=1+rn*2,pulse=.55+.45*Math.sin(animT*sp+(p.id||0)*.8);
   const isH=hovId===p.id,isS=selId===p.id;
-  const hasDupe=p._dupKey&&people.some(x=>x._dupKey===p._dupKey&&x.id!==p.id);
+  const showGlow=tr.s>=2||isH||isS;
   const gr=r*(2.5+rn*2)*pulse;
-  if(gr>0&&isFinite(gr)){
+  if(showGlow&&gr>0&&isFinite(gr)){
     const grd=ctx.createRadialGradient(pos.x,pos.y,0,pos.x,pos.y,gr);
-    grd.addColorStop(0,h2r(p.color,(.07+rn*.2)*pulse*2));grd.addColorStop(1,h2r(p.color,0));
+    grd.addColorStop(0,`rgba(${p._r},${p._g},${p._b},${((.07+rn*.2)*pulse*2).toFixed(2)})`);
+    grd.addColorStop(1,`rgba(${p._r},${p._g},${p._b},0)`);
     ctx.beginPath();ctx.arc(pos.x,pos.y,gr,0,Math.PI*2);ctx.fillStyle=grd;ctx.fill();
   }
-  if(hasDupe){const ringR=r*4.5+Math.sin(animT*2.5+p.id)*r*.5;ctx.beginPath();ctx.arc(pos.x,pos.y,ringR,0,Math.PI*2);ctx.strokeStyle=`rgba(0,200,255,${.12+.08*Math.sin(animT*2)})`;ctx.lineWidth=1;ctx.stroke();}
-  if(isS||isH){ctx.beginPath();ctx.arc(pos.x,pos.y,r*4,0,Math.PI*2);ctx.strokeStyle=h2r(p.color,.5+.3*Math.sin(animT*3.5));ctx.lineWidth=1.3;ctx.stroke();}
-  ctx.beginPath();ctx.arc(pos.x,pos.y,r,0,Math.PI*2);ctx.fillStyle=p.color;ctx.fill();
-  if(rn>.2||isH||isS){
-	  ctx.globalAlpha=.5+.4*pulse;ctx.beginPath();
-	  ctx.arc(pos.x,pos.y,r*.4,0,Math.PI*2);
-	  // Приглушення при активному пошуку
-	  const dimAlpha = p._dimmed ? 0.15 : 1.0;
-	  ctx.fillStyle='#fff';
-	  ctx.fill();
-	  ctx.globalAlpha=1;
-	 // ctx.globalAlpha = someValue * (p._dimmed ? 0.15 : 1.0);
-	  }
+  if(p._hasDupe){const ringR=r*4.5+Math.sin(animT*2.5+p.id)*r*.5;ctx.beginPath();ctx.arc(pos.x,pos.y,ringR,0,Math.PI*2);ctx.strokeStyle=`rgba(0,200,255,${(.12+.08*Math.sin(animT*2)).toFixed(2)})`;ctx.lineWidth=1;ctx.stroke();}
+  if(isS||isH){ctx.beginPath();ctx.arc(pos.x,pos.y,r*4,0,Math.PI*2);ctx.strokeStyle=`rgba(${p._r},${p._g},${p._b},${(.5+.3*Math.sin(animT*3.5)).toFixed(2)})`;ctx.lineWidth=1.3;ctx.stroke();}
+  if(rn>.2||isH||isS){ctx.globalAlpha=.5+.4*pulse;ctx.beginPath();ctx.arc(pos.x,pos.y,r*.4,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();ctx.globalAlpha=1;}
 }
 
-(function loop(){
-  animT+=.016;ctx.clearRect(0,0,W,H);
-  drawNeonThreads();
-  for(const p of people)drawDot(p);
-  particles=particles.filter(p=>p.age<1);
-  for(const p of particles){p.age+=.022;const pos=w2s(p.x,p.y);ctx.globalAlpha=1-p.age;ctx.font=`${13+(1-p.age)*6}px sans-serif`;ctx.fillText('⭐',pos.x-8,pos.y-p.age*55);ctx.globalAlpha=1;}
-  requestAnimationFrame(loop);
-})();
+let _cachedSqrtS = 1;
+let _lastCanvasFrame = 0;
+let _canvasLoopRunning = false;
+function _startCanvasLoop() {
+  if(_canvasLoopRunning) return;
+  _canvasLoopRunning = true;
+  (function loop(ts){
+    if(document.hidden){_canvasLoopRunning=false;return;}
+    requestAnimationFrame(loop);
+    // Cap canvas at ~30fps to halve CPU load (dot animations are smooth enough at 30fps)
+    if(ts - _lastCanvasFrame < 30) return;
+    _lastCanvasFrame = ts;
+    _svgBoundsCache = null;
+    _cachedSqrtS = Math.min(Math.sqrt(tr.s), 2.5);
+    animT+=.033;ctx.clearRect(0,0,W,H);
+    drawNeonThreads();
+    // Pre-compute visible dots (single w2s pass)
+    const _vis=[];
+    for(const p of people){
+      if(!p||!isFinite(p.x)||!isFinite(p.y))continue;
+      const pos=w2s(p.x,p.y);
+      if(!isFinite(pos.x)||!isFinite(pos.y))continue;
+      if(pos.x<-60||pos.x>W+60||pos.y<-60||pos.y>H+60)continue;
+      _vis.push({p,pos});
+    }
+    // Pass 1: per-dot special effects (glow, rings, white center)
+    for(const {p,pos} of _vis)drawDotFX(p,pos);
+    // Pass 2: batch fill main circles grouped by color (300 draw calls → ~10-20)
+    const _cb=new Map();
+    for(const {p,pos} of _vis){
+      const r=dotR(p);
+      if(!_cb.has(p.color))_cb.set(p.color,[]);
+      _cb.get(p.color).push({pos,r});
+    }
+    for(const[color,dots]of _cb){
+      ctx.beginPath();ctx.fillStyle=color;
+      for(const{pos,r}of dots){ctx.moveTo(pos.x+r,pos.y);ctx.arc(pos.x,pos.y,r,0,Math.PI*2);}
+      ctx.fill();
+    }
+    for(let i=particles.length-1;i>=0;i--){if(particles[i].age>=1)particles.splice(i,1);}
+    for(const p of particles){p.age+=.044;const pos=w2s(p.x,p.y);ctx.globalAlpha=1-p.age;ctx.font=`${13+(1-p.age)*6}px sans-serif`;ctx.fillText('⭐',pos.x-8,pos.y-p.age*55);ctx.globalAlpha=1;}
+  })(0);
+}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)_startCanvasLoop();});
+_startCanvasLoop();
 
 /* ── SVG borders ── */
 function initSVGBorders() {
@@ -2770,11 +2849,92 @@ async function loadLabels() {
   } catch {}
 }
 
+/* ── City labels ── */
+let cities = [];
+let _cityLabelGroups = [];
+
+function renderCityLabels(){
+  const overlay=document.getElementById('city-overlay');
+  if(!overlay)return;
+  const NS='http://www.w3.org/2000/svg';
+  // clear overlay and any old in-SVG group
+  while(overlay.firstChild)overlay.removeChild(overlay.firstChild);
+  const svgEl=document.getElementById('ukraine-svg');
+  const old=svgEl&&svgEl.querySelector('#city-labels');
+  if(old)old.remove();
+  _cityLabelGroups=[];
+
+  // Sizes in CSS pixels (overlay has no viewBox → 1 unit = 1 screen pixel).
+  // These are constant regardless of map zoom.
+  const cfg=[
+    {r:4, fs:12, fw:'400', dot:'rgba(160,215,255,0.85)'},
+    {r:5, fs:14, fw:'500', dot:'rgba(160,215,255,0.90)'},
+    {r:7, fs:16, fw:'600', dot:'rgba(190,230,255,0.95)'},
+    {r:9, fs:20, fw:'700', dot:'rgba(220,240,255,1.0)' },
+  ];
+
+  cities.forEach(city=>{
+    const name=city.name, cx=city.pos_x*14000, cy=city.pos_y*9500, tier=Math.min(city.tier||0,3);
+    const c=cfg[tier];
+
+    const lg=document.createElementNS(NS,'g');
+    lg.dataset.cx=cx; lg.dataset.cy=cy;
+    _cityLabelGroups.push(lg);
+
+    // Dot
+    const dot=document.createElementNS(NS,'circle');
+    dot.setAttribute('cx',0);dot.setAttribute('cy',0);dot.setAttribute('r',c.r);
+    dot.setAttribute('fill',c.dot);
+    dot.setAttribute('stroke','rgba(10,60,120,0.7)');
+    dot.setAttribute('stroke-width','1');
+    lg.appendChild(dot);
+
+    // Shadow (outline effect)
+    const ty=c.r+c.fs*1.1;
+    const shadow=document.createElementNS(NS,'text');
+    shadow.setAttribute('x',0);shadow.setAttribute('y',ty);
+    shadow.setAttribute('text-anchor','middle');
+    shadow.style.fontSize=c.fs+'px';
+    shadow.style.fontWeight=c.fw;
+    shadow.style.fill='rgba(0,8,20,0.85)';
+    shadow.setAttribute('stroke','rgba(0,8,20,0.85)');
+    shadow.setAttribute('stroke-width',String(Math.round(c.fs*0.32)));
+    shadow.setAttribute('stroke-linejoin','round');
+    shadow.style.paintOrder='stroke fill';
+    shadow.textContent=name;
+    lg.appendChild(shadow);
+
+    // Main text
+    const txt=document.createElementNS(NS,'text');
+    txt.setAttribute('x',0);txt.setAttribute('y',ty);
+    txt.setAttribute('text-anchor','middle');
+    txt.style.fontSize=c.fs+'px';
+    txt.style.fontWeight=c.fw;
+    txt.style.fill='rgba(215,238,255,0.97)';
+    txt.textContent=name;
+    lg.appendChild(txt);
+
+    overlay.appendChild(lg);
+  });
+
+  scaleCityLabels();
+}
+
+function scaleCityLabels(){
+  if(!_cityLabelGroups.length) return;
+  _cityLabelGroups.forEach(lg=>{
+    const cx=+lg.dataset.cx, cy=+lg.dataset.cy;
+    const sx=(cx * tr.s * W / 14000 + tr.x).toFixed(1);
+    const sy=(cy * tr.s * H / 9500  + tr.y).toFixed(1);
+    lg.setAttribute('transform',`translate(${sx},${sy})`);
+  });
+}
+
 /* ── Data ── */
 async function loadData() {
   try {
-    const [rp,rs]=await Promise.all([fetch(API+'/api/people'),fetch(API+'/api/stats')]);
-    const raw=await rp.json();const stats=await rs.json();
+    const [rp,rs,rc]=await Promise.all([fetch(API+'/api/people'),fetch(API+'/api/stats'),fetch(API+'/api/cities')]);
+    const raw=await rp.json();const stats=await rs.json();cities=await rc.json();
     people=raw.map(p=>({...p,x:parseFloat(p.pos_x??p.x??0.5),y:parseFloat(p.pos_y??p.y??0.5),grp:p.grp||''}));
     // Ключ зв'язку: ПІБ + дата нар. + дата смерті (незалежно від поля grp)
     people.forEach(p=>{
@@ -2783,9 +2943,21 @@ async function loadData() {
       const mid=(p.mid||'').trim().toLowerCase();
       p._dupKey=(last||first)?`${last}|${first}|${mid}`:'';
     });
-    // Debug: groups
-    const dbg={};people.forEach(p=>{if(p._dupKey){if(!dbg[p._dupKey])dbg[p._dupKey]=[];dbg[p._dupKey].push(p.id);}});
-    Object.entries(dbg).filter(([,ids])=>ids.length>1).forEach(([k,ids])=>console.log('🔗 Зв\'язок:',k,'→ ids:',ids));
+    // Pre-compute per-person derived values (avoid recalculating each frame)
+    const _dupCounts={};
+    people.forEach(p=>{if(p._dupKey)_dupCounts[p._dupKey]=(_dupCounts[p._dupKey]||0)+1;});
+    people.forEach(p=>{
+      p._hasDupe=!!p._dupKey&&(_dupCounts[p._dupKey]||0)>1;
+      p._rn=Math.min(((p.rating||0)+(p.likes||0)/150)/12,1);
+      const h=p.color||'#4fc3f7';
+      p._r=h.length>=7?parseInt(h.slice(1,3),16):79;
+      p._g=h.length>=7?parseInt(h.slice(3,5),16):195;
+      p._b=h.length>=7?parseInt(h.slice(5,7),16):247;
+    });
+    // Pre-build neon groups (used by drawNeonThreads every frame)
+    const _grpMap={};
+    people.forEach(p=>{if(p._hasDupe){if(!_grpMap[p._dupKey])_grpMap[p._dupKey]=[];_grpMap[p._dupKey].push(p);}});
+    window._neonGroups=Object.values(_grpMap).filter(g=>g.length>=2);
     document.getElementById('sttotal').textContent=stats.total||people.length;
     document.getElementById('stlikes').textContent=stats.likes||0;
     document.getElementById('btotal').textContent=stats.total||people.length;
@@ -2813,7 +2985,7 @@ function openCard(p) {
   setText('cdates', `${fd(p.birth)} — ${fd(p.death)}`);
   setText('cbury', p.bury || '—');
   setText('cloc', p.loc || '—');
-  setHTML('ccirc', p.circ ? `<span class="badge">${p.circ}</span>` : '—');
+  setHTML('ccirc', p.circ ? `<span class="badge">${h(p.circ)}</span>` : '—');
   setText('cdesc', p.descr || '—');
 
   // Позывной (grp)
@@ -2833,7 +3005,7 @@ function openCard(p) {
   const ds = document.getElementById('dupes-section');
   const dhr = document.getElementById('dupes-hr');
   if (dupes.length) {
-    setHTML('cdupes', dupes.map(d => `<span class="dupe-chip">&#128279; ${d.last} ${d.first} (${d.added_by||'?'})</span>`).join(''));
+    setHTML('cdupes', dupes.map(d => `<span class="dupe-chip">&#128279; ${h(d.last)} ${h(d.first)} (${h(d.added_by)||'?'})</span>`).join(''));
     if (ds) ds.style.display = '';
     if (dhr) dhr.style.display = '';
   } else {
@@ -2913,7 +3085,7 @@ function renderDrop(results, q) {
       <div class="sdi${i === sIdx ? ' sdi-active' : ''}" 
            data-idx="${i}"
            onmousedown="pickRes(${i})">
-        <div class="sdi-dot" style="background:${p.color}"></div>
+        <div class="sdi-dot" style="background:${h(p.color)}"></div>
         <div class="sdi-body">
           <div class="sdi-name">${name}${call}</div>
           <div class="sdi-loc">&#9875; ${loc}${p.likes ? ` &middot; &#11088; ${p.likes}` : ''}</div>
@@ -3116,7 +3288,8 @@ async function submitAdd(){
 /* ── WS ── */
 function connectWS(){
   try{
-    const ws=new WebSocket('ws://127.0.0.1:8000/ws/online');
+    const wsUrl=(window.API||'http://127.0.0.1:8000').replace(/^http/,'ws');
+    const ws=new WebSocket(`${wsUrl}/ws/online`);
     ws.onopen=()=>{if(curUser)ws.send('user:'+curUser.name);};
     ws.onmessage=e=>{try{const d=JSON.parse(e.data);if(d.online!==undefined)document.getElementById('stonline').textContent=d.online;}catch{}};
     ws.onclose=()=>{document.getElementById('stonline').textContent='—';setTimeout(connectWS,3000);};
@@ -3158,17 +3331,23 @@ function _applyCookiePrefs() {
 }
 
 function _applySmokeState() {
-  const fl  = document.getElementById('fluid');
-  const btn = document.getElementById('btn-smoke');
-  const lbl = document.getElementById('smoke-lbl');
+  // Адмін може повністю відключити ефект — тоді кнопка прихована для всіх
+  const adminEnabled = (getC('smoke_enabled') || '1') !== '0';
+  const ctrl = document.getElementById('smoke-ctrl');
+  const fl   = document.getElementById('fluid');
+  const btn  = document.getElementById('btn-smoke');
+  const lbl  = document.getElementById('smoke-lbl');
+
+  if (ctrl) ctrl.style.display = adminEnabled ? '' : 'none';
+
+  const actuallyOn = adminEnabled && _smokeOn;
   if (fl) {
-    fl.style.opacity       = _smokeOn ? '0.85' : '0';
+    fl.style.opacity       = actuallyOn ? '0.85' : '0';
     fl.style.pointerEvents = 'none';
   }
-  if (window._fluidConfig) window._fluidConfig.PAUSED = !_smokeOn;
-  if (btn) btn.classList.toggle('active', _smokeOn);
-  if (lbl) lbl.textContent = _smokeOn ? 'Дим увімкнено' : 'Дим вимкнено';
-  // Зберегти вибір у куку якщо дозволено адміном
+  if (window._fluidConfig) window._fluidConfig.PAUSED = !actuallyOn;
+  if (btn) btn.classList.toggle('active', actuallyOn);
+  if (lbl) lbl.textContent = actuallyOn ? 'Дим увімкнено' : 'Дим вимкнено';
   if (_cookiesOk) _setCookie('zp_smoke', _smokeOn ? '1' : '0');
 }
 
@@ -3191,11 +3370,25 @@ window.addEventListener('load', () => {
   setupMapPhotoClip();
 });
 
+/* ── LIVE COLOR UPDATES FROM ADMIN ── */
+try {
+  const _colorBC = new BroadcastChannel('zoryana_colors');
+  _colorBC.onmessage = e => {
+    if (!e.data || e.data.type !== 'colors_update') return;
+    Object.entries(e.data.colors).forEach(([k, v]) => {
+      if (!COLORS[k]) COLORS[k] = { value: v, label: k };
+      else COLORS[k].value = v;
+    });
+    applyColors();
+  };
+} catch(_) {}
+
 /* ── INIT ── */
 (async()=>{
   await loadColors();
   await loadData();
   await loadLabels();
+  renderCityLabels();
   initSVGBorders();
   updateAuthUI();
   connectWS();
@@ -3207,7 +3400,7 @@ window.addEventListener('load', () => {
     <video id="videoBackground" muted loop></video>
     <div id="overlay"></div>
     <script src="js/script.js?v=20260419"></script>
-    <script src="js/sea.js?v=20260422e"></script>
+    <script src="js/sea.js?v=20260424b"></script>
 
 <!-- INFO MODALS -->
 <div class="mov" id="m-rules">

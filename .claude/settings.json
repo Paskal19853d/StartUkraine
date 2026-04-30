@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:cdn.jsdelivr.net)",
+      "WebFetch(domain:data.jsdelivr.com)",
+      "Bash(grep -o \"\\\\`.*API.*api/[^'\\\\\"]*\" /d/OSPanel/OpenServer/domains/localhost/treetex/admin.html)",
+      "Bash(sed \"s/[\\\\`'\\\\\"].*//\")",
+      "Bash(grep -v \"^--$\")",
+      "WebFetch(domain:ru.wikipedia.org)",
+      "WebFetch(domain:uk.wikipedia.org)"
+    ]
+  }
+}

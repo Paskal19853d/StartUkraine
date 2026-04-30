@@ -31,26 +31,26 @@ let config = {
   SIM_RESOLUTION: 256,
   DYE_RESOLUTION: 1024,
   CAPTURE_RESOLUTION: 512,
-  DENSITY_DISSIPATION: 0.995,
-  VELOCITY_DISSIPATION: 0.98,
+  DENSITY_DISSIPATION: 1,
+  VELOCITY_DISSIPATION: 0.9,
   PRESSURE: 0.8,
   PRESSURE_ITERATIONS: 20,
-  CURL: 35,
-  SPLAT_RADIUS: 0.22,
-  SPLAT_FORCE: 14000,
-  SHADING: false,
+  CURL: 30,
+  SPLAT_RADIUS: 0.25,
+  SPLAT_FORCE: 6000,
+  SHADING: true,
   COLORFUL: true,
   COLOR_UPDATE_SPEED: 10,
   PAUSED: false,
   BACK_COLOR: { r: 0, g: 0, b: 0 },
-  TRANSPARENT: true,
-  BLOOM: false,
+  TRANSPARENT: false,
+  BLOOM: true,
   BLOOM_ITERATIONS: 8,
   BLOOM_RESOLUTION: 12,
   BLOOM_INTENSITY: 0.2,
   BLOOM_THRESHOLD: 0.6,
   BLOOM_SOFT_KNEE: 0.7,
-  SUNRAYS: false,
+  SUNRAYS: true,
   SUNRAYS_RESOLUTION: 196,
   SUNRAYS_WEIGHT: 1.0,
   SOUND_SENSITIVITY: 0,
@@ -58,9 +58,6 @@ let config = {
   FREQ_MULTI: 0.1,
   CUSTOM_COLOR: true
 };
-
-// Доступний одразу для index.html (кнопка-перемикач)
-window._fluidConfig = config;
 
 var timer = setInterval(randomSplat, 3500);
 var _runRandom = true;
@@ -124,8 +121,7 @@ function multipleSplats(amount) {
 
 let _randomSplats = false;
 let _audioReact = false;
-let colorRange = ["#0057B7","#00BFFF"];
-window.colorRange = colorRange; // доступ з index.html для керування кольором диму
+let colorRange = ["#0057B7","#0057B7"];
  
 
 let colorConfig = null;
@@ -1749,16 +1745,6 @@ window.addEventListener("keydown", (e) => {
   if (e.code === "KeyP") config.PAUSED = !config.PAUSED;
   if (e.key === " ") splatStack.push(parseInt(Math.random() * 20) + 5);
 });
-
-// Хелпер для виклику диму з touch-хендлера карти (index.html)
-window._touchSplat = function(clientX, clientY) {
-  let p = pointers[1] || (pointers[1] = new pointerPrototype());
-  let posX = scaleByPixelRatio(clientX);
-  let posY = scaleByPixelRatio(clientY);
-  if (!p.down) { updatePointerDownData(p, 1, posX, posY); return; }
-  updatePointerMoveData(p, posX, posY);
-  if (p.moved) { p.moved = false; splatPointer(p); }
-};
 
 function updatePointerDownData(pointer, id, posX, posY) {
   pointer.id = id;
