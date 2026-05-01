@@ -11,7 +11,22 @@ header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-cache, max-age=0');
 
 // ── API КЛЮЧ ──────────────────────────────────────────
-define('API_KEY', '57fb756a020521fc83927919590c9addcef38d5fab2203');
+// Встановіть змінну середовища ALERTS_API_KEY на хостингу
+// або покладіть ключ у файл proxy.key поруч з цим файлом (рядок без пробілів)
+$_api_key = getenv('ALERTS_API_KEY');
+if (!$_api_key) {
+    $_key_file = __DIR__ . '/proxy.key';
+    if (file_exists($_key_file)) {
+        $_api_key = trim(file_get_contents($_key_file));
+    }
+}
+if (!$_api_key) {
+    http_response_code(500);
+    echo json_encode(['error' => 'API key not configured']);
+    exit;
+}
+define('API_KEY', $_api_key);
+unset($_api_key, $_key_file);
 // ─────────────────────────────────────────────────────
 
 $type = $_GET['type'] ?? 'active';

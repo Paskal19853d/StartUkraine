@@ -3,7 +3,7 @@
 Запуск: python -m uvicorn Paskal:app --reload --port 8000
 БД:     MySQL / MariaDB (налаштування у .env)
 """
-import os, time, asyncio, hashlib, threading, re, base64
+import os, time, asyncio, hashlib, threading, re, base64, secrets, string, html as _html
 import bcrypt
 from typing import Optional, List
 
@@ -20,7 +20,8 @@ except ImportError:
 
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Depends, UploadFile, File, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, StreamingResponse
+import csv, io
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -210,24 +211,35 @@ def init_db():
                 pos_x DOUBLE NOT NULL DEFAULT 0,
                 pos_y DOUBLE NOT NULL DEFAULT 0,
                 tier  INT NOT NULL DEFAULT 0,
+                color VARCHAR(20) NOT NULL DEFAULT '#a0d7ff',
                 INDEX idx_shown (pos_x)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
         """)
+        # Migration: add color column to existing installations
+        try:
+            c.execute("ALTER TABLE cities ADD COLUMN color VARCHAR(20) NOT NULL DEFAULT '#a0d7ff'")
+        except Exception:
+            pass  # column already exists
 
     # ── Admin user ──────────────────────────────────────
     with db.cursor() as c:
         c.execute("SELECT id, password FROM users WHERE email=%s", ("admin@admin.com",))
         admin_row = c.fetchone()
         if not admin_row:
+            _init_pass = os.getenv("ADMIN_INIT_PASS") or (
+                "".join(secrets.choice(string.ascii_letters + string.digits + "!@#$%") for _ in range(16))
+            )
             c.execute(
                 "INSERT INTO users (name,email,password,is_admin) VALUES (%s,%s,%s,1)",
-                ("Admin", "admin@admin.com", hash_pass("Admin"))
+                ("Admin", "admin@admin.com", hash_pass(_init_pass))
             )
+            print(f"[INIT] Admin account created. Password: {_init_pass}", flush=True)
         elif _is_sha256_hash(admin_row["password"]):
-            # Міграція: оновлюємо SHA256 → bcrypt при старті сервера
+            # Міграція SHA256 → bcrypt; пароль залишається тим самим
+            _init_pass = os.getenv("ADMIN_INIT_PASS", "Admin")
             c.execute(
                 "UPDATE users SET password=%s WHERE email=%s",
-                (hash_pass("Admin"), "admin@admin.com")
+                (hash_pass(_init_pass), "admin@admin.com")
             )
 
     # ── Default colors ──────────────────────────────────
@@ -276,6 +288,9 @@ def init_db():
         ("map_photo_feather",     "55",       "Фото на карті — розмитість країв % (20–80)"),
         ("map_photo_scale",       "100",      "Фото на карті — масштаб відображення % (10–100)"),
         ("admin_theme",           "dark",     "Тема адмін-панелі (dark / light)"),
+        ("admin_logo_url",        "",         "Логотип адмінки — URL зображення (порожньо = без логотипу)"),
+        ("admin_logo_height",     "60",       "Логотип адмінки — висота px (30–140)"),
+        ("admin_logo_radius",     "8",        "Логотип адмінки — заокруглення px (0–70)"),
         ("sea_enabled",           "1",        "Море — показувати на карті (1=так, 0=ні)"),
         ("sea_wave_color",        "#a0d7ff",  "Море — колір хвиль (hex)"),
         ("sea_wave_count",        "20",       "Море — кількість хвиль (5–40)"),
@@ -693,6 +708,13 @@ class _RateLimiter:
             self._data[key] = ts
             return True
 
+    def blocked(self, key: str, limit: int, window: int) -> bool:
+        """Перевіряє блокування без споживання токену."""
+        now = time.time()
+        with self._lock:
+            ts = [t for t in self._data.get(key, []) if now - t < window]
+            return len(ts) >= limit
+
     def purge(self, max_age: int = 3600):
         now = time.time()
         with self._lock:
@@ -702,6 +724,39 @@ class _RateLimiter:
                     del self._data[k]
 
 _rl = _RateLimiter()
+
+
+# ── Admin session store (cookie-based auth) ───────────────
+_sessions: dict = {}
+_sessions_lock = threading.Lock()
+
+def _session_create(user_id: int) -> str:
+    token = secrets.token_hex(32)
+    expires = time.time() + 86400 * 7  # 7 днів
+    with _sessions_lock:
+        _sessions[token] = {"user_id": user_id, "expires": expires}
+    return token
+
+def _session_get(token: str):
+    with _sessions_lock:
+        sess = _sessions.get(token)
+        if not sess:
+            return None
+        if sess["expires"] < time.time():
+            del _sessions[token]
+            return None
+        return sess
+
+def _session_delete(token: str):
+    with _sessions_lock:
+        _sessions.pop(token, None)
+
+def _sessions_purge():
+    now = time.time()
+    with _sessions_lock:
+        expired = [k for k, v in _sessions.items() if v["expires"] < now]
+        for k in expired:
+            del _sessions[k]
 
 
 # ── Login failure tracker (brute-force lockout) ──────────
@@ -757,13 +812,20 @@ def _get_ip(request: Request) -> str:
     return client_host
 
 # ── APP ──────────────────────────────────────────────────
-app = FastAPI(title="Зоряна Памʼять API", version="2.0")
+_DEBUG = os.getenv("DEBUG", "0") == "1"
+app = FastAPI(
+    title="Зоряна Памʼять API",
+    version="2.0",
+    docs_url="/docs" if _DEBUG else None,
+    redoc_url="/redoc" if _DEBUG else None,
+    openapi_url="/openapi.json" if _DEBUG else None,
+)
 _ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://127.0.0.1:8000,http://localhost:8000").split(",")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_ALLOWED_ORIGINS,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization"],
 )
 
 @app.middleware("http")
@@ -776,9 +838,10 @@ async def track_visits(request, call_next):
     cutoff = hour - 48 * 3600
     for k in [k for k in _visits_hourly if k < cutoff]:
         del _visits_hourly[k]
-    # Periodically purge rate-limiter (every ~1000 requests)
+    # Periodically purge rate-limiter and expired sessions (every ~1000 requests)
     if _request_count % 1000 == 0:
         _rl.purge(3600)
+        _sessions_purge()
     return await call_next(request)
 
 @app.middleware("http")
@@ -788,6 +851,14 @@ async def security_headers(request, call_next):
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["X-XSS-Protection"] = "1; mode=block"
     response.headers["Referrer-Policy"] = "no-referrer"
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+        "font-src 'self' https://fonts.gstatic.com; "
+        "img-src 'self' data: https: blob:; "
+        "connect-src 'self' ws://127.0.0.1:8000 wss://127.0.0.1:8000 http://127.0.0.1:8000;"
+    )
     return response
 
 # Статичні файли (img)
@@ -859,7 +930,7 @@ async def ws_online(ws: WebSocket):
         while True:
             msg = await asyncio.wait_for(ws.receive_text(), timeout=60)
             if msg.startswith("user:"):
-                online_users[id(ws)] = msg[5:]
+                online_users[id(ws)] = _html.escape(msg[5:][:50])
     except Exception:
         pass
     finally:
@@ -867,6 +938,35 @@ async def ws_online(ws: WebSocket):
         online_users.pop(id(ws), None)
         await broadcast({"online": len(connected)})
 
+
+# ── Validation helpers ────────────────────────────────────
+_PRIVATE_IP_RE = re.compile(
+    r'^(https?://)?(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)',
+    re.IGNORECASE,
+)
+_HEX_COLOR_RE  = re.compile(r'^#[0-9a-fA-F]{3}(?:[0-9a-fA-F]{3})?$')
+_RGBA_COLOR_RE = re.compile(r'^rgba?\(\s*\d+\s*,\s*\d+\s*,\s*\d+')
+
+def _validate_photo_url(url: str) -> str:
+    if not url:
+        return url
+    if not url.startswith(('http://', 'https://')):
+        raise HTTPException(400, "URL фото має починатись з http:// або https://")
+    if _PRIVATE_IP_RE.match(url):
+        raise HTTPException(400, "Недопустиме URL фото")
+    return url[:500]
+
+def _sanitize_text(s: str, maxlen: int = 200) -> str:
+    if not s:
+        return ''
+    return _html.escape(str(s).strip())[:maxlen]
+
+def _validate_color(v: str) -> str:
+    if not v:
+        return '#4fc3f7'
+    if _HEX_COLOR_RE.match(v) or _RGBA_COLOR_RE.match(v):
+        return v
+    raise HTTPException(400, "Невалідний формат кольору")
 
 # ── Schemas ───────────────────────────────────────────────
 class PersonIn(BaseModel):
@@ -911,6 +1011,12 @@ class CityUpdate(BaseModel):
     pos_x: Optional[float] = None
     pos_y: Optional[float] = None
     tier:  Optional[int]   = None
+    color: Optional[str]   = None
+
+class CityCreate(BaseModel):
+    name: str
+    tier: Optional[int] = 0
+    color: Optional[str] = '#a0d7ff'
 
 
 # ── AUTH helpers ──────────────────────────────────────────
@@ -940,17 +1046,43 @@ def get_admin(email: str, password: str):
         return None
     return u
 
+def _get_user_by_id(user_id: int):
+    db = get_db()
+    with db.cursor() as c:
+        c.execute(
+            "SELECT id,name,email,is_admin,is_banned FROM users WHERE id=%s", (user_id,)
+        )
+        row = c.fetchone()
+    db.close()
+    return row
+
 def require_admin(request: Request):
+    # 1. Cookie-сесія (основний шлях)
+    token = request.cookies.get("admin_session")
+    if token:
+        sess = _session_get(token)
+        if sess:
+            u = _get_user_by_id(sess["user_id"])
+            if u and u["is_admin"] and not u["is_banned"]:
+                return u
+
+    # 2. Basic Auth (зворотна сумісність)
     auth = request.headers.get("Authorization", "")
     if not auth.startswith("Basic "):
         raise HTTPException(403, "Доступ заборонено")
+    ip = _get_ip(request)
+    fail_key = f"admin_fail:{ip}"
+    if _rl.blocked(fail_key, 10, 300):
+        raise HTTPException(429, "Забагато спроб. Зачекайте 5 хвилин.")
     try:
         decoded = base64.b64decode(auth[6:]).decode("utf-8")
         email, password = decoded.split(":", 1)
     except Exception:
+        _rl.check(fail_key, 10, 300)
         raise HTTPException(403, "Доступ заборонено")
     u = get_admin(email, password)
     if not u:
+        _rl.check(fail_key, 10, 300)
         raise HTTPException(403, "Доступ заборонено")
     return u
 
@@ -1161,7 +1293,7 @@ def get_cities(request: Request):
         raise HTTPException(429, "Забагато запитів. Зачекайте.")
     db = get_db()
     with db.cursor() as c:
-        c.execute("SELECT id,name,pos_x,pos_y,tier FROM cities WHERE pos_x > 0 ORDER BY tier DESC, name")
+        c.execute("SELECT id,name,pos_x,pos_y,tier,color FROM cities WHERE pos_x > 0 ORDER BY tier DESC, name")
         rows = c.fetchall()
     db.close()
     return rows
@@ -1171,7 +1303,7 @@ def admin_get_cities(request: Request):
     require_admin(request)
     db = get_db()
     with db.cursor() as c:
-        c.execute("SELECT id,name,pos_x,pos_y,tier FROM cities ORDER BY name")
+        c.execute("SELECT id,name,pos_x,pos_y,tier,color FROM cities ORDER BY name")
         rows = c.fetchall()
     db.close()
     return rows
@@ -1184,12 +1316,39 @@ def admin_update_city(cid: int, u: CityUpdate, request: Request):
     if u.pos_x is not None: fields.append("pos_x=%s"); vals.append(u.pos_x)
     if u.pos_y is not None: fields.append("pos_y=%s"); vals.append(u.pos_y)
     if u.tier  is not None: fields.append("tier=%s");  vals.append(u.tier)
+    if u.color is not None: fields.append("color=%s"); vals.append(u.color[:20])
     if not fields:
         raise HTTPException(400, "Нічого оновлювати")
     vals.append(cid)
     db = get_db()
     with db.cursor() as c:
         c.execute(f"UPDATE cities SET {','.join(fields)} WHERE id=%s", vals)
+    db.commit(); db.close()
+    return {"ok": True}
+
+@app.post("/api/admin/city")
+def admin_create_city(u: CityCreate, request: Request):
+    require_admin(request)
+    name = u.name.strip()[:100]
+    if not name:
+        raise HTTPException(400, "Назва міста обов'язкова")
+    color = u.color or '#a0d7ff'
+    db = get_db()
+    with db.cursor() as c:
+        c.execute(
+            "INSERT INTO cities (name, tier, color, pos_x, pos_y) VALUES (%s,%s,%s,0,0)",
+            (name, u.tier or 0, color[:20])
+        )
+        new_id = c.lastrowid
+    db.commit(); db.close()
+    return {"ok": True, "id": new_id}
+
+@app.delete("/api/admin/city/{cid}")
+def admin_delete_city(cid: int, request: Request):
+    require_admin(request)
+    db = get_db()
+    with db.cursor() as c:
+        c.execute("DELETE FROM cities WHERE id=%s", (cid,))
     db.commit(); db.close()
     return {"ok": True}
 
@@ -1206,14 +1365,23 @@ def add_person(p: PersonIn, request: Request):
         raise HTTPException(400, "Ім'я обов'язкове (макс. 100 символів)")
     if p.descr and len(p.descr) > 5000:
         raise HTTPException(400, "Опис занадто довгий (макс. 5000 символів)")
+    photo = _validate_photo_url(p.photo or '')
+    color = _validate_color(p.color or '')
+    last  = _sanitize_text(p.last,  100)
+    first = _sanitize_text(p.first, 100)
+    mid   = _sanitize_text(p.mid or '', 100)
+    loc   = _sanitize_text(p.loc or '', 200)
+    bury  = _sanitize_text(p.bury or '', 200)
+    circ  = _sanitize_text(p.circ or '', 200)
+    grp   = _sanitize_text(p.grp or '', 100)
     db = get_db()
     with db.cursor() as c:
         c.execute("""
             INSERT INTO memorials
             (last,first,mid,birth,death,loc,bury,circ,descr,photo,color,pos_x,pos_y,grp,added_by,approved)
             VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,0)
-        """, (p.last, p.first, p.mid, p.birth, p.death, p.loc, p.bury,
-              p.circ, p.descr, p.photo, p.color, p.pos_x, p.pos_y, p.grp, p.added_by))
+        """, (last, first, mid, p.birth, p.death, loc, bury,
+              circ, p.descr, photo, color, p.pos_x, p.pos_y, grp, p.added_by))
         new_id = c.lastrowid
     db.commit()
     db.close()
@@ -1316,7 +1484,34 @@ def login(u: UserLogin, request: Request):
     db.commit()
     db.close()
     row.pop("password", None)  # не повертаємо хеш у відповіді
-    return {"ok": True, "user": row}
+    token = _session_create(row["id"])
+    resp = JSONResponse({"ok": True, "user": row})
+    resp.set_cookie(
+        key="admin_session",
+        value=token,
+        httponly=True,
+        secure=False,       # True на production (HTTPS)
+        samesite="lax",
+        max_age=86400 * 7,
+        path="/",
+    )
+    return resp
+
+
+@app.post("/api/auth/logout")
+def logout(request: Request):
+    token = request.cookies.get("admin_session")
+    if token:
+        _session_delete(token)
+    resp = JSONResponse({"ok": True})
+    resp.delete_cookie("admin_session", path="/")
+    return resp
+
+
+@app.get("/api/admin/me")
+def admin_me(request: Request):
+    u = require_admin(request)
+    return u
 
 
 # ── ADMIN API ─────────────────────────────────────────────
@@ -1368,6 +1563,105 @@ def delete_memorial(mid: int, request: Request):
     db.close()
     return {"ok": True}
 
+# ── CSV Export / Import ────────────────────────────────────
+
+_CSV_COLS = ['id','last','first','mid','birth','death','loc','bury','circ',
+             'descr','photo','color','pos_x','pos_y','grp','added_by','approved','likes']
+
+@app.get("/api/admin/export/csv")
+def export_csv(request: Request):
+    require_admin(request)
+    db = get_db()
+    with db.cursor() as c:
+        c.execute(
+            "SELECT id,last,first,mid,birth,death,loc,bury,circ,descr,photo,color,"
+            "pos_x,pos_y,grp,added_by,approved,likes FROM memorials ORDER BY id"
+        )
+        rows = c.fetchall()
+    db.close()
+
+    buf = io.StringIO()
+    buf.write('﻿')  # BOM для коректного відкриття в Excel
+    w = csv.writer(buf, quoting=csv.QUOTE_MINIMAL)
+    w.writerow(_CSV_COLS)
+    for r in rows:
+        w.writerow(['' if r.get(col) is None else r.get(col, '') for col in _CSV_COLS])
+
+    fname = f"memorials_{__import__('datetime').date.today()}.csv"
+    return StreamingResponse(
+        iter([buf.getvalue()]),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{fname}"'},
+    )
+
+
+@app.post("/api/admin/import/csv")
+async def import_csv(request: Request, file: UploadFile = File(...)):
+    require_admin(request)
+    raw = await file.read()
+    try:
+        text = raw.decode('utf-8-sig')  # utf-8 з BOM або без
+    except UnicodeDecodeError:
+        text = raw.decode('cp1251', errors='replace')  # fallback для Windows-кодування
+
+    reader = csv.DictReader(io.StringIO(text))
+    inserted, skipped = 0, 0
+    errors: list[str] = []
+
+    db = get_db()
+    for i, row in enumerate(reader, 1):
+        last  = (row.get('last')  or '').strip()
+        first = (row.get('first') or '').strip()
+        if not last or not first:
+            skipped += 1
+            errors.append(f"Рядок {i}: пропущено — відсутнє прізвище або ім'я")
+            continue
+        if len(last) > 100 or len(first) > 100:
+            skipped += 1
+            errors.append(f"Рядок {i}: пропущено — прізвище/ім'я надто довге")
+            continue
+        try:
+            pos_x = float(row.get('pos_x') or 0)
+            pos_y = float(row.get('pos_y') or 0)
+        except ValueError:
+            pos_x, pos_y = 0.0, 0.0
+        try:
+            with db.cursor() as c:
+                c.execute("""
+                    INSERT INTO memorials
+                    (last,first,mid,birth,death,loc,bury,circ,descr,photo,color,
+                     pos_x,pos_y,grp,added_by,approved)
+                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,0)
+                """, (
+                    _sanitize_text(last, 100),
+                    _sanitize_text(first, 100),
+                    _sanitize_text((row.get('mid')  or '')[:100], 100),
+                    (row.get('birth') or None) or None,
+                    (row.get('death') or None) or None,
+                    _sanitize_text((row.get('loc')  or '')[:300], 300),
+                    _sanitize_text((row.get('bury') or '')[:300], 300),
+                    _sanitize_text((row.get('circ') or '')[:500], 500),
+                    (row.get('descr') or '')[:5000],
+                    _validate_photo_url((row.get('photo') or '')[:500]),
+                    _validate_color(row.get('color') or ''),
+                    pos_x, pos_y,
+                    _sanitize_text((row.get('grp')  or '')[:100], 100),
+                    _sanitize_text((row.get('added_by') or 'csv-import')[:100], 100),
+                ))
+            db.commit()
+            inserted += 1
+        except HTTPException as ex:
+            skipped += 1
+            errors.append(f"Рядок {i} ({last} {first}): {ex.detail}")
+        except Exception as ex:
+            skipped += 1
+            errors.append(f"Рядок {i} ({last} {first}): {str(ex)[:120]}")
+
+    db.close()
+    return {"ok": True, "inserted": inserted, "skipped": skipped,
+            "errors": errors[:50]}  # повертаємо не більше 50 помилок
+
+
 _MEMORIAL_COL_MAP = {
     'last':    '`last`=%s',    'first': '`first`=%s', 'mid':    '`mid`=%s',
     'birth':   '`birth`=%s',   'death': '`death`=%s', 'loc':    '`loc`=%s',
@@ -1385,6 +1679,10 @@ def update_memorial(mid: int, p: PersonUpdate, request: Request):
     for f, v in p.dict(exclude_none=True).items():
         if f not in _MEMORIAL_COL_MAP:
             raise HTTPException(400, f"Поле '{f}' не дозволено")
+        if f == 'photo' and v:
+            v = _validate_photo_url(v)
+        elif f == 'color' and v:
+            v = _validate_color(v)
         fields.append(_MEMORIAL_COL_MAP[f])
         vals.append(v)
     if not fields:
