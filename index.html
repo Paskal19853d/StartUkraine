@@ -2827,21 +2827,41 @@ function drawNeonThreads() {
   ctx.restore();
 }
 
-function drawDotFX(p, pos) {
+function drawDotFX(p, pos, pulse, tw) {
   const rn=p._rn??0;
-  const r=dotR(p),sp=1+rn*2,pulse=.55+.45*Math.sin(animT*sp+(p.id||0)*.8);
+  const r=dotR(p);
   const isH=hovId===p.id,isS=selId===p.id;
-  const showGlow=tr.s>=2||isH||isS;
-  const gr=r*(2.5+rn*2)*pulse;
-  if(showGlow&&gr>0&&isFinite(gr)){
-    const grd=ctx.createRadialGradient(pos.x,pos.y,0,pos.x,pos.y,gr);
-    grd.addColorStop(0,`rgba(${p._r},${p._g},${p._b},${((.07+rn*.2)*pulse*2).toFixed(2)})`);
-    grd.addColorStop(1,`rgba(${p._r},${p._g},${p._b},0)`);
-    ctx.beginPath();ctx.arc(pos.x,pos.y,gr,0,Math.PI*2);ctx.fillStyle=grd;ctx.fill();
+
+  // Адитивне змішування — свічення зірок накладаються одне на одне
+  ctx.save();
+  ctx.globalCompositeOperation='lighter';
+
+  // Зовнішня корона (велика, м'яка)
+  const gr1=r*(7+rn*5+tw*10)*(0.65+0.35*pulse);
+  if(gr1>0&&isFinite(gr1)){
+    const a=(0.07+rn*0.09+tw*0.18)*(0.5+0.5*pulse);
+    const grd=ctx.createRadialGradient(pos.x,pos.y,0,pos.x,pos.y,gr1);
+    grd.addColorStop(0,  `rgba(${p._r},${p._g},${p._b},${a.toFixed(3)})`);
+    grd.addColorStop(0.3,`rgba(${p._r},${p._g},${p._b},${(a*.12).toFixed(3)})`);
+    grd.addColorStop(1,  `rgba(${p._r},${p._g},${p._b},0)`);
+    ctx.beginPath();ctx.arc(pos.x,pos.y,gr1,0,Math.PI*2);ctx.fillStyle=grd;ctx.fill();
   }
-  if(p._hasDupe){const ringR=r*4.5+Math.sin(animT*2.5+p.id)*r*.5;ctx.beginPath();ctx.arc(pos.x,pos.y,ringR,0,Math.PI*2);ctx.strokeStyle=`rgba(0,200,255,${(.12+.08*Math.sin(animT*2)).toFixed(2)})`;ctx.lineWidth=1;ctx.stroke();}
-  if(isS||isH){ctx.beginPath();ctx.arc(pos.x,pos.y,r*4,0,Math.PI*2);ctx.strokeStyle=`rgba(${p._r},${p._g},${p._b},${(.5+.3*Math.sin(animT*3.5)).toFixed(2)})`;ctx.lineWidth=1.3;ctx.stroke();}
-  if(rn>.2||isH||isS){ctx.globalAlpha=.5+.4*pulse;ctx.beginPath();ctx.arc(pos.x,pos.y,r*.4,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();ctx.globalAlpha=1;}
+
+  // Внутрішнє гало (яскравіше, тісніше)
+  const gr2=r*(2.5+1.5*pulse+tw*2.5);
+  if(gr2>0&&isFinite(gr2)){
+    const a2=0.4+0.5*pulse+tw*0.8;
+    const grd2=ctx.createRadialGradient(pos.x,pos.y,0,pos.x,pos.y,gr2);
+    grd2.addColorStop(0,`rgba(${p._r},${p._g},${p._b},${Math.min(a2,1).toFixed(3)})`);
+    grd2.addColorStop(1,`rgba(${p._r},${p._g},${p._b},0)`);
+    ctx.beginPath();ctx.arc(pos.x,pos.y,gr2,0,Math.PI*2);ctx.fillStyle=grd2;ctx.fill();
+  }
+
+  ctx.restore();
+
+  // Кільця дублікатів / вибраного
+  if(p._hasDupe){const ringR=r*4.5+Math.sin(animT*2.5+p.id)*r*.5;ctx.beginPath();ctx.arc(pos.x,pos.y,ringR,0,Math.PI*2);ctx.strokeStyle=`rgba(0,200,255,${(.14+.08*Math.sin(animT*2)).toFixed(2)})`;ctx.lineWidth=1;ctx.stroke();}
+  if(isS||isH){ctx.beginPath();ctx.arc(pos.x,pos.y,r*4.5,0,Math.PI*2);ctx.strokeStyle=`rgba(${p._r},${p._g},${p._b},${(.6+.3*Math.sin(animT*3.5)).toFixed(2)})`;ctx.lineWidth=1.5;ctx.stroke();}
 }
 
 let _cachedSqrtS = 1;
@@ -2860,18 +2880,22 @@ function _startCanvasLoop() {
     _cachedSqrtS = Math.min(Math.sqrt(tr.s), 2.5);
     animT+=.033;ctx.clearRect(0,0,W,H);
     drawNeonThreads();
-    // Pre-compute visible dots (single w2s pass)
+    // Pre-compute visible dots + анімаційні значення за кадр
     const _vis=[];
     for(const p of people){
       if(!p||!isFinite(p.x)||!isFinite(p.y))continue;
       const pos=w2s(p.x,p.y);
       if(!isFinite(pos.x)||!isFinite(pos.y))continue;
       if(pos.x<-60||pos.x>W+60||pos.y<-60||pos.y>H+60)continue;
-      _vis.push({p,pos});
+      const rn=p._rn??0;
+      const sp=0.7+rn*1.6;
+      const pulse=0.5+0.5*Math.sin(animT*sp+(p.id||0)*1.4);
+      const tw=Math.pow(Math.max(0,Math.sin(animT*(sp*2.3)+p.id*2.9)),8);
+      _vis.push({p,pos,pulse,tw});
     }
-    // Pass 1: per-dot special effects (glow, rings, white center)
-    for(const {p,pos} of _vis)drawDotFX(p,pos);
-    // Pass 2: batch fill main circles grouped by color (300 draw calls → ~10-20)
+    // Pass 1: свічення та кільця (адитивне + source-over)
+    for(const {p,pos,pulse,tw} of _vis)drawDotFX(p,pos,pulse,tw);
+    // Pass 2: batch fill main circles grouped by color
     const _cb=new Map();
     for(const {p,pos} of _vis){
       const r=dotR(p);
@@ -2883,6 +2907,15 @@ function _startCanvasLoop() {
       for(const{pos,r}of dots){ctx.moveTo(pos.x+r,pos.y);ctx.arc(pos.x,pos.y,r,0,Math.PI*2);}
       ctx.fill();
     }
+    // Pass 3: яскраве біле ядро зірки поверх основного кола
+    ctx.save();ctx.globalCompositeOperation='lighter';
+    for(const {p,pos,pulse,tw} of _vis){
+      const r=dotR(p);
+      ctx.globalAlpha=Math.min(0.65+0.3*pulse+tw*0.5,1);
+      ctx.beginPath();ctx.arc(pos.x,pos.y,r*.55,0,Math.PI*2);
+      ctx.fillStyle='#ffffff';ctx.fill();
+    }
+    ctx.globalAlpha=1;ctx.restore();
     for(let i=particles.length-1;i>=0;i--){if(particles[i].age>=1)particles.splice(i,1);}
     for(const p of particles){p.age+=.044;const pos=w2s(p.x,p.y);ctx.globalAlpha=1-p.age;ctx.font=`${13+(1-p.age)*6}px sans-serif`;ctx.fillText('⭐',pos.x-8,pos.y-p.age*55);ctx.globalAlpha=1;}
   })(0);
