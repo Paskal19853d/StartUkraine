@@ -248,13 +248,7 @@ def init_db():
                 ("Admin", "admin@admin.com", hash_pass(_init_pass))
             )
             print(f"[INIT] Admin account created. Password: {_init_pass}", flush=True)
-        elif _is_sha256_hash(admin_row["password"]):
-            # Міграція SHA256 → bcrypt; пароль залишається тим самим
-            _init_pass = os.getenv("ADMIN_INIT_PASS", "Admin")
-            c.execute(
-                "UPDATE users SET password=%s WHERE email=%s",
-                (hash_pass(_init_pass), "admin@admin.com")
-            )
+        # SHA256 → bcrypt migration happens lazily at login time (see _upgrade_to_bcrypt)
 
     # ── Default colors ──────────────────────────────────
     defaults = [
@@ -872,7 +866,7 @@ async def security_headers(request, call_next):
         "font-src 'self' https://fonts.gstatic.com; "
         "img-src 'self' data: https: blob:; "
         "frame-src https://www.youtube.com https://www.youtube-nocookie.com; "
-        "connect-src 'self' ws://127.0.0.1:8000 wss://127.0.0.1:8000 http://127.0.0.1:8000;"
+        "connect-src 'self' ws://127.0.0.1:8000 wss://127.0.0.1:8000 http://127.0.0.1:8000 https://www.youtube.com;"
     )
     return response
 
