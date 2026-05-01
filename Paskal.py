@@ -4,6 +4,7 @@
 БД:     MySQL / MariaDB (налаштування у .env)
 """
 import os, time, asyncio, hashlib, threading, re, base64, secrets, string, html as _html
+import urllib.request, urllib.error
 import bcrypt
 from typing import Optional, List
 
@@ -1162,6 +1163,24 @@ def _score_person(row: dict, q: str) -> float:
 
 
 # ── PUBLIC API ────────────────────────────────────────────
+
+_YT_VID_RE = re.compile(r'^[a-zA-Z0-9_-]{11}$')
+
+@app.get("/api/yt-check")
+def yt_check(vid: str):
+    """Перевіряє чи дозволяє відео вбудовування (server-side, без CORS)."""
+    vid = vid.strip()[:12]
+    if not _YT_VID_RE.match(vid):
+        return {"embeddable": False}
+    try:
+        url = f"https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v={vid}&format=json"
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req, timeout=5):
+            return {"embeddable": True}
+    except urllib.error.HTTPError as e:
+        return {"embeddable": e.code not in (401, 403)}
+    except Exception:
+        return {"embeddable": True}
 
 @app.get("/api/people")
 def get_people(request: Request):

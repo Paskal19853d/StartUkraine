@@ -2691,10 +2691,11 @@ function _buildYtPreview(cont, ytId) {
   wrap.appendChild(btn);
   cont.appendChild(wrap);
 
-  // Фонова перевірка oEmbed (YouTube повертає 401 якщо вбудовування заборонено)
+  // Фонова перевірка через наш бекенд (без CORS/CSP проблем)
   let embeddable = null;
-  fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${ytId}&format=json`)
-    .then(r => { embeddable = r.ok; if (!r.ok) _ytFallback(cont, ytId); })
+  fetch(`${API}/api/yt-check?vid=${ytId}`)
+    .then(r => r.json())
+    .then(d => { embeddable = d.embeddable; if (!d.embeddable) _ytFallback(cont, ytId); })
     .catch(() => { embeddable = true; });
 
   wrap.onclick = async () => {
