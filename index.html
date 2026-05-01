@@ -2669,6 +2669,11 @@ window.addEventListener('mousemove',e=>{
   });
 });
 
+let _ytErrHandler = null;
+function _clearYtErrHandler() {
+  if (_ytErrHandler) { window.removeEventListener('message', _ytErrHandler); _ytErrHandler = null; }
+}
+
 function _buildYtPreview(cont, ytId) {
   const wrap = document.createElement('div');
   wrap.style.cssText = 'position:relative;width:100%;aspect-ratio:16/9;border-radius:8px;overflow:hidden;cursor:pointer;background:#000;border:1px solid var(--border2)';
@@ -2686,8 +2691,7 @@ function _buildYtPreview(cont, ytId) {
   wrap.appendChild(btn);
   cont.appendChild(wrap);
 
-  // Перевіряємо embeddability через oEmbed у фоні
-  // YouTube повертає 401 якщо вбудовування заборонено власником
+  // Фонова перевірка oEmbed (YouTube повертає 401 якщо вбудовування заборонено)
   let embeddable = null;
   fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${ytId}&format=json`)
     .then(r => { embeddable = r.ok; if (!r.ok) _ytFallback(cont, ytId); })
@@ -2705,6 +2709,20 @@ function _buildYtPreview(cont, ytId) {
     fr.setAttribute('allowfullscreen','');
     fr.style.cssText = 'width:100%;aspect-ratio:16/9;border-radius:8px;border:1px solid var(--border2);display:block';
     cont.appendChild(fr);
+
+    // YouTube IFrame API надсилає onError 101/150 коли вбудовування заблоковано
+    _clearYtErrHandler();
+    _ytErrHandler = function(e) {
+      if (e.origin !== 'https://www.youtube.com') return;
+      try {
+        const d = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
+        if (d.event === 'onError' && (d.info === 101 || d.info === 150)) {
+          _clearYtErrHandler();
+          _ytFallback(cont, ytId);
+        }
+      } catch {}
+    };
+    window.addEventListener('message', _ytErrHandler);
   };
 }
 
@@ -3124,6 +3142,7 @@ function openCard(p) {
 function closeCard(){
   document.getElementById('card').classList.remove('open');
   selId=null; activePerson=null;
+  _clearYtErrHandler();
   const cvCont=document.getElementById('cvideo-container');
   if(cvCont) cvCont.innerHTML='';
   const cvWrap=document.getElementById('cvideo-wrap');
