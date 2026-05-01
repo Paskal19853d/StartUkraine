@@ -314,6 +314,10 @@ def init_db():
         ("sea_svg_tx",            "0",        "Море SVG — зміщення X"),
         ("sea_svg_ty",            "0",        "Море SVG — зміщення Y"),
         ("sea_svg_scale",         "1",        "Море SVG — масштаб"),
+        ("dot_pulse_speed",       "1.0",      "Точки — швидкість мерехтіння (0.2–4.0)"),
+        ("dot_glow_size",         "1.0",      "Точки — розмір свічення (0.0–3.0)"),
+        ("dot_pulse_amp",         "1.0",      "Точки — амплітуда пульсації (0.0–1.0)"),
+        ("dot_twinkle",           "1.0",      "Точки — сила спалахів twinkle (0.0–1.0)"),
     ]
     with db.cursor() as c:
         for key, val, label in defaults:

@@ -4106,6 +4106,10 @@ const RANGE_KEYS={
   'smoke_splat_force':   {min:1000, max:20000, step:500,   label:'F'},
   'smoke_curl':          {min:0,    max:60,    step:1,     label:'curl'},
   'smoke_opacity':       {min:0.1,  max:1.0,   step:0.05,  label:'op'},
+  'dot_pulse_speed':     {min:0.1,  max:5.0,   step:0.1,   label:'×'},
+  'dot_glow_size':       {min:0.0,  max:3.0,   step:0.1,   label:'×'},
+  'dot_pulse_amp':       {min:0.0,  max:1.0,   step:0.05,  label:''},
+  'dot_twinkle':         {min:0.0,  max:1.0,   step:0.05,  label:''},
 };
 
 function renderColors(){
@@ -4127,9 +4131,24 @@ function renderColors(){
                     'sea_wave_dir','sea_wave_speed',
                     'sea_glow_on','sea_glow_color','sea_glow_spread',
                     'sea_svg_tx','sea_svg_ty','sea_svg_scale','sea_svg_content'];
+  const dotKeys   =['dot_pulse_speed','dot_glow_size','dot_pulse_amp','dot_twinkle'];
   const boolKeys  =['use_cookies'];
   const iconKeys  =['icon_logo','icon_likes','icon_people'];
   // smokeBlock і photoBlock — тепер окремі секції (renderSmokeSection/renderPhotoSection)
+
+  const dotBlock=`
+  <div style="grid-column:1/-1;background:rgba(200,160,64,.05);border:1px solid rgba(200,160,64,.22);border-radius:8px;padding:14px 16px;margin-bottom:4px">
+    <div style="font-size:11px;color:#d4a800;font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px">✨ Мерехтіння точок</div>
+    <div style="display:flex;flex-wrap:wrap;gap:10px">
+      ${dotKeys.map(k=>COLORS[k]?renderColorRow(k,COLORS[k]):'').join('')}
+    </div>
+    <div style="font-size:10px;color:var(--muted);margin-top:8px;line-height:1.6">
+      <strong style="color:var(--text2)">Швидкість</strong> — частота пульсації (0.1=повільно, 1=норма, 4=дуже швидко)<br>
+      <strong style="color:var(--text2)">Розмір свічення</strong> — масштаб зовнішньої корони (0=вимкнено, 1=норма, 3=велике)<br>
+      <strong style="color:var(--text2)">Амплітуда</strong> — сила мерехтіння (0=рівне, 1=повна пульсація)<br>
+      <strong style="color:var(--text2)">Спалахи</strong> — інтенсивність раптових твінкл-спалахів (0=без спалахів)
+    </div>
+  </div>`;
 
   const zoomBlock=`
   <div style="grid-column:1/-1;background:rgba(0,200,255,.06);border:1px solid rgba(0,200,255,.2);border-radius:8px;padding:14px 16px;margin-bottom:4px">
@@ -4140,7 +4159,7 @@ function renderColors(){
   </div>`;
 
 
-  const knownKeys = new Set([...glowKeys,...zoomKeys,...smokeKeys,...photoKeys,...seaKeys,...boolKeys,...iconKeys,'admin_theme','admin_nav_order']);
+  const knownKeys = new Set([...glowKeys,...zoomKeys,...smokeKeys,...photoKeys,...seaKeys,...dotKeys,...boolKeys,...iconKeys,'admin_theme','admin_nav_order']);
 
   const grp = (keys) => keys.filter(k=>COLORS[k]).map(k=>renderColorRow(k,COLORS[k])).join('');
 
@@ -4168,7 +4187,7 @@ function renderColors(){
        </div>`
     : '';
 
-  document.getElementById('colors-grid').innerHTML = glowBlock+zoomBlock+bgBlock+txtBlock+mapBlock+logoBlock+uiBlock+extraBlock;
+  document.getElementById('colors-grid').innerHTML = glowBlock+dotBlock+zoomBlock+bgBlock+txtBlock+mapBlock+logoBlock+uiBlock+extraBlock;
   renderSmokeSection();
   renderPhotoSection();
   renderSeaSection();
