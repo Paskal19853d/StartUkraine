@@ -2787,6 +2787,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
       </div>
       <div class="em-f"><label>Позивний</label><input id="e-grp"></div>
       <div class="em-f"><label>Фото URL</label><input id="e-photo"></div>
+      <div class="em-f em-full"><label>Відео YouTube URL</label><input id="e-video" placeholder="https://youtu.be/… або youtube.com/watch?v=…"></div>
       <div class="em-f em-full"><label>Опис</label><textarea id="e-desc"></textarea></div>
     </div>
     <div class="em-actions">
@@ -3206,6 +3207,7 @@ function _showImportReport(d) {
 async function loadPend() {
   const r=await fetch(`${API}/api/admin/pending`, {headers: authH()});
   const pend=await r.json();
+  pend.forEach(rec=>{if(!allPeople.find(x=>x.id===rec.id))allPeople.push(rec);});
   document.getElementById('pend-tb').innerHTML=!pend.length
     ?'<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px">Немає записів</td></tr>'
     :pend.map(p=>`
@@ -3924,8 +3926,8 @@ async function saveSelectedCity(){
 /* ══════════ EDIT MODAL ══════════ */
 function openEditById(id){
   editId=id;
-  const all=[...people];
-  const p=all.find(x=>x.id===id);if(!p)return;
+  const p=allPeople.find(x=>x.id===id)||people.find(x=>x.id===id);
+  if(!p)return;
   document.getElementById('em-title').textContent=`Редагування: ${p.last} ${p.first}`;
   document.getElementById('e-last').value=p.last||'';
   document.getElementById('e-first').value=p.first||'';
@@ -3939,6 +3941,7 @@ function openEditById(id){
   document.getElementById('e-approved').value=p.approved||0;
   document.getElementById('e-grp').value=p.grp||'';
   document.getElementById('e-photo').value=p.photo||'';
+  document.getElementById('e-video').value=p.video_url||'';
   document.getElementById('e-desc').value=p.descr||'';
   document.getElementById('edit-modal').classList.add('open');
 }
@@ -3958,6 +3961,7 @@ function openCreateModal(){
   document.getElementById('e-approved').value='1';
   document.getElementById('e-grp').value='';
   document.getElementById('e-photo').value='';
+  document.getElementById('e-video').value='';
   document.getElementById('e-desc').value='';
   document.getElementById('edit-modal').classList.add('open');
 }
@@ -3976,6 +3980,7 @@ async function saveEdit(){
     approved:parseInt(document.getElementById('e-approved').value),
     grp:document.getElementById('e-grp').value,
     photo:document.getElementById('e-photo').value,
+    video_url:document.getElementById('e-video').value.trim(),
     descr:document.getElementById('e-desc').value,
   };
   if(!body.last||!body.first){showN('❌ Вкажіть прізвище та імʼя',true);return;}

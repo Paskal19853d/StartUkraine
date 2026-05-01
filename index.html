@@ -2199,6 +2199,10 @@
       <div id="cdupes"></div>
     </div>
     <hr id="dupes-hr" style="display:none">
+    <div id="cvideo-wrap" style="display:none;margin:10px 0">
+      <div id="cvideo-container"></div>
+      <div id="cvideo-hint" style="font-size:9px;color:var(--muted);text-align:center;margin-top:4px;opacity:.6">ПРОБІЛ — звук вкл/викл</div>
+    </div>
     <button id="lbtn" onclick="doLike()">
       <span>&#11088;</span><span>Зірка памʼяті</span><span id="lcnt">0</span>
     </button>
@@ -2242,6 +2246,7 @@
       <div class="fg"><label>По батькові</label><input id="fmid" placeholder="Миколайович"></div>
       <div class="fg"><label>Фото (URL)</label><input id="fphoto" placeholder="https://…"></div>
     </div>
+    <div class="fr full"><div class="fg"><label>Відео YouTube (URL)</label><input id="fvideo" placeholder="https://youtu.be/… або youtube.com/watch?v=…"></div></div>
     <div class="fr">
       <div class="fg"><label>Дата народження</label><input type="date" id="fbirth"></div>
       <div class="fg"><label>Дата загибелі</label><input type="date" id="fdeath"></div>
@@ -2631,6 +2636,13 @@ mw.addEventListener('mousedown',e=>{
   drag=true;dragS={x:e.clientX,y:e.clientY};trS={x:tr.x,y:tr.y};mw.classList.add('grabbing');
 });
 let _mousePending=false,_lastMX=0,_lastMY=0;
+let _tipPid=null;
+
+function _ytExtractId(url){
+  if(!url)return null;
+  const m=url.match(/(?:youtu\.be\/|[?&]v=|\/embed\/)([a-zA-Z0-9_-]{11})/);
+  return m?m[1]:null;
+}
 window.addEventListener('mousemove',e=>{
   if(drag){tr.x=trS.x+(e.clientX-dragS.x);tr.y=trS.y+(e.clientY-dragS.y);clampTr();scheduleApplyTr();document.getElementById('tip').style.display='none';return;}
   _lastMX=e.clientX;_lastMY=e.clientY;
@@ -2640,11 +2652,81 @@ window.addEventListener('mousemove',e=>{
     _mousePending=false;
     const r=mw.getBoundingClientRect();const sx=_lastMX-r.left,sy=_lastMY-r.top;
     const p=hit(sx,sy);const tip=document.getElementById('tip');
-    if(p){hovId=p.id;mw.style.cursor='pointer';tip.style.display='block';tip.style.left=(sx+16)+'px';tip.style.top=(sy-10)+'px';
-      const dupes=people.filter(x=>x._dupKey&&x._dupKey===p._dupKey&&x.id!==p.id);
-      tip.innerHTML=`<div class="tn">${h(p.last)} ${h(p.first)}</div><div class="tl">&#9875; ${h(p.bury)||'—'}</div><div class="ts">&#11088; ${p.likes||0}${dupes.length?' &nbsp;&#128279;'+dupes.length+' збіг':''}</div>`;}
-    else{hovId=null;mw.style.cursor=isPick?'crosshair':'grab';tip.style.display='none';}
+    if(p){
+      hovId=p.id;mw.style.cursor='pointer';tip.style.display='block';
+      tip.style.left=(sx+16)+'px';tip.style.top=(sy-10)+'px';
+      if(p.id!==_tipPid){
+        _tipPid=p.id;
+        const dupes=people.filter(x=>x._dupKey&&x._dupKey===p._dupKey&&x.id!==p.id);
+        const hasVid=!!_ytExtractId(p.video_url);
+        tip.classList.remove('has-video');
+        tip.innerHTML=`<div class="tn">${h(p.last)} ${h(p.first)}</div><div class="tl">&#9875; ${h(p.bury)||'—'}</div><div class="ts">&#11088; ${p.likes||0}${dupes.length?' &nbsp;&#128279;'+dupes.length+' збіг':''}${hasVid?' &nbsp;&#9654; відео':''}</div>`;
+      }
+    } else {
+      _tipPid=null;
+      hovId=null;mw.style.cursor=isPick?'crosshair':'grab';tip.style.display='none';
+    }
   });
+});
+
+function _buildYtPreview(cont, ytId) {
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'position:relative;width:100%;aspect-ratio:16/9;border-radius:8px;overflow:hidden;cursor:pointer;background:#000;border:1px solid var(--border2)';
+
+  const img = document.createElement('img');
+  img.src = `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`;
+  img.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;opacity:.85';
+  img.onerror = () => { img.style.display='none'; };
+
+  const btn = document.createElement('div');
+  btn.style.cssText = 'position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px';
+  btn.innerHTML = '<div style="width:52px;height:52px;background:rgba(255,0,0,.9);border-radius:50%;display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="24" height="24" fill="white"><polygon points="9,7 19,12 9,17"/></svg></div><div style="font-size:11px;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.8)">Натисніть для перегляду</div>';
+
+  wrap.appendChild(img);
+  wrap.appendChild(btn);
+  cont.appendChild(wrap);
+
+  // Перевіряємо embeddability через oEmbed у фоні
+  // YouTube повертає 401 якщо вбудовування заборонено власником
+  let embeddable = null;
+  fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${ytId}&format=json`)
+    .then(r => { embeddable = r.ok; if (!r.ok) _ytFallback(cont, ytId); })
+    .catch(() => { embeddable = true; });
+
+  wrap.onclick = async () => {
+    if (embeddable === null) await new Promise(r => setTimeout(r, 600));
+    if (embeddable === false) { _ytFallback(cont, ytId); return; }
+    cont.innerHTML = '';
+    const fr = document.createElement('iframe');
+    fr.id = 'card-yt-iframe';
+    fr.src = `https://www.youtube.com/embed/${ytId}?autoplay=1&controls=1&rel=0&modestbranding=1&enablejsapi=1&playsinline=1`;
+    fr.setAttribute('frameborder','0');
+    fr.setAttribute('allow','autoplay; encrypted-media; gyroscope; picture-in-picture');
+    fr.setAttribute('allowfullscreen','');
+    fr.style.cssText = 'width:100%;aspect-ratio:16/9;border-radius:8px;border:1px solid var(--border2);display:block';
+    cont.appendChild(fr);
+  };
+}
+
+function _ytFallback(cont, ytId) {
+  cont.innerHTML = '';
+  const d = document.createElement('div');
+  d.style.cssText = 'background:rgba(20,0,0,.4);border:1px solid rgba(224,80,80,.3);border-radius:8px;padding:16px;text-align:center';
+  d.innerHTML = `<div style="color:#e05050;font-size:12px;margin-bottom:10px">⚠️ Власник відео заборонив вбудовування</div><a href="https://www.youtube.com/watch?v=${ytId}" target="_blank" rel="noopener" style="display:inline-block;background:#ff0000;color:#fff;padding:8px 18px;border-radius:6px;font-size:12px;text-decoration:none;font-weight:600">▶ Відкрити на YouTube</a>`;
+  cont.appendChild(d);
+}
+
+let _cardYtMuted = false;
+window.addEventListener('keydown',e=>{
+  if(e.code==='Space'){
+    const f=document.getElementById('card-yt-iframe');
+    if(!f) return;
+    e.preventDefault();
+    _cardYtMuted=!_cardYtMuted;
+    f.contentWindow.postMessage(JSON.stringify({event:'command',func:_cardYtMuted?'mute':'unMute',args:[]}), 'https://www.youtube.com');
+    const hint=document.getElementById('cvideo-hint');
+    if(hint)hint.textContent=_cardYtMuted?'🔇 ПРОБІЛ — увімкнути звук':'🔊 ПРОБІЛ — вимкнути звук';
+  }
 });
 window.addEventListener('mouseup',e=>{
   const was=drag;drag=false;mw.classList.remove('grabbing');
@@ -3024,10 +3106,29 @@ function openCard(p) {
     }
   }
 
+  // ── Відео YouTube ──
+  const cvWrap = document.getElementById('cvideo-wrap');
+  const cvCont = document.getElementById('cvideo-container');
+  if (cvCont) cvCont.innerHTML = '';
+  const ytId = _ytExtractId(p.video_url);
+  if (ytId && cvWrap && cvCont) {
+    _buildYtPreview(cvCont, ytId);
+    cvWrap.style.display = 'block';
+  } else if (cvWrap) {
+    cvWrap.style.display = 'none';
+  }
+
   const card = document.getElementById('card');
   if (card) card.classList.add('open');
 }
-function closeCard(){document.getElementById('card').classList.remove('open');selId=null;activePerson=null;}
+function closeCard(){
+  document.getElementById('card').classList.remove('open');
+  selId=null; activePerson=null;
+  const cvCont=document.getElementById('cvideo-container');
+  if(cvCont) cvCont.innerHTML='';
+  const cvWrap=document.getElementById('cvideo-wrap');
+  if(cvWrap) cvWrap.style.display='none';
+}
 function fd(s){if(!s)return'?';try{return new Date(s).toLocaleDateString('uk-UA',{day:'numeric',month:'long',year:'numeric'});}catch{return s;}}
 
 /* ── Likes ── */
@@ -3277,7 +3378,7 @@ async function submitAdd(){
   const py=document.getElementById('fpy').value;
   if(!last||!first){showN("Введіть прізвище та імʼя",true);return;}
   if(!px||!py){showN("Оберіть місце поховання на карті",true);return;}
-  const body={last,first,mid:document.getElementById('fmid').value.trim(),birth:document.getElementById('fbirth').value||null,death:document.getElementById('fdeath').value||null,loc:document.getElementById('floc').value.trim(),bury:document.getElementById('fbury').value.trim(),circ:document.getElementById('fcirc').value,descr:document.getElementById('fdesc').value.trim(),photo:document.getElementById('fphoto').value.trim(),color:selColor,pos_x:+px,pos_y:+py,added_by:curUser?.name||''};
+  const body={last,first,mid:document.getElementById('fmid').value.trim(),birth:document.getElementById('fbirth').value||null,death:document.getElementById('fdeath').value||null,loc:document.getElementById('floc').value.trim(),bury:document.getElementById('fbury').value.trim(),circ:document.getElementById('fcirc').value,descr:document.getElementById('fdesc').value.trim(),photo:document.getElementById('fphoto').value.trim(),video_url:document.getElementById('fvideo').value.trim(),color:selColor,pos_x:+px,pos_y:+py,added_by:curUser?.name||''};
   try{const r=await fetch(API+'/api/people',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const d=await r.json();showN(d.message||"Надіслано на модерацію");}
   catch{showN("Надіслано на модерацію (офлайн)");}
   closeAdd();

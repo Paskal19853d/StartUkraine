@@ -229,6 +229,11 @@ def init_db():
             c.execute("ALTER TABLE users ADD COLUMN notes TEXT")
         except Exception:
             pass
+        # Migration: add video_url to memorials
+        try:
+            c.execute("ALTER TABLE memorials ADD COLUMN video_url VARCHAR(500) NOT NULL DEFAULT ''")
+        except Exception:
+            pass
 
     # ── Admin user ──────────────────────────────────────
     with db.cursor() as c:
@@ -866,6 +871,7 @@ async def security_headers(request, call_next):
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "font-src 'self' https://fonts.gstatic.com; "
         "img-src 'self' data: https: blob:; "
+        "frame-src https://www.youtube.com https://www.youtube-nocookie.com; "
         "connect-src 'self' ws://127.0.0.1:8000 wss://127.0.0.1:8000 http://127.0.0.1:8000;"
     )
     return response
@@ -977,6 +983,16 @@ def _validate_color(v: str) -> str:
         return v
     raise HTTPException(400, "Невалідний формат кольору")
 
+_YT_ID_RE = re.compile(r'(?:youtu\.be/|[?&]v=|/embed/)([a-zA-Z0-9_-]{11})')
+
+def _validate_yt_url(url: str) -> str:
+    if not url:
+        return ''
+    url = url.strip()[:500]
+    if not _YT_ID_RE.search(url):
+        raise HTTPException(400, "Невалідне посилання YouTube")
+    return url
+
 # ── Schemas ───────────────────────────────────────────────
 class PersonIn(BaseModel):
     last: str = Field(..., max_length=200)
@@ -988,6 +1004,7 @@ class PersonIn(BaseModel):
     circ: Optional[str] = Field("", max_length=200)
     descr: Optional[str] = ""
     photo: Optional[str] = ""; color: Optional[str] = "#4fc3f7"
+    video_url: Optional[str] = ""
     pos_x: float; pos_y: float; grp: Optional[str] = ""
     added_by: Optional[str] = ""
 
@@ -999,7 +1016,7 @@ class PersonUpdate(BaseModel):
     descr: Optional[str] = None; photo: Optional[str] = None
     color: Optional[str] = None; pos_x: Optional[float] = None
     pos_y: Optional[float] = None; approved: Optional[int] = None
-    grp: Optional[str] = None
+    grp: Optional[str] = None; video_url: Optional[str] = None
 
 class UserReg(BaseModel):
     name: str; email: str; password: str
@@ -1384,8 +1401,9 @@ def add_person(p: PersonIn, request: Request):
         raise HTTPException(400, "Ім'я обов'язкове (макс. 100 символів)")
     if p.descr and len(p.descr) > 5000:
         raise HTTPException(400, "Опис занадто довгий (макс. 5000 символів)")
-    photo = _validate_photo_url(p.photo or '')
-    color = _validate_color(p.color or '')
+    photo     = _validate_photo_url(p.photo or '')
+    color     = _validate_color(p.color or '')
+    video_url = _validate_yt_url(p.video_url or '')
     last  = _sanitize_text(p.last,  100)
     first = _sanitize_text(p.first, 100)
     mid   = _sanitize_text(p.mid or '', 100)
@@ -1397,10 +1415,10 @@ def add_person(p: PersonIn, request: Request):
     with db.cursor() as c:
         c.execute("""
             INSERT INTO memorials
-            (last,first,mid,birth,death,loc,bury,circ,descr,photo,color,pos_x,pos_y,grp,added_by,approved)
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,0)
+            (last,first,mid,birth,death,loc,bury,circ,descr,photo,color,video_url,pos_x,pos_y,grp,added_by,approved)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,0)
         """, (last, first, mid, p.birth, p.death, loc, bury,
-              circ, p.descr, photo, color, p.pos_x, p.pos_y, grp, p.added_by))
+              circ, p.descr, photo, color, video_url, p.pos_x, p.pos_y, grp, p.added_by))
         new_id = c.lastrowid
     db.commit()
     db.close()
@@ -1698,6 +1716,7 @@ _MEMORIAL_COL_MAP = {
     'bury':    '`bury`=%s',    'circ':  '`circ`=%s',  'descr':  '`descr`=%s',
     'photo':   '`photo`=%s',   'color': '`color`=%s', 'pos_x':  '`pos_x`=%s',
     'pos_y':   '`pos_y`=%s',   'approved':'`approved`=%s', 'grp': '`grp`=%s',
+    'video_url': '`video_url`=%s',
 }
 _MEMORIAL_ALLOWED_FIELDS = set(_MEMORIAL_COL_MAP)
 
@@ -1713,6 +1732,8 @@ def update_memorial(mid: int, p: PersonUpdate, request: Request):
             v = _validate_photo_url(v)
         elif f == 'color' and v:
             v = _validate_color(v)
+        elif f == 'video_url':
+            v = _validate_yt_url(v or '')
         fields.append(_MEMORIAL_COL_MAP[f])
         vals.append(v)
     if not fields:
