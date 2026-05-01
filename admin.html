@@ -235,6 +235,19 @@ tr:hover td{background:rgba(255,255,255,.02)}
 
 .online-dot{width:7px;height:7px;border-radius:50%;background:#3a9a60;display:inline-block;box-shadow:0 0 5px #3a9a60;margin-right:4px}
 
+/* ── USERS ── */
+.user-stats-row{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.user-stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 16px;flex:1;min-width:90px;text-align:center}
+.user-stat-card .val{font-size:22px;font-weight:700;line-height:1.2}
+.user-stat-card .key{font-size:10px;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:.05em}
+.users-filter-bar{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center}
+.users-filter-bar input{flex:1;min-width:180px;padding:7px 12px;background:var(--panel);border:1px solid var(--border);color:var(--text);border-radius:6px;font-size:12px;outline:none}
+.users-filter-bar select{padding:7px 10px;background:var(--panel);border:1px solid var(--border);color:var(--text);border-radius:6px;font-size:12px;outline:none}
+#user-modal{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:600;display:none;align-items:center;justify-content:center}
+#user-modal.open{display:flex}
+#um-close{position:absolute;top:14px;right:14px;background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;transition:transform .2s}
+#um-close:hover{transform:rotate(90deg);color:var(--text)}
+
 /* ── CHARTS / SERVER STATS ── */
 .chart-grid{display:-webkit-box;display:-webkit-flex;display:flex;gap:16px;margin-bottom:20px;-webkit-flex-wrap:wrap;flex-wrap:wrap}
 .chart-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;-webkit-flex:1;flex:1;min-width:280px}
@@ -421,8 +434,35 @@ tr:hover td{background:rgba(255,255,255,.02)}
       <!-- USERS -->
       <div id="sec-users" class="section">
         <div class="sec-title">👥 Користувачі</div>
-        <div class="tbl-wrap"><table>
-          <thead><tr><th>ID</th><th>Імʼя</th><th>Email</th><th>Статус</th><th>Онлайн</th><th>Роль</th><th>Дії</th></tr></thead>
+        <div class="user-stats-row">
+          <div class="user-stat-card"><div class="val" id="ust-total">—</div><div class="key">Всього</div></div>
+          <div class="user-stat-card"><div class="val" id="ust-active" style="color:#3a9a60">—</div><div class="key">Активних</div></div>
+          <div class="user-stat-card"><div class="val" id="ust-banned" style="color:#e05050">—</div><div class="key">Заблоковано</div></div>
+          <div class="user-stat-card"><div class="val" id="ust-online" style="color:#00c8ff">—</div><div class="key">Онлайн</div></div>
+          <div class="user-stat-card"><div class="val" id="ust-admins" style="color:#d4a800">—</div><div class="key">Адмінів</div></div>
+        </div>
+        <div class="users-filter-bar">
+          <input id="users-search" type="text" placeholder="🔍 Пошук по імені, email, ID…" oninput="filterUsersTable()">
+          <select id="users-f-status" onchange="filterUsersTable()">
+            <option value="all">Всі статуси</option>
+            <option value="active">Активні</option>
+            <option value="temp">Тимчасовий бан</option>
+            <option value="perm">Постійний бан</option>
+            <option value="online">Онлайн</option>
+          </select>
+          <select id="users-f-role" onchange="filterUsersTable()">
+            <option value="all">Всі ролі</option>
+            <option value="user">Юзери</option>
+            <option value="admin">Адміни</option>
+          </select>
+          <button class="btn btn-b" onclick="loadUsers()">↺ Оновити</button>
+        </div>
+        <div class="tbl-wrap"><table id="users-table">
+          <thead><tr>
+            <th>ID</th><th>Імʼя</th><th>Email</th>
+            <th>Статус</th><th>Онлайн</th><th>Роль</th>
+            <th>Зареєстровано</th><th>Дії</th>
+          </tr></thead>
           <tbody id="users-tb"></tbody>
         </table></div>
       </div>
@@ -2701,6 +2741,30 @@ tr:hover td{background:rgba(255,255,255,.02)}
   </div><!-- /main -->
 </div><!-- /layout -->
 
+<!-- USER MODAL -->
+<div id="user-modal">
+  <div class="em-box">
+    <button id="um-close" onclick="closeUserModal()">✕</button>
+    <h3>✏️ Редагування користувача</h3>
+    <input type="hidden" id="um-uid">
+    <div class="em-grid">
+      <div class="em-f"><label>Імʼя</label><input type="text" id="um-name"></div>
+      <div class="em-f"><label>Email</label><input type="email" id="um-email"></div>
+      <div class="em-f em-full"><label>Роль</label>
+        <select id="um-role"><option value="0">Юзер</option><option value="1">Адмін</option></select>
+      </div>
+      <div class="em-f em-full"><label>Нотатки (внутрішні)</label>
+        <textarea id="um-notes" placeholder="Внутрішні нотатки про користувача..."></textarea>
+      </div>
+    </div>
+    <div class="em-actions">
+      <button class="btn btn-r" onclick="deleteUser(+document.getElementById('um-uid').value)">🗑 Видалити</button>
+      <button class="btn" onclick="closeUserModal()">Скасувати</button>
+      <button class="btn btn-b" onclick="saveUserEdit()">💾 Зберегти</button>
+    </div>
+  </div>
+</div>
+
 <!-- EDIT MODAL -->
 <div id="edit-modal">
   <div class="em-box">
@@ -3162,22 +3226,192 @@ async function approveMem(id){try{const r=await fetch(`${API}/api/admin/approve/
 async function delMem(id){if(!confirm('Видалити?'))return;try{const r=await fetch(`${API}/api/admin/memorial/${id}`,{method:'DELETE',headers:authH()});if(!r.ok)throw new Error(r.status);showN('🗑 Видалено');loadMem();loadStats();}catch{showN('❌ Помилка видалення',true);}}
 
 /* ══════════ USERS ══════════ */
+let _usersData = [];
+let _usersBanMenu = null;
+
 async function loadUsers() {
-  const r=await fetch(`${API}/api/admin/users`, {headers: authH()});
-  const users=await r.json();
-  document.getElementById('users-tb').innerHTML=users.map(u=>`
-    <tr>
-      <td style="color:var(--muted)">${u.id}</td>
+  try {
+    const r = await fetch(`${API}/api/admin/users`, {headers: authH()});
+    if (!r.ok) throw new Error(r.status);
+    _usersData = await r.json();
+    _renderUserStats();
+    filterUsersTable();
+  } catch { showN('❌ Помилка завантаження користувачів', true); }
+}
+
+function _renderUserStats() {
+  document.getElementById('ust-total').textContent  = _usersData.length;
+  document.getElementById('ust-active').textContent = _usersData.filter(u => u.ban_status === 'active').length;
+  document.getElementById('ust-banned').textContent = _usersData.filter(u => u.is_banned).length;
+  document.getElementById('ust-online').textContent = _usersData.filter(u => u.online).length;
+  document.getElementById('ust-admins').textContent = _usersData.filter(u => u.is_admin).length;
+}
+
+function filterUsersTable() {
+  const q  = (document.getElementById('users-search')?.value || '').toLowerCase();
+  const st = document.getElementById('users-f-status')?.value || 'all';
+  const rl = document.getElementById('users-f-role')?.value   || 'all';
+  let data = _usersData;
+  if (q) data = data.filter(u =>
+    u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q) || String(u.id).includes(q)
+  );
+  if (st === 'active') data = data.filter(u => u.ban_status === 'active');
+  else if (st === 'temp')   data = data.filter(u => u.ban_status === 'temp');
+  else if (st === 'perm')   data = data.filter(u => u.ban_status === 'perm');
+  else if (st === 'online') data = data.filter(u => u.online);
+  if (rl === 'admin') data = data.filter(u => u.is_admin);
+  else if (rl === 'user') data = data.filter(u => !u.is_admin);
+  _renderUsersTable(data);
+}
+
+function _fmtRelTime(ts) {
+  if (!ts) return '—';
+  const d = Math.floor(Date.now()/1000 - ts);
+  if (d < 60)      return 'щойно';
+  if (d < 3600)    return `${Math.floor(d/60)} хв тому`;
+  if (d < 86400)   return `${Math.floor(d/3600)} год тому`;
+  if (d < 2592000) return `${Math.floor(d/86400)} дн тому`;
+  return new Date(ts*1000).toLocaleDateString('uk-UA');
+}
+
+function _fmtBanDur(sec) {
+  if (!sec) return 'назавжди';
+  const h = Math.floor(sec/3600), m = Math.floor((sec%3600)/60);
+  if (h > 24) return `${Math.floor(h/24)}д ${h%24}г`;
+  if (h > 0)  return `${h}г ${m}хв`;
+  return `${m}хв`;
+}
+
+function _renderUsersTable(data) {
+  document.getElementById('users-tb').innerHTML = data.map(u => {
+    let statusBadge;
+    if (u.ban_status === 'perm') {
+      statusBadge = `<span class="badge br">🚫 Бан</span>`;
+    } else if (u.ban_status === 'temp') {
+      statusBadge = `<span class="badge" style="background:rgba(212,168,0,.12);color:#d4a800;border:1px solid rgba(212,168,0,.3)">⏳ ${_fmtBanDur(u.ban_remaining)}</span>`;
+    } else if (u.ban_status === 'expired') {
+      statusBadge = `<span class="badge" style="background:rgba(200,200,200,.08);color:var(--muted);border:1px solid var(--border)">Бан закінчився</span>`;
+    } else {
+      statusBadge = `<span class="badge bg">Активний</span>`;
+    }
+    const onlineEl = u.online
+      ? `<span class="online-dot"></span><span style="color:#3a9a60;font-size:11px">Онлайн</span>`
+      : `<span style="color:var(--muted);font-size:11px">${_fmtRelTime(u.last_seen)}</span>`;
+    const roleBadge = u.is_admin ? `<span class="badge by">Адмін</span>` : `<span class="badge bb">Юзер</span>`;
+    const banBtn = u.is_banned
+      ? `<button class="btn btn-g" style="font-size:10px" onclick="unbanUser(${u.id})">✅ Розблок</button>`
+      : `<button class="btn btn-r" style="font-size:10px" onclick="openBanMenu(${u.id},this)">🚫 Бан ▾</button>`;
+    const actions = `<div style="display:flex;gap:4px;flex-wrap:wrap">
+      <button class="btn btn-b" style="font-size:10px" onclick="openUserModal(${u.id})">✏️ Ред.</button>
+      ${u.is_admin ? '' : banBtn}
+    </div>`;
+    return `<tr>
+      <td style="color:var(--muted);font-size:11px">${u.id}</td>
       <td><strong>${h(u.name)}</strong></td>
       <td style="font-size:11px;color:var(--text2)">${h(u.email)}</td>
-      <td><span class="badge ${u.is_banned?'br':'bg'}">${u.is_banned?'Бан':'Актив'}</span></td>
-      <td>${u.online?'<span class="online-dot"></span>Онлайн':'<span style="color:var(--muted)">Офлайн</span>'}</td>
-      <td><span class="badge ${u.is_admin?'by':'bb'}">${u.is_admin?'Адмін':'Юзер'}</span></td>
-      <td>${u.is_admin?'':`<button class="btn ${u.is_banned?'btn-g':'btn-r'}" onclick="${u.is_banned?'unban':'ban'}User(${u.id})">${u.is_banned?'✅ Розблок':'🚫 Бан'}</button>`}</td>
-    </tr>`).join('');
+      <td>${statusBadge}</td>
+      <td>${onlineEl}</td>
+      <td>${roleBadge}</td>
+      <td style="font-size:11px;color:var(--muted)">${_fmtRelTime(u.created)}</td>
+      <td>${actions}</td>
+    </tr>`;
+  }).join('');
 }
-async function banUser(id){if(!confirm('Заблокувати цього користувача?'))return;try{const r=await fetch(`${API}/api/admin/ban/${id}`,{method:'POST',headers:authH()});if(!r.ok)throw new Error(r.status);showN('🚫 Заблоковано');loadUsers();}catch{showN('❌ Помилка блокування',true);}}
-async function unbanUser(id){if(!confirm('Розблокувати цього користувача?'))return;try{const r=await fetch(`${API}/api/admin/unban/${id}`,{method:'POST',headers:authH()});if(!r.ok)throw new Error(r.status);showN('✅ Розблоковано');loadUsers();}catch{showN('❌ Помилка розблокування',true);}}
+
+function openUserModal(uid) {
+  _closeUserBanMenu();
+  const u = _usersData.find(x => x.id === uid);
+  if (!u) return;
+  document.getElementById('um-uid').value   = u.id;
+  document.getElementById('um-name').value  = u.name;
+  document.getElementById('um-email').value = u.email;
+  document.getElementById('um-role').value  = u.is_admin ? '1' : '0';
+  document.getElementById('um-notes').value = u.notes || '';
+  document.getElementById('user-modal').classList.add('open');
+}
+function closeUserModal() { document.getElementById('user-modal').classList.remove('open'); }
+
+async function saveUserEdit() {
+  const uid = +document.getElementById('um-uid').value;
+  const body = {
+    name:     document.getElementById('um-name').value.trim(),
+    email:    document.getElementById('um-email').value.trim(),
+    is_admin: +document.getElementById('um-role').value,
+    notes:    document.getElementById('um-notes').value,
+  };
+  try {
+    const r = await fetch(`${API}/api/admin/user/${uid}`, {
+      method:'PUT', headers:{...authH(),'Content-Type':'application/json'}, body:JSON.stringify(body)
+    });
+    if (!r.ok) { const e=await r.json(); throw new Error(e.detail||r.status); }
+    showN('✅ Збережено'); closeUserModal(); loadUsers();
+  } catch(e) { showN(`❌ ${e.message}`, true); }
+}
+
+function _closeUserBanMenu() {
+  if (_usersBanMenu) { _usersBanMenu.remove(); _usersBanMenu = null; }
+}
+
+function openBanMenu(uid, btn) {
+  _closeUserBanMenu();
+  const rect = btn.getBoundingClientRect();
+  const menu = document.createElement('div');
+  menu.id = 'user-ban-menu';
+  menu.style.cssText = `position:fixed;top:${rect.bottom+4}px;left:${rect.left}px;z-index:9000;
+    background:#060c1a;border:1px solid var(--border2);border-radius:8px;padding:6px;
+    display:flex;flex-direction:column;gap:2px;min-width:165px;box-shadow:0 4px 20px rgba(0,0,0,.6)`;
+  [
+    {label:'⏳ 1 годину',  dur:3600},
+    {label:'⏳ 6 годин',   dur:21600},
+    {label:'⏳ 1 день',    dur:86400},
+    {label:'⏳ 3 дні',     dur:259200},
+    {label:'⏳ 7 днів',    dur:604800},
+    {label:'⏳ 30 днів',   dur:2592000},
+    {label:'🚫 Назавжди',  dur:0},
+  ].forEach(o => {
+    const b = document.createElement('button');
+    b.className = 'btn btn-r';
+    b.style.cssText = 'width:100%;text-align:left;font-size:11px;border-radius:5px';
+    b.textContent = o.label;
+    b.onclick = () => applyBan(uid, o.dur);
+    menu.appendChild(b);
+  });
+  document.body.appendChild(menu);
+  _usersBanMenu = menu;
+  const close = e => { if (!menu.contains(e.target) && e.target !== btn) { _closeUserBanMenu(); document.removeEventListener('click', close); } };
+  setTimeout(() => document.addEventListener('click', close), 10);
+}
+
+async function applyBan(uid, duration) {
+  _closeUserBanMenu();
+  try {
+    const r = await fetch(`${API}/api/admin/ban/${uid}`, {
+      method:'POST', headers:{...authH(),'Content-Type':'application/json'},
+      body: JSON.stringify({duration, reason:''})
+    });
+    if (!r.ok) throw new Error(r.status);
+    showN(duration ? `⏳ Заблоковано на ${_fmtBanDur(duration)}` : '🚫 Заблоковано назавжди');
+    loadUsers();
+  } catch { showN('❌ Помилка блокування', true); }
+}
+
+async function unbanUser(id) {
+  if (!confirm('Розблокувати цього користувача?')) return;
+  try {
+    const r = await fetch(`${API}/api/admin/unban/${id}`, {method:'POST', headers:authH()});
+    if (!r.ok) throw new Error(r.status);
+    showN('✅ Розблоковано'); loadUsers();
+  } catch { showN('❌ Помилка розблокування', true); }
+}
+
+async function deleteUser(uid) {
+  if (!confirm('Видалити цього користувача? Цю дію не можна скасувати.')) return;
+  try {
+    const r = await fetch(`${API}/api/admin/user/${uid}`, {method:'DELETE', headers:authH()});
+    if (!r.ok) { const e=await r.json(); throw new Error(e.detail||r.status); }
+    showN('🗑 Користувача видалено'); closeUserModal(); loadUsers();
+  } catch(e) { showN(`❌ ${e.message}`, true); }
+}
 
 /* ══════════════════════════════════
    MAP EDITOR

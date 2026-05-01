@@ -220,6 +220,15 @@ def init_db():
             c.execute("ALTER TABLE cities ADD COLUMN color VARCHAR(20) NOT NULL DEFAULT '#a0d7ff'")
         except Exception:
             pass  # column already exists
+        # Migration: add ban_until and notes to users
+        try:
+            c.execute("ALTER TABLE users ADD COLUMN ban_until INT NOT NULL DEFAULT 0")
+        except Exception:
+            pass
+        try:
+            c.execute("ALTER TABLE users ADD COLUMN notes TEXT")
+        except Exception:
+            pass
 
     # ── Admin user ──────────────────────────────────────
     with db.cursor() as c:
@@ -1015,6 +1024,16 @@ class CityUpdate(BaseModel):
 
 class CityCreate(BaseModel):
     name: str
+
+class BanRequest(BaseModel):
+    duration: int = 0   # seconds; 0 = permanent
+    reason: str = ""
+
+class UserUpdate(BaseModel):
+    name:     Optional[str] = None
+    email:    Optional[str] = None
+    is_admin: Optional[int] = None
+    notes:    Optional[str] = None
     tier: Optional[int] = 0
     color: Optional[str] = '#a0d7ff'
 
@@ -1460,7 +1479,7 @@ def login(u: UserLogin, request: Request):
     db = get_db()
     with db.cursor() as c:
         c.execute(
-            "SELECT id,name,email,is_admin,is_banned,password FROM users WHERE email=%s",
+            "SELECT id,name,email,is_admin,is_banned,ban_until,password FROM users WHERE email=%s",
             (u.email.lower(),)
         )
         row = c.fetchone()
@@ -1470,8 +1489,19 @@ def login(u: UserLogin, request: Request):
         _record_fail(ip, u.email)
         raise HTTPException(401, "Невірний email або пароль")
     if row["is_banned"]:
-        db.close()
-        raise HTTPException(403, "Акаунт заблоковано")
+        bu = row.get("ban_until") or 0
+        now_ts = int(time.time())
+        if bu > 0 and bu <= now_ts:
+            # temp ban expired — auto-unban
+            with db.cursor() as c:
+                c.execute("UPDATE users SET is_banned=0, ban_until=0 WHERE id=%s", (row["id"],))
+            db.commit()
+        else:
+            db.close()
+            if bu > 0:
+                rem = bu - now_ts
+                raise HTTPException(403, f"Акаунт тимчасово заблоковано. Залишилось: {rem // 3600}г {(rem % 3600) // 60}хв")
+            raise HTTPException(403, "Акаунт заблоковано")
     _clear_fails(ip, u.email)
     stored_hash = row["password"]
     with db.cursor() as c:
@@ -1701,21 +1731,41 @@ def get_users(request: Request):
     db = get_db()
     with db.cursor() as c:
         c.execute(
-            "SELECT id,name,email,is_admin,is_banned,last_seen,created FROM users ORDER BY id DESC"
+            "SELECT id,name,email,is_admin,is_banned,ban_until,notes,last_seen,created FROM users ORDER BY id DESC"
         )
         rows = c.fetchall()
     db.close()
     now = int(time.time())
     for r in rows:
         r["online"] = (now - (r["last_seen"] or 0)) < 120
+        bu = r.get("ban_until") or 0
+        if r["is_banned"]:
+            if bu > 0:
+                remaining = bu - now
+                if remaining <= 0:
+                    r["ban_status"] = "expired"
+                    r["ban_remaining"] = 0
+                else:
+                    r["ban_status"] = "temp"
+                    r["ban_remaining"] = remaining
+            else:
+                r["ban_status"] = "perm"
+                r["ban_remaining"] = 0
+        else:
+            r["ban_status"] = "active"
+            r["ban_remaining"] = 0
     return rows
 
 @app.post("/api/admin/ban/{uid}")
-def ban_user(uid: int, request: Request):
+def ban_user(uid: int, body: BanRequest, request: Request):
     require_admin(request)
+    ban_until = (int(time.time()) + body.duration) if body.duration > 0 else 0
     db = get_db()
     with db.cursor() as c:
-        c.execute("UPDATE users SET is_banned=1 WHERE id=%s", (uid,))
+        c.execute(
+            "UPDATE users SET is_banned=1, ban_until=%s WHERE id=%s AND is_admin=0",
+            (ban_until, uid)
+        )
     db.commit()
     db.close()
     return {"ok": True}
@@ -1725,7 +1775,43 @@ def unban_user(uid: int, request: Request):
     require_admin(request)
     db = get_db()
     with db.cursor() as c:
-        c.execute("UPDATE users SET is_banned=0 WHERE id=%s", (uid,))
+        c.execute("UPDATE users SET is_banned=0, ban_until=0 WHERE id=%s", (uid,))
+    db.commit()
+    db.close()
+    return {"ok": True}
+
+@app.put("/api/admin/user/{uid}")
+def update_user(uid: int, body: UserUpdate, request: Request):
+    me = require_admin(request)
+    fields, vals = [], []
+    if body.name is not None:
+        fields.append("name=%s"); vals.append(_sanitize_text(body.name, 100))
+    if body.email is not None:
+        fields.append("email=%s"); vals.append(body.email.lower().strip()[:120])
+    if body.is_admin is not None:
+        if uid == me["id"]:
+            raise HTTPException(400, "Не можна змінити власну роль")
+        fields.append("is_admin=%s"); vals.append(1 if body.is_admin else 0)
+    if body.notes is not None:
+        fields.append("notes=%s"); vals.append(body.notes[:1000])
+    if not fields:
+        return {"ok": True}
+    vals.append(uid)
+    db = get_db()
+    with db.cursor() as c:
+        c.execute(f"UPDATE users SET {', '.join(fields)} WHERE id=%s", vals)
+    db.commit()
+    db.close()
+    return {"ok": True}
+
+@app.delete("/api/admin/user/{uid}")
+def delete_user(uid: int, request: Request):
+    me = require_admin(request)
+    if uid == me["id"]:
+        raise HTTPException(400, "Не можна видалити власний акаунт")
+    db = get_db()
+    with db.cursor() as c:
+        c.execute("DELETE FROM users WHERE id=%s AND is_admin=0", (uid,))
     db.commit()
     db.close()
     return {"ok": True}
