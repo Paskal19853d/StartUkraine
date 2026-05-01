@@ -2704,20 +2704,22 @@ function _buildYtPreview(cont, ytId) {
     cont.innerHTML = '';
     const fr = document.createElement('iframe');
     fr.id = 'card-yt-iframe';
-    fr.src = `https://www.youtube.com/embed/${ytId}?autoplay=1&controls=1&rel=0&modestbranding=1&enablejsapi=1&playsinline=1`;
+    fr.title = 'YouTube video player';
+    fr.src = `https://www.youtube.com/embed/${ytId}?autoplay=1&enablejsapi=1`;
     fr.setAttribute('frameborder','0');
-    fr.setAttribute('allow','autoplay; encrypted-media; gyroscope; picture-in-picture');
+    fr.setAttribute('allow','accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share');
+    fr.setAttribute('referrerpolicy','strict-origin-when-cross-origin');
     fr.setAttribute('allowfullscreen','');
     fr.style.cssText = 'width:100%;aspect-ratio:16/9;border-radius:8px;border:1px solid var(--border2);display:block';
     cont.appendChild(fr);
 
-    // YouTube IFrame API надсилає onError 101/150 коли вбудовування заблоковано
+    // YouTube IFrame API надсилає onError 101/150/153 коли вбудовування заблоковано
     _clearYtErrHandler();
     _ytErrHandler = function(e) {
       if (e.origin !== 'https://www.youtube.com') return;
       try {
         const d = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
-        if (d.event === 'onError' && (d.info === 101 || d.info === 150)) {
+        if (d.event === 'onError' && (d.info === 101 || d.info === 150 || d.info === 153)) {
           _clearYtErrHandler();
           _ytFallback(cont, ytId);
         }
