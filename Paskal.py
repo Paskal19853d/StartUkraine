@@ -3,8 +3,8 @@
 Запуск: python -m uvicorn Paskal:app --reload --port 8000
 БД:     MySQL / MariaDB (налаштування у .env)
 """
-import os, time, asyncio, hashlib, threading, re, base64, secrets, string, html as _html
-import urllib.request, urllib.error
+import os, time, asyncio, hashlib, threading, re, base64, secrets, string, html as _html, json
+import urllib.request, urllib.error, urllib.parse
 import bcrypt
 from typing import Optional, List
 
@@ -21,12 +21,22 @@ except ImportError:
 
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Depends, UploadFile, File, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, StreamingResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, StreamingResponse, RedirectResponse
 import csv, io
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 load_dotenv()
+
+# ── OAuth Config (з .env) ────────────────────────────────
+GOOGLE_CLIENT_ID     = os.getenv("GOOGLE_CLIENT_ID", "")
+GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
+DIIA_CLIENT_ID       = os.getenv("DIIA_CLIENT_ID", "")
+DIIA_CLIENT_SECRET   = os.getenv("DIIA_CLIENT_SECRET", "")
+OAUTH_REDIRECT_BASE  = os.getenv("OAUTH_REDIRECT_BASE", "http://127.0.0.1:8000")
+DIIA_AUTH_URL        = os.getenv("DIIA_AUTH_URL",      "https://id.diia.gov.ua/oauth/authorize")
+DIIA_TOKEN_URL       = os.getenv("DIIA_TOKEN_URL",     "https://id.diia.gov.ua/oauth/token")
+DIIA_USERINFO_URL    = os.getenv("DIIA_USERINFO_URL",  "https://id.diia.gov.ua/oauth/userinfo")
 
 # ── MySQL Config (з .env) ────────────────────────────────
 _DB_CFG = {
@@ -314,10 +324,6 @@ def init_db():
         ("sea_svg_tx",            "0",        "Море SVG — зміщення X"),
         ("sea_svg_ty",            "0",        "Море SVG — зміщення Y"),
         ("sea_svg_scale",         "1",        "Море SVG — масштаб"),
-        ("dot_pulse_speed",       "1.0",      "Точки — швидкість мерехтіння (0.2–4.0)"),
-        ("dot_glow_size",         "1.0",      "Точки — розмір свічення (0.0–3.0)"),
-        ("dot_pulse_amp",         "1.0",      "Точки — амплітуда пульсації (0.0–1.0)"),
-        ("dot_twinkle",           "1.0",      "Точки — сила спалахів twinkle (0.0–1.0)"),
     ]
     with db.cursor() as c:
         for key, val, label in defaults:
@@ -1571,6 +1577,163 @@ def logout(request: Request):
     resp = JSONResponse({"ok": True})
     resp.delete_cookie("admin_session", path="/")
     return resp
+
+
+@app.get("/api/auth/me")
+def auth_me(request: Request):
+    token = request.cookies.get("admin_session")
+    if not token:
+        raise HTTPException(401, "Не авторизовано")
+    sess = _session_get(token)
+    if not sess:
+        raise HTTPException(401, "Сесія застаріла")
+    db = get_db()
+    with db.cursor() as c:
+        c.execute("SELECT id,name,email,is_admin FROM users WHERE id=%s", (sess["user_id"],))
+        row = c.fetchone()
+    db.close()
+    if not row:
+        raise HTTPException(401, "Користувача не знайдено")
+    return {"ok": True, "user": row}
+
+
+def _oauth_login_or_create(email: str, name: str) -> dict:
+    db = get_db()
+    with db.cursor() as c:
+        c.execute("SELECT id,name,email,is_admin FROM users WHERE email=%s", (email,))
+        row = c.fetchone()
+        if not row:
+            c.execute(
+                "INSERT INTO users (name,email,password) VALUES (%s,%s,%s)",
+                (name, email, hash_pass(secrets.token_hex(16)))
+            )
+            db.commit()
+            c.execute("SELECT id,name,email,is_admin FROM users WHERE email=%s", (email,))
+            row = c.fetchone()
+    db.close()
+    return row
+
+
+def _oauth_set_session(resp: RedirectResponse, user_id: int) -> RedirectResponse:
+    token = _session_create(user_id)
+    resp.set_cookie(key="admin_session", value=token, httponly=True,
+                    secure=False, samesite="lax", max_age=86400 * 7, path="/")
+    return resp
+
+
+# ── Google OAuth ──────────────────────────────────────────
+
+@app.get("/api/auth/google")
+def auth_google():
+    if not GOOGLE_CLIENT_ID:
+        return RedirectResponse("/?oauth_error=google_not_configured", status_code=302)
+    params = urllib.parse.urlencode({
+        "client_id":     GOOGLE_CLIENT_ID,
+        "redirect_uri":  f"{OAUTH_REDIRECT_BASE}/api/auth/google/callback",
+        "response_type": "code",
+        "scope":         "openid email profile",
+        "access_type":   "online",
+    })
+    return RedirectResponse(f"https://accounts.google.com/o/oauth2/v2/auth?{params}", status_code=302)
+
+
+@app.get("/api/auth/google/callback")
+def auth_google_callback(code: str = None, error: str = None):
+    if error or not code:
+        return RedirectResponse("/?oauth_error=google_cancelled", status_code=302)
+    token_data = urllib.parse.urlencode({
+        "code":          code,
+        "client_id":     GOOGLE_CLIENT_ID,
+        "client_secret": GOOGLE_CLIENT_SECRET,
+        "redirect_uri":  f"{OAUTH_REDIRECT_BASE}/api/auth/google/callback",
+        "grant_type":    "authorization_code",
+    }).encode()
+    try:
+        req = urllib.request.Request(
+            "https://oauth2.googleapis.com/token",
+            data=token_data,
+            headers={"Content-Type": "application/x-www-form-urlencoded"}
+        )
+        with urllib.request.urlopen(req, timeout=10) as r:
+            token_json = json.loads(r.read())
+    except Exception:
+        return RedirectResponse("/?oauth_error=google_token", status_code=302)
+    access_token = token_json.get("access_token")
+    if not access_token:
+        return RedirectResponse("/?oauth_error=google_token", status_code=302)
+    try:
+        req2 = urllib.request.Request(
+            "https://www.googleapis.com/oauth2/v2/userinfo",
+            headers={"Authorization": f"Bearer {access_token}"}
+        )
+        with urllib.request.urlopen(req2, timeout=10) as r:
+            info = json.loads(r.read())
+    except Exception:
+        return RedirectResponse("/?oauth_error=google_userinfo", status_code=302)
+    email = info.get("email", "").lower()
+    if not email:
+        return RedirectResponse("/?oauth_error=google_no_email", status_code=302)
+    name = info.get("name") or email.split("@")[0]
+    user = _oauth_login_or_create(email, name)
+    resp = RedirectResponse("/?oauth=success", status_code=302)
+    return _oauth_set_session(resp, user["id"])
+
+
+# ── Дія OAuth ─────────────────────────────────────────────
+
+@app.get("/api/auth/diia")
+def auth_diia():
+    if not DIIA_CLIENT_ID:
+        return RedirectResponse("/?oauth_error=diia_not_configured", status_code=302)
+    params = urllib.parse.urlencode({
+        "client_id":     DIIA_CLIENT_ID,
+        "redirect_uri":  f"{OAUTH_REDIRECT_BASE}/api/auth/diia/callback",
+        "response_type": "code",
+        "scope":         "openid email profile",
+    })
+    return RedirectResponse(f"{DIIA_AUTH_URL}?{params}", status_code=302)
+
+
+@app.get("/api/auth/diia/callback")
+def auth_diia_callback(code: str = None, error: str = None):
+    if error or not code:
+        return RedirectResponse("/?oauth_error=diia_cancelled", status_code=302)
+    token_data = urllib.parse.urlencode({
+        "code":          code,
+        "client_id":     DIIA_CLIENT_ID,
+        "client_secret": DIIA_CLIENT_SECRET,
+        "redirect_uri":  f"{OAUTH_REDIRECT_BASE}/api/auth/diia/callback",
+        "grant_type":    "authorization_code",
+    }).encode()
+    try:
+        req = urllib.request.Request(
+            DIIA_TOKEN_URL,
+            data=token_data,
+            headers={"Content-Type": "application/x-www-form-urlencoded"}
+        )
+        with urllib.request.urlopen(req, timeout=10) as r:
+            token_json = json.loads(r.read())
+    except Exception:
+        return RedirectResponse("/?oauth_error=diia_token", status_code=302)
+    access_token = token_json.get("access_token")
+    if not access_token:
+        return RedirectResponse("/?oauth_error=diia_token", status_code=302)
+    try:
+        req2 = urllib.request.Request(
+            DIIA_USERINFO_URL,
+            headers={"Authorization": f"Bearer {access_token}"}
+        )
+        with urllib.request.urlopen(req2, timeout=10) as r:
+            info = json.loads(r.read())
+    except Exception:
+        return RedirectResponse("/?oauth_error=diia_userinfo", status_code=302)
+    email = info.get("email", "").lower()
+    if not email:
+        return RedirectResponse("/?oauth_error=diia_no_email", status_code=302)
+    name = info.get("name") or info.get("rnokpp") or email.split("@")[0]
+    user = _oauth_login_or_create(email, name)
+    resp = RedirectResponse("/?oauth=success", status_code=302)
+    return _oauth_set_session(resp, user["id"])
 
 
 @app.get("/api/admin/me")

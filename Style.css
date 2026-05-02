@@ -999,6 +999,42 @@ mark.shl {
 }
 .atab.active { color: var(--accent); border-color: var(--accent); }
 
+/* ── OAuth кнопки ──────────────────────────────────── */
+.oauth-btns { display:flex; flex-direction:column; gap:10px; margin-bottom:18px; }
+.oauth-btn {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  padding: 11px 16px;
+  border-radius: 8px;
+  font-size: 14px; font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: opacity .2s, transform .1s, box-shadow .2s;
+  border: 1px solid transparent;
+  letter-spacing: .02em;
+}
+.oauth-btn:hover { opacity: .88; transform: translateY(-1px); }
+.oauth-btn:active { transform: scale(.98); }
+.oauth-google {
+  background: #fff;
+  color: #3c4043;
+  border-color: #dadce0;
+}
+.oauth-google:hover { box-shadow: 0 2px 12px rgba(0,0,0,.18); }
+.oauth-diia {
+  background: linear-gradient(135deg, #1d3f8a, #0057b7);
+  color: #fff;
+  border-color: rgba(255,255,255,.12);
+}
+.oauth-diia:hover { box-shadow: 0 2px 14px rgba(0,87,183,.4); }
+.oauth-sep {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 16px;
+  font-size: 12px; color: var(--muted);
+}
+.oauth-sep::before, .oauth-sep::after {
+  content: ''; flex: 1; height: 1px; background: var(--border);
+}
+
 /* ── NOTIFICATION ──────────────────────────────────── */
 #notif {
   position: fixed;

@@ -4088,6 +4088,7 @@ async function loadColors(){
     if (hasDiff) _showDraftBanner(__ts);
   }
 
+  if (!COLORS['settlement_stroke']) COLORS['settlement_stroke'] = {value:'rgba(255,255,255,0.22)', label:'Межі населених пунктів'};
   renderColors(); updatePreview();
   // Відновлюємо збережений порядок меню
   applyNavOrder(COLORS['admin_nav_order']?.value || '');
@@ -4098,102 +4099,77 @@ const RANGE_KEYS={
   'glow_outer_spread':   {min:10,   max:200,   label:'px'},
   'label_opacity':       {min:0,    max:1,     step:0.05, label:''},
   'zoom_min':            {min:0.2,  max:2,     step:0.1,  label:'×'},
-  'zoom_max':            {min:3,    max:20,    step:0.5,  label:'×'},
-  'city_border_zoom':    {min:1.5,  max:6,     step:0.1,  label:'×'},
-  'smoke_density':       {min:0.90, max:1.0,   step:0.001, label:'густ.'},
-  'smoke_velocity':      {min:0.90, max:1.0,   step:0.001, label:'швидк.'},
-  'smoke_splat_radius':  {min:0.05, max:0.8,   step:0.01,  label:'r'},
-  'smoke_splat_force':   {min:1000, max:20000, step:500,   label:'F'},
-  'smoke_curl':          {min:0,    max:60,    step:1,     label:'curl'},
-  'smoke_opacity':       {min:0.1,  max:1.0,   step:0.05,  label:'op'},
-  'dot_pulse_speed':     {min:0.1,  max:5.0,   step:0.1,   label:'×'},
-  'dot_glow_size':       {min:0.0,  max:3.0,   step:0.1,   label:'×'},
-  'dot_pulse_amp':       {min:0.0,  max:1.0,   step:0.05,  label:''},
-  'dot_twinkle':         {min:0.0,  max:1.0,   step:0.05,  label:''},
+  'zoom_max':              {min:3,    max:20,    step:0.5,  label:'×'},
+  'city_border_zoom':      {min:1.5,  max:6,     step:0.1,  label:'×'},
+  'smoke_density':         {min:0.90, max:1.0,   step:0.001, label:'густ.'},
+  'smoke_velocity':        {min:0.90, max:1.0,   step:0.001, label:'швидк.'},
+  'smoke_splat_radius':    {min:0.05, max:0.8,   step:0.01,  label:'r'},
+  'smoke_splat_force':     {min:1000, max:20000, step:500,   label:'F'},
+  'smoke_curl':            {min:0,    max:60,    step:1,     label:'curl'},
+  'smoke_opacity':         {min:0.1,  max:1.0,   step:0.05,  label:'op'},
 };
 
 function renderColors(){
+  // Спочатку — виділений блок свічення країни
+  const glowKeys=['glow_outer_color','glow_outer_spread','glow_color','glow_spread'];
+  const glowBlock = `
+  <div style="grid-column:1/-1;background:rgba(212,168,0,.06);border:1px solid rgba(212,168,0,.2);border-radius:8px;padding:14px 16px;margin-bottom:4px">
+    <div style="font-size:11px;color:#d4a800;font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px">⚡ Свічення карти</div>
+    <div style="display:flex;flex-wrap:wrap;gap:10px">
+      ${glowKeys.map(k=>COLORS[k]?renderColorRow(k,COLORS[k]):'').join('')}
+    </div>
+  </div>`;
+
+  const zoomKeys  =['zoom_min','zoom_max','city_border','city_border_zoom'];
   const smokeKeys =['smoke_density','smoke_velocity','smoke_splat_radius','smoke_splat_force','smoke_curl','smoke_opacity','smoke_color_from','smoke_color_to'];
   const photoKeys =['map_photo_url','map_photo_opacity','map_photo_blend','map_photo_feather','map_photo_scale'];
-  const seaKeys   =['sea_enabled','sea_wave_color','sea_wave_count','sea_wave_intensity','sea_shore_impact','sea_blur','sea_wave_dir','sea_wave_speed','sea_glow_on','sea_glow_color','sea_glow_spread','sea_svg_tx','sea_svg_ty','sea_svg_scale','sea_svg_content'];
+  const seaKeys   =['sea_enabled',
+                    'sea_wave_color','sea_wave_count','sea_wave_intensity','sea_shore_impact','sea_blur',
+                    'sea_wave_dir','sea_wave_speed',
+                    'sea_glow_on','sea_glow_color','sea_glow_spread',
+                    'sea_svg_tx','sea_svg_ty','sea_svg_scale','sea_svg_content'];
+  const boolKeys  =['use_cookies'];
   const iconKeys  =['icon_logo','icon_likes','icon_people'];
-  const allKnown  = new Set(['glow_outer_color','glow_outer_spread','glow_color','glow_spread',
-    'dot_pulse_speed','dot_glow_size','dot_pulse_amp','dot_twinkle',
-    'zoom_min','zoom_max','city_border','city_border_zoom',
-    'bg','surface','map_bg','bar_bg','card_bg',
-    'text_primary','text_secondary','accent','yellow','yellow2',
-    'oblast_fill','oblast_stroke','neon_blue','neon_yellow','thread_color','label_opacity',
-    'logo_star','logo_text','logo_accent',
-    'btn_add_bg','btn_add_text',
-    'use_cookies','admin_theme','admin_nav_order',
-    ...smokeKeys,...photoKeys,...seaKeys,...iconKeys]);
+  // smokeBlock і photoBlock — тепер окремі секції (renderSmokeSection/renderPhotoSection)
 
-  const glowBlock = mkDescBlock('⚡','Свічення карти','#d4a800','rgba(212,168,0,.05)','rgba(212,168,0,.2)',[
-    {key:'glow_outer_color', name:'Зовнішній ореол',     desc:'Колір широкого свічення навколо областей (далеке, розмите)'},
-    {key:'glow_outer_spread',name:'Розмах ореолу',       desc:'Ширина зовнішнього ореолу в пікселях'},
-    {key:'glow_color',       name:'Внутрішнє свічення',  desc:'Колір підсвітки безпосередньо на межах регіонів'},
-    {key:'glow_spread',      name:'Розмах свічення',     desc:'Щільність внутрішнього свічення (px)'},
-  ]);
+  const zoomBlock=`
+  <div style="grid-column:1/-1;background:rgba(0,200,255,.06);border:1px solid rgba(0,200,255,.2);border-radius:8px;padding:14px 16px;margin-bottom:4px">
+    <div style="font-size:11px;color:#00c8ff;font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px">🔍 Зум та межі районів</div>
+    <div style="display:flex;flex-wrap:wrap;gap:10px">
+      ${zoomKeys.map(k=>COLORS[k]?renderColorRow(k,COLORS[k]):'').join('')}
+    </div>
+  </div>`;
 
-  const dotBlock = mkDescBlock('✨','Мерехтіння точок','#d4a800','rgba(200,160,64,.04)','rgba(200,160,64,.2)',[
-    {key:'dot_pulse_speed', name:'Швидкість пульсації', desc:'Частота мерехтіння: 0.1=дуже повільно, 1=норма, 5=швидко'},
-    {key:'dot_glow_size',   name:'Розмір свічення',     desc:'Масштаб зовнішньої корони: 0=вимкнено, 1=норма, 3=велике'},
-    {key:'dot_pulse_amp',   name:'Амплітуда',           desc:'Сила мерехтіння: 0=рівне горіння, 1=повна пульсація від та до'},
-    {key:'dot_twinkle',     name:'Спалахи',             desc:'Інтенсивність раптових твінкл-спалахів: 0=без спалахів'},
-  ]);
 
-  const zoomBlock = mkDescBlock('🔍','Масштаб і межі','#00c8ff','rgba(0,200,255,.04)','rgba(0,200,255,.18)',[
-    {key:'zoom_min',         name:'Мінімальний зум',    desc:'Найменший рівень віддалення карти (×)'},
-    {key:'zoom_max',         name:'Максимальний зум',   desc:'Найбільший рівень наближення карти (×)'},
-    {key:'city_border',      name:'Колір меж районів',  desc:'Колір ліній між районами при збільшенні'},
-    {key:'city_border_zoom', name:'Зум появи меж',      desc:'При якому збільшенні з\'являються межі районів (×)'},
-  ]);
+  const knownKeys = new Set([...glowKeys,...zoomKeys,...smokeKeys,...photoKeys,...seaKeys,...boolKeys,...iconKeys,'admin_theme','admin_nav_order']);
 
-  const bgBlock = mkDescBlock('🎨','Фон та поверхні','#7dd3fc','rgba(125,211,252,.04)','rgba(125,211,252,.15)',[
-    {key:'bg',       name:'Фон сторінки',    desc:'Основний темний фон всього сайту'},
-    {key:'surface',  name:'Фон панелей',     desc:'Поверхня карточок, модальних вікон, блоків'},
-    {key:'map_bg',   name:'Фон карти',       desc:'Фон під SVG-картою (видно де немає регіонів)'},
-    {key:'bar_bg',   name:'Фон шапки',       desc:'Фон верхньої навігаційної панелі'},
-    {key:'card_bg',  name:'Фон картки',      desc:'Фон бічної панелі з інформацією про людину'},
-  ]);
+  const grp = (keys) => keys.filter(k=>COLORS[k]).map(k=>renderColorRow(k,COLORS[k])).join('');
 
-  const txtBlock = mkDescBlock('📝','Текст та акценти','#a5b4fc','rgba(165,180,252,.04)','rgba(165,180,252,.15)',[
-    {key:'text_primary',   name:'Основний текст',    desc:'Заголовки, імена, основний контент'},
-    {key:'text_secondary', name:'Другорядний текст', desc:'Підписи, дати, мuted-елементи'},
-    {key:'accent',         name:'Акцентний колір',   desc:'Підсвітка, посилання, активні елементи (синій)'},
-    {key:'yellow',         name:'Жовтий акцент',     desc:'Зірки памʼяті, важливі маркери'},
-    {key:'yellow2',        name:'Яскравий жовтий',   desc:'Лічильники, великі числа, заголовки'},
-  ]);
+  const mkBlock = (icon, title, color, rgb, keys) => {
+    const rows = grp(keys);
+    if (!rows) return '';
+    return `<div style="grid-column:1/-1;background:rgba(${rgb},.06);border:1px solid rgba(${rgb},.2);border-radius:8px;padding:14px 16px;margin-bottom:4px">
+      <div style="font-size:11px;color:${color};font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px">${icon} ${title}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:10px">${rows}</div>
+    </div>`;
+  };
 
-  const mapBlock = mkDescBlock('🗺','Карта','#86efac','rgba(134,239,172,.04)','rgba(134,239,172,.15)',[
-    {key:'oblast_fill',   name:'Заливка регіонів',  desc:'Колір заливки областей на карті України'},
-    {key:'oblast_stroke', name:'Межі регіонів',     desc:'Колір ліній між областями (товсті межі)'},
-    {key:'neon_blue',     name:'Неоновий синій',    desc:'Нитки між точками, акценти карти'},
-    {key:'neon_yellow',   name:'Неоновий жовтий',   desc:'Додатковий акцент карти та підписів'},
-    {key:'thread_color',  name:'Колір ниток',       desc:'Колір ліній що зʼєднують точки однієї групи'},
-    {key:'label_opacity', name:'Прозорість підписів',desc:'Видимість назв населених пунктів на карті (0–1)'},
-  ]);
+  const bgBlock   = mkBlock('🎨','Фон та поверхні',   '#7dd3fc', '125,211,252', ['bg','surface','map_bg','bar_bg','card_bg']);
+  const txtBlock  = mkBlock('📝','Текст та акценти',   '#a5b4fc', '165,180,252', ['text_primary','text_secondary','accent','yellow','yellow2']);
+  const mapBlock  = mkBlock('🗺','Карта',              '#86efac', '134,239,172', ['oblast_fill','oblast_stroke','settlement_stroke','neon_blue','neon_yellow','thread_color','label_opacity']);
+  const logoBlock = mkBlock('🔤','Логотип',            '#fcd34d', '252,211,77',  ['logo_star','logo_text','logo_accent']);
+  const uiBlock   = mkBlock('🔘','Кнопки',             '#f9a8d4', '249,168,212', ['btn_add_bg','btn_add_text']);
 
-  const logoBlock = mkDescBlock('🔤','Логотип','#fcd34d','rgba(252,211,77,.04)','rgba(252,211,77,.15)',[
-    {key:'logo_star',   name:'Зірка ★',        desc:'Колір символу зірки у назві сайту'},
-    {key:'logo_text',   name:'Слово «Памʼять»', desc:'Колір другої частини назви логотипу'},
-    {key:'logo_accent', name:'Слово «Зоряна»',  desc:'Колір першої частини назви логотипу'},
-  ]);
-
-  const uiBlock = mkDescBlock('🔘','Кнопки','#f9a8d4','rgba(249,168,212,.04)','rgba(249,168,212,.15)',[
-    {key:'btn_add_bg',   name:'Фон кнопки «Додати»',  desc:'Градієнт фону кнопки додавання запису'},
-    {key:'btn_add_text', name:'Текст кнопки «Додати»', desc:'Колір тексту і іконки на кнопці'},
-  ]);
-
-  const extraEntries = Object.entries(COLORS).filter(([k])=>!allKnown.has(k) && !k.startsWith('sea_') && !k.startsWith('icon_'));
+  // sea_* і icon_* — тільки у власних секціях, не тут
+  const extraEntries = Object.entries(COLORS).filter(([k])=>!knownKeys.has(k) && !k.startsWith('sea_') && !k.startsWith('icon_'));
   const extraBlock = extraEntries.length
-    ? `<div style="grid-column:1/-1;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:16px 18px;margin-bottom:6px">
-        <div style="font-size:11px;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:14px">⚙️ Інші параметри</div>
-        <div style="display:flex;flex-direction:column;gap:5px">${extraEntries.map(([k,info])=>renderStructRow(k,info,'','Додатковий параметр')).join('')}</div>
+    ? `<div style="grid-column:1/-1;background:rgba(148,163,184,.06);border:1px solid rgba(148,163,184,.2);border-radius:8px;padding:14px 16px;margin-bottom:4px">
+        <div style="font-size:11px;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px">⚙️ Інші параметри</div>
+        <div style="display:flex;flex-wrap:wrap;gap:10px">${extraEntries.map(([k,info])=>renderColorRow(k,info)).join('')}</div>
        </div>`
     : '';
 
-  document.getElementById('colors-grid').innerHTML = glowBlock+dotBlock+zoomBlock+bgBlock+txtBlock+mapBlock+logoBlock+uiBlock+extraBlock;
+  document.getElementById('colors-grid').innerHTML = glowBlock+zoomBlock+bgBlock+txtBlock+mapBlock+logoBlock+uiBlock+extraBlock;
   renderSmokeSection();
   renderPhotoSection();
   renderSeaSection();
@@ -4806,49 +4782,6 @@ async function adminToggleSea() {
 
   // Передаємо на index.html через BroadcastChannel
   applySeaSettings();
-}
-
-// Рядок з назвою, описом і контролом (слайдер або color-picker)
-function renderStructRow(key, info, name, desc) {
-  const isHex   = info.value.startsWith('#');
-  const isRange = RANGE_KEYS[key];
-  const val = info.value;
-  const nameHtml = `<div style="font-size:12px;font-weight:600;color:var(--text)">${h(name||info.label||key)}</div>`;
-  const descHtml = desc ? `<div style="font-size:10px;color:var(--muted);margin-top:2px;line-height:1.4">${desc}</div>` : '';
-  if (isRange) {
-    const rng = RANGE_KEYS[key]; const step = rng.step||1;
-    return `<div style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:rgba(255,255,255,.02);border-radius:6px;border:1px solid rgba(255,255,255,.05)">
-      <div style="flex:1;min-width:0">${nameHtml}${descHtml}</div>
-      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
-        <input type="range" id="cr-${key}" min="${rng.min}" max="${rng.max}" step="${step}" value="${h(val)}"
-          style="width:110px;accent-color:#00c8ff"
-          oninput="document.getElementById('ci-${key}').value=this.value;onClrChange('${key}',this.value)">
-        <input class="cinp" id="ci-${key}" value="${h(val)}" type="number" min="${rng.min}" max="${rng.max}"
-          style="width:56px;text-align:center"
-          oninput="document.getElementById('cr-${key}').value=this.value;onClrChange('${key}',this.value)">
-        <span style="font-size:10px;color:var(--muted);min-width:16px">${h(rng.label)}</span>
-      </div>
-    </div>`;
-  }
-  return `<div style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:rgba(255,255,255,.02);border-radius:6px;border:1px solid rgba(255,255,255,.05)">
-    <div id="cp-${key}" style="width:30px;height:30px;border-radius:6px;border:1px solid rgba(255,255,255,.15);background:${h(val)};flex-shrink:0;${isHex?'cursor:pointer':''}"
-      ${isHex?`onclick="document.getElementById('cclr-${key}').click()"`:''} ></div>
-    <div style="flex:1;min-width:0">${nameHtml}${descHtml}</div>
-    <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
-      <input class="cinp" id="ci-${key}" value="${h(val)}" style="width:96px" oninput="onClrChange('${key}',this.value)">
-      ${isHex?`<input type="color" class="cclr" id="cclr-${key}" value="${h(val.slice(0,7))}" oninput="document.getElementById('ci-${key}').value=this.value;onClrChange('${key}',this.value)">`:'' }
-    </div>
-  </div>`;
-}
-
-// Структурований блок з описами на кожен параметр
-function mkDescBlock(icon, title, accent, bg, border, items) {
-  const rows = items.filter(({key})=>COLORS[key]).map(({key,name,desc})=>renderStructRow(key,COLORS[key],name,desc)).join('');
-  if (!rows) return '';
-  return `<div style="grid-column:1/-1;background:${bg};border:1px solid ${border};border-radius:8px;padding:16px 18px;margin-bottom:6px">
-    <div style="font-size:11px;color:${accent};font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:14px">${icon} ${title}</div>
-    <div style="display:flex;flex-direction:column;gap:5px">${rows}</div>
-  </div>`;
 }
 
 function renderColorRow(k,info){

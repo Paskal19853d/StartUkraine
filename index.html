@@ -2211,9 +2211,31 @@
 
 <!-- AUTH -->
 <div class="mov" id="mauth">
-  <div class="mo" style="max-width:360px">
+  <div class="mo" style="max-width:380px">
     <button class="moc" onclick="closeAuth()">&#10005;</button>
     <h2>&#128272; Вхід / Реєстрація</h2>
+
+    <!-- OAuth -->
+    <div class="oauth-btns">
+      <a href="/api/auth/google" class="oauth-btn oauth-google">
+        <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+          <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615Z"/>
+          <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18Z"/>
+          <path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332Z"/>
+          <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58Z"/>
+        </svg>
+        Продовжити з Google
+      </a>
+      <a href="/api/auth/diia" class="oauth-btn oauth-diia">
+        <svg width="20" height="20" viewBox="0 0 32 32" aria-hidden="true" fill="none">
+          <circle cx="16" cy="16" r="16" fill="#FFD700" opacity=".15"/>
+          <text x="16" y="22" text-anchor="middle" font-size="13" font-weight="700" fill="#FFD700" font-family="sans-serif">Дія</text>
+        </svg>
+        Продовжити з Дія
+      </a>
+    </div>
+    <div class="oauth-sep"><span>або</span></div>
+
     <div class="atabs">
       <div class="atab active" id="tlogin" onclick="switchTab('login')">Увійти</div>
       <div class="atab" id="treg" onclick="switchTab('reg')">Реєстрація</div>
@@ -2827,44 +2849,21 @@ function drawNeonThreads() {
   ctx.restore();
 }
 
-function drawDotFX(p, pos, pulse, tw, glowScale) {
+function drawDotFX(p, pos) {
   const rn=p._rn??0;
-  const r=dotR(p);
+  const r=dotR(p),sp=1+rn*2,pulse=.55+.45*Math.sin(animT*sp+(p.id||0)*.8);
   const isH=hovId===p.id,isS=selId===p.id;
-  const gs=glowScale??1;
-
-  if(gs>0){
-    // Адитивне змішування — свічення зірок накладаються одне на одне
-    ctx.save();
-    ctx.globalCompositeOperation='lighter';
-
-    // Зовнішня корона (велика, м'яка)
-    const gr1=r*(7+rn*5+tw*10)*gs*(0.65+0.35*pulse);
-    if(gr1>0&&isFinite(gr1)){
-      const a=(0.07+rn*0.09+tw*0.18)*(0.5+0.5*pulse);
-      const grd=ctx.createRadialGradient(pos.x,pos.y,0,pos.x,pos.y,gr1);
-      grd.addColorStop(0,  `rgba(${p._r},${p._g},${p._b},${a.toFixed(3)})`);
-      grd.addColorStop(0.3,`rgba(${p._r},${p._g},${p._b},${(a*.12).toFixed(3)})`);
-      grd.addColorStop(1,  `rgba(${p._r},${p._g},${p._b},0)`);
-      ctx.beginPath();ctx.arc(pos.x,pos.y,gr1,0,Math.PI*2);ctx.fillStyle=grd;ctx.fill();
-    }
-
-    // Внутрішнє гало (яскравіше, тісніше)
-    const gr2=r*(2.5+1.5*pulse+tw*2.5)*gs;
-    if(gr2>0&&isFinite(gr2)){
-      const a2=0.4+0.5*pulse+tw*0.8;
-      const grd2=ctx.createRadialGradient(pos.x,pos.y,0,pos.x,pos.y,gr2);
-      grd2.addColorStop(0,`rgba(${p._r},${p._g},${p._b},${Math.min(a2,1).toFixed(3)})`);
-      grd2.addColorStop(1,`rgba(${p._r},${p._g},${p._b},0)`);
-      ctx.beginPath();ctx.arc(pos.x,pos.y,gr2,0,Math.PI*2);ctx.fillStyle=grd2;ctx.fill();
-    }
-
-    ctx.restore();
+  const showGlow=tr.s>=2||isH||isS;
+  const gr=r*(2.5+rn*2)*pulse;
+  if(showGlow&&gr>0&&isFinite(gr)){
+    const grd=ctx.createRadialGradient(pos.x,pos.y,0,pos.x,pos.y,gr);
+    grd.addColorStop(0,`rgba(${p._r},${p._g},${p._b},${((.07+rn*.2)*pulse*2).toFixed(2)})`);
+    grd.addColorStop(1,`rgba(${p._r},${p._g},${p._b},0)`);
+    ctx.beginPath();ctx.arc(pos.x,pos.y,gr,0,Math.PI*2);ctx.fillStyle=grd;ctx.fill();
   }
-
-  // Кільця дублікатів / вибраного
-  if(p._hasDupe){const ringR=r*4.5+Math.sin(animT*2.5+p.id)*r*.5;ctx.beginPath();ctx.arc(pos.x,pos.y,ringR,0,Math.PI*2);ctx.strokeStyle=`rgba(0,200,255,${(.14+.08*Math.sin(animT*2)).toFixed(2)})`;ctx.lineWidth=1;ctx.stroke();}
-  if(isS||isH){ctx.beginPath();ctx.arc(pos.x,pos.y,r*4.5,0,Math.PI*2);ctx.strokeStyle=`rgba(${p._r},${p._g},${p._b},${(.6+.3*Math.sin(animT*3.5)).toFixed(2)})`;ctx.lineWidth=1.5;ctx.stroke();}
+  if(p._hasDupe){const ringR=r*4.5+Math.sin(animT*2.5+p.id)*r*.5;ctx.beginPath();ctx.arc(pos.x,pos.y,ringR,0,Math.PI*2);ctx.strokeStyle=`rgba(0,200,255,${(.12+.08*Math.sin(animT*2)).toFixed(2)})`;ctx.lineWidth=1;ctx.stroke();}
+  if(isS||isH){ctx.beginPath();ctx.arc(pos.x,pos.y,r*4,0,Math.PI*2);ctx.strokeStyle=`rgba(${p._r},${p._g},${p._b},${(.5+.3*Math.sin(animT*3.5)).toFixed(2)})`;ctx.lineWidth=1.3;ctx.stroke();}
+  if(rn>.2||isH||isS){ctx.globalAlpha=.5+.4*pulse;ctx.beginPath();ctx.arc(pos.x,pos.y,r*.4,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();ctx.globalAlpha=1;}
 }
 
 let _cachedSqrtS = 1;
@@ -2883,27 +2882,18 @@ function _startCanvasLoop() {
     _cachedSqrtS = Math.min(Math.sqrt(tr.s), 2.5);
     animT+=.033;ctx.clearRect(0,0,W,H);
     drawNeonThreads();
-    // Читаємо параметри мерехтіння з налаштувань адмінки
-    const _dSpeed = parseFloat(getC('dot_pulse_speed') || '1.0');
-    const _dGlow  = parseFloat(getC('dot_glow_size')   || '1.0');
-    const _dAmp   = parseFloat(getC('dot_pulse_amp')    || '1.0');
-    const _dTw    = parseFloat(getC('dot_twinkle')      || '1.0');
-    // Pre-compute visible dots + анімаційні значення за кадр
+    // Pre-compute visible dots (single w2s pass)
     const _vis=[];
     for(const p of people){
       if(!p||!isFinite(p.x)||!isFinite(p.y))continue;
       const pos=w2s(p.x,p.y);
       if(!isFinite(pos.x)||!isFinite(pos.y))continue;
       if(pos.x<-60||pos.x>W+60||pos.y<-60||pos.y>H+60)continue;
-      const rn=p._rn??0;
-      const sp=(0.7+rn*1.6)*_dSpeed;
-      const pulse=1-_dAmp+_dAmp*(.5+.5*Math.sin(animT*sp+(p.id||0)*1.4));
-      const tw=_dTw*Math.pow(Math.max(0,Math.sin(animT*(sp*2.3)+p.id*2.9)),8);
-      _vis.push({p,pos,pulse,tw});
+      _vis.push({p,pos});
     }
-    // Pass 1: свічення та кільця (адитивне + source-over)
-    for(const {p,pos,pulse,tw} of _vis)drawDotFX(p,pos,pulse,tw,_dGlow);
-    // Pass 2: batch fill main circles grouped by color
+    // Pass 1: per-dot special effects (glow, rings, white center)
+    for(const {p,pos} of _vis)drawDotFX(p,pos);
+    // Pass 2: batch fill main circles grouped by color (300 draw calls → ~10-20)
     const _cb=new Map();
     for(const {p,pos} of _vis){
       const r=dotR(p);
@@ -2915,15 +2905,6 @@ function _startCanvasLoop() {
       for(const{pos,r}of dots){ctx.moveTo(pos.x+r,pos.y);ctx.arc(pos.x,pos.y,r,0,Math.PI*2);}
       ctx.fill();
     }
-    // Pass 3: яскраве біле ядро зірки поверх основного кола
-    ctx.save();ctx.globalCompositeOperation='lighter';
-    for(const {p,pos,pulse,tw} of _vis){
-      const r=dotR(p);
-      ctx.globalAlpha=Math.min((0.65+0.3*pulse+tw*0.5)*(_dGlow>0?1:0),1);
-      ctx.beginPath();ctx.arc(pos.x,pos.y,r*.55,0,Math.PI*2);
-      ctx.fillStyle='#ffffff';ctx.fill();
-    }
-    ctx.globalAlpha=1;ctx.restore();
     for(let i=particles.length-1;i>=0;i--){if(particles[i].age>=1)particles.splice(i,1);}
     for(const p of particles){p.age+=.044;const pos=w2s(p.x,p.y);ctx.globalAlpha=1-p.age;ctx.font=`${13+(1-p.age)*6}px sans-serif`;ctx.fillText('⭐',pos.x-8,pos.y-p.age*55);ctx.globalAlpha=1;}
   })(0);
@@ -2941,6 +2922,20 @@ function initSVGBorders() {
   const ny=window.NEON_YELLOW||'#d4a800';
   firstPaths.slice(0,6).forEach(p=>{p.style.stroke=nb;p.style.strokeWidth='5';p.style.filter='';});
   firstPaths.slice(6).forEach(p=>{p.style.stroke=ny;p.style.strokeWidth='3';p.style.filter='';});
+
+  // ── Межі населених пунктів (всі path всередині g[data-rid]) ─────────
+  const sc = getC('settlement_stroke','rgba(255,255,255,0.22)');
+  groups.forEach(g=>{
+    g.querySelectorAll('path,polygon').forEach(p=>{
+      p.style.stroke=sc;
+      p.style.strokeWidth='1';
+      p.style.vectorEffect='non-scaling-stroke';
+    });
+  });
+  // Першо-шляхи (зовнішні межі областей) — перезаписуємо поверх
+  firstPaths.slice(0,6).forEach(p=>{p.style.stroke=nb;p.style.strokeWidth='5';p.style.vectorEffect='';});
+  firstPaths.slice(6).forEach(p=>{p.style.stroke=ny;p.style.strokeWidth='3';p.style.vectorEffect='';});
+
   // ── Внутрішні кордони областей (contours group) ─────
   const glowHex = getC('glow_color','#ffd700');
   const spread  = Math.max(6, Math.min(120, parseInt(getC('glow_spread','28'))));
@@ -3547,6 +3542,34 @@ try {
   };
 } catch(_) {}
 
+/* ── OAuth callback handler ── */
+async function checkOAuthCallback(){
+  const p=new URLSearchParams(location.search);
+  if(p.get('oauth')==='success'){
+    try{
+      const r=await fetch(API+'/api/auth/me');
+      const d=await r.json();
+      if(d.ok&&d.user){curUser=d.user;localStorage.setItem('mu',JSON.stringify(curUser));updateAuthUI();showN("Ласкаво просимо, "+curUser.name+"!");}
+    }catch(e){}
+    history.replaceState({},'','/');
+  }else if(p.has('oauth_error')){
+    const msgs={
+      google_not_configured:'Google OAuth не налаштовано — зверніться до адміністратора.',
+      google_cancelled:'Авторизацію через Google скасовано.',
+      google_token:'Помилка отримання токена Google.',
+      google_userinfo:'Помилка отримання даних Google.',
+      google_no_email:'Google не надав email адресу.',
+      diia_not_configured:'Дія OAuth не налаштовано — зверніться до адміністратора.',
+      diia_cancelled:'Авторизацію через Дія скасовано.',
+      diia_token:'Помилка отримання токена Дія.',
+      diia_userinfo:'Помилка отримання даних Дія.',
+      diia_no_email:'Дія не надала email адресу.',
+    };
+    showN(msgs[p.get('oauth_error')]||'Помилка авторизації',true);
+    history.replaceState({},'','/');
+  }
+}
+
 /* ── INIT ── */
 (async()=>{
   await loadColors();
@@ -3556,6 +3579,7 @@ try {
   initSVGBorders();
   updateAuthUI();
   connectWS();
+  checkOAuthCallback();
 })();
 </script>
 
