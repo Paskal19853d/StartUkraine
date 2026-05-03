@@ -245,6 +245,28 @@ def init_db():
             c.execute("ALTER TABLE memorials ADD COLUMN video_url VARCHAR(500) NOT NULL DEFAULT ''")
         except Exception:
             pass
+        try:
+            c.execute("ALTER TABLE memorials ADD COLUMN `rank` VARCHAR(100) NOT NULL DEFAULT ''")
+        except Exception:
+            pass
+        try:
+            c.execute("ALTER TABLE memorials ADD COLUMN `position` VARCHAR(100) NOT NULL DEFAULT ''")
+        except Exception:
+            pass
+
+        # ── memorial_awards ───────────────────────────────
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS memorial_awards (
+                id           INT PRIMARY KEY AUTO_INCREMENT,
+                memorial_id  INT NOT NULL,
+                name         VARCHAR(200) NOT NULL,
+                img_file     VARCHAR(300) DEFAULT '',
+                award_date   DATE         DEFAULT NULL,
+                descr        TEXT         DEFAULT NULL,
+                sort_order   INT          NOT NULL DEFAULT 0,
+                FOREIGN KEY (memorial_id) REFERENCES memorials(id) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        """)
 
     # ── Admin user ──────────────────────────────────────
     with db.cursor() as c:
@@ -1010,6 +1032,7 @@ class PersonIn(BaseModel):
     descr: Optional[str] = ""
     photo: Optional[str] = ""; color: Optional[str] = "#4fc3f7"
     video_url: Optional[str] = ""
+    rank: Optional[str] = ""; position: Optional[str] = ""
     pos_x: float; pos_y: float; grp: Optional[str] = ""
     added_by: Optional[str] = ""
 
@@ -1022,6 +1045,7 @@ class PersonUpdate(BaseModel):
     color: Optional[str] = None; pos_x: Optional[float] = None
     pos_y: Optional[float] = None; approved: Optional[int] = None
     grp: Optional[str] = None; video_url: Optional[str] = None
+    rank: Optional[str] = None; position: Optional[str] = None
 
 class UserReg(BaseModel):
     name: str; email: str; password: str
@@ -1200,11 +1224,24 @@ def get_people(request: Request):
     db = get_db()
     with db.cursor() as c:
         c.execute(
-            "SELECT * FROM memorials WHERE approved=1 ORDER BY rating DESC, likes DESC"
+            "SELECT id,last,first,mid,birth,death,bury,color,pos_x,pos_y,"
+            "grp,likes,rating,video_url,approved,added_by "
+            "FROM memorials WHERE approved=1 ORDER BY rating DESC, likes DESC"
         )
         rows = c.fetchall()
     db.close()
     return rows
+
+@app.get("/api/memorial/{mid}")
+def get_memorial(mid: int):
+    db = get_db()
+    with db.cursor() as c:
+        c.execute("SELECT * FROM memorials WHERE id=%s AND approved=1", (mid,))
+        row = c.fetchone()
+    db.close()
+    if not row:
+        raise HTTPException(404, "Не знайдено")
+    return row
 
 @app.get("/api/search")
 def search(q: str = "", request: Request = None):
@@ -1438,10 +1475,12 @@ def add_person(p: PersonIn, request: Request):
     with db.cursor() as c:
         c.execute("""
             INSERT INTO memorials
-            (last,first,mid,birth,death,loc,bury,circ,descr,photo,color,video_url,pos_x,pos_y,grp,added_by,approved)
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,0)
+            (last,first,mid,birth,death,loc,bury,circ,descr,photo,color,video_url,`rank`,`position`,pos_x,pos_y,grp,added_by,approved)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,0)
         """, (last, first, mid, p.birth, p.death, loc, bury,
-              circ, p.descr, photo, color, video_url, p.pos_x, p.pos_y, grp, p.added_by))
+              circ, p.descr, photo, color, video_url,
+              p.rank or '', p.position or '',
+              p.pos_x, p.pos_y, grp, p.added_by))
         new_id = c.lastrowid
     db.commit()
     db.close()
@@ -1771,11 +1810,12 @@ def admin_add_person(p: PersonIn, request: Request):
     with db.cursor() as c:
         c.execute("""
             INSERT INTO memorials
-            (last,first,mid,birth,death,loc,bury,circ,descr,photo,color,pos_x,pos_y,grp,added_by,approved)
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,1)
+            (last,first,mid,birth,death,loc,bury,circ,descr,photo,color,`rank`,`position`,pos_x,pos_y,grp,added_by,approved)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,1)
         """, (p.last.strip(), p.first.strip(), p.mid or '', p.birth or None, p.death or None,
               p.loc or '', p.bury or '', p.circ or '', p.descr or '', p.photo or '',
-              p.color or '#4fc3f7', p.pos_x, p.pos_y, p.grp or '', 'admin'))
+              p.color or '#4fc3f7', p.rank or '', p.position or '',
+              p.pos_x, p.pos_y, p.grp or '', 'admin'))
         new_id = c.lastrowid
     db.commit()
     db.close()
@@ -1897,6 +1937,8 @@ _MEMORIAL_COL_MAP = {
     'photo':   '`photo`=%s',   'color': '`color`=%s', 'pos_x':  '`pos_x`=%s',
     'pos_y':   '`pos_y`=%s',   'approved':'`approved`=%s', 'grp': '`grp`=%s',
     'video_url': '`video_url`=%s',
+    'rank':      '`rank`=%s',
+    'position':  '`position`=%s',
 }
 _MEMORIAL_ALLOWED_FIELDS = set(_MEMORIAL_COL_MAP)
 
@@ -1923,6 +1965,54 @@ def update_memorial(mid: int, p: PersonUpdate, request: Request):
     with db.cursor() as c:
         c.execute("UPDATE memorials SET " + ",".join(fields) + " WHERE id=%s", vals)
     db.commit()
+    db.close()
+    return {"ok": True}
+
+@app.get("/api/memorial/{mid}/awards")
+def get_awards(mid: int):
+    db = get_db()
+    with db.cursor() as c:
+        c.execute(
+            "SELECT id,name,img_file,award_date,descr,sort_order FROM memorial_awards "
+            "WHERE memorial_id=%s ORDER BY sort_order,id",
+            (mid,)
+        )
+        rows = c.fetchall()
+    db.close()
+    for r in rows:
+        if r.get("award_date"):
+            r["award_date"] = str(r["award_date"])
+    return rows
+
+class AwardIn(BaseModel):
+    name:       str
+    img_file:   Optional[str] = ""
+    award_date: Optional[str] = None
+    descr:      Optional[str] = ""
+    sort_order: Optional[int] = 0
+
+@app.post("/api/admin/memorial/{mid}/awards")
+def add_award(mid: int, a: AwardIn, request: Request):
+    require_admin(request)
+    db = get_db()
+    with db.cursor() as c:
+        c.execute(
+            "INSERT INTO memorial_awards (memorial_id,name,img_file,award_date,descr,sort_order) "
+            "VALUES (%s,%s,%s,%s,%s,%s)",
+            (mid, a.name.strip(), a.img_file or '', a.award_date or None, a.descr or '', a.sort_order or 0)
+        )
+        db.commit()
+        new_id = c.lastrowid
+    db.close()
+    return {"ok": True, "id": new_id}
+
+@app.delete("/api/admin/awards/{award_id}")
+def delete_award(award_id: int, request: Request):
+    require_admin(request)
+    db = get_db()
+    with db.cursor() as c:
+        c.execute("DELETE FROM memorial_awards WHERE id=%s", (award_id,))
+        db.commit()
     db.close()
     return {"ok": True}
 

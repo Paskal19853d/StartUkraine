@@ -2189,9 +2189,27 @@
     <div id="cdates"></div>
     <hr>
   <!-- Стало — добавить строку с позывным ПОСЛЕ cdates и ПЕРЕД cbury: -->
-	<div class="cf"><span class="cl">&#9875; Місце поховання</span><span class="cv" id="cbury"></span></div>
-	<div class="cf"><span class="cl">&#128205; Місце загибелі</span><span class="cv" id="cloc"></span></div>
+	<div class="cf" style="align-items:flex-start">
+	  <span class="cl" style="padding-top:2px">📍 Місця</span>
+	  <span class="cv" style="display:flex;flex-direction:column;gap:3px">
+	    <span><span style="opacity:.55;font-size:10px">пох.&nbsp;</span><span id="cbury"></span></span>
+	    <span><span style="opacity:.55;font-size:10px">заг.&nbsp;</span><span id="cloc"></span></span>
+	  </span>
+	</div>
 	<div class="cf" id="cgrp-row" style="display:none"><span class="cl">📻 Позивний</span><span class="cv" id="cgrp"></span></div>
+	<div class="cf" id="crank-row">
+	  <span class="cl">🎖 Звання</span>
+	  <span class="cv" style="display:flex;align-items:center;justify-content:center;gap:14px;width:100%">
+	    <span style="display:inline-flex;align-items:center;justify-content:center;width:120px;height:52px;flex-shrink:0;overflow:visible">
+	      <img id="crank-img" src="" alt="" style="height:120px;width:auto;display:none;transform:rotate(90deg);transform-origin:center">
+	    </span>
+	    <span style="display:flex;flex-direction:column;align-items:center;gap:7px">
+	      <span id="crank" style="font-size:12px;text-align:center"></span>
+	      <button id="awards-btn" onclick="openAwards()" style="display:flex;align-items:center;justify-content:center;width:100%;background:rgba(139,15,15,.82);border:1px solid rgba(190,30,30,.65);border-radius:10px;color:#f5d0d0;font-family:'Unbounded',sans-serif;font-size:10px;font-weight:600;padding:8px 14px;cursor:pointer;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;box-shadow:0 2px 8px rgba(139,0,0,.4);transition:background .2s,box-shadow .2s" onmouseover="this.style.background='rgba(30,0,0,1)';this.style.boxShadow='0 3px 14px rgba(139,0,0,.6)'" onmouseout="this.style.background='rgba(139,15,15,.82)';this.style.boxShadow='0 2px 8px rgba(139,0,0,.4)'">НАГОРОДИ</button>
+	    </span>
+	  </span>
+	</div>
+	<div class="cf" id="cpos-row"><span class="cl">💼 Посада</span><span class="cv" id="cpos"></span></div>
 	<div class="cf"><span class="cl">Обставини</span><span class="cv" id="ccirc"></span></div>
     <hr>
     <div class="cf" id="dupes-section" style="display:none">
@@ -2201,13 +2219,33 @@
     <hr id="dupes-hr" style="display:none">
     <div id="cvideo-wrap" style="display:none;margin:10px 0">
       <div id="cvideo-container"></div>
-      <div id="cvideo-hint" style="font-size:9px;color:var(--muted);text-align:center;margin-top:4px;opacity:.6">ПРОБІЛ — звук вкл/викл</div>
+      <div id="cvideo-hint" style="font-size:9px;color:var(--muted);text-align:center;margin-top:4px;opacity:.6;display:none">ПРОБІЛ — звук вкл/викл</div>
     </div>
     <button id="lbtn" onclick="doLike()">
       <span>&#11088;</span><span>Зірка памʼяті</span><span id="lcnt">0</span>
     </button>
   </div>
 </aside>
+
+<!-- AWARDS MODAL -->
+<div class="mov" id="mawards">
+  <div class="mo" style="max-width:780px;width:96vw">
+    <button class="moc" onclick="closeAwards()">&#10005;</button>
+    <h2 style="margin:0 0 14px">🏅 Нагороди</h2>
+    <div style="display:flex;gap:22px;align-items:flex-start">
+      <div style="flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:8px;width:280px">
+        <img id="awards-person-photo" src="/img/foto_false.png" alt="" style="width:280px;height:157px;object-fit:cover;border-radius:8px;border:1px solid rgba(255,255,255,0.15)">
+        <p class="mo-sub" id="awards-person-name" style="margin:0;text-align:center;font-size:11px;line-height:1.4"></p>
+        <p id="awards-person-descr" style="display:none;margin:0;font-size:10px;color:var(--muted);line-height:1.5;text-align:left;width:100%;max-height:120px;overflow-y:auto;padding:6px 8px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:6px;box-sizing:border-box"></p>
+      </div>
+      <div id="awards-list" style="flex:1;min-width:0;max-height:68vh;overflow-y:auto"></div>
+    </div>
+  </div>
+</div>
+<!-- MEDAL LIGHTBOX -->
+<div id="medal-lightbox" onclick="this.style.display='none'" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.82);cursor:zoom-out;display:none;align-items:center;justify-content:center">
+  <img id="medal-lightbox-img" src="" alt="" style="max-width:90vw;max-height:90vh;object-fit:contain;border-radius:10px;box-shadow:0 0 40px rgba(0,0,0,.8)">
+</div>
 
 <!-- AUTH -->
 <div class="mov" id="mauth">
@@ -2310,6 +2348,21 @@
 
 <script>
 const API = 'http://127.0.0.1:8000';
+const RANK_POGON_IMG = {
+  'Солдат':'UA_shoulder_mark_01.svg','Старший солдат':'UA_shoulder_mark_02.svg',
+  'Молодший сержант':'UA_shoulder_mark_03.svg','Сержант':'UA_shoulder_mark_04.svg',
+  'Старший сержант':'UA_shoulder_mark_05.svg','Головний сержант':'UA_shoulder_mark_06.svg',
+  'Штаб-сержант':'UA_shoulder_mark_07.svg','Майстер-сержант':'UA_shoulder_mark_08.svg',
+  'Старший майстер-сержант':'UA_shoulder_mark_09.svg','Головний майстер-сержант':'UA_shoulder_mark_10-0.svg',
+  'Молодший лейтенант':'UA_shoulder_mark_11.svg','Лейтенант':'UA_shoulder_mark_12.svg',
+  'Старший лейтенант':'UA_shoulder_mark_13.svg','Капітан':'UA_shoulder_mark_14.svg',
+  'Майор':'UA_shoulder_mark_15.svg','Підполковник':'UA_shoulder_mark_16.svg',
+  'Полковник':'UA_shoulder_mark_17.svg',
+  'Бригадний генерал':'Погон_бригадного_генерала_ЗСУ_(2020).svg',
+  'Генерал-майор':'Погон_генерал-майора_ЗСУ_(2020).svg',
+  'Генерал-лейтенант':'Погон_генерал-лейтенанта_ЗСУ_(2020).svg',
+  'Генерал':'Погон_генерала_ЗСУ_(2020).svg',
+};
 window.API = API;
 function h(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 let people = [], curUser = JSON.parse(localStorage.getItem('mu')||'null');
@@ -2319,6 +2372,7 @@ const tr = {x:0, y:0, s:1};
 let drag = false, dragS = {x:0,y:0}, trS = {x:0,y:0};
 let hovId = null, selId = null;
 let COLORS = {};
+let _dotPulseSpeed = 1.0, _dotPulseAmp = 0.35, _dotGlowInt = 0.40, _dotGlowR = 3.0;
 
 /* ── Завантаження кольорів з БД ── */
 async function loadColors() {
@@ -2388,6 +2442,12 @@ function applyColors() {
   window.ZOOM_MIN         = parseFloat(c('zoom_min')         || '0.4');
   window.ZOOM_MAX         = parseFloat(c('zoom_max')         || '12');
   window.CITY_BORDER_ZOOM = parseFloat(c('city_border_zoom') || '2.5');
+  // Пульсація і свічення зірок
+  _dotPulseSpeed = Math.max(0.1, parseFloat(c('dot_pulse_speed')    || '1.0'));
+  _dotPulseAmp   = Math.max(0,   parseFloat(c('dot_pulse_amp')      || '0.35'));
+  _dotGlowInt    = Math.max(0,   parseFloat(c('dot_glow_intensity') || '0.40'));
+  _dotGlowR      = Math.max(1,   parseFloat(c('dot_glow_radius')    || '3.0'));
+
   // Застосовуємо smoke-налаштування до fluid simulation
   applySmokeConfig();
 
@@ -2582,7 +2642,7 @@ function updateMapSvgViewBox() {
 }
 
 function applyTr() {
-  // No CSS transform on #svg-layer — use viewBox zoom instead for crisp rendering.
+  _canvasDirty = true; // карта рухається → canvas має перемалюватись синхронно
   updateMapSvgViewBox();
   const zc=tr.s>=(window.CITY_BORDER_ZOOM||2.5);
   sl.classList.toggle('zoom-city',zc);
@@ -2593,6 +2653,7 @@ function applyTr() {
 // Throttle applyTr to one call per rAF frame — avoids SVG layout storm during drag/wheel
 let _applyTrPending = false;
 function scheduleApplyTr() {
+  _canvasDirty = true; // попереджаємо canvas ще до того як applyTr виконається
   if (_applyTrPending) return;
   _applyTrPending = true;
   requestAnimationFrame(() => { _applyTrPending = false; applyTr(); });
@@ -2849,62 +2910,84 @@ function drawNeonThreads() {
   ctx.restore();
 }
 
-function drawDotFX(p, pos) {
+function drawDotFX(p, pos, pulse) {
   const rn=p._rn??0;
-  const r=dotR(p),sp=1+rn*2,pulse=.55+.45*Math.sin(animT*sp+(p.id||0)*.8);
-  const isH=hovId===p.id,isS=selId===p.id;
-  const showGlow=tr.s>=2||isH||isS;
-  const gr=r*(2.5+rn*2)*pulse;
-  if(showGlow&&gr>0&&isFinite(gr)){
+  const r=dotR(p);
+  const isH=hovId===p.id, isS=selId===p.id;
+  // ── свічення (завжди увімкнено, конфігуроване) ──────────
+  const gr=r*(_dotGlowR+rn*2)*pulse;
+  if(gr>0&&isFinite(gr)){
+    const baseA=_dotGlowInt*pulse*(isH||isS?2.2:1);
     const grd=ctx.createRadialGradient(pos.x,pos.y,0,pos.x,pos.y,gr);
-    grd.addColorStop(0,`rgba(${p._r},${p._g},${p._b},${((.07+rn*.2)*pulse*2).toFixed(2)})`);
-    grd.addColorStop(1,`rgba(${p._r},${p._g},${p._b},0)`);
+    grd.addColorStop(0,   `rgba(${p._r},${p._g},${p._b},${Math.min(1,baseA*.85).toFixed(2)})`);
+    grd.addColorStop(0.45,`rgba(${p._r},${p._g},${p._b},${Math.min(1,baseA*.35).toFixed(2)})`);
+    grd.addColorStop(1,   `rgba(${p._r},${p._g},${p._b},0)`);
     ctx.beginPath();ctx.arc(pos.x,pos.y,gr,0,Math.PI*2);ctx.fillStyle=grd;ctx.fill();
   }
-  if(p._hasDupe){const ringR=r*4.5+Math.sin(animT*2.5+p.id)*r*.5;ctx.beginPath();ctx.arc(pos.x,pos.y,ringR,0,Math.PI*2);ctx.strokeStyle=`rgba(0,200,255,${(.12+.08*Math.sin(animT*2)).toFixed(2)})`;ctx.lineWidth=1;ctx.stroke();}
+  // ── неонове кільце для дублікатів ───────────────────────
+  if(p._hasDupe){const ringR=r*4.5+Math.sin(animT*2.5+(p.id||0))*r*.5;ctx.beginPath();ctx.arc(pos.x,pos.y,ringR,0,Math.PI*2);ctx.strokeStyle=`rgba(0,200,255,${(.12+.08*Math.sin(animT*2)).toFixed(2)})`;ctx.lineWidth=1;ctx.stroke();}
+  // ── кільце при наведенні/виділенні ──────────────────────
   if(isS||isH){ctx.beginPath();ctx.arc(pos.x,pos.y,r*4,0,Math.PI*2);ctx.strokeStyle=`rgba(${p._r},${p._g},${p._b},${(.5+.3*Math.sin(animT*3.5)).toFixed(2)})`;ctx.lineWidth=1.3;ctx.stroke();}
-  if(rn>.2||isH||isS){ctx.globalAlpha=.5+.4*pulse;ctx.beginPath();ctx.arc(pos.x,pos.y,r*.4,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();ctx.globalAlpha=1;}
 }
 
 let _cachedSqrtS = 1;
 let _lastCanvasFrame = 0;
 let _canvasLoopRunning = false;
+let _canvasDirty = false; // true коли карта рухається → знімаємо 30fps-кеп
 function _startCanvasLoop() {
   if(_canvasLoopRunning) return;
   _canvasLoopRunning = true;
   (function loop(ts){
     if(document.hidden){_canvasLoopRunning=false;return;}
     requestAnimationFrame(loop);
-    // Cap canvas at ~30fps to halve CPU load (dot animations are smooth enough at 30fps)
-    if(ts - _lastCanvasFrame < 30) return;
+    // При русі карти — малюємо синхронно (без кепу); інакше ~30fps
+    const _dirty=_canvasDirty; _canvasDirty=false;
+    if(!_dirty && ts - _lastCanvasFrame < 30) return;
     _lastCanvasFrame = ts;
     _svgBoundsCache = null;
     _cachedSqrtS = Math.min(Math.sqrt(tr.s), 2.5);
     animT+=.033;ctx.clearRect(0,0,W,H);
     drawNeonThreads();
-    // Pre-compute visible dots (single w2s pass)
+    // Pre-compute visible dots + індивідуальний pulse кожної зірки
     const _vis=[];
     for(const p of people){
       if(!p||!isFinite(p.x)||!isFinite(p.y))continue;
       const pos=w2s(p.x,p.y);
       if(!isFinite(pos.x)||!isFinite(pos.y))continue;
       if(pos.x<-60||pos.x>W+60||pos.y<-60||pos.y>H+60)continue;
-      _vis.push({p,pos});
+      // Псевдо-випадкові фаза і швидкість — кожна зірка мерехтить незалежно
+      const _pid=(p.id||0);
+      const phase=((_pid*2654435761)>>>0)%6283/1000;           // 0..2π унікальна фаза
+      const spd=0.7+0.6*(((_pid*1103515245+12345)>>>0)%1000)/1000; // 0.7..1.3×
+      const sp=_dotPulseSpeed*spd*(1+(p._rn??0)*0.3);
+      const pulse=(1-_dotPulseAmp)+_dotPulseAmp*((Math.sin(animT*sp+phase)+1)/2);
+      _vis.push({p,pos,pulse});
     }
-    // Pass 1: per-dot special effects (glow, rings, white center)
-    for(const {p,pos} of _vis)drawDotFX(p,pos);
-    // Pass 2: batch fill main circles grouped by color (300 draw calls → ~10-20)
+    // Pass 1: свічення та кільця (з індивідуальним pulse)
+    for(const {p,pos,pulse} of _vis)drawDotFX(p,pos,pulse);
+    // Pass 2: основні кола зі змазаними краями (blur → реалістична зірка)
     const _cb=new Map();
     for(const {p,pos} of _vis){
       const r=dotR(p);
       if(!_cb.has(p.color))_cb.set(p.color,[]);
       _cb.get(p.color).push({pos,r});
     }
+    ctx.save();
+    ctx.filter='blur(1.2px)';
     for(const[color,dots]of _cb){
       ctx.beginPath();ctx.fillStyle=color;
       for(const{pos,r}of dots){ctx.moveTo(pos.x+r,pos.y);ctx.arc(pos.x,pos.y,r,0,Math.PI*2);}
       ctx.fill();
     }
+    ctx.restore();
+    // Pass 3: яскраве біле ядро поверх (пульсує асинхронно, без blur)
+    for(const {p,pos,pulse} of _vis){
+      const r=dotR(p);const isH=hovId===p.id,isS=selId===p.id;
+      ctx.globalAlpha=Math.min(1,(0.3+0.65*pulse)*(isH||isS?1.4:1));
+      ctx.beginPath();ctx.arc(pos.x,pos.y,r*.38,0,Math.PI*2);
+      ctx.fillStyle='rgba(255,255,255,0.92)';ctx.fill();
+    }
+    ctx.globalAlpha=1;
     for(let i=particles.length-1;i>=0;i--){if(particles[i].age>=1)particles.splice(i,1);}
     for(const p of particles){p.age+=.044;const pos=w2s(p.x,p.y);ctx.globalAlpha=1-p.age;ctx.font=`${13+(1-p.age)*6}px sans-serif`;ctx.fillText('⭐',pos.x-8,pos.y-p.age*55);ctx.globalAlpha=1;}
   })(0);
@@ -2924,14 +3007,36 @@ function initSVGBorders() {
   firstPaths.slice(6).forEach(p=>{p.style.stroke=ny;p.style.strokeWidth='3';p.style.filter='';});
 
   // ── Межі населених пунктів (всі path всередині g[data-rid]) ─────────
-  const sc = getC('settlement_stroke','rgba(255,255,255,0.22)');
+  const sc = getC('settlement_stroke','rgba(255,255,255,0.35)');
+  const allSettlePaths = [];
   groups.forEach(g=>{
     g.querySelectorAll('path,polygon').forEach(p=>{
       p.style.stroke=sc;
       p.style.strokeWidth='1';
       p.style.vectorEffect='non-scaling-stroke';
+      allSettlePaths.push(p);
     });
   });
+
+  // ── Яскраве виділення шляхів що містять міста (з таблиці cities) ──
+  const cityStroke = getC('city_path_stroke','rgba(255,255,255,0.85)');
+  if(cities && cities.length){
+    cities.forEach(city=>{
+      if(!city.pos_x||!city.pos_y)return;
+      try{
+        const pt=svg.createSVGPoint();
+        pt.x=city.pos_x*14000; pt.y=city.pos_y*9500;
+        for(const p of allSettlePaths){
+          if(p.isPointInFill&&p.isPointInFill(pt)){
+            p.style.stroke=cityStroke;
+            p.style.strokeWidth='1.5';
+            break;
+          }
+        }
+      }catch{}
+    });
+  }
+
   // Першо-шляхи (зовнішні межі областей) — перезаписуємо поверх
   firstPaths.slice(0,6).forEach(p=>{p.style.stroke=nb;p.style.strokeWidth='5';p.style.vectorEffect='';});
   firstPaths.slice(6).forEach(p=>{p.style.stroke=ny;p.style.strokeWidth='3';p.style.vectorEffect='';});
@@ -3104,79 +3209,97 @@ async function loadData() {
 }
 
 /* ── Card ── */
-/* ── Card ── */
-function openCard(p) {
-  activePerson = p;
-  selId = p.id;
+function _setText(id,text){const e=document.getElementById(id);if(e)e.textContent=text;}
+function _setHTML(id,html){const e=document.getElementById(id);if(e)e.innerHTML=html;}
 
-  // Безопасный помощник для установки textContent
-  const setText = (id, text) => {
-    const el = document.getElementById(id);
-    if (el) el.textContent = text;
-  };
-  // Безопасный помощник для установки innerHTML
-  const setHTML = (id, html) => {
-    const el = document.getElementById(id);
-    if (el) el.innerHTML = html;
-  };
+function _renderVideoBlock(videoUrl){
+  const cvWrap=document.getElementById('cvideo-wrap');
+  const cvCont=document.getElementById('cvideo-container');
+  const cvHint=document.getElementById('cvideo-hint');
+  if(cvCont) cvCont.innerHTML='';
+  if(cvWrap) cvWrap.style.display='block';
+  const ytId=_ytExtractId(videoUrl);
+  if(ytId && cvCont){
+    _buildYtPreview(cvCont,ytId);
+    if(cvHint) cvHint.style.display='block';
+  } else if(cvCont){
+    if(cvHint) cvHint.style.display='none';
+    const ph=document.createElement('div');
+    ph.style.cssText='position:relative;width:100%;aspect-ratio:16/9;border-radius:8px;overflow:hidden;border:1px solid var(--border2)';
+    ph.innerHTML='<img src="img/novidio.gif" style="width:100%;height:100%;object-fit:cover;display:block;opacity:.8"><span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.6);font-size:11px;letter-spacing:.08em">ВІДЕО ВІДСУТНЄ</span>';
+    cvCont.appendChild(ph);
+  }
+}
 
-  setText('cname', `${p.last} ${p.first} ${p.mid||''}`.trim());
-  setText('cdates', `${fd(p.birth)} — ${fd(p.death)}`);
-  setText('cbury', p.bury || '—');
-  setText('cloc', p.loc || '—');
-  setHTML('ccirc', p.circ ? `<span class="badge">${h(p.circ)}</span>` : '—');
-  setText('cdesc', p.descr || '—');
+function _renderCardDetails(p){
+  _setText('cloc',   p.loc      || '—');
+  _setHTML('ccirc',  p.circ ? `<span class="badge">${h(p.circ)}</span>` : '—');
+  _setText('cdesc',  p.descr    || '—');
 
-  // Позывной (grp)
-  const cgrpRow = document.getElementById('cgrp-row');
-  const cgrpEl  = document.getElementById('cgrp');
-  if (p.grp && cgrpEl) {
-    cgrpEl.textContent = p.grp;
-    if (cgrpRow) cgrpRow.style.display = '';
-  } else {
-    if (cgrpRow) cgrpRow.style.display = 'none';
+  const crankRow=document.getElementById('crank-row');
+  const crankEl =document.getElementById('crank');
+  const crankImg=document.getElementById('crank-img');
+  if(crankRow) crankRow.style.display='';
+  if(crankEl)  crankEl.textContent=p.rank||'—';
+  if(crankImg){
+    const pf=p.rank?RANK_POGON_IMG[p.rank]:null;
+    if(pf){crankImg.src='https://commons.wikimedia.org/wiki/Special:FilePath/'+encodeURIComponent(pf)+'?width=56';crankImg.style.display='inline-block';}
+    else crankImg.style.display='none';
   }
 
-  setText('lcnt', p.likes || 0);
+  const cposEl=document.getElementById('cpos');
+  if(cposEl) cposEl.textContent=p.position||'—';
 
-  // Дубликаты
-  const dupes = p._dupKey ? people.filter(x => x._dupKey === p._dupKey && x.id !== p.id) : [];
-  const ds = document.getElementById('dupes-section');
-  const dhr = document.getElementById('dupes-hr');
-  if (dupes.length) {
-    setHTML('cdupes', dupes.map(d => `<span class="dupe-chip">&#128279; ${h(d.last)} ${h(d.first)} (${h(d.added_by)||'?'})</span>`).join(''));
-    if (ds) ds.style.display = '';
-    if (dhr) dhr.style.display = '';
-  } else {
-    if (ds) ds.style.display = 'none';
-    if (dhr) dhr.style.display = 'none';
+  const img=document.getElementById('cimg');
+  if(img){
+    if(p.photo&&p.photo.trim()){img.src=p.photo.startsWith('http')?p.photo:`https://${p.photo}`;img.onerror=()=>{img.src='img/foto_false.png';};}
+    else img.src='img/foto_false.png';
   }
 
-  // ── ФОТО: если есть - показываем, если нет - заглушка ──
-  const img = document.getElementById('cimg');
-  if (img) {
-    if (p.photo && p.photo.trim() !== '') {
-      img.src = p.photo.startsWith('http') ? p.photo : `https://${p.photo}`;
-      img.onerror = () => { img.src = 'img/foto_false.png'; };
-    } else {
-      img.src = 'img/foto_false.png';
-    }
-  }
+  _renderVideoBlock(p.video_url);
+}
 
-  // ── Відео YouTube ──
-  const cvWrap = document.getElementById('cvideo-wrap');
-  const cvCont = document.getElementById('cvideo-container');
-  if (cvCont) cvCont.innerHTML = '';
-  const ytId = _ytExtractId(p.video_url);
-  if (ytId && cvWrap && cvCont) {
-    _buildYtPreview(cvCont, ytId);
-    cvWrap.style.display = 'block';
-  } else if (cvWrap) {
-    cvWrap.style.display = 'none';
-  }
+async function openCard(p){
+  activePerson=p;
+  selId=p.id;
 
-  const card = document.getElementById('card');
-  if (card) card.classList.add('open');
+  // ── Фаза 1: одразу показуємо базові дані (є в легкому списку) ──
+  _setText('cname',`${p.last} ${p.first} ${p.mid||''}`.trim());
+  const _b=p.birth?fd(p.birth):'', _d=p.death?fd(p.death):'';
+  _setText('cdates',_b&&_d?`${_b} — ${_d}`:_b?`нар. ${_b}`:_d?`† ${_d}`:'');
+  _setText('cbury', p.bury||'—');
+  _setText('lcnt',  p.likes||0);
+
+  const cgrpRow=document.getElementById('cgrp-row');
+  if(p.grp){_setText('cgrp',p.grp);if(cgrpRow)cgrpRow.style.display='';}
+  else{if(cgrpRow)cgrpRow.style.display='none';}
+
+  const dupes=p._dupKey?people.filter(x=>x._dupKey===p._dupKey&&x.id!==p.id):[];
+  const ds=document.getElementById('dupes-section'),dhr=document.getElementById('dupes-hr');
+  if(dupes.length){
+    _setHTML('cdupes',dupes.map(d=>`<span class="dupe-chip">&#128279; ${h(d.last)} ${h(d.first)} (${h(d.added_by)||'?'})</span>`).join(''));
+    if(ds)ds.style.display='';if(dhr)dhr.style.display='';
+  } else {if(ds)ds.style.display='none';if(dhr)dhr.style.display='none';}
+
+  // Деталі — заглушки поки вантажиться
+  _setText('cloc','…');_setHTML('ccirc','…');_setText('cdesc','…');
+  const crankEl=document.getElementById('crank');if(crankEl)crankEl.textContent='…';
+  const crankImg=document.getElementById('crank-img');if(crankImg)crankImg.style.display='none';
+  const cposEl=document.getElementById('cpos');if(cposEl)cposEl.textContent='…';
+  const cimg=document.getElementById('cimg');if(cimg)cimg.src='img/foto_false.png';
+  _renderVideoBlock(p.video_url); // відео з легких даних поки деталі завантажуються
+
+  document.getElementById('card').classList.add('open');
+
+  // ── Фаза 2: підвантажуємо повні дані по запиту ──
+  try{
+    const res=await fetch(`${API}/api/memorial/${p.id}`);
+    if(!res.ok) return;
+    const full=await res.json();
+    if(selId!==p.id) return; // користувач вже відкрив іншу картку
+    Object.assign(activePerson,full);
+    _renderCardDetails(full);
+  }catch(e){}
 }
 function closeCard(){
   document.getElementById('card').classList.remove('open');
@@ -3188,6 +3311,91 @@ function closeCard(){
   if(cvWrap) cvWrap.style.display='none';
 }
 function fd(s){if(!s)return'?';try{return new Date(s).toLocaleDateString('uk-UA',{day:'numeric',month:'long',year:'numeric'});}catch{return s;}}
+
+/* ── Awards ── */
+const AWARDS_DATA = [
+  { name:'Герой України (Золота Зірка)',              file:'Medal_of_Golden_Star_Ukraine.jpg',                         desc:'За здійснення видатного подвигу або визначний особистий внесок у державне будівництво та захист суверенітету України' },
+  { name:'Орден «За мужність» I ступеня',             file:'Mugnist-1.jpg',                                            desc:'За особисту мужність і героїзм, виявлені в бойових діях при захисті державного суверенітету та територіальної цілісності України' },
+  { name:'Орден «За мужність» II ступеня',            file:'Mugnist-2.jpg',                                            desc:'За мужність і відвагу в бойових діях, самовіддане виконання військового обов\'язку' },
+  { name:'Орден «За мужність» III ступеня',           file:'Mugnist-3.jpg',                                            desc:'За особисту мужність і стійкість, виявлені при виконанні військового та громадянського обов\'язку' },
+  { name:'Орден Богдана Хмельницького I ступеня',     file:'Order_of_Bohdan_Khmelnytsky_1st_Class_of_Ukraine.png',     desc:'За видатні заслуги у зміцненні обороноздатності держави, вагомий внесок у розвиток Збройних Сил України' },
+  { name:'Орден Богдана Хмельницького II ступеня',    file:'Order_of_Bohdan_Khmelnytsky_2nd_Class_of_Ukraine.png',     desc:'За значний внесок у зміцнення обороноздатності держави та розвиток Збройних Сил' },
+  { name:'Орден Богдана Хмельницького III ступеня',   file:'Order_of_Bohdan_Khmelnytsky_3rd_Class_of_Ukraine.png',     desc:'За мужність і відвагу при виконанні бойових завдань, сумлінну військову службу' },
+  { name:'Орден Данила Галицького',                   file:'Order_of_Danylo_Halytsky_of_Ukraine.png',                  desc:'За визначні заслуги у захисті державного суверенітету, зміцненні обороноздатності та безпеки України' },
+  { name:'Хрест бойових заслуг',                      file:'Cross_of_Combat_Merit_2.jpg',                              desc:'За особисту мужність і умілі дії в боях при захисті державного суверенітету та територіальної цілісності України' },
+  { name:'Медаль «Захиснику Вітчизни»',               file:'Ukraine-Defender_of_the_Motherland_Medal.PNG',             desc:'За захист державного суверенітету та територіальної цілісності України, зразкове виконання військового обов\'язку' },
+  { name:'Медаль «За поранення»',                     file:'Wound_Medal_(Ukraine).png',                                desc:'Вручається військовослужбовцям, які отримали поранення (контузію, травму, каліцтво) під час виконання бойових завдань' },
+  { name:'Медаль «За військову службу Україні»',      file:'За_військову_службу_Україні.jpg',                          desc:'За зразкове виконання військового обов\'язку, бездоганну службу та вагомий внесок у зміцнення обороноздатності держави' },
+];
+
+function _wikiImg(file, w){
+  return `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(file)}?width=${w||80}`;
+}
+
+async function openAwards(){
+  if(!activePerson) return;
+  const p = activePerson;
+
+  const nameEl = document.getElementById('awards-person-name');
+  if(nameEl) nameEl.textContent = `${p.last} ${p.first} ${p.mid||''}`.trim();
+
+  const descrEl = document.getElementById('awards-person-descr');
+  if(descrEl){
+    if(p.descr && p.descr.trim()){
+      descrEl.textContent = p.descr.trim();
+      descrEl.style.display = 'block';
+    } else {
+      descrEl.style.display = 'none';
+    }
+  }
+
+  const photoEl = document.getElementById('awards-person-photo');
+  if(photoEl){
+    const src = p.photo && p.photo.trim() ? (p.photo.startsWith('http') ? p.photo : `https://${p.photo}`) : '/img/foto_false.png';
+    photoEl.src = src;
+    photoEl.onerror = () => { photoEl.src = '/img/foto_false.png'; };
+  }
+
+  const list = document.getElementById('awards-list');
+  if(list) list.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:16px 0">Завантаження...</div>';
+
+  document.getElementById('mawards').classList.add('open');
+
+  try {
+    const res = await fetch(`${API}/api/memorial/${p.id}/awards`);
+    const awards = await res.json();
+    if(!list) return;
+    if(!awards.length){
+      list.innerHTML = '<div class="awards-empty"><div class="awards-empty-ico">🏅</div><div class="awards-empty-title">Немає даних</div><div class="awards-empty-sub">Інформація про нагороди відсутня в базі даних</div></div>';
+      return;
+    }
+    list.innerHTML = awards.map(a => {
+      const imgSrc = a.img_file ? _wikiImg(a.img_file, 60) : '';
+      const imgHtml = imgSrc
+        ? `<img class="award-medal-img" src="${imgSrc}" alt="${h(a.name)}" title="Натисніть для перегляду" onclick="medalZoom('${_wikiImg(a.img_file,400)}')" onerror="this.style.display='none'" style="width:44px;height:44px;object-fit:contain;flex-shrink:0;cursor:zoom-in">`
+        : `<div style="width:44px;height:44px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:24px;background:rgba(255,255,255,.04);border-radius:4px">🏅</div>`;
+      const dateHtml = a.award_date ? `<div class="award-date">Дата нагородження: ${a.award_date}</div>` : '';
+      const descHtml = a.descr ? `<div class="award-desc">${h(a.descr)}</div>` : '';
+      return `<div class="award-item" style="display:flex;flex-direction:row;align-items:flex-start;gap:12px">
+        ${imgHtml}
+        <div style="flex:1;min-width:0">
+          <div class="award-name">${h(a.name)}</div>
+          ${descHtml}${dateHtml}
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    if(list) list.innerHTML = '<div class="awards-empty"><div class="awards-empty-ico">⚠️</div><div class="awards-empty-title">Помилка завантаження</div></div>';
+  }
+}
+function closeAwards(){
+  document.getElementById('mawards').classList.remove('open');
+}
+function medalZoom(src){
+  const lb = document.getElementById('medal-lightbox');
+  document.getElementById('medal-lightbox-img').src = src;
+  lb.style.display = 'flex';
+}
 
 /* ── Likes ── */
 const lCD={};

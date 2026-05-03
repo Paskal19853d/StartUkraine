@@ -173,7 +173,9 @@ html,body{height:100%;font-family:"Segoe UI",sans-serif;background:var(--bg);col
 /* ── TABLES ── */
 .tbl-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:20px}
 table{width:100%;border-collapse:collapse}
-th{background:var(--surface2);padding:9px 12px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);border-bottom:1px solid var(--border)}
+th{background:var(--surface2);padding:9px 12px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);border-bottom:1px solid var(--border);position:relative;white-space:nowrap}
+.tbl-resizer{position:absolute;right:0;top:0;height:100%;width:5px;cursor:col-resize;user-select:none;z-index:2}
+.tbl-resizer:hover,.tbl-resizer.rsz-active{background:rgba(0,200,255,.45)}
 td{padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:middle;font-size:12px}
 tr:last-child td{border-bottom:none}
 tr:hover td{background:rgba(255,255,255,.02)}
@@ -199,9 +201,10 @@ tr:hover td{background:rgba(255,255,255,.02)}
 .em-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
 .em-full{grid-column:1/-1}
 .em-f{display:flex;flex-direction:column;gap:4px}
-.em-f label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
-.em-f input,.em-f select,.em-f textarea{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:7px;color:var(--text);padding:7px 10px;font-size:12px;font-family:inherit;outline:none}
+.em-f label{font-size:10px;color:rgba(150,180,210,.8);text-transform:uppercase;letter-spacing:.06em}
+.em-f input,.em-f select,.em-f textarea{background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.18);border-radius:7px;color:#dce8f4;padding:7px 10px;font-size:12px;font-family:inherit;outline:none}
 .em-f input:focus,.em-f select:focus,.em-f textarea:focus{border-color:rgba(0,200,255,.4)}
+.em-f select option,.em-f select optgroup{background:#0d1b2e;color:#dce8f4}
 .em-f textarea{min-height:70px;resize:vertical}
 .em-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:16px}
 #em-close{position:absolute;top:14px;right:14px;background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;transition:transform .2s}
@@ -408,18 +411,37 @@ tr:hover td{background:rgba(255,255,255,.02)}
           <button class="btn" onclick="exportCsv()" title="Завантажити всі записи у CSV">📤 Експорт CSV</button>
           <button class="btn" onclick="document.getElementById('csv-import-input').click()" title="Завантажити з CSV — потрапить на модерацію">📥 Імпорт CSV</button>
           <input type="file" id="csv-import-input" accept=".csv" style="display:none" onchange="handleCsvImport(event)">
+          <label style="font-size:11px;color:var(--muted);margin-left:8px">Рядків:
+            <select id="mem-page-size-sel" onchange="memSetPageSize(+this.value)"
+              style="background:var(--surface2);border:1px solid var(--border2);border-radius:5px;color:var(--text);padding:3px 6px;font-size:11px;margin-left:4px">
+              <option value="25">25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+          </label>
+          <button class="btn btn-b" onclick="memResetColWidths()" title="Скинути ширину колонок">⟳ Колонки</button>
         </div>
-        <div class="tbl-wrap"><table>
-		  <thead><tr><th>ID</th><th>ПІБ</th><th>Позивний</th><th>Місце пох.</th><th>Обст.</th><th>Статус</th><th>★</th><th>Дії</th></tr></thead>
-          <tbody id="mem-tb"></tbody>
-		  
-			<div id="mem-pagination" style="display:flex;gap:8px;align-items:center;margin-top:12px;flex-wrap:wrap;">
-		  <button class="btn btn-b" id="pg-prev" onclick="memPage(-1)">◀ Назад</button>
-		  <span id="pg-info" style="color:var(--muted);font-size:12px"></span>
-		  <button class="btn btn-b" id="pg-next" onclick="memPage(1)">Вперед ▶</button>
-			</div>
-		  
-        </table></div>
+        <div class="tbl-wrap">
+          <table id="mem-table" style="table-layout:fixed;width:100%">
+            <thead><tr>
+              <th style="width:50px">ID</th>
+              <th style="width:180px">ПІБ</th>
+              <th style="width:100px">Звання</th>
+              <th style="width:90px">Дати</th>
+              <th style="width:130px">Місце пох.</th>
+              <th style="width:90px">Обст.</th>
+              <th style="width:65px">Статус</th>
+              <th style="width:40px">★</th>
+              <th style="width:160px">Дії</th>
+            </tr></thead>
+            <tbody id="mem-tb"></tbody>
+          </table>
+        </div>
+        <div id="mem-pagination" style="display:flex;gap:8px;align-items:center;margin-top:12px;flex-wrap:wrap;">
+          <button class="btn btn-b" id="pg-prev" onclick="memPage(-1)">◀ Назад</button>
+          <span id="pg-info" style="color:var(--muted);font-size:12px"></span>
+          <button class="btn btn-b" id="pg-next" onclick="memPage(1)">Вперед ▶</button>
+        </div>
       </div>
 
       <!-- PENDING -->
@@ -2786,9 +2808,86 @@ tr:hover td{background:rgba(255,255,255,.02)}
         <select id="e-approved"><option value="0">На модерації</option><option value="1">Схвалено</option></select>
       </div>
       <div class="em-f"><label>Позивний</label><input id="e-grp"></div>
-      <div class="em-f"><label>Фото URL</label><input id="e-photo"></div>
+      <div class="em-f"><label>Звання *</label>
+        <select id="e-rank" onchange="drawRankPogon(this.value)">
+          <option value="">— не вказано —</option>
+          <optgroup label="Рядовий / Солдат">
+            <option>Рекрут</option>
+            <option>Солдат</option>
+            <option>Старший солдат</option>
+          </optgroup>
+          <optgroup label="Сержантський склад">
+            <option>Молодший сержант</option>
+            <option>Сержант</option>
+            <option>Старший сержант</option>
+            <option>Головний сержант</option>
+            <option>Штаб-сержант</option>
+            <option>Майстер-сержант</option>
+            <option>Старший майстер-сержант</option>
+            <option>Головний майстер-сержант</option>
+          </optgroup>
+          <optgroup label="Офіцерський склад">
+            <option>Молодший лейтенант</option>
+            <option>Лейтенант</option>
+            <option>Старший лейтенант</option>
+            <option>Капітан</option>
+            <option>Майор</option>
+            <option>Підполковник</option>
+            <option>Полковник</option>
+          </optgroup>
+          <optgroup label="Генеральський склад">
+            <option>Бригадний генерал</option>
+            <option>Генерал-майор</option>
+            <option>Генерал-лейтенант</option>
+            <option>Генерал</option>
+          </optgroup>
+        </select>
+        <img id="rank-pogon-img" src="" alt="" style="display:none;height:80px;width:auto;transform:rotate(90deg);transform-origin:center;margin:-18px auto -10px;border-radius:3px;box-shadow:0 2px 10px rgba(0,0,0,.6);">
+      </div>
+      <div class="em-f"><label>Посада *</label>
+        <select id="e-position">
+          <option value="">— не вказано —</option>
+          <optgroup label="Стрілецькі">
+            <option>Стрілець</option>
+            <option>Кулеметник</option>
+            <option>Снайпер</option>
+            <option>Гранатометник</option>
+          </optgroup>
+          <optgroup label="Технічні">
+            <option>Водій</option>
+            <option>Механік-водій</option>
+            <option>Оператор БпЛА</option>
+            <option>Сапер</option>
+            <option>Зв'язківець</option>
+            <option>Артилерист</option>
+            <option>Льотчик</option>
+          </optgroup>
+          <optgroup label="Медицина">
+            <option>Санітар</option>
+            <option>Санітарний інструктор</option>
+            <option>Лікар</option>
+          </optgroup>
+          <optgroup label="Командування">
+            <option>Командир відділення</option>
+            <option>Командир взводу</option>
+            <option>Командир роти</option>
+            <option>Командир батальйону</option>
+            <option>Начальник штабу</option>
+          </optgroup>
+          <optgroup label="Інші">
+            <option>Розвідник</option>
+            <option>Капелан</option>
+            <option>Психолог</option>
+            <option>Юрист</option>
+            <option>Кухар</option>
+          </optgroup>
+        </select>
+      </div>
+      <div class="em-f"><label>Фото URL</label><input id="e-photo" oninput="updateEditPhotoPreview()">
+        <img id="edit-photo-preview" src="/img/foto_false.png" onerror="this.src='/img/foto_false.png'" style="width:72px;height:72px;object-fit:cover;border-radius:6px;margin-top:6px;border:1px solid var(--border2);display:block">
+      </div>
       <div class="em-f em-full"><label>Відео YouTube URL</label><input id="e-video" placeholder="https://youtu.be/… або youtube.com/watch?v=…"></div>
-      <div class="em-f em-full"><label>Опис</label><textarea id="e-desc"></textarea></div>
+      <div class="em-f em-full"><label>Опис <span id="e-desc-cnt" style="float:right;font-weight:400;color:rgba(150,180,210,.6)">0/200</span></label><textarea id="e-desc" maxlength="200" oninput="document.getElementById('e-desc-cnt').textContent=this.value.length+'/200'"></textarea></div>
     </div>
     <div class="em-actions">
       <button class="btn" onclick="closeEdit()">Скасувати</button>
@@ -3084,38 +3183,57 @@ async function loadServerStats() {
 }
 
 /* ══════════ MEMORIALS ══════════ */
- 
+
 let allPeople = [];
 let memCurrentPage = 0;
-const MEM_PAGE_SIZE = 100;
+let memPageSize = parseInt(localStorage.getItem('mem_page_size') || '25') || 25;
+let memColWidths = JSON.parse(localStorage.getItem('mem_col_widths') || 'null') || {};
 
 async function loadMem() {
   const r = await fetch(`${API}/api/people`);
   allPeople = await r.json();
   memCurrentPage = 0;
   renderMemPage();
+  _initMemResize();
+  // sync selector
+  const sel = document.getElementById('mem-page-size-sel');
+  if (sel) sel.value = String(memPageSize);
 }
 
 function renderMemPage() {
-  const start = memCurrentPage * MEM_PAGE_SIZE;
-  const slice = allPeople.slice(start, start + MEM_PAGE_SIZE);
+  const start = memCurrentPage * memPageSize;
+  const slice = allPeople.slice(start, start + memPageSize);
   const total = allPeople.length;
-  const totalPages = Math.ceil(total / MEM_PAGE_SIZE);
+  const totalPages = Math.ceil(total / memPageSize) || 1;
 
-  document.getElementById('mem-tb').innerHTML = slice.map(p => `
-    <tr>
-      <td style="color:var(--muted)">${p.id}</td>
-      <td><strong>${h(p.last)} ${h(p.first)}</strong><br><small style="color:var(--muted)">${h(p.mid)}</small></td>
-      <td style="font-size:11px;color:#4fc3f7">${h(p.grp)||'—'}</td>
-      <td style="font-size:11px">${h(p.bury)||'—'}</td>
-      <td><span class="badge bb">${h(p.circ)||'—'}</span></td>
-      <td><span class="badge ${p.approved?'bg':'by'}">${p.approved?'OK':'Мод.'}</span></td>
-      <td>⭐${p.likes||0}</td>
-      <td style="display:flex;gap:5px">
-        <button class="btn btn-b" onclick="openEditById(${p.id})">✏️</button>
-        <button class="btn btn-r" onclick="delMem(${p.id})">🗑</button>
+  document.getElementById('mem-tb').innerHTML = slice.map(p => {
+    const name = `${h(p.last)} ${h(p.first)}`;
+    const ytBadge = p.video_url
+      ? '<span style="background:#f00;color:#fff;font-size:9px;font-weight:700;padding:1px 4px;border-radius:2px;margin-left:5px;vertical-align:middle">▶ YT</span>'
+      : '';
+    const rankStr = [p.rank, p.position].filter(Boolean).join(' / ') || '—';
+    const dates = [p.birth, p.death].filter(Boolean).join(' – ') || '—';
+    const safeNameJs = (p.last + ' ' + p.first).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    return `<tr>
+      <td style="color:var(--muted);overflow:hidden;text-overflow:ellipsis">${p.id}</td>
+      <td style="overflow:hidden">
+        <strong style="white-space:nowrap">${name}</strong>${ytBadge}
+        <br><small style="color:var(--muted)">${h(p.mid)||''}</small>
       </td>
-    </tr>`).join('');
+      <td style="font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${h(rankStr)}</td>
+      <td style="font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden">${h(dates)}</td>
+      <td style="font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${h(p.bury)||'—'}</td>
+      <td><span class="badge bb" style="white-space:nowrap">${h(p.circ)||'—'}</span></td>
+      <td><span class="badge ${p.approved?'bg':'by'}">${p.approved?'OK':'Мод.'}</span></td>
+      <td style="text-align:center">⭐${p.likes||0}</td>
+      <td>
+        <div style="display:flex;gap:4px;flex-wrap:nowrap">
+          <button class="btn btn-b" style="flex:1;min-width:70px;font-size:11px" onclick="openEditById(${p.id})">✏️ Редагувати</button>
+          <button class="btn btn-r" style="flex:1;min-width:70px;font-size:11px" onclick="delMem(${p.id},'${safeNameJs}')">🗑 Видалити</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
 
   document.getElementById('pg-info').textContent =
     `Сторінка ${memCurrentPage + 1} з ${totalPages} (всього: ${total})`;
@@ -3124,9 +3242,61 @@ function renderMemPage() {
 }
 
 function memPage(dir) {
-  const totalPages = Math.ceil(allPeople.length / MEM_PAGE_SIZE);
+  const totalPages = Math.ceil(allPeople.length / memPageSize) || 1;
   memCurrentPage = Math.max(0, Math.min(memCurrentPage + dir, totalPages - 1));
   renderMemPage();
+}
+
+function memSetPageSize(n) {
+  memPageSize = n;
+  memCurrentPage = 0;
+  localStorage.setItem('mem_page_size', String(n));
+  renderMemPage();
+}
+
+function memResetColWidths() {
+  memColWidths = {};
+  localStorage.removeItem('mem_col_widths');
+  const ths = document.querySelectorAll('#mem-table thead th');
+  const defaults = [50,180,100,90,130,90,65,40,160];
+  ths.forEach((th, i) => { th.style.width = (defaults[i] || 100) + 'px'; });
+}
+
+let _rszActive = false;
+function _initMemResize() {
+  const ths = [...document.querySelectorAll('#mem-table thead th')];
+  ths.forEach((th, i) => {
+    // Apply saved width
+    if (memColWidths[i]) th.style.width = memColWidths[i] + 'px';
+    // Remove old handle if any
+    const old = th.querySelector('.tbl-resizer');
+    if (old) old.remove();
+    // Add new handle (skip last column)
+    if (i === ths.length - 1) return;
+    const handle = document.createElement('div');
+    handle.className = 'tbl-resizer';
+    handle.addEventListener('mousedown', e => {
+      e.preventDefault();
+      _rszActive = true;
+      handle.classList.add('rsz-active');
+      const x0 = e.pageX, w0 = th.offsetWidth;
+      const onMove = e => {
+        if (!_rszActive) return;
+        th.style.width = Math.max(40, w0 + e.pageX - x0) + 'px';
+      };
+      const onUp = () => {
+        _rszActive = false;
+        handle.classList.remove('rsz-active');
+        memColWidths[i] = th.offsetWidth;
+        localStorage.setItem('mem_col_widths', JSON.stringify(memColWidths));
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+      };
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+    th.appendChild(handle);
+  });
 }
 
 /* ── CSV EXPORT ─────────────────────────────────────────── */
@@ -3225,7 +3395,16 @@ async function loadPend() {
 }
 
 async function approveMem(id){try{const r=await fetch(`${API}/api/admin/approve/${id}`,{method:'POST',headers:authH()});if(!r.ok)throw new Error(r.status);showN('✅ Схвалено');loadPend();loadStats();}catch{showN('❌ Помилка схвалення',true);}}
-async function delMem(id){if(!confirm('Видалити?'))return;try{const r=await fetch(`${API}/api/admin/memorial/${id}`,{method:'DELETE',headers:authH()});if(!r.ok)throw new Error(r.status);showN('🗑 Видалено');loadMem();loadStats();}catch{showN('❌ Помилка видалення',true);}}
+async function delMem(id, name=''){
+  const msg = `⚠️ ВИДАЛЕННЯ ЗАПИСУ\n\n${name ? '"'+name+'"' : 'ID: '+id}\n\nЦю дію неможливо скасувати.\nВсі дані про цього героя будуть втрачені назавжди.\n\nПродовжити?`;
+  if(!confirm(msg)) return;
+  try{
+    const r=await fetch(`${API}/api/admin/memorial/${id}`,{method:'DELETE',headers:authH()});
+    if(!r.ok)throw new Error(r.status);
+    showN('🗑 Запис видалено');
+    loadMem(); loadStats();
+  }catch{showN('❌ Помилка видалення',true);}
+}
 
 /* ══════════ USERS ══════════ */
 let _usersData = [];
@@ -3923,7 +4102,45 @@ async function saveSelectedCity(){
   }catch{showN('❌ Помилка збереження міста',true);}
 }
 
+/* ══════════ RANK POGON — Wikimedia Special:FilePath (no hash needed) ══════════ */
+const RANK_POGON_IMG = {
+  'Солдат':                   'UA_shoulder_mark_01.svg',
+  'Старший солдат':           'UA_shoulder_mark_02.svg',
+  'Молодший сержант':         'UA_shoulder_mark_03.svg',
+  'Сержант':                  'UA_shoulder_mark_04.svg',
+  'Старший сержант':          'UA_shoulder_mark_05.svg',
+  'Головний сержант':         'UA_shoulder_mark_06.svg',
+  'Штаб-сержант':             'UA_shoulder_mark_07.svg',
+  'Майстер-сержант':          'UA_shoulder_mark_08.svg',
+  'Старший майстер-сержант':  'UA_shoulder_mark_09.svg',
+  'Головний майстер-сержант': 'UA_shoulder_mark_10-0.svg',
+  'Молодший лейтенант':       'UA_shoulder_mark_11.svg',
+  'Лейтенант':                'UA_shoulder_mark_12.svg',
+  'Старший лейтенант':        'UA_shoulder_mark_13.svg',
+  'Капітан':                  'UA_shoulder_mark_14.svg',
+  'Майор':                    'UA_shoulder_mark_15.svg',
+  'Підполковник':             'UA_shoulder_mark_16.svg',
+  'Полковник':                'UA_shoulder_mark_17.svg',
+  'Бригадний генерал':        'Погон_бригадного_генерала_ЗСУ_(2020).svg',
+  'Генерал-майор':            'Погон_генерал-майора_ЗСУ_(2020).svg',
+  'Генерал-лейтенант':        'Погон_генерал-лейтенанта_ЗСУ_(2020).svg',
+  'Генерал':                  'Погон_генерала_ЗСУ_(2020).svg',
+};
+
+function drawRankPogon(rankName){
+  const img=document.getElementById('rank-pogon-img');
+  if(!img) return;
+  const file=RANK_POGON_IMG[rankName];
+  if(!file){img.style.display='none'; return;}
+  img.src='https://commons.wikimedia.org/wiki/Special:FilePath/'+encodeURIComponent(file)+'?width=80';
+  img.style.display='block';
+}
+
 /* ══════════ EDIT MODAL ══════════ */
+function updateEditPhotoPreview(){
+  const url=(document.getElementById('e-photo').value||'').trim();
+  document.getElementById('edit-photo-preview').src=url||'/img/foto_false.png';
+}
 function openEditById(id){
   editId=id;
   const p=allPeople.find(x=>x.id===id)||people.find(x=>x.id===id);
@@ -3940,9 +4157,14 @@ function openEditById(id){
   document.getElementById('e-circ').value=p.circ||'';
   document.getElementById('e-approved').value=p.approved||0;
   document.getElementById('e-grp').value=p.grp||'';
+  document.getElementById('e-rank').value=p.rank||'';
+  document.getElementById('e-position').value=p.position||'';
+  drawRankPogon(p.rank||'');
   document.getElementById('e-photo').value=p.photo||'';
   document.getElementById('e-video').value=p.video_url||'';
   document.getElementById('e-desc').value=p.descr||'';
+  document.getElementById('e-desc-cnt').textContent=(p.descr||'').length+'/200';
+  updateEditPhotoPreview();
   document.getElementById('edit-modal').classList.add('open');
 }
 function openEditModal(){if(selDot)openEditById(selDot);}
@@ -3960,9 +4182,14 @@ function openCreateModal(){
   document.getElementById('e-circ').value='Інше';
   document.getElementById('e-approved').value='1';
   document.getElementById('e-grp').value='';
+  document.getElementById('e-rank').value='';
+  document.getElementById('e-position').value='';
+  drawRankPogon('');
   document.getElementById('e-photo').value='';
   document.getElementById('e-video').value='';
   document.getElementById('e-desc').value='';
+  document.getElementById('e-desc-cnt').textContent='0/200';
+  updateEditPhotoPreview();
   document.getElementById('edit-modal').classList.add('open');
 }
 function closeEdit(){document.getElementById('edit-modal').classList.remove('open');editId=null;editMode='edit';}
@@ -3979,6 +4206,8 @@ async function saveEdit(){
     circ:document.getElementById('e-circ').value,
     approved:parseInt(document.getElementById('e-approved').value),
     grp:document.getElementById('e-grp').value,
+    rank:document.getElementById('e-rank').value,
+    position:document.getElementById('e-position').value,
     photo:document.getElementById('e-photo').value,
     video_url:document.getElementById('e-video').value.trim(),
     descr:document.getElementById('e-desc').value,
@@ -4088,7 +4317,12 @@ async function loadColors(){
     if (hasDiff) _showDraftBanner(__ts);
   }
 
-  if (!COLORS['settlement_stroke']) COLORS['settlement_stroke'] = {value:'rgba(255,255,255,0.22)', label:'Межі населених пунктів'};
+  if (!COLORS['settlement_stroke'])  COLORS['settlement_stroke']  = {value:'rgba(255,255,255,0.35)', label:'Межі населених пунктів'};
+  if (!COLORS['city_path_stroke'])   COLORS['city_path_stroke']   = {value:'rgba(255,255,255,0.85)', label:'Межі міст (яскраві)'};
+  if (!COLORS['dot_pulse_speed'])    COLORS['dot_pulse_speed']    = {value:'1.0',  label:'Швидкість пульсації'};
+  if (!COLORS['dot_pulse_amp'])      COLORS['dot_pulse_amp']      = {value:'0.35', label:'Амплітуда пульсації'};
+  if (!COLORS['dot_glow_intensity']) COLORS['dot_glow_intensity'] = {value:'0.40', label:'Яскравість свічення'};
+  if (!COLORS['dot_glow_radius'])    COLORS['dot_glow_radius']    = {value:'3.0',  label:'Радіус свічення'};
   renderColors(); updatePreview();
   // Відновлюємо збережений порядок меню
   applyNavOrder(COLORS['admin_nav_order']?.value || '');
@@ -4107,6 +4341,10 @@ const RANGE_KEYS={
   'smoke_splat_force':     {min:1000, max:20000, step:500,   label:'F'},
   'smoke_curl':            {min:0,    max:60,    step:1,     label:'curl'},
   'smoke_opacity':         {min:0.1,  max:1.0,   step:0.05,  label:'op'},
+  'dot_pulse_speed':       {min:0.1,  max:5.0,   step:0.1,   label:'×'},
+  'dot_pulse_amp':         {min:0,    max:1.0,   step:0.05,  label:''},
+  'dot_glow_intensity':    {min:0,    max:1.0,   step:0.05,  label:''},
+  'dot_glow_radius':       {min:1,    max:12,    step:0.5,   label:'×'},
 };
 
 function renderColors(){
@@ -4141,7 +4379,17 @@ function renderColors(){
   </div>`;
 
 
-  const knownKeys = new Set([...glowKeys,...zoomKeys,...smokeKeys,...photoKeys,...seaKeys,...boolKeys,...iconKeys,'admin_theme','admin_nav_order']);
+  const _dotBlockKeys  = ['dot_pulse_speed','dot_pulse_amp','dot_glow_intensity','dot_glow_radius'];
+  const _mapBlockKeys  = ['oblast_fill','oblast_stroke','settlement_stroke','city_path_stroke','neon_blue','neon_yellow','thread_color','label_opacity'];
+  const _bgBlockKeys   = ['bg','surface','map_bg','bar_bg','card_bg'];
+  const _txtBlockKeys  = ['text_primary','text_secondary','accent','yellow','yellow2'];
+  const _logoBlockKeys = ['logo_star','logo_text','logo_accent'];
+  const _uiBlockKeys   = ['btn_add_bg','btn_add_text'];
+  const knownKeys = new Set([
+    ...glowKeys,...zoomKeys,...smokeKeys,...photoKeys,...seaKeys,...boolKeys,...iconKeys,
+    ..._dotBlockKeys,..._mapBlockKeys,..._bgBlockKeys,..._txtBlockKeys,..._logoBlockKeys,..._uiBlockKeys,
+    'admin_theme','admin_nav_order',
+  ]);
 
   const grp = (keys) => keys.filter(k=>COLORS[k]).map(k=>renderColorRow(k,COLORS[k])).join('');
 
@@ -4154,11 +4402,12 @@ function renderColors(){
     </div>`;
   };
 
-  const bgBlock   = mkBlock('🎨','Фон та поверхні',   '#7dd3fc', '125,211,252', ['bg','surface','map_bg','bar_bg','card_bg']);
-  const txtBlock  = mkBlock('📝','Текст та акценти',   '#a5b4fc', '165,180,252', ['text_primary','text_secondary','accent','yellow','yellow2']);
-  const mapBlock  = mkBlock('🗺','Карта',              '#86efac', '134,239,172', ['oblast_fill','oblast_stroke','settlement_stroke','neon_blue','neon_yellow','thread_color','label_opacity']);
-  const logoBlock = mkBlock('🔤','Логотип',            '#fcd34d', '252,211,77',  ['logo_star','logo_text','logo_accent']);
-  const uiBlock   = mkBlock('🔘','Кнопки',             '#f9a8d4', '249,168,212', ['btn_add_bg','btn_add_text']);
+  const dotBlock  = mkBlock('⭐','Зірки памʼяті',      '#fda4af', '253,164,175', _dotBlockKeys);
+  const bgBlock   = mkBlock('🎨','Фон та поверхні',   '#7dd3fc', '125,211,252', _bgBlockKeys);
+  const txtBlock  = mkBlock('📝','Текст та акценти',   '#a5b4fc', '165,180,252', _txtBlockKeys);
+  const mapBlock  = mkBlock('🗺','Карта',              '#86efac', '134,239,172', _mapBlockKeys);
+  const logoBlock = mkBlock('🔤','Логотип',            '#fcd34d', '252,211,77',  _logoBlockKeys);
+  const uiBlock   = mkBlock('🔘','Кнопки',             '#f9a8d4', '249,168,212', _uiBlockKeys);
 
   // sea_* і icon_* — тільки у власних секціях, не тут
   const extraEntries = Object.entries(COLORS).filter(([k])=>!knownKeys.has(k) && !k.startsWith('sea_') && !k.startsWith('icon_'));
@@ -4169,7 +4418,7 @@ function renderColors(){
        </div>`
     : '';
 
-  document.getElementById('colors-grid').innerHTML = glowBlock+zoomBlock+bgBlock+txtBlock+mapBlock+logoBlock+uiBlock+extraBlock;
+  document.getElementById('colors-grid').innerHTML = glowBlock+dotBlock+zoomBlock+bgBlock+txtBlock+mapBlock+logoBlock+uiBlock+extraBlock;
   renderSmokeSection();
   renderPhotoSection();
   renderSeaSection();
