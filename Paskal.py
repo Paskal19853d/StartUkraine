@@ -253,6 +253,19 @@ def init_db():
             c.execute("ALTER TABLE memorials ADD COLUMN `position` VARCHAR(100) NOT NULL DEFAULT ''")
         except Exception:
             pass
+        try:
+            c.execute("ALTER TABLE memorials ADD COLUMN `unit` VARCHAR(200) NOT NULL DEFAULT ''")
+        except Exception:
+            pass
+        # Migration: add role to users
+        try:
+            c.execute("ALTER TABLE users ADD COLUMN role VARCHAR(20) NOT NULL DEFAULT 'user'")
+        except Exception:
+            pass
+        try:
+            c.execute("UPDATE users SET role='admin' WHERE is_admin=1 AND role='user'")
+        except Exception:
+            pass
 
         # ── memorial_awards ───────────────────────────────
         c.execute("""
@@ -952,7 +965,11 @@ def faq_page(): return FileResponse("faq.html")
 
 # ── WebSocket онлайн ─────────────────────────────────────
 connected: set = set()
-online_users: dict = {}
+online_users: dict = {}  # {id(ws): {"name": str, "role": str}}
+
+def _online_users_list():
+    return [{"name": v["name"], "role": v["role"]}
+            for v in online_users.values() if v.get("name")]
 
 async def broadcast(data: dict):
     dead = set()
@@ -967,18 +984,24 @@ async def broadcast(data: dict):
 async def ws_online(ws: WebSocket):
     await ws.accept()
     connected.add(ws)
-    await broadcast({"online": len(connected)})
+    await broadcast({"online": len(connected), "users": _online_users_list()})
     try:
         while True:
             msg = await asyncio.wait_for(ws.receive_text(), timeout=60)
             if msg.startswith("user:"):
-                online_users[id(ws)] = _html.escape(msg[5:][:50])
+                parts = msg[5:].split("|", 1)
+                name = _html.escape(parts[0][:50])
+                role = parts[1][:10] if len(parts) > 1 else "user"
+                if role not in ("admin", "moder"):
+                    role = "user"
+                online_users[id(ws)] = {"name": name, "role": role}
+                await broadcast({"online": len(connected), "users": _online_users_list()})
     except Exception:
         pass
     finally:
         connected.discard(ws)
         online_users.pop(id(ws), None)
-        await broadcast({"online": len(connected)})
+        await broadcast({"online": len(connected), "users": _online_users_list()})
 
 
 # ── Validation helpers ────────────────────────────────────
@@ -1003,6 +1026,16 @@ def _sanitize_text(s: str, maxlen: int = 200) -> str:
         return ''
     return _html.escape(str(s).strip())[:maxlen]
 
+_DATE_RE = re.compile(r'^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$')
+
+def _validate_date(s) -> str | None:
+    if not s:
+        return None
+    s = str(s).strip()
+    if not _DATE_RE.match(s):
+        raise HTTPException(400, f"Невалідний формат дати (очікується РРРР-ММ-ДД): {s[:20]}")
+    return s
+
 def _validate_color(v: str) -> str:
     if not v:
         return '#4fc3f7'
@@ -1022,19 +1055,25 @@ def _validate_yt_url(url: str) -> str:
 
 # ── Schemas ───────────────────────────────────────────────
 class PersonIn(BaseModel):
-    last: str = Field(..., max_length=200)
-    first: str = Field(..., max_length=200)
-    mid: Optional[str] = Field("", max_length=200)
-    birth: Optional[str] = None; death: Optional[str] = None
-    loc: Optional[str] = Field("", max_length=200)
-    bury: Optional[str] = Field("", max_length=200)
-    circ: Optional[str] = Field("", max_length=200)
-    descr: Optional[str] = ""
-    photo: Optional[str] = ""; color: Optional[str] = "#4fc3f7"
-    video_url: Optional[str] = ""
-    rank: Optional[str] = ""; position: Optional[str] = ""
-    pos_x: float; pos_y: float; grp: Optional[str] = ""
-    added_by: Optional[str] = ""
+    last:  str = Field(..., min_length=1, max_length=100)
+    first: str = Field(..., min_length=1, max_length=100)
+    mid:   Optional[str] = Field("", max_length=100)
+    birth: Optional[str] = None
+    death: Optional[str] = None
+    loc:   Optional[str] = Field("", max_length=300)
+    bury:  Optional[str] = Field("", max_length=300)
+    circ:  Optional[str] = Field("", max_length=200)
+    descr: Optional[str] = Field("", max_length=5000)
+    photo: Optional[str] = Field("", max_length=500)
+    color: Optional[str] = Field("#4fc3f7", max_length=30)
+    video_url: Optional[str] = Field("", max_length=500)
+    rank:     Optional[str] = Field("", max_length=100)
+    position: Optional[str] = Field("", max_length=100)
+    unit:     Optional[str] = Field("", max_length=200)
+    pos_x: float = Field(0.0, ge=0.0, le=1.0)
+    pos_y: float = Field(0.0, ge=0.0, le=1.0)
+    grp:      Optional[str] = Field("", max_length=100)
+    added_by: Optional[str] = Field("", max_length=100)
 
 class PersonUpdate(BaseModel):
     last: Optional[str] = None; first: Optional[str] = None
@@ -1046,6 +1085,7 @@ class PersonUpdate(BaseModel):
     pos_y: Optional[float] = None; approved: Optional[int] = None
     grp: Optional[str] = None; video_url: Optional[str] = None
     rank: Optional[str] = None; position: Optional[str] = None
+    unit: Optional[str] = None
 
 class UserReg(BaseModel):
     name: str; email: str; password: str
@@ -1115,23 +1155,14 @@ def _get_user_by_id(user_id: int):
     db = get_db()
     with db.cursor() as c:
         c.execute(
-            "SELECT id,name,email,is_admin,is_banned FROM users WHERE id=%s", (user_id,)
+            "SELECT id,name,email,is_admin,is_banned,role FROM users WHERE id=%s", (user_id,)
         )
         row = c.fetchone()
     db.close()
     return row
 
-def require_admin(request: Request):
-    # 1. Cookie-сесія (основний шлях)
-    token = request.cookies.get("admin_session")
-    if token:
-        sess = _session_get(token)
-        if sess:
-            u = _get_user_by_id(sess["user_id"])
-            if u and u["is_admin"] and not u["is_banned"]:
-                return u
-
-    # 2. Basic Auth (зворотна сумісність)
+def _basic_auth_user(request: Request):
+    """Parse Basic Auth header and return verified user or raise 403/429."""
     auth = request.headers.get("Authorization", "")
     if not auth.startswith("Basic "):
         raise HTTPException(403, "Доступ заборонено")
@@ -1145,10 +1176,38 @@ def require_admin(request: Request):
     except Exception:
         _rl.check(fail_key, 10, 300)
         raise HTTPException(403, "Доступ заборонено")
-    u = get_admin(email, password)
-    if not u:
+    u = get_user(email, password)
+    if not u or u.get("is_banned"):
         _rl.check(fail_key, 10, 300)
         raise HTTPException(403, "Доступ заборонено")
+    return u
+
+def require_admin(request: Request):
+    """Тільки role='admin'."""
+    token = request.cookies.get("admin_session")
+    if token:
+        sess = _session_get(token)
+        if sess:
+            u = _get_user_by_id(sess["user_id"])
+            if u and u.get("role") == "admin" and not u["is_banned"]:
+                return u
+    u = _basic_auth_user(request)
+    if u.get("role") != "admin":
+        raise HTTPException(403, "Потрібні права адміністратора")
+    return u
+
+def require_moder(request: Request):
+    """role='admin' або role='moder'."""
+    token = request.cookies.get("admin_session")
+    if token:
+        sess = _session_get(token)
+        if sess:
+            u = _get_user_by_id(sess["user_id"])
+            if u and u.get("role") in ("admin", "moder") and not u["is_banned"]:
+                return u
+    u = _basic_auth_user(request)
+    if u.get("role") not in ("admin", "moder"):
+        raise HTTPException(403, "Потрібні права модератора або адміністратора")
     return u
 
 
@@ -1224,8 +1283,8 @@ def get_people(request: Request):
     db = get_db()
     with db.cursor() as c:
         c.execute(
-            "SELECT id,last,first,mid,birth,death,bury,color,pos_x,pos_y,"
-            "grp,likes,rating,video_url,approved,added_by "
+            "SELECT id,last,first,mid,birth,death,bury,loc,photo,color,pos_x,pos_y,"
+            "grp,`rank`,`position`,unit,likes,rating,video_url,approved,added_by "
             "FROM memorials WHERE approved=1 ORDER BY rating DESC, likes DESC"
         )
         rows = c.fetchall()
@@ -1464,22 +1523,28 @@ def add_person(p: PersonIn, request: Request):
     photo     = _validate_photo_url(p.photo or '')
     color     = _validate_color(p.color or '')
     video_url = _validate_yt_url(p.video_url or '')
+    birth     = _validate_date(p.birth)
+    death     = _validate_date(p.death)
     last  = _sanitize_text(p.last,  100)
     first = _sanitize_text(p.first, 100)
     mid   = _sanitize_text(p.mid or '', 100)
-    loc   = _sanitize_text(p.loc or '', 200)
-    bury  = _sanitize_text(p.bury or '', 200)
+    loc   = _sanitize_text(p.loc or '', 300)
+    bury  = _sanitize_text(p.bury or '', 300)
     circ  = _sanitize_text(p.circ or '', 200)
     grp   = _sanitize_text(p.grp or '', 100)
+    rank  = _sanitize_text(p.rank or '', 100)
+    pos   = _sanitize_text(p.position or '', 100)
+    unit  = _sanitize_text(p.unit or '', 200)
+    descr = (p.descr or '')[:5000]
     db = get_db()
     with db.cursor() as c:
         c.execute("""
             INSERT INTO memorials
-            (last,first,mid,birth,death,loc,bury,circ,descr,photo,color,video_url,`rank`,`position`,pos_x,pos_y,grp,added_by,approved)
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,0)
-        """, (last, first, mid, p.birth, p.death, loc, bury,
-              circ, p.descr, photo, color, video_url,
-              p.rank or '', p.position or '',
+            (last,first,mid,birth,death,loc,bury,circ,descr,photo,color,video_url,`rank`,`position`,`unit`,pos_x,pos_y,grp,added_by,approved)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,0)
+        """, (last, first, mid, birth, death, loc, bury,
+              circ, descr, photo, color, video_url,
+              rank, pos, unit,
               p.pos_x, p.pos_y, grp, p.added_by))
         new_id = c.lastrowid
     db.commit()
@@ -1538,7 +1603,7 @@ def register(u: UserReg, request: Request):
         )
         db.commit()
         c.execute(
-            "SELECT id,name,email,is_admin FROM users WHERE email=%s", (u.email,)
+            "SELECT id,name,email,is_admin,role FROM users WHERE email=%s", (u.email,)
         )
         row = c.fetchone()
     db.close()
@@ -1559,7 +1624,7 @@ def login(u: UserLogin, request: Request):
     db = get_db()
     with db.cursor() as c:
         c.execute(
-            "SELECT id,name,email,is_admin,is_banned,ban_until,password FROM users WHERE email=%s",
+            "SELECT id,name,email,is_admin,is_banned,ban_until,password,role FROM users WHERE email=%s",
             (u.email.lower(),)
         )
         row = c.fetchone()
@@ -1628,7 +1693,7 @@ def auth_me(request: Request):
         raise HTTPException(401, "Сесія застаріла")
     db = get_db()
     with db.cursor() as c:
-        c.execute("SELECT id,name,email,is_admin FROM users WHERE id=%s", (sess["user_id"],))
+        c.execute("SELECT id,name,email,is_admin,role FROM users WHERE id=%s", (sess["user_id"],))
         row = c.fetchone()
     db.close()
     if not row:
@@ -1639,7 +1704,7 @@ def auth_me(request: Request):
 def _oauth_login_or_create(email: str, name: str) -> dict:
     db = get_db()
     with db.cursor() as c:
-        c.execute("SELECT id,name,email,is_admin FROM users WHERE email=%s", (email,))
+        c.execute("SELECT id,name,email,is_admin,role FROM users WHERE email=%s", (email,))
         row = c.fetchone()
         if not row:
             c.execute(
@@ -1647,7 +1712,7 @@ def _oauth_login_or_create(email: str, name: str) -> dict:
                 (name, email, hash_pass(secrets.token_hex(16)))
             )
             db.commit()
-            c.execute("SELECT id,name,email,is_admin FROM users WHERE email=%s", (email,))
+            c.execute("SELECT id,name,email,is_admin,role FROM users WHERE email=%s", (email,))
             row = c.fetchone()
     db.close()
     return row
@@ -1777,7 +1842,7 @@ def auth_diia_callback(code: str = None, error: str = None):
 
 @app.get("/api/admin/me")
 def admin_me(request: Request):
-    u = require_admin(request)
+    u = require_moder(request)
     return u
 
 
@@ -1785,7 +1850,7 @@ def admin_me(request: Request):
 
 @app.get("/api/admin/pending")
 def pending(request: Request):
-    require_admin(request)
+    require_moder(request)
     db = get_db()
     with db.cursor() as c:
         c.execute("SELECT * FROM memorials WHERE approved=0 ORDER BY id DESC")
@@ -1795,7 +1860,7 @@ def pending(request: Request):
 
 @app.post("/api/admin/approve/{mid}")
 def approve(mid: int, request: Request):
-    require_admin(request)
+    require_moder(request)
     db = get_db()
     with db.cursor() as c:
         c.execute("UPDATE memorials SET approved=1 WHERE id=%s", (mid,))
@@ -1803,18 +1868,28 @@ def approve(mid: int, request: Request):
     db.close()
     return {"ok": True}
 
+@app.get("/api/admin/memorials")
+def admin_get_memorials(request: Request):
+    require_moder(request)
+    db = get_db()
+    with db.cursor() as c:
+        c.execute("SELECT * FROM memorials ORDER BY id DESC")
+        rows = c.fetchall()
+    db.close()
+    return rows
+
 @app.post("/api/admin/memorial")
 def admin_add_person(p: PersonIn, request: Request):
-    require_admin(request)
+    require_moder(request)
     db = get_db()
     with db.cursor() as c:
         c.execute("""
             INSERT INTO memorials
-            (last,first,mid,birth,death,loc,bury,circ,descr,photo,color,`rank`,`position`,pos_x,pos_y,grp,added_by,approved)
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,1)
+            (last,first,mid,birth,death,loc,bury,circ,descr,photo,color,`rank`,`position`,`unit`,pos_x,pos_y,grp,added_by,approved)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,1)
         """, (p.last.strip(), p.first.strip(), p.mid or '', p.birth or None, p.death or None,
               p.loc or '', p.bury or '', p.circ or '', p.descr or '', p.photo or '',
-              p.color or '#4fc3f7', p.rank or '', p.position or '',
+              p.color or '#4fc3f7', p.rank or '', p.position or '', p.unit or '',
               p.pos_x, p.pos_y, p.grp or '', 'admin'))
         new_id = c.lastrowid
     db.commit()
@@ -1834,23 +1909,25 @@ def delete_memorial(mid: int, request: Request):
 # ── CSV Export / Import ────────────────────────────────────
 
 _CSV_COLS = ['id','last','first','mid','birth','death','loc','bury','circ',
-             'descr','photo','color','pos_x','pos_y','grp','added_by','approved','likes']
+             'descr','photo','color','pos_x','pos_y','grp','rank','position','unit',
+             'video_url','added_by','approved','likes','rating']
 
 @app.get("/api/admin/export/csv")
 def export_csv(request: Request):
-    require_admin(request)
+    require_moder(request)
     db = get_db()
     with db.cursor() as c:
         c.execute(
             "SELECT id,last,first,mid,birth,death,loc,bury,circ,descr,photo,color,"
-            "pos_x,pos_y,grp,added_by,approved,likes FROM memorials ORDER BY id"
+            "pos_x,pos_y,grp,`rank`,`position`,`unit`,video_url,added_by,approved,likes,rating "
+            "FROM memorials ORDER BY id"
         )
         rows = c.fetchall()
     db.close()
 
     buf = io.StringIO()
     buf.write('﻿')  # BOM для коректного відкриття в Excel
-    w = csv.writer(buf, quoting=csv.QUOTE_MINIMAL)
+    w = csv.writer(buf, quoting=csv.QUOTE_ALL)
     w.writerow(_CSV_COLS)
     for r in rows:
         w.writerow(['' if r.get(col) is None else r.get(col, '') for col in _CSV_COLS])
@@ -1861,6 +1938,26 @@ def export_csv(request: Request):
         media_type="text/csv; charset=utf-8",
         headers={"Content-Disposition": f'attachment; filename="{fname}"'},
     )
+
+
+@app.get("/api/admin/export/json")
+def export_json(request: Request):
+    """Повний список записів у JSON — для XLSX-експорту на клієнті."""
+    require_moder(request)
+    db = get_db()
+    with db.cursor() as c:
+        c.execute(
+            "SELECT id,last,first,mid,birth,death,loc,bury,circ,descr,photo,color,"
+            "pos_x,pos_y,grp,`rank`,`position`,`unit`,video_url,added_by,approved,likes,rating "
+            "FROM memorials ORDER BY id"
+        )
+        rows = c.fetchall()
+    db.close()
+    for r in rows:
+        for k in ('birth', 'death'):
+            if r.get(k):
+                r[k] = str(r[k])
+    return rows
 
 
 @app.post("/api/admin/import/csv")
@@ -1898,23 +1995,26 @@ async def import_csv(request: Request, file: UploadFile = File(...)):
                 c.execute("""
                     INSERT INTO memorials
                     (last,first,mid,birth,death,loc,bury,circ,descr,photo,color,
-                     pos_x,pos_y,grp,added_by,approved)
-                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,0)
+                     pos_x,pos_y,grp,`rank`,`position`,video_url,added_by,approved)
+                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,0)
                 """, (
                     _sanitize_text(last, 100),
                     _sanitize_text(first, 100),
-                    _sanitize_text((row.get('mid')  or '')[:100], 100),
+                    _sanitize_text((row.get('mid')       or '')[:100],  100),
                     (row.get('birth') or None) or None,
                     (row.get('death') or None) or None,
-                    _sanitize_text((row.get('loc')  or '')[:300], 300),
-                    _sanitize_text((row.get('bury') or '')[:300], 300),
-                    _sanitize_text((row.get('circ') or '')[:500], 500),
-                    (row.get('descr') or '')[:5000],
+                    _sanitize_text((row.get('loc')       or '')[:300],  300),
+                    _sanitize_text((row.get('bury')      or '')[:300],  300),
+                    _sanitize_text((row.get('circ')      or '')[:500],  500),
+                    (row.get('descr')     or '')[:5000],
                     _validate_photo_url((row.get('photo') or '')[:500]),
                     _validate_color(row.get('color') or ''),
                     pos_x, pos_y,
-                    _sanitize_text((row.get('grp')  or '')[:100], 100),
-                    _sanitize_text((row.get('added_by') or 'csv-import')[:100], 100),
+                    _sanitize_text((row.get('grp')       or '')[:100],  100),
+                    _sanitize_text((row.get('rank')      or '')[:100],  100),
+                    _sanitize_text((row.get('position')  or '')[:100],  100),
+                    _sanitize_text((row.get('video_url') or '')[:500],  500),
+                    _sanitize_text((row.get('added_by')  or 'csv-import')[:100], 100),
                 ))
             db.commit()
             inserted += 1
@@ -1927,7 +2027,153 @@ async def import_csv(request: Request, file: UploadFile = File(...)):
 
     db.close()
     return {"ok": True, "inserted": inserted, "skipped": skipped,
-            "errors": errors[:50]}  # повертаємо не більше 50 помилок
+            "errors": errors[:50]}
+
+
+@app.post("/api/admin/import/preview")
+async def import_csv_preview(request: Request, file: UploadFile = File(...)):
+    require_moder(request)
+    raw = await file.read()
+    try:
+        text = raw.decode('utf-8-sig')
+    except UnicodeDecodeError:
+        text = raw.decode('cp1251', errors='replace')
+
+    reader = csv.DictReader(io.StringIO(text))
+    rows, parse_errors = [], []
+
+    for i, row in enumerate(reader, 1):
+        last  = (row.get('last')  or '').strip()
+        first = (row.get('first') or '').strip()
+        if not last or not first:
+            parse_errors.append(f"Рядок {i}: пропущено — відсутнє прізвище або ім'я")
+            continue
+        try:
+            px = float(row.get('pos_x') or 0)
+            py = float(row.get('pos_y') or 0)
+        except (ValueError, TypeError):
+            px, py = 0.0, 0.0
+        rows.append({
+            '_row': i, '_status': 'new', '_matches': [],
+            'last':      last[:100],
+            'first':     first[:100],
+            'mid':       (row.get('mid')       or '').strip()[:100],
+            'birth':     (row.get('birth')      or '').strip()[:20],
+            'death':     (row.get('death')      or '').strip()[:20],
+            'loc':       (row.get('loc')        or '').strip()[:300],
+            'bury':      (row.get('bury')       or '').strip()[:300],
+            'circ':      (row.get('circ')       or '').strip()[:500],
+            'descr':     (row.get('descr')      or '').strip(),
+            'photo':     (row.get('photo')      or '').strip()[:500],
+            'color':     (row.get('color')      or '#4fc3f7'),
+            'pos_x': px, 'pos_y': py,
+            'grp':       (row.get('grp')        or '').strip()[:100],
+            'rank':      (row.get('rank')       or '').strip()[:100],
+            'position':  (row.get('position')   or '').strip()[:100],
+            'unit':      (row.get('unit')       or '').strip()[:200],
+            'video_url': (row.get('video_url')  or '').strip()[:500],
+            'added_by':  (row.get('added_by')   or 'csv-import').strip()[:100],
+        })
+
+    if rows:
+        db = get_db()
+        with db.cursor() as c:
+            c.execute("""
+                SELECT m.id, m.last, m.first, m.birth, m.death,
+                       COUNT(a.id) AS awards_count
+                FROM memorials m
+                LEFT JOIN memorial_awards a ON a.memorial_id = m.id
+                GROUP BY m.id
+            """)
+            existing = c.fetchall()
+        db.close()
+        ex_map: dict = {}
+        for r in existing:
+            key = (r['last'].strip().lower(), r['first'].strip().lower())
+            ex_map.setdefault(key, []).append(r)
+        for row in rows:
+            key = (row['last'].lower(), row['first'].lower())
+            matches = ex_map.get(key, [])
+            if matches:
+                row['_status'] = 'duplicate'
+                row['_matches'] = [
+                    {'id': m['id'], 'last': m['last'], 'first': m['first'],
+                     'birth': str(m.get('birth') or ''), 'death': str(m.get('death') or ''),
+                     'awards_count': int(m.get('awards_count') or 0)}
+                    for m in matches
+                ]
+    return {'rows': rows, 'parse_errors': parse_errors}
+
+
+@app.post("/api/admin/import/apply")
+async def import_csv_apply(request: Request):
+    require_moder(request)
+    rows = await request.json()
+    if not isinstance(rows, list):
+        rows = rows.get('rows', [])
+    inserted, skipped, errors = 0, 0, []
+    db = get_db()
+    for i, row in enumerate(rows, 1):
+        last  = (row.get('last')  or '').strip()
+        first = (row.get('first') or '').strip()
+        if not last or not first:
+            skipped += 1; continue
+        try:
+            px = float(row.get('pos_x') or 0)
+            py = float(row.get('pos_y') or 0)
+        except (ValueError, TypeError):
+            px, py = 0.0, 0.0
+        try:
+            new_id = None
+            with db.cursor() as c:
+                c.execute("""
+                    INSERT INTO memorials
+                    (last,first,mid,birth,death,loc,bury,circ,descr,photo,color,
+                     pos_x,pos_y,grp,`rank`,`position`,`unit`,video_url,added_by,approved)
+                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,0)
+                """, (
+                    _sanitize_text(last, 100),
+                    _sanitize_text(first, 100),
+                    _sanitize_text((row.get('mid')       or '')[:100], 100),
+                    (row.get('birth') or None) or None,
+                    (row.get('death') or None) or None,
+                    _sanitize_text((row.get('loc')       or '')[:300], 300),
+                    _sanitize_text((row.get('bury')      or '')[:300], 300),
+                    _sanitize_text((row.get('circ')      or '')[:500], 500),
+                    (row.get('descr')     or '')[:5000],
+                    _validate_photo_url((row.get('photo') or '')[:500]),
+                    _validate_color(row.get('color') or ''),
+                    px, py,
+                    _sanitize_text((row.get('grp')       or '')[:100], 100),
+                    _sanitize_text((row.get('rank')      or '')[:100], 100),
+                    _sanitize_text((row.get('position')  or '')[:100], 100),
+                    _sanitize_text((row.get('unit')      or '')[:200], 200),
+                    _sanitize_text((row.get('video_url') or '')[:500], 500),
+                    _sanitize_text((row.get('added_by')  or 'csv-import')[:100], 100),
+                ))
+                new_id = c.lastrowid
+            db.commit()
+            inserted += 1
+            awards = row.get('_awards') or []
+            if awards and new_id:
+                try:
+                    with db.cursor() as c:
+                        for sort_idx, aw in enumerate(awards):
+                            c.execute(
+                                "INSERT INTO memorial_awards (memorial_id,name,img_file,sort_order) VALUES (%s,%s,%s,%s)",
+                                (new_id, (aw.get('name') or '')[:200], (aw.get('img_file') or '')[:300], sort_idx)
+                            )
+                    db.commit()
+                except Exception:
+                    pass
+        except HTTPException as ex:
+            skipped += 1
+            errors.append(f"Рядок {i} ({last} {first}): {ex.detail}")
+        except Exception as ex:
+            skipped += 1
+            errors.append(f"Рядок {i} ({last} {first}): {str(ex)[:120]}")
+    db.close()
+    return {"ok": True, "inserted": inserted, "skipped": skipped, "errors": errors[:50]}
 
 
 _MEMORIAL_COL_MAP = {
@@ -1939,23 +2185,36 @@ _MEMORIAL_COL_MAP = {
     'video_url': '`video_url`=%s',
     'rank':      '`rank`=%s',
     'position':  '`position`=%s',
+    'unit':      '`unit`=%s',
 }
 _MEMORIAL_ALLOWED_FIELDS = set(_MEMORIAL_COL_MAP)
 
 @app.put("/api/admin/memorial/{mid}")
 def update_memorial(mid: int, p: PersonUpdate, request: Request):
-    require_admin(request)
+    require_moder(request)
     db = get_db()
+    _TEXT_MAXLEN = {
+        'last':100,'first':100,'mid':100,'loc':300,'bury':300,
+        'circ':200,'grp':100,'rank':100,'position':100,'unit':200,
+    }
     fields, vals = [], []
     for f, v in p.dict(exclude_none=True).items():
         if f not in _MEMORIAL_COL_MAP:
             raise HTTPException(400, f"Поле '{f}' не дозволено")
-        if f == 'photo' and v:
+        if f in _TEXT_MAXLEN and v is not None:
+            v = _sanitize_text(str(v), _TEXT_MAXLEN[f])
+        elif f == 'descr' and v is not None:
+            v = str(v)[:5000]
+        elif f == 'photo' and v:
             v = _validate_photo_url(v)
         elif f == 'color' and v:
             v = _validate_color(v)
         elif f == 'video_url':
             v = _validate_yt_url(v or '')
+        elif f in ('birth', 'death'):
+            v = _validate_date(v)
+        elif f in ('pos_x', 'pos_y') and v is not None:
+            v = max(0.0, min(1.0, float(v)))
         fields.append(_MEMORIAL_COL_MAP[f])
         vals.append(v)
     if not fields:
@@ -1993,7 +2252,7 @@ class AwardIn(BaseModel):
 
 @app.post("/api/admin/memorial/{mid}/awards")
 def add_award(mid: int, a: AwardIn, request: Request):
-    require_admin(request)
+    require_moder(request)
     db = get_db()
     with db.cursor() as c:
         c.execute(
@@ -2008,7 +2267,7 @@ def add_award(mid: int, a: AwardIn, request: Request):
 
 @app.delete("/api/admin/awards/{award_id}")
 def delete_award(award_id: int, request: Request):
-    require_admin(request)
+    require_moder(request)
     db = get_db()
     with db.cursor() as c:
         c.execute("DELETE FROM memorial_awards WHERE id=%s", (award_id,))
@@ -2022,7 +2281,7 @@ def get_users(request: Request):
     db = get_db()
     with db.cursor() as c:
         c.execute(
-            "SELECT id,name,email,is_admin,is_banned,ban_until,notes,last_seen,created FROM users ORDER BY id DESC"
+            "SELECT id,name,email,is_admin,is_banned,ban_until,notes,last_seen,created,role FROM users ORDER BY id DESC"
         )
         rows = c.fetchall()
     db.close()
@@ -2103,6 +2362,25 @@ def delete_user(uid: int, request: Request):
     db = get_db()
     with db.cursor() as c:
         c.execute("DELETE FROM users WHERE id=%s AND is_admin=0", (uid,))
+    db.commit()
+    db.close()
+    return {"ok": True}
+
+class RoleUpdate(BaseModel):
+    role: str
+
+@app.put("/api/admin/users/{uid}/role")
+def set_user_role(uid: int, body: RoleUpdate, request: Request):
+    me = require_admin(request)
+    if uid == me["id"]:
+        raise HTTPException(400, "Не можна змінити власну роль")
+    role = body.role.strip()
+    if role not in ("admin", "moder", "user"):
+        raise HTTPException(400, "Невірна роль")
+    db = get_db()
+    with db.cursor() as c:
+        c.execute("UPDATE users SET role=%s, is_admin=%s WHERE id=%s",
+                  (role, 1 if role == "admin" else 0, uid))
     db.commit()
     db.close()
     return {"ok": True}
@@ -2190,7 +2468,7 @@ def update_label(lid: int, lbl: LabelUpdate, request: Request):
 
 @app.get("/api/admin/stats")
 def admin_stats(request: Request):
-    require_admin(request)
+    require_moder(request)
     db = get_db()
     with db.cursor() as c:
         c.execute("SELECT COUNT(*) AS cnt FROM memorials");              total    = c.fetchone()["cnt"]
@@ -2207,7 +2485,7 @@ def admin_stats(request: Request):
 
 @app.get("/api/admin/server-stats")
 def server_stats(request: Request):
-    require_admin(request)
+    require_moder(request)
     # CPU / RAM
     if _HAS_PSUTIL:
         cpu   = round(_psutil.cpu_percent(interval=0.2), 1)

@@ -649,6 +649,7 @@ mark.shl {
   .sr-title      { font-size: 6px; }
 }
 
+
 /* Tooltip */
 #tip {
   position: absolute;
@@ -975,6 +976,47 @@ mark.shl {
   padding: 2px 6px;
   white-space: nowrap;
   flex-shrink: 0;
+}
+
+/* Preloader */
+#preloader {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: #03070e;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity .5s ease, visibility .5s ease;
+}
+#preloader.hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+#preloader-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+#preloader-spinner {
+  width: 52px;
+  height: 52px;
+  border: 3px solid rgba(255,255,255,.08);
+  border-top-color: #4fc3f7;
+  border-radius: 50%;
+  animation: preloader-spin .8s linear infinite;
+}
+@keyframes preloader-spin {
+  to { transform: rotate(360deg); }
+}
+#preloader-text {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 11px;
+  color: rgba(255,255,255,.35);
+  letter-spacing: .12em;
+  text-transform: uppercase;
 }
 
 /* Form */

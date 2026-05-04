@@ -2181,6 +2181,14 @@
   <div id="tip"></div>
 </div>
 
+<!-- PRELOADER -->
+<div id="preloader">
+  <div id="preloader-inner">
+    <div id="preloader-spinner"></div>
+    <div id="preloader-text">Завантаження...</div>
+  </div>
+</div>
+
 <aside id="card">
   <button id="cclose" onclick="closeCard()">&#10005;</button>
   <div id="cphoto"><img id="cimg" src="" alt=""><div id="cgrad"></div></div>
@@ -2197,6 +2205,7 @@
 	  </span>
 	</div>
 	<div class="cf" id="cgrp-row" style="display:none"><span class="cl">📻 Позивний</span><span class="cv" id="cgrp"></span></div>
+	<div class="cf" id="cunit-row" style="display:none"><span class="cl">🪖 Підрозділ</span><span class="cv" id="cunit" style="font-size:11px"></span></div>
 	<div class="cf" id="crank-row">
 	  <span class="cl">🎖 Звання</span>
 	  <span class="cv" style="display:flex;align-items:center;justify-content:center;gap:14px;width:100%">
@@ -2211,6 +2220,7 @@
 	</div>
 	<div class="cf" id="cpos-row"><span class="cl">💼 Посада</span><span class="cv" id="cpos"></span></div>
 	<div class="cf"><span class="cl">Обставини</span><span class="cv" id="ccirc"></span></div>
+	<div class="cf" id="cdesc-row" style="display:none;align-items:flex-start"><span class="cl">Опис</span><span class="cv" id="cdesc" style="font-size:11px;line-height:1.55;white-space:pre-wrap"></span></div>
     <hr>
     <div class="cf" id="dupes-section" style="display:none">
       <span class="cl">&#128279; Також додали</span>
@@ -2253,6 +2263,24 @@
     <button class="moc" onclick="closeAuth()">&#10005;</button>
     <h2>&#128272; Вхід / Реєстрація</h2>
 
+    
+
+    <div class="atabs">
+      <div class="atab active" id="tlogin" onclick="switchTab('login')">Увійти</div>
+      <div class="atab" id="treg" onclick="switchTab('reg')">Реєстрація</div>
+    </div>
+    <div id="plogin">
+      <div class="fr full" style="margin-bottom:10px"><div class="fg"><label>Email</label><input type="email" id="lemail" placeholder="you@email.com"></div></div>
+      <div class="fr full" style="margin-bottom:16px"><div class="fg"><label>Пароль</label><input type="password" id="lpass" placeholder="min 6 символів"></div></div>
+      <button class="fsub" onclick="doLogin()">Увійти</button>
+    </div>
+    <div id="preg" style="display:none">
+      <div class="fr full" style="margin-bottom:10px"><div class="fg"><label>Імʼя</label><input id="rname" placeholder="Ваше імʼя"></div></div>
+      <div class="fr full" style="margin-bottom:10px"><div class="fg"><label>Email</label><input type="email" id="remail" placeholder="you@email.com"></div></div>
+      <div class="fr full" style="margin-bottom:16px"><div class="fg"><label>Пароль</label><input type="password" id="rpass" placeholder="min 6 символів"></div></div>
+      <button class="fsub" onclick="doRegister()">Зареєструватись</button>
+    </div><br>
+    <div class="oauth-sep"><span>або</span></div>
     <!-- OAuth -->
     <div class="oauth-btns">
       <a href="/api/auth/google" class="oauth-btn oauth-google">
@@ -2271,23 +2299,6 @@
         </svg>
         Продовжити з Дія
       </a>
-    </div>
-    <div class="oauth-sep"><span>або</span></div>
-
-    <div class="atabs">
-      <div class="atab active" id="tlogin" onclick="switchTab('login')">Увійти</div>
-      <div class="atab" id="treg" onclick="switchTab('reg')">Реєстрація</div>
-    </div>
-    <div id="plogin">
-      <div class="fr full" style="margin-bottom:10px"><div class="fg"><label>Email</label><input type="email" id="lemail" placeholder="you@email.com"></div></div>
-      <div class="fr full" style="margin-bottom:16px"><div class="fg"><label>Пароль</label><input type="password" id="lpass" placeholder="min 6 символів"></div></div>
-      <button class="fsub" onclick="doLogin()">Увійти</button>
-    </div>
-    <div id="preg" style="display:none">
-      <div class="fr full" style="margin-bottom:10px"><div class="fg"><label>Імʼя</label><input id="rname" placeholder="Ваше імʼя"></div></div>
-      <div class="fr full" style="margin-bottom:10px"><div class="fg"><label>Email</label><input type="email" id="remail" placeholder="you@email.com"></div></div>
-      <div class="fr full" style="margin-bottom:16px"><div class="fg"><label>Пароль</label><input type="password" id="rpass" placeholder="min 6 символів"></div></div>
-      <button class="fsub" onclick="doRegister()">Зареєструватись</button>
     </div>
   </div>
 </div>
@@ -3232,9 +3243,20 @@ function _renderVideoBlock(videoUrl){
 }
 
 function _renderCardDetails(p){
-  _setText('cloc',   p.loc      || '—');
-  _setHTML('ccirc',  p.circ ? `<span class="badge">${h(p.circ)}</span>` : '—');
-  _setText('cdesc',  p.descr    || '—');
+  _setText('cloc',  p.loc  || '—');
+  _setHTML('ccirc', p.circ ? `<span class="badge">${h(p.circ)}</span>` : '—');
+  const cdescRow = document.getElementById('cdesc-row');
+  if(p.descr && p.descr.trim()){
+    _setText('cdesc', p.descr.trim());
+    if(cdescRow) cdescRow.style.display = '';
+  } else {
+    if(cdescRow) cdescRow.style.display = 'none';
+  }
+
+  const cunitRow=document.getElementById('cunit-row');
+  const cunitEl =document.getElementById('cunit');
+  if(cunitRow) cunitRow.style.display = p.unit ? '' : 'none';
+  if(cunitEl)  cunitEl.textContent = p.unit || '';
 
   const crankRow=document.getElementById('crank-row');
   const crankEl =document.getElementById('crank');
@@ -3281,13 +3303,9 @@ async function openCard(p){
     if(ds)ds.style.display='';if(dhr)dhr.style.display='';
   } else {if(ds)ds.style.display='none';if(dhr)dhr.style.display='none';}
 
-  // Деталі — заглушки поки вантажиться
-  _setText('cloc','…');_setHTML('ccirc','…');_setText('cdesc','…');
-  const crankEl=document.getElementById('crank');if(crankEl)crankEl.textContent='…';
-  const crankImg=document.getElementById('crank-img');if(crankImg)crankImg.style.display='none';
-  const cposEl=document.getElementById('cpos');if(cposEl)cposEl.textContent='…';
-  const cimg=document.getElementById('cimg');if(cimg)cimg.src='img/foto_false.png';
-  _renderVideoBlock(p.video_url); // відео з легких даних поки деталі завантажуються
+  // Фаза 1: photo/loc/rank/position/unit вже є в легкому списку — показуємо одразу
+  // circ/descr/awards покажуть '—', фаза 2 оновить їх повними даними
+  _renderCardDetails(p);
 
   document.getElementById('card').classList.add('open');
 
@@ -3788,6 +3806,8 @@ async function checkOAuthCallback(){
   updateAuthUI();
   connectWS();
   checkOAuthCallback();
+  const pl=document.getElementById('preloader');
+  if(pl) pl.classList.add('hidden');
 })();
 </script>
 
