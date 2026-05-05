@@ -2181,6 +2181,7 @@
   <div id="tip"></div>
 </div>
 
+
 <!-- PRELOADER -->
 <div id="preloader">
   <div id="preloader-inner">
@@ -2390,9 +2391,37 @@ async function loadColors() {
   try {
     const r = await fetch(API+'/api/colors');
     COLORS = await r.json();
-    window.COLORS = COLORS;   // expose для зовнішніх скриптів (sea.js тощо)
+    window.COLORS = COLORS;
     applyColors();
+    applySocialLinks();
   } catch { console.warn('Кольори не завантажено — використовуємо типові'); }
+}
+
+function applySocialLinks() {
+  const bar = document.getElementById('social-bar');
+  if (!bar) return;
+
+  // Порядок з БД, fallback — дефолтний
+  const order = (getC('social_order') || 'facebook,twitter,instagram,youtube,telegram,tiktok,linkedin,viber')
+    .split(',').map(s => s.trim()).filter(Boolean);
+
+  // Показ/URL
+  order.forEach(cls => {
+    const el = bar.querySelector(`.soc-link.${cls}`);
+    if (!el) return;
+    const on  = getC('social_'+cls, '1') !== '0';
+    const url = getC('social_'+cls+'_url', '');
+    el.style.display = on ? '' : 'none';
+    el.href = url || '#';
+  });
+
+  // Переставляємо іконки в DOM за порядком
+  const row = bar.querySelector('.soc-row');
+  if (!row) return;
+  order.forEach(cls => {
+    const el = row.querySelector(`.soc-link.${cls}`);
+    if (el) row.appendChild(el);
+  });
 }
 
 function getC(key, fallback='') {
@@ -3905,6 +3934,36 @@ function closeInfo(id){document.getElementById('m-'+id).classList.remove('open')
   });
 });
 </script>
+
+
+<div id="social-bar">
+  <div class="soc-row">
+    <a href="#" class="soc-link facebook" target="_blank" rel="noopener noreferrer" title="Facebook">
+      <img src="img/social/facebook.png" alt="Facebook">
+    </a>
+    <a href="#" class="soc-link twitter" target="_blank" rel="noopener noreferrer" title="Twitter / X">
+      <img src="img/social/twitter.png" alt="Twitter">
+    </a>
+    <a href="#" class="soc-link instagram" target="_blank" rel="noopener noreferrer" title="Instagram">
+      <img src="img/social/instagram.png" alt="Instagram">
+    </a>
+    <a href="#" class="soc-link youtube" target="_blank" rel="noopener noreferrer" title="YouTube">
+      <img src="img/social/youtube.png" alt="YouTube">
+    </a>
+    <a href="#" class="soc-link telegram" target="_blank" rel="noopener noreferrer" title="Telegram">
+      <img src="img/social/telegram.png" alt="Telegram">
+    </a>
+    <a href="#" class="soc-link tiktok" target="_blank" rel="noopener noreferrer" title="TikTok">
+      <img src="img/social/tiktok.png" alt="TikTok">
+    </a>
+    <a href="#" class="soc-link linkedin" target="_blank" rel="noopener noreferrer" title="LinkedIn">
+      <img src="img/social/linkedin.png" alt="LinkedIn">
+    </a>
+    <a href="#" class="soc-link viber" target="_blank" rel="noopener noreferrer" title="Viber">
+      <img src="img/social/viber.png" alt="Viber">
+    </a>
+  </div>
+</div>
 
 </body>
 </html>

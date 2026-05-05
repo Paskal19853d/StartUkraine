@@ -359,6 +359,23 @@ def init_db():
         ("sea_svg_tx",            "0",        "Море SVG — зміщення X"),
         ("sea_svg_ty",            "0",        "Море SVG — зміщення Y"),
         ("sea_svg_scale",         "1",        "Море SVG — масштаб"),
+        ("social_order",           "facebook,twitter,instagram,youtube,telegram,tiktok,linkedin,viber", "Соцмережі — порядок відображення"),
+        ("social_facebook",       "1",        "Соцмережі — Facebook (1=показати, 0=сховати)"),
+        ("social_facebook_url",   "",         "Соцмережі — Facebook URL"),
+        ("social_twitter",        "1",        "Соцмережі — Twitter/X (1=показати, 0=сховати)"),
+        ("social_twitter_url",    "",         "Соцмережі — Twitter/X URL"),
+        ("social_instagram",      "1",        "Соцмережі — Instagram (1=показати, 0=сховати)"),
+        ("social_instagram_url",  "",         "Соцмережі — Instagram URL"),
+        ("social_youtube",        "1",        "Соцмережі — YouTube (1=показати, 0=сховати)"),
+        ("social_youtube_url",    "",         "Соцмережі — YouTube URL"),
+        ("social_telegram",       "1",        "Соцмережі — Telegram (1=показати, 0=сховати)"),
+        ("social_telegram_url",   "",         "Соцмережі — Telegram URL"),
+        ("social_tiktok",         "1",        "Соцмережі — TikTok (1=показати, 0=сховати)"),
+        ("social_tiktok_url",     "",         "Соцмережі — TikTok URL"),
+        ("social_linkedin",       "1",        "Соцмережі — LinkedIn (1=показати, 0=сховати)"),
+        ("social_linkedin_url",   "",         "Соцмережі — LinkedIn URL"),
+        ("social_viber",          "1",        "Соцмережі — Viber (1=показати, 0=сховати)"),
+        ("social_viber_url",      "",         "Соцмережі — Viber URL"),
     ]
     with db.cursor() as c:
         for key, val, label in defaults:
@@ -366,6 +383,9 @@ def init_db():
                 "INSERT IGNORE INTO colors (`key`,value,label) VALUES (%s,%s,%s)",
                 (key, val, label)
             )
+        # Мігруємо порожні social-ключі (старий формат URL) → '1' (показати)
+        for _sk in ('social_facebook','social_twitter','social_instagram','social_youtube'):
+            c.execute("UPDATE colors SET value='1' WHERE `key`=%s AND value=''", (_sk,))
         # Синхронізуємо кольори областей із новою схемою (як в адмінці)
         c.execute("UPDATE colors SET value=%s WHERE `key`='oblast_fill'  AND value IN ('#03070e','#040f1e')", ("#0d2240",))
         c.execute("UPDATE colors SET value=%s WHERE `key`='oblast_stroke' AND value IN ('rgba(90,110,130,.3)','rgba(90,110,130,0.3)')", ("#1e4a7a",))

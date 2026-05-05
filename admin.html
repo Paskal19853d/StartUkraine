@@ -343,6 +343,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
     <div class="nav-item"        draggable="true" onclick="showSec('pend')"      data-s="pend">      <span class="nav-drag">⠿</span><span class="nav-ico">⏳</span>Модерація<span class="nb" id="pend-nb"></span></div>
     <div class="nav-item"        draggable="true" onclick="showSec('users')"     data-s="users">     <span class="nav-drag">⠿</span><span class="nav-ico">👥</span>Користувачі</div>
     <div class="nav-item"        draggable="true" onclick="showSec('mapeditor')" data-s="mapeditor"> <span class="nav-drag">⠿</span><span class="nav-ico">🗺</span>Редактор карти</div>
+    <div class="nav-item"        draggable="true" onclick="showSec('social')"    data-s="social">    <span class="nav-drag">⠿</span><span class="nav-ico">🌐</span>Соцмережі</div>
     <div class="nav-item"        draggable="true" onclick="showSec('colors')"    data-s="colors">    <span class="nav-drag">⠿</span><span class="nav-ico">🎨</span>Кольори</div>
     <div class="nav-item"        draggable="true" onclick="showSec('smoke')"     data-s="smoke">     <span class="nav-drag">⠿</span><span class="nav-ico">💨</span>Ефект диму</div>
     <div class="nav-item"        draggable="true" onclick="showSec('photo')"     data-s="photo">     <span class="nav-drag">⠿</span><span class="nav-ico">🖼</span>Фото на карті</div>
@@ -2723,6 +2724,17 @@ tr:hover td{background:rgba(255,255,255,.02)}
         <div class="colors-grid" id="colors-grid"></div>
       </div>
 
+      <!-- SOCIAL SECTION -->
+      <div id="sec-social" class="section">
+        <div class="sec-title">🌐 Соціальні мережі</div>
+        <p style="font-size:12px;color:var(--muted);margin:0 0 16px">Активуйте тумблером і вкажіть посилання на сторінку.</p>
+        <div id="social-grid" style="display:flex;flex-direction:column;gap:12px"></div>
+        <div style="display:flex;gap:10px;margin-top:18px">
+          <button class="btn btn-p" onclick="saveSocialLinks()">💾 Зберегти</button>
+          <button class="btn" onclick="renderSocialGrid()">↺ Скасувати</button>
+        </div>
+      </div>
+
       <!-- SMOKE SECTION -->
       <div id="sec-smoke" class="section">
         <div class="sec-title">💨 Ефект диму</div>
@@ -3106,9 +3118,12 @@ function showSec(id) {
   if(id==='users')     loadUsers();
   if(id==='mapeditor') initMapEditor();
   if(id==='colors')    loadColors();
-  if(id==='sea')      { if(Object.keys(COLORS).length>0) renderSeaSection(); else loadColors(); }
-  if(id==='icons')    { if(Object.keys(COLORS).length>0) renderIconsSection(); else loadColors(); }
-  if(id==='cities')   { document.getElementById('city-search').value=''; loadCitiesAdmin(); }
+  if(id==='social')  { if(Object.keys(COLORS).length>0) renderSocialGrid();   else loadColors(); }
+  if(id==='smoke')   { if(Object.keys(COLORS).length>0) renderSmokeSection(); else loadColors(); }
+  if(id==='photo')   { if(Object.keys(COLORS).length>0) renderPhotoSection(); else loadColors(); }
+  if(id==='sea')     { if(Object.keys(COLORS).length>0) renderSeaSection();   else loadColors(); }
+  if(id==='icons')   { if(Object.keys(COLORS).length>0) renderIconsSection(); else loadColors(); }
+  if(id==='cities')  { document.getElementById('city-search').value=''; loadCitiesAdmin(); }
 }
 
 /* ══════════ NAV DRAG-AND-DROP ══════════ */
@@ -4916,6 +4931,7 @@ async function loadColors(){
   if (!COLORS['dot_glow_intensity']) COLORS['dot_glow_intensity'] = {value:'0.40', label:'Яскравість свічення'};
   if (!COLORS['dot_glow_radius'])    COLORS['dot_glow_radius']    = {value:'3.0',  label:'Радіус свічення'};
   renderColors(); updatePreview();
+  renderSocialGrid();
   // Відновлюємо збережений порядок меню
   applyNavOrder(COLORS['admin_nav_order']?.value || '');
 }
@@ -5828,6 +5844,190 @@ function adminPhotoPreview() {
   if (wrap) wrap.style.padding = '0';
 
   if (img.complete && img.naturalWidth) adminPhotoPreviewFit(img);
+}
+
+/* ══════════ SOCIAL LINKS ══════════ */
+const SOCIAL_FIELDS = [
+  { id: 'facebook',  label: 'Facebook',    color: '#1877f2', img: 'img/social/facebook.png',  domains: ['facebook.com','fb.com','fb.me']                    },
+  { id: 'twitter',   label: 'Twitter / X', color: '#000000', img: 'img/social/twitter.png',   domains: ['twitter.com','x.com']                              },
+  { id: 'instagram', label: 'Instagram',   color: '#e1306c', img: 'img/social/instagram.png', domains: ['instagram.com','instagr.am']                       },
+  { id: 'youtube',   label: 'YouTube',     color: '#ff0000', img: 'img/social/youtube.png',   domains: ['youtube.com','youtu.be']                           },
+  { id: 'telegram',  label: 'Telegram',    color: '#2ca5e0', img: 'img/social/telegram.png',  domains: ['t.me','telegram.me','telegram.org']                },
+  { id: 'tiktok',    label: 'TikTok',      color: '#010101', img: 'img/social/tiktok.png',    domains: ['tiktok.com','vm.tiktok.com']                       },
+  { id: 'linkedin',  label: 'LinkedIn',    color: '#0077b5', img: 'img/social/linkedin.png',  domains: ['linkedin.com','lnkd.in']                          },
+  { id: 'viber',     label: 'Viber',       color: '#7360f2', img: 'img/social/viber.png',     domains: ['viber.com','invite.viber.com','chats.viber.com']   },
+];
+
+function renderSocialGrid() {
+  const grid = document.getElementById('social-grid');
+  if (!grid) return;
+
+  // Визначаємо порядок з БД
+  const savedOrder = (COLORS['social_order']?.value || '').split(',').map(s => s.trim()).filter(Boolean);
+  const ordered = [...SOCIAL_FIELDS].sort((a, b) => {
+    const ai = savedOrder.indexOf(a.id), bi = savedOrder.indexOf(b.id);
+    if (ai === -1 && bi === -1) return 0;
+    if (ai === -1) return 1;
+    if (bi === -1) return -1;
+    return ai - bi;
+  });
+
+  grid.innerHTML = `<style>
+    .soc-card{background:var(--surface2);border:1px solid var(--border);border-radius:10px;
+      padding:12px 14px;display:flex;align-items:center;gap:12px;transition:border-color .2s,opacity .2s,box-shadow .15s;cursor:default}
+    .soc-card.active{border-color:var(--accent2)}
+    .soc-card.soc-drag-over{box-shadow:0 0 0 2px var(--accent);border-color:var(--accent)}
+    .soc-card.soc-dragging{opacity:.4}
+    .soc-drag-handle{cursor:grab;color:var(--muted);font-size:16px;padding:0 2px;user-select:none;flex-shrink:0}
+    .soc-drag-handle:active{cursor:grabbing}
+    .soc-ico-wrap{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;
+      justify-content:center;flex-shrink:0;background:var(--surface3)}
+    .soc-ico-wrap img{width:20px;height:20px;filter:brightness(0) invert(1)}
+    .soc-card.active .soc-ico-wrap{background:var(--soc-color,#555)}
+    .soc-info{flex:1;display:flex;flex-direction:column;gap:5px;min-width:0}
+    .soc-name{font-size:12px;font-weight:600;color:var(--text)}
+    .soc-url-inp{background:var(--surface3);border:1px solid var(--border2);border-radius:6px;
+      padding:5px 9px;color:var(--text2);font-size:11px;width:100%;box-sizing:border-box;
+      outline:none;transition:border-color .2s}
+    .soc-url-inp:focus{border-color:var(--accent);color:var(--text)}
+    .sw{position:relative;width:38px;height:20px;flex-shrink:0}
+    .sw input{opacity:0;width:0;height:0;position:absolute}
+    .sw-track{position:absolute;inset:0;background:var(--border2);border-radius:10px;
+      transition:background .25s;cursor:pointer}
+    .sw input:checked+.sw-track{background:#22c55e}
+    .sw-track::after{content:'';position:absolute;width:14px;height:14px;border-radius:50%;
+      background:#fff;top:3px;left:3px;transition:transform .25s}
+    .sw input:checked+.sw-track::after{transform:translateX(18px)}
+  </style>` + ordered.map(f => {
+    const on  = (COLORS['social_'+f.id]?.value ?? '1') !== '0';
+    const url = COLORS['social_'+f.id+'_url']?.value || '';
+    return `<div class="soc-card${on?' active':''}" id="soc-card-${f.id}" data-soc-id="${f.id}"
+        style="--soc-color:${f.color}" draggable="true">
+      <span class="soc-drag-handle" title="Перетягнути">⠿</span>
+      <div class="soc-ico-wrap">
+        <img src="${f.img}" alt="${f.label}">
+      </div>
+      <div class="soc-info">
+        <span class="soc-name">${f.label}</span>
+        <input class="soc-url-inp" type="url" id="soc-url-${f.id}"
+          value="${url.replace(/"/g,'&quot;')}" placeholder="https://..."
+          oninput="_socUrlChange('${f.id}',this.value)"
+          onblur="_socUrlChange('${f.id}',this.value)">
+      </div>
+      <label class="sw" title="${on?'Вимкнути':'Увімкнути'}">
+        <input type="checkbox" id="soc-chk-${f.id}" ${on?'checked':''}
+          onchange="_socToggle('${f.id}',this.checked)">
+        <span class="sw-track"></span>
+      </label>
+    </div>`;
+  }).join('');
+
+  _initSocDrag(grid);
+}
+
+function _initSocDrag(grid) {
+  let dragSrc = null;
+  grid.querySelectorAll('.soc-card').forEach(card => {
+    card.addEventListener('dragstart', e => {
+      dragSrc = card;
+      card.classList.add('soc-dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    card.addEventListener('dragend', () => {
+      card.classList.remove('soc-dragging');
+      grid.querySelectorAll('.soc-card').forEach(c => c.classList.remove('soc-drag-over'));
+      _socSaveOrder(grid);
+    });
+    card.addEventListener('dragover', e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      if (card !== dragSrc) {
+        grid.querySelectorAll('.soc-card').forEach(c => c.classList.remove('soc-drag-over'));
+        card.classList.add('soc-drag-over');
+      }
+    });
+    card.addEventListener('dragleave', () => card.classList.remove('soc-drag-over'));
+    card.addEventListener('drop', e => {
+      e.preventDefault();
+      if (dragSrc && dragSrc !== card) {
+        const cards = [...grid.querySelectorAll('.soc-card')];
+        const fromI = cards.indexOf(dragSrc);
+        const toI   = cards.indexOf(card);
+        if (fromI < toI) card.after(dragSrc);
+        else             card.before(dragSrc);
+      }
+    });
+  });
+}
+
+function _socSaveOrder(grid) {
+  const order = [...grid.querySelectorAll('.soc-card')].map(c => c.dataset.socId).join(',');
+  pendColors['social_order'] = order;
+}
+
+function _socIsValidUrl(id, val) {
+  if (!val) return { ok: true };
+  let u;
+  try { u = new URL(val); } catch { return { ok: false, msg: 'Невірний формат URL' }; }
+  if (u.protocol !== 'https:' && u.protocol !== 'http:')
+    return { ok: false, msg: 'URL має починатись з https://' };
+  const f = SOCIAL_FIELDS.find(f => f.id === id);
+  if (f) {
+    const host = u.hostname.replace(/^www\./, '');
+    const allowed = f.domains.some(d => host === d || host.endsWith('.'+d));
+    if (!allowed)
+      return { ok: false, msg: `Для ${f.label} дозволено тільки: ${f.domains.join(', ')}` };
+  }
+  return { ok: true };
+}
+
+function _socUrlChange(id, val) {
+  const inp = document.getElementById('soc-url-'+id);
+  const {ok, msg} = _socIsValidUrl(id, val.trim());
+  if (inp) {
+    inp.style.borderColor = val && !ok ? '#ef4444' : '';
+    inp.title = !ok ? (msg || '') : '';
+  }
+  pendColors['social_'+id+'_url'] = val;
+}
+
+function _socToggle(id, on) {
+  pendColors['social_'+id] = on ? '1' : '0';
+  const card = document.getElementById('soc-card-'+id);
+  if (card) card.classList.toggle('active', on);
+}
+
+async function saveSocialLinks() {
+  // Валідація перед збереженням
+  let firstErr = null;
+  SOCIAL_FIELDS.forEach(f => {
+    const inp = document.getElementById('soc-url-'+f.id);
+    const val = (inp?.value || '').trim();
+    const {ok, msg} = _socIsValidUrl(f.id, val);
+    if (!ok) {
+      if (inp) inp.style.borderColor = '#ef4444';
+      if (!firstErr) firstErr = `${f.label}: ${msg}`;
+    }
+  });
+  if (firstErr) { showN('❌ ' + firstErr); return; }
+
+  const grid = document.getElementById('social-grid');
+  const order = grid ? [...grid.querySelectorAll('.soc-card')].map(c=>c.dataset.socId).join(',') : '';
+  const batch = [
+    { key: 'social_order', value: order },
+    ...SOCIAL_FIELDS.flatMap(f => [
+      { key: 'social_'+f.id,        value: document.getElementById('soc-chk-'+f.id)?.checked ? '1' : '0' },
+      { key: 'social_'+f.id+'_url', value: document.getElementById('soc-url-'+f.id)?.value.trim() || '' },
+    ])
+  ];
+  try {
+    const r = await fetch(`${API}/api/admin/colors/batch`,
+      { method:'PUT', headers: authH({'Content-Type':'application/json'}), body: JSON.stringify(batch) });
+    if (!r.ok) throw new Error(r.status);
+    batch.forEach(({key,value}) => { if(COLORS[key]) COLORS[key].value=value; else COLORS[key]={value,label:''}; });
+    pendColors = {};
+    showN('💾 Соцмережі збережено!');
+  } catch(e) { showN('❌ Помилка: '+e.message); }
 }
 
 async function saveAllColors(){

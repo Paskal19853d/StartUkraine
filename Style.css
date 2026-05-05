@@ -650,6 +650,59 @@ mark.shl {
 }
 
 
+/* ── Social bar ─────────────────────────────────────── */
+#social-bar {
+  position: fixed;
+  bottom: clamp(12px, 2.2vw, 22px);
+  left: 50%;
+  translate: -50% 0;
+  z-index: 1000;
+  background: rgba(7,13,26,.92);
+  border: 1px solid rgba(255,255,255,.5);
+  border-radius: var(--radius);
+  padding: clamp(4px, .6vw, 6px) clamp(10px, 1.6vw, 18px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: clamp(1px, .25vw, 2px);
+  cursor: default;
+  opacity: .4;
+  transition: background .22s, border-color .22s, box-shadow .22s, translate .15s, opacity .22s;
+}
+#social-bar:hover {
+  background: rgba(5,18,38,.97);
+  border-color: rgba(255,255,255,.8);
+  box-shadow: 0 0 22px rgba(255,255,255,.1);
+  translate: -50% -2px;
+  opacity: 1;
+}
+.soc-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.soc-link {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  transition: transform .18s;
+}
+.soc-link img {
+  width: 21px;
+  height: 21px;
+  filter: brightness(0) invert(1);
+  transition: filter .25s;
+}
+.soc-link:hover { transform: scale(1.15); }
+.soc-link.facebook:hover  img { filter: invert(29%) sepia(77%) saturate(1800%) hue-rotate(208deg) brightness(101%) contrast(93%); }
+.soc-link.twitter:hover   img { filter: invert(58%) sepia(72%) saturate(573%) hue-rotate(171deg) brightness(99%) contrast(94%); }
+.soc-link.instagram:hover img { filter: invert(30%) sepia(60%) saturate(1500%) hue-rotate(310deg) brightness(95%) contrast(95%); }
+.soc-link.youtube:hover   img { filter: invert(17%) sepia(94%) saturate(4500%) hue-rotate(356deg) brightness(107%) contrast(119%); }
+.soc-link.telegram:hover  img { filter: invert(55%) sepia(60%) saturate(600%) hue-rotate(175deg) brightness(100%) contrast(95%); }
+.soc-link.tiktok:hover    img { filter: brightness(0) invert(1); }
+.soc-link.linkedin:hover  img { filter: invert(29%) sepia(90%) saturate(700%) hue-rotate(180deg) brightness(95%) contrast(95%); }
+.soc-link.viber:hover     img { filter: invert(40%) sepia(60%) saturate(800%) hue-rotate(240deg) brightness(95%) contrast(90%); }
+
 /* Tooltip */
 #tip {
   position: absolute;
