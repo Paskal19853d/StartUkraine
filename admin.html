@@ -9,6 +9,7 @@
         crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
+.adm-ico { width:15px;height:15px;display:inline-block;vertical-align:middle;flex-shrink:0;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round; }
 :root{
   --bg:#080808;--surface:#111111;--surface2:#181818;--surface3:#1e1e1e;
   --border:rgba(255,255,255,.06);--border2:rgba(255,255,255,.11);--border3:rgba(255,255,255,.18);
@@ -51,7 +52,7 @@ html,body{height:100%;font-family:"Segoe UI",sans-serif;background:var(--bg);col
 .nav-item{display:flex;align-items:center;gap:9px;padding:10px 16px;cursor:pointer;color:var(--text2);border-left:2px solid transparent;transition:all .12s;font-size:12px}
 .nav-item:hover{background:rgba(255,255,255,.03);color:var(--text)}
 .nav-item.active{background:rgba(0,170,221,.07);color:var(--accent);border-left-color:var(--accent)}
-.nav-ico{font-size:14px;width:17px;text-align:center;opacity:.7}
+.nav-ico{font-size:13px;width:17px;text-align:center;opacity:.65;display:inline-flex;align-items:center;justify-content:center}
 .nav-item.active .nav-ico{opacity:1}
 .nb{margin-left:auto;background:rgba(192,144,0,.2);color:var(--yellow);border-radius:10px;padding:1px 6px;font-size:10px;display:none}
 /* Drag-and-drop nav */
@@ -309,6 +310,34 @@ tr:hover td{background:rgba(255,255,255,.02)}
 </head>
 <body>
 
+<!-- ══ SVG ICON SPRITE ══ -->
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+  <!-- stats: bar chart -->
+  <symbol id="ico-stats" viewBox="0 0 24 24"><rect x="3" y="12" width="4" height="9" rx="0.5"/><rect x="10" y="7" width="4" height="14" rx="0.5"/><rect x="17" y="3" width="4" height="18" rx="0.5"/></symbol>
+  <!-- doc: document -->
+  <symbol id="ico-doc" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></symbol>
+  <!-- hourglass -->
+  <symbol id="ico-hourglass" viewBox="0 0 24 24"><path d="M5 3h14M5 21h14M6 3l6 8.5L18 3M6 21l6-8.5 6 8.5"/></symbol>
+  <!-- users -->
+  <symbol id="ico-users" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+  <!-- map -->
+  <symbol id="ico-map" viewBox="0 0 24 24"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></symbol>
+  <!-- share / social -->
+  <symbol id="ico-share" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></symbol>
+  <!-- palette -->
+  <symbol id="ico-palette" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c2.76 0 5-2.24 5-5 0-4.42-4.03-8-9-8z"/><circle cx="6.5" cy="11.5" r="1.5"/><circle cx="9.5" cy="7.5" r="1.5"/><circle cx="14.5" cy="7.5" r="1.5"/><circle cx="17.5" cy="11.5" r="1.5"/></symbol>
+  <!-- smoke / wind -->
+  <symbol id="ico-smoke" viewBox="0 0 24 24"><path d="M3 8c0 0 3-3 6 0s6 0 6 0 3-3 6 0"/><path d="M3 13c0 0 3-3 6 0s6 0 6 0 3-3 6 0"/><path d="M3 18c0 0 3-3 6 0s6 0 6 0 3-3 6 0"/></symbol>
+  <!-- photo / image -->
+  <symbol id="ico-photo" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></symbol>
+  <!-- waves / sea -->
+  <symbol id="ico-waves" viewBox="0 0 24 24"><path d="M2 10c1.5-2 3.5-2 5 0s3.5 2 5 0 3.5-2 5 0"/><path d="M2 16c1.5-2 3.5-2 5 0s3.5 2 5 0 3.5-2 5 0"/></symbol>
+  <!-- star -->
+  <symbol id="ico-star" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></symbol>
+  <!-- city / buildings -->
+  <symbol id="ico-city" viewBox="0 0 24 24"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><line x1="10" y1="6" x2="14" y2="6"/><line x1="10" y1="10" x2="14" y2="10"/><line x1="10" y1="14" x2="14" y2="14"/><line x1="10" y1="18" x2="14" y2="18"/></symbol>
+</svg>
+
 <!-- Hamburger (mobile) -->
 <button id="hamburger" onclick="toggleSidebar()">☰</button>
 <div id="sidebar-overlay" onclick="closeSidebar()"></div>
@@ -338,18 +367,18 @@ tr:hover td{background:rgba(255,255,255,.02)}
       <p>Зоряна Памʼять v2.0</p>
     </div>
     <div id="nav-list">
-    <div class="nav-item active" draggable="true" onclick="showSec('stats')"     data-s="stats">     <span class="nav-drag">⠿</span><span class="nav-ico">📊</span>Статистика</div>
-    <div class="nav-item"        draggable="true" onclick="showSec('mem')"       data-s="mem">       <span class="nav-drag">⠿</span><span class="nav-ico">📋</span>Записи</div>
-    <div class="nav-item"        draggable="true" onclick="showSec('pend')"      data-s="pend">      <span class="nav-drag">⠿</span><span class="nav-ico">⏳</span>Модерація<span class="nb" id="pend-nb"></span></div>
-    <div class="nav-item"        draggable="true" onclick="showSec('users')"     data-s="users">     <span class="nav-drag">⠿</span><span class="nav-ico">👥</span>Користувачі</div>
-    <div class="nav-item"        draggable="true" onclick="showSec('mapeditor')" data-s="mapeditor"> <span class="nav-drag">⠿</span><span class="nav-ico">🗺</span>Редактор карти</div>
-    <div class="nav-item"        draggable="true" onclick="showSec('social')"    data-s="social">    <span class="nav-drag">⠿</span><span class="nav-ico">🌐</span>Соцмережі</div>
-    <div class="nav-item"        draggable="true" onclick="showSec('colors')"    data-s="colors">    <span class="nav-drag">⠿</span><span class="nav-ico">🎨</span>Кольори</div>
-    <div class="nav-item"        draggable="true" onclick="showSec('smoke')"     data-s="smoke">     <span class="nav-drag">⠿</span><span class="nav-ico">💨</span>Ефект диму</div>
-    <div class="nav-item"        draggable="true" onclick="showSec('photo')"     data-s="photo">     <span class="nav-drag">⠿</span><span class="nav-ico">🖼</span>Фото на карті</div>
-    <div class="nav-item"        draggable="true" onclick="showSec('sea')"       data-s="sea">       <span class="nav-drag">⠿</span><span class="nav-ico">🌊</span>Хвилі морів</div>
-    <div class="nav-item"        draggable="true" onclick="showSec('icons')"     data-s="icons">     <span class="nav-drag">⠿</span><span class="nav-ico">🎭</span>Іконки</div>
-    <div class="nav-item"        draggable="true" onclick="showSec('cities')"    data-s="cities">    <span class="nav-drag">⠿</span><span class="nav-ico">🏙</span>Міста</div>
+    <div class="nav-item active" draggable="true" onclick="showSec('stats')"     data-s="stats">     <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-stats"/></svg></span>Статистика</div>
+    <div class="nav-item"        draggable="true" onclick="showSec('mem')"       data-s="mem">       <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-doc"/></svg></span>Записи</div>
+    <div class="nav-item"        draggable="true" onclick="showSec('pend')"      data-s="pend">      <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-hourglass"/></svg></span>Модерація<span class="nb" id="pend-nb"></span></div>
+    <div class="nav-item"        draggable="true" onclick="showSec('users')"     data-s="users">     <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-users"/></svg></span>Користувачі</div>
+    <div class="nav-item"        draggable="true" onclick="showSec('mapeditor')" data-s="mapeditor"> <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-map"/></svg></span>Редактор карти</div>
+    <div class="nav-item"        draggable="true" onclick="showSec('social')"    data-s="social">    <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-share"/></svg></span>Соцмережі</div>
+    <div class="nav-item"        draggable="true" onclick="showSec('colors')"    data-s="colors">    <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-palette"/></svg></span>Кольори</div>
+    <div class="nav-item"        draggable="true" onclick="showSec('smoke')"     data-s="smoke">     <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-smoke"/></svg></span>Ефект диму</div>
+    <div class="nav-item"        draggable="true" onclick="showSec('photo')"     data-s="photo">     <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-photo"/></svg></span>Фото на карті</div>
+    <div class="nav-item"        draggable="true" onclick="showSec('sea')"       data-s="sea">       <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-waves"/></svg></span>Хвилі морів</div>
+    <div class="nav-item"        draggable="true" onclick="showSec('icons')"     data-s="icons">     <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-star"/></svg></span>Іконки</div>
+    <div class="nav-item"        draggable="true" onclick="showSec('cities')"    data-s="cities">    <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-city"/></svg></span>Міста</div>
     </div>
     <div class="sb-bottom">
       <p>Адмін: <strong id="adm-name">—</strong> <span id="adm-role-badge" style="font-size:9px;margin-left:4px"></span></p>
@@ -383,7 +412,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
 
       <!-- STATS -->
       <div id="sec-stats" class="section active">
-        <div class="sec-title">📊 Статистика</div>
+        <div class="sec-title"><svg class="adm-ico"><use href="#ico-stats"/></svg> Статистика</div>
 
         <!-- Stat cards -->
         <div class="stats-grid">
@@ -426,7 +455,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
 
       <!-- MEMORIALS -->
       <div id="sec-mem" class="section">
-        <div class="sec-title">📋 Всі записи</div>
+        <div class="sec-title"><svg class="adm-ico"><use href="#ico-doc"/></svg> Всі записи</div>
         <div style="margin-bottom:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
           <button class="btn btn-p" onclick="openCreateModal()">＋ Додати запис</button>
           <button class="btn" onclick="exportCsv()" title="Завантажити всі записи у CSV">📤 Експорт CSV</button>
@@ -477,7 +506,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
 
       <!-- PENDING -->
       <div id="sec-pend" class="section">
-        <div class="sec-title">⏳ На модерації</div>
+        <div class="sec-title"><svg class="adm-ico"><use href="#ico-hourglass"/></svg> На модерації</div>
         <div class="tbl-wrap"><table>
           <thead><tr><th>ID</th><th>ПІБ</th><th>Місце пох.</th><th>Хто додав</th><th>Дії</th></tr></thead>
           <tbody id="pend-tb"></tbody>
@@ -486,7 +515,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
 
       <!-- USERS -->
       <div id="sec-users" class="section">
-        <div class="sec-title">👥 Користувачі</div>
+        <div class="sec-title"><svg class="adm-ico"><use href="#ico-users"/></svg> Користувачі</div>
         <div class="user-stats-row">
           <div class="user-stat-card"><div class="val" id="ust-total">—</div><div class="key">Всього</div></div>
           <div class="user-stat-card"><div class="val" id="ust-active" style="color:#3a9a60">—</div><div class="key">Активних</div></div>
@@ -2710,7 +2739,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
 
       <!-- COLORS -->
       <div id="sec-colors" class="section">
-        <div class="sec-title">🎨 Кольори та дизайн</div>
+        <div class="sec-title"><svg class="adm-ico"><use href="#ico-palette"/></svg> Кольори та дизайн</div>
         <div id="preview-bar">
           <span class="prev-lbl">Перегляд:</span>
           <span id="prev-logo">★ <em>Зоряна</em> Памʼять</span>
@@ -2726,7 +2755,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
 
       <!-- SOCIAL SECTION -->
       <div id="sec-social" class="section">
-        <div class="sec-title">🌐 Соціальні мережі</div>
+        <div class="sec-title"><svg class="adm-ico"><use href="#ico-share"/></svg> Соціальні мережі</div>
         <p style="font-size:12px;color:var(--muted);margin:0 0 16px">Активуйте тумблером і вкажіть посилання на сторінку.</p>
         <div id="social-grid" style="display:flex;flex-direction:column;gap:12px"></div>
         <div style="display:flex;gap:10px;margin-top:18px">
@@ -2737,7 +2766,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
 
       <!-- SMOKE SECTION -->
       <div id="sec-smoke" class="section">
-        <div class="sec-title">💨 Ефект диму</div>
+        <div class="sec-title"><svg class="adm-ico"><use href="#ico-smoke"/></svg> Ефект диму</div>
         <div style="display:flex;gap:10px;margin-bottom:16px">
           <button class="btn btn-p" onclick="saveAllColors()">💾 Зберегти</button>
           <button class="btn" onclick="loadColors()">↺ Скасувати</button>
@@ -2747,7 +2776,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
 
       <!-- SEA SECTION -->
       <div id="sec-sea" class="section">
-        <div class="sec-title">🌊 Хвилі морів</div>
+        <div class="sec-title"><svg class="adm-ico"><use href="#ico-waves"/></svg> Хвилі морів</div>
         <div style="display:flex;gap:10px;margin-bottom:16px">
           <button class="btn btn-p" onclick="saveAllColors()">💾 Зберегти</button>
           <button class="btn" onclick="loadColors()">↺ Скасувати</button>
@@ -2757,7 +2786,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
 
       <!-- ICONS SECTION -->
       <div id="sec-icons" class="section">
-        <div class="sec-title">🎭 Іконки сайту</div>
+        <div class="sec-title"><svg class="adm-ico"><use href="#ico-star"/></svg> Іконки сайту</div>
         <div style="display:flex;gap:10px;margin-bottom:16px">
           <button class="btn btn-p" onclick="saveAllColors()">💾 Зберегти</button>
           <button class="btn" onclick="loadColors()">↺ Скасувати</button>
@@ -2767,7 +2796,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
 
       <!-- PHOTO SECTION -->
       <div id="sec-photo" class="section">
-        <div class="sec-title">🖼 Фото на карті</div>
+        <div class="sec-title"><svg class="adm-ico"><use href="#ico-photo"/></svg> Фото на карті</div>
         <div style="display:flex;gap:10px;margin-bottom:16px">
           <button class="btn btn-p" onclick="saveAllColors()">💾 Зберегти</button>
           <button class="btn" onclick="loadColors()">↺ Скасувати</button>
@@ -2777,7 +2806,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
 
       <!-- CITIES SECTION -->
       <div id="sec-cities" class="section">
-        <div class="sec-title">🏙 Міста України</div>
+        <div class="sec-title"><svg class="adm-ico"><use href="#ico-city"/></svg> Міста України</div>
         <!-- Панель інструментів -->
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px">
           <button class="btn btn-p" onclick="openAddCityModal()">＋ Додати місто</button>
