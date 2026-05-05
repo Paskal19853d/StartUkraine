@@ -527,6 +527,15 @@ mark.shl {
   to { transform: translateX(-50%) translateY(0); opacity: 1; }
 }
 
+/* Fullscreen button — притиснута до лівого боку #zoom */
+#btn-fs {
+  position: absolute;
+  bottom: 22px;
+  right: calc(22px + 36px + 4px);
+  z-index: 50;
+  animation: fadeIn .5s .3s var(--ease) both;
+}
+
 /* Zoom */
 #zoom {
   position: absolute;
