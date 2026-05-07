@@ -13,3 +13,4 @@ node_modules/
 *.pem
 *.p12
 proxy.php
+logs/

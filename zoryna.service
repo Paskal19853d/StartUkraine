@@ -1,0 +1,49 @@
+# ── Systemd Service для Зоряна Пам'ять ──
+# Встановлення: sudo cp zoryna.service /etc/systemd/system/
+#reload: sudo systemctl daemon-reload
+# Старт: sudo systemctl enable zoryna && sudo systemctl start zoryna
+# Статус: sudo systemctl status zoryna
+# Логи: journalctl -u zoryna -f --no-pager
+
+[Unit]
+Description=Зоряна Пам'ять - FastAPI Backend
+After=network.target mysql.service
+Wants=mysql.service
+
+[Service]
+Type=notify
+User=zoryna
+Group=www-data
+WorkingDirectory=/var/www/zoryna
+
+# ── Віртуальне середовище ──
+ExecStart=/var/www/zoryna/venv/bin/gunicorn -c gunicorn.conf.py Paskal:app
+ExecReload=/bin/kill -s HUP $MAINPID
+
+# ── Безпека ──
+PrivateTmp=true
+ProtectSystem=full
+NoNewPrivileges=true
+ProtectHome=read-only
+
+# ── Restart Policy ──
+Restart=always
+RestartSec=5
+StartLimitBurst=3
+StartLimitIntervalSec=60
+
+# ── Limits ──
+LimitNOFILE=65535
+LimitNPROC=4096
+
+# ── Environment ──
+EnvironmentFile=/var/www/zoryna/.env
+Environment=PYTHONUNBUFFERED=1
+
+# ── Logging ──
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=zoryna
+
+[Install]
+WantedBy=multi-user.target

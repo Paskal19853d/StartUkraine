@@ -89,7 +89,8 @@
   <div id="smoke-ctrl" onclick="toggleSmoke()" title="Ефект диму вкл/викл">
     <span id="smoke-lbl">Дим увімкнено</span>
     <div id="btn-smoke" class="smoke-toggle active"><div class="smoke-thumb"></div></div>
-  </div>
+  </div> 
+  
 <div id="sw">
     <span class="sico">🔍</span>
     <input type="text" id="search" placeholder="Пошук за іменем, позивним, місцем…" autocomplete="off">
@@ -2169,6 +2170,22 @@
       <path d="M3 3h6v2H5v4H3V3zm12 0h6v6h-2V5h-4V3zM3 15h2v4h4v2H3v-6zm16 4h-4v2h6v-6h-2v4z"/>
     </svg>
   </button>
+
+   <div style="
+    position: fixed;
+    bottom: 20px;
+    right: 115px;
+    color: #888;
+    font-size: 10px;
+    padding: 10px, 0;
+    z-index: 800;
+    white-space: nowrap;
+    text-align: right;
+    ">
+    © 2026 <b style="color:#929191;">TREETEX</b> NPO · All rights reserved
+    <span style="font-size:10px;">Denys KOSHELENKO</span>
+    </div>
+
   <div id="zoom">
     <button class="zbtn" id="zin">+</button>
     <button class="zbtn" id="zout">&#8722;</button>
@@ -2184,7 +2201,6 @@
     </div>
   </div>
   <div id="tip"></div>
-   © 2026 Eezy LLC All rights reserved
 </div>
 
 
@@ -2388,6 +2404,8 @@ let selColor = '#4fc3f7', isPick = false, pickCb = null, activePerson = null;
 let W = 0, H = 0, animT = 0, particles = [];
 const tr = {x:0, y:0, s:1};
 let drag = false, dragS = {x:0,y:0}, trS = {x:0,y:0};
+let _lastVbKey = '';   // debounce: останній viewBox key для уникнення reflow
+let _lastWheel = 0;    // throttle: timestamp останнього wheel event
 let hovId = null, selId = null;
 let COLORS = {};
 let _dotPulseSpeed = 1.0, _dotPulseAmp = 0.35, _dotGlowInt = 0.40, _dotGlowR = 3.0;
@@ -2678,10 +2696,15 @@ function updateMapSvgViewBox() {
   const vby=(-(b.y*(s-1)+tr.y)*9500 /(b.h*s)).toFixed(2);
   const vbw=(14000/s).toFixed(2);
   const vbh=(9500 /s).toFixed(2);
+  const vbKey=`${vbx}_${vby}_${vbw}_${vbh}`;
   const vb=`${vbx} ${vby} ${vbw} ${vbh}`;
   const uaSvg=document.getElementById('ukraine-svg');
   const seaSvg=document.getElementById('sea-svg');
-  if(uaSvg)uaSvg.setAttribute('viewBox',vb);
+  // Оновлюємо viewBox ТІЛЬКИ якщо значуще змінився (>0.01) — уникнення DOM reflow
+  if(vbKey !== _lastVbKey){
+    if(uaSvg)uaSvg.setAttribute('viewBox',vb);
+    _lastVbKey=vbKey;
+  }
   // Sea SVG використовує CSS transform (GPU) замість viewBox —
   // feTurbulence фільтр не перераховується при кожному pan/zoom
   if(seaSvg)seaSvg.style.transform=`translate(${tr.x.toFixed(1)}px,${tr.y.toFixed(1)}px) scale(${tr.s})`;
@@ -2886,6 +2909,9 @@ window.addEventListener('mouseup',e=>{
 });
 mw.addEventListener('wheel',e=>{
   e.preventDefault();
+  const now=performance.now();
+  if(now - _lastWheel < 8) return;  // throttle до ~120Hz — менше SVG reflow при швидкому скролі
+  _lastWheel = now;
   const r=mw.getBoundingClientRect();
   // Нормалізуємо deltaY: рядки→пікселі, сторінки→пікселі
   let dy=e.deltaY;
@@ -3001,9 +3027,10 @@ function _startCanvasLoop() {
   (function loop(ts){
     if(document.hidden){_canvasLoopRunning=false;return;}
     requestAnimationFrame(loop);
-    // При русі карти — малюємо синхронно (без кепу); інакше ~30fps
+    // При русі карти — 30fps, в стані спокою — 20fps
     const _dirty=_canvasDirty; _canvasDirty=false;
-    if(!_dirty && ts - _lastCanvasFrame < 30) return;
+    const cap=_dirty?33:50;
+    if(ts - _lastCanvasFrame < cap) return;
     _lastCanvasFrame = ts;
     _svgBoundsCache = null;
     _cachedSqrtS = Math.min(Math.sqrt(tr.s), 2.5);
@@ -3024,8 +3051,10 @@ function _startCanvasLoop() {
       const pulse=(1-_dotPulseAmp)+_dotPulseAmp*((Math.sin(animT*sp+phase)+1)/2);
       _vis.push({p,pos,pulse});
     }
-    // Pass 1: свічення та кільця (з індивідуальним pulse)
-    for(const {p,pos,pulse} of _vis)drawDotFX(p,pos,pulse);
+    // Pass 1: свічення та кільця — ТІЛЬКИ коли карта стоїть (економія CPU)
+    if(!_dirty){
+      for(const {p,pos,pulse} of _vis)drawDotFX(p,pos,pulse);
+    }
     // Pass 2: основні кола зі змазаними краями (blur → реалістична зірка)
     const _cb=new Map();
     for(const {p,pos} of _vis){
@@ -3238,8 +3267,22 @@ function scaleCityLabels(){
 /* ── Data ── */
 async function loadData() {
   try {
-    const [rp,rs,rc]=await Promise.all([fetch(API+'/api/people'),fetch(API+'/api/stats'),fetch(API+'/api/cities')]);
-    const raw=await rp.json();const stats=await rs.json();cities=await rc.json();
+    const [rs,rc]=await Promise.all([fetch(API+'/api/stats'),fetch(API+'/api/cities')]);
+    const stats=await rs.json();cities=await rc.json();
+    // Пагіноване завантаження всіх записів (по 100 за раз)
+    let allPeople=[];
+    let page=1;
+    while(true){
+      const rp=await fetch(API+`/api/people?page=${page}&limit=100`);
+      const pd=await rp.json();
+      const items=pd.items||pd; // fallback для старого формату
+      allPeople=allPeople.concat(items);
+      if(pd.pages && page>=pd.pages) break;
+      if(!pd.items && !Array.isArray(pd)) break; // старий формат — масив
+      if(!pd.items || pd.items.length===0) break;
+      page++;
+    }
+    const raw=allPeople;
     people=raw.map(p=>({...p,x:parseFloat(p.pos_x??p.x??0.5),y:parseFloat(p.pos_y??p.y??0.5),grp:p.grp||''}));
     // Ключ зв'язку: ПІБ + дата нар. + дата смерті (незалежно від поля grp)
     people.forEach(p=>{
@@ -3983,8 +4026,59 @@ function closeInfo(id){document.getElementById('m-'+id).classList.remove('open')
     <a href="#" class="soc-link viber" target="_blank" rel="noopener noreferrer" title="Viber">
       <img src="img/social/viber.png" alt="Viber">
     </a>
+
+
   </div>
 </div>
+
+<!-- Cookie Consent & Disclaimer Banner -->
+<div id="cookie-consent" style="position: fixed; bottom: 0; left: 0; right: 0; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); color: #e0e0e0; padding: 20px 30px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 -4px 15px rgba(0,0,0,0.4); z-index: 1000; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+
+  <!-- 18+ Warning -->
+  <div style="display: flex; align-items: center; gap: 8px; background: rgba(255,82,82,0.15); border: 1px solid rgba(255,82,82,0.4); border-radius: 6px; padding: 8px 12px; width: fit-content;">
+    <span style="background: #ff5252; color: #fff; font-weight: 800; font-size: 14px; padding: 3px 8px; border-radius: 4px;">18+</span>
+    <span style="font-size: 13px; color: #ff8a80;">Контент сайта предназначен только для лиц старше 18 лет</span>
+  </div>
+
+  <!-- Disclaimer -->
+  <div style="font-size: 13px; color: #aaa; padding-left: 12px; border-left: 2px solid #333;">
+    Информация на сайте носит исключительно ознакомительный характер и не является справочником. Не используйте её в качестве руководства к действию.
+  </div>
+
+  <!-- Cookie Notice -->
+  <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px;">
+    <p style="margin: 0; font-size: 14px; line-height: 1.5; max-width: 800px;">
+      Мы используем файлы cookie для улучшения работы сайта, анализа трафика и персонализации контента. Продолжая использовать сайт, вы соглашаетесь с <a href="/privacy-policy" style="color: #4fc3f7; text-decoration: underline;">политикой конфиденциальности</a> и обработкой cookie-файлов.
+    </p>
+    <div style="display: flex; gap: 10px; flex-shrink: 0;">
+      <button id="cookie-decline" style="background: transparent; border: 1px solid #555; color: #aaa; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; transition: all 0.2s;" onmouseover="this.style.borderColor='#888';this.style.color='#ccc'" onmouseout="this.style.borderColor='#555';this.style.color='#aaa'">Отклонить</button>
+      <button id="cookie-accept" style="background: #4fc3f7; border: none; color: #1a1a2e; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='#81d4fa'" onmouseout="this.style.background='#4fc3f7'">Принять</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  const banner = document.getElementById('cookie-consent');
+  const acceptBtn = document.getElementById('cookie-accept');
+  const declineBtn = document.getElementById('cookie-decline');
+
+  if (localStorage.getItem('cookieConsent')) {
+    banner.style.display = 'none';
+  }
+
+  acceptBtn.addEventListener('click', function() {
+    localStorage.setItem('cookieConsent', 'accepted');
+    banner.style.display = 'none';
+  });
+
+  declineBtn.addEventListener('click', function() {
+    localStorage.setItem('cookieConsent', 'declined');
+    banner.style.display = 'none';
+  });
+})();
+</script>
+
 
 </body>
 </html>

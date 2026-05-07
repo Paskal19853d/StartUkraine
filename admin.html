@@ -2637,7 +2637,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
           <div id="map-sidebar">
             <div id="map-sidebar-title">
               <span id="map-sidebar-mode">🏷 Підписи</span>
-              <button class="btn btn-p" onclick="saveAny()" style="font-size:10px;padding:5px 10px">💾 Зберегти</button>
+              <button class="btn btn-p" id="save-all-dots-btn" onclick="saveAny()" style="font-size:10px;padding:5px 10px">💾 Зберегти</button>
             </div>
             <div id="map-props-panel">
               <div class="no-sel" id="no-sel-msg">👆 Клікніть на підпис, точку або місто щоб редагувати</div>
@@ -2697,7 +2697,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
                     <input type="color" id="dprop-color-pick" style="width:36px;height:36px;border:none;border-radius:6px;cursor:pointer" oninput="document.getElementById('dprop-color').value=this.value;updateDotFromProps()">
                   </div>
                 </div>
-                <button class="prop-save-btn" onclick="saveSelectedDot()">💾 Зберегти в базу</button>
+                <button class="prop-save-btn" onclick="saveAllChangedDots()">💾 Зберегти всі зміни</button>
                 <button class="prop-save-btn" style="background:rgba(0,200,255,.15);border:1px solid rgba(0,200,255,.3);color:#00c8ff;margin-top:6px" onclick="openEditModal()">✏️ Редагувати повністю</button>
               </div>
               <!-- City props -->
@@ -3333,8 +3333,19 @@ let memPageSize = parseInt(localStorage.getItem('mem_page_size') || '10') || 10;
 let memColWidths = JSON.parse(localStorage.getItem('mem_col_widths') || 'null') || {};
 
 async function loadMem() {
-  const r = await fetch(`${API}/api/admin/memorials`);
-  allPeople = await r.json();
+  // Пагіноване завантаження всіх записів
+  let allMem=[];let pg=1;
+  while(true){
+    const r=await fetch(`${API}/api/admin/memorials?page=${pg}&limit=500`);
+    const pd=await r.json();
+    const items=pd.items||pd;
+    allMem=allMem.concat(items);
+    if(pd.pages && pg>=pd.pages) break;
+    if(!pd.items) break;
+    if(!items.length) break;
+    pg++;
+  }
+  allPeople = allMem;
   memCurrentPage = 0;
   renderMemPage();
   _initMemResize();
@@ -4293,14 +4304,25 @@ function svg2screen(svgX,svgY){
 }
 
 async function initMapEditor() {
-  const [rl,rp,rc] = await Promise.all([
+  const [rl,rc] = await Promise.all([
     fetch(`${API}/api/labels`),
-    fetch(`${API}/api/people`),
     fetch(`${API}/api/admin/cities`,{headers:authH()})
   ]);
   labels       = await rl.json();
-  people       = await rp.json();
   citiesAdmin  = await rc.json();
+  // Пагіноване завантаження людей
+  let allP=[];let pg=1;
+  while(true){
+    const rp=await fetch(`${API}/api/people?page=${pg}&limit=100`);
+    const pd=await rp.json();
+    const items=pd.items||pd;
+    allP=allP.concat(items);
+    if(pd.pages && pg>=pd.pages) break;
+    if(!pd.items) break;
+    if(!items.length) break;
+    pg++;
+  }
+  people=allP;
   renderLabels();
   renderDots();
   renderCitiesAdmin();
@@ -4328,22 +4350,24 @@ function applyMapBorders(){
 
 function setTool(t){
   curTool=t;
-  selLabel=null;selDot=null;selCity=null;
   document.getElementById('tool-labels').classList.toggle('active',t==='labels');
   document.getElementById('tool-dots').classList.toggle('active',t==='dots');
   document.getElementById('tool-cities').classList.toggle('active',t==='cities');
-  const modeMap={labels:'🏷 Підписи областей',dots:'📍 Точки меморіалів',cities:'🏙 Міста'};
-  const hintMap={labels:'Перетягуйте назви областей — збережіть позицію',dots:'Перетягуйте точки меморіалів — збережіть позицію',cities:'Перетягуйте міста щоб встановити координати'};
-  document.getElementById('map-sidebar-mode').textContent=modeMap[t]||'';
-  document.getElementById('map-hint').textContent=hintMap[t]||'';
-  document.getElementById('no-sel-msg').style.display='';
-  document.getElementById('label-props').style.display='none';
-  document.getElementById('dot-props').style.display='none';
-  document.getElementById('city-props').style.display='none';
-  document.getElementById('unplaced-cities').style.display=t==='cities'?'':'none';
-  lblSVG.style.pointerEvents=t==='labels'?'all':'none';
-  dotSVG.style.pointerEvents=t==='dots'?'all':'none';
-  citySVG.style.pointerEvents=t==='cities'?'all':'none';
+  const btn=document.getElementById('save-all-dots-btn');
+  if(btn){
+    if(t==='dots'){
+      btn.textContent='💾 Зберегти всі зміни';
+      btn.onclick=saveAllChangedDots;
+    }else if(t==='labels'){
+      btn.textContent='💾 Зберегти';
+      btn.onclick=saveSelected;
+    }else if(t==='cities'){
+      btn.textContent='💾 Зберегти';
+      btn.onclick=saveSelectedCity;
+    }
+  }
+  document.getElementById('map-sidebar-mode').textContent=t==='labels'?'🏷 Підписи':t==='dots'?'📍 Точки меморіалів':'🏙 Міста';
+  showToolHints();
 }
 
 /* ── LABELS ── */
@@ -4406,8 +4430,8 @@ function updateLabelFromProps(){
 }
 
 function startLblDrag(e,id,el){
+  e.stopPropagation();e.preventDefault();
   if(curTool!=='labels')return;
-  e.stopPropagation();
   selectLabel(id,el);
   lblDrag=true;lblDragEl=el;lblDragId=id;
   const p=screen2svg(e.clientX,e.clientY);
@@ -4423,19 +4447,24 @@ function renderDots(){
     const py=parseFloat(p.pos_y??p.y??0.5)*9500;
     const g=document.createElementNS('http://www.w3.org/2000/svg','g');
     g.setAttribute('data-id',p.id);g.classList.add('adm-dot');
+    g.setAttribute('cursor','move');
+    g.setAttribute('pointer-events','all');  // дозволяє отримувати події попри pointer-events:none на SVG
     g.style.cursor='move';
-    // Glow
+    // Glow — не блокує кліки
     const glow=document.createElementNS('http://www.w3.org/2000/svg','circle');
     glow.setAttribute('cx',px);glow.setAttribute('cy',py);glow.setAttribute('r',120);
-    glow.style.fill=p.color||'#4fc3f7';glow.style.opacity='.12';glow.classList.add('adm-dot-ring');
-    // Core
+    glow.setAttribute('fill',p.color||'#4fc3f7');glow.setAttribute('opacity','.12');glow.classList.add('adm-dot-ring');
+    glow.setAttribute('pointer-events','none');
+    // Core — приймає кліки
     const c=document.createElementNS('http://www.w3.org/2000/svg','circle');
     c.setAttribute('cx',px);c.setAttribute('cy',py);c.setAttribute('r',70);
-    c.style.fill=p.color||'#4fc3f7';c.style.stroke='#fff';c.style.strokeWidth='20';
+    c.setAttribute('fill',p.color||'#4fc3f7');c.setAttribute('stroke','#fff');c.setAttribute('stroke-width','20');
+    c.setAttribute('pointer-events','all');
     // Label
     const tx=document.createElementNS('http://www.w3.org/2000/svg','text');
     tx.setAttribute('x',px);tx.setAttribute('y',py-100);tx.setAttribute('text-anchor','middle');
-    tx.style.fill='#fff';tx.setAttribute('font-size',90);tx.style.fontFamily='Arial,sans-serif';tx.style.pointerEvents='none';
+    tx.setAttribute('fill','#fff');tx.setAttribute('font-size',90);tx.setAttribute('font-family','Arial,sans-serif');
+    tx.setAttribute('pointer-events','none');
     tx.textContent=p.last;
     g.appendChild(glow);g.appendChild(c);g.appendChild(tx);
     g.addEventListener('mousedown',ev=>startDotDrag(ev,p.id,g,px,py));
@@ -4468,6 +4497,7 @@ function updateDotFromProps(){
   const ny=parseFloat(document.getElementById('dprop-y').value)||0;
   const nc=document.getElementById('dprop-color').value;
   p.pos_x=nx;p.pos_y=ny;p.color=nc;
+  markDotChanged(p.id);
   // Оновити в SVG
   const g=dotSVG.querySelector(`[data-id="${selDot}"]`);
   if(!g)return;
@@ -4480,8 +4510,8 @@ function updateDotFromProps(){
 }
 
 function startDotDrag(e,id,el,svgX,svgY){
+  e.stopPropagation();e.preventDefault();  // завжди блокує панорамування карти
   if(curTool!=='dots')return;
-  e.stopPropagation();
   selectDot(id,el);
   dotDrag=true;dotDragEl=el;dotDragId=id;
   const p=screen2svg(e.clientX,e.clientY);
@@ -4490,8 +4520,16 @@ function startDotDrag(e,id,el,svgX,svgY){
 
 /* ── Mouse events on mapCont ── */
 mapCont.addEventListener('mousedown',e=>{
-  if(!lblDrag&&!dotDrag){mDrag=true;mDragS={x:e.clientX,y:e.clientY};mTrS={x:mtr.x,y:mtr.y};mapWrap.classList.add('grabbing');}
+  // Не панорамувати карту якщо клік по точці меморіалу
+  if(e.target.closest('.adm-dot')) return;
+  // Не панорамувати карту якщо клік по місту
+  if(e.target.closest('.adm-city')) return;
+  // Не панорамувати карту якщо клік по підпису
+  if(e.target.closest('.adm-label')) return;
+  if(dotDrag||cityDrag) return;
+  mDrag=true;mDragS={x:e.clientX,y:e.clientY};mTrS={x:mtr.x,y:mtr.y};mapWrap.classList.add('grabbing');
 });
+
 window.addEventListener('mousemove',e=>{
   if(lblDrag&&lblDragEl){
     const p=screen2svg(e.clientX,e.clientY);
@@ -4506,7 +4544,7 @@ window.addEventListener('mousemove',e=>{
     const p=screen2svg(e.clientX,e.clientY);
     const nx=(p.x-dragOffSVG.x), ny=(p.y-dragOffSVG.y);
     const rx=nx/14000, ry=ny/9500;
-    const pers=people.find(x=>x.id===dotDragId);if(pers){pers.pos_x=rx;pers.pos_y=ry;}
+    const pers=people.find(x=>x.id===dotDragId);if(pers){pers.pos_x=rx;pers.pos_y=ry;markDotChanged(pers.id);}
     const circles=dotDragEl.querySelectorAll('circle');
     const tx=dotDragEl.querySelector('text');
     circles[0].setAttribute('cx',nx);circles[0].setAttribute('cy',ny);
@@ -4575,6 +4613,29 @@ mapCont.addEventListener('wheel',e=>{
   zoomMap(e.clientX-r.left,e.clientY-r.top,e.deltaY<0?1.14:.87);
 },{passive:false});
 
+/* ── DIRTY TRACKING — відстеження змінених точок ── */
+let _changedDots = new Set();  // IDs меморіалів зі зміненими координатами
+
+function markDotChanged(id) {
+  if (id) _changedDots.add(id);
+  updateSaveButtonState();
+}
+
+function updateSaveButtonState() {
+  const btn = document.getElementById('save-all-dots-btn');
+  if (!btn) return;
+  const count = _changedDots.size;
+  if (count > 0) {
+    btn.textContent = `💾 Зберегти всі зміни (${count})`;
+    btn.style.background = 'rgba(0,200,255,.25)';
+    btn.style.borderColor = 'rgba(0,200,255,.5)';
+  } else {
+    btn.textContent = '💾 Зберегти всі зміни';
+    btn.style.background = 'rgba(255,255,255,.05)';
+    btn.style.borderColor = 'rgba(255,255,255,.1)';
+  }
+}
+
 /* ── SAVE ── */
 async function saveSelected(){
   if(!selLabel)return;
@@ -4596,14 +4657,60 @@ async function saveSelectedDot(){
       {method:'PUT',headers:authH({'Content-Type':'application/json'}),
        body:JSON.stringify({pos_x:p.pos_x,pos_y:p.pos_y,color:p.color})});
     if(!r.ok)throw new Error(r.status);
+    _changedDots.delete(p.id);
+    updateSaveButtonState();
     showN('💾 Точку збережено');
   }catch{showN('❌ Помилка збереження точки',true);}
 }
 
+/* ── SAVE ALL CHANGED DOTS ── */
+async function saveAllChangedDots(){
+  const changed = [..._changedDots];
+  if (changed.length === 0) {
+    showN('ℹ️ Немає змін для збереження');
+    return;
+  }
+  const btn = document.getElementById('save-all-dots-btn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Збереження...'; }
+  
+  let saved = 0, errors = 0;
+  for (const id of changed) {
+    const p = people.find(x => x.id === id);
+    if (!p) continue;
+    try {
+      const r = await fetch(`${API}/api/admin/memorial/${p.id}`,
+        {method:'PUT', headers:authH({'Content-Type':'application/json'}),
+         body:JSON.stringify({pos_x: p.pos_x, pos_y: p.pos_y, color: p.color})});
+      if (r.ok) saved++;
+      else errors++;
+    } catch { errors++; }
+  }
+  
+  _changedDots.clear();
+  updateSaveButtonState();
+  if (btn) { btn.disabled = false; updateSaveButtonState(); }
+  
+  if (errors === 0) showN(`✅ Збережено ${saved} точок`);
+  else showN(`⚠️ Збережено: ${saved}, помилок: ${errors}`);
+}
+
 function saveAny(){
   if(curTool==='labels') saveSelected();
-  else if(curTool==='dots') saveSelectedDot();
+  else if(curTool==='dots') saveAllChangedDots();
   else if(curTool==='cities') saveSelectedCity();
+}
+
+// Legacy alias
+function saveSelectedDot(){
+  if(!selDot)return;
+  const p=people.find(x=>x.id===selDot);if(!p)return;
+  try{
+    const r=fetch(`${API}/api/admin/memorial/${p.id}`,
+      {method:'PUT',headers:authH({'Content-Type':'application/json'}),
+       body:JSON.stringify({pos_x:p.pos_x,pos_y:p.pos_y,color:p.color})}).then(()=>{
+      _changedDots.delete(p.id);updateSaveButtonState();showN('💾 Точку збережено');
+    }).catch(()=>showN('❌ Помилка збереження точки',true));
+  }catch{showN('❌ Помилка збереження точки',true);}
 }
 
 /* ══════════ CITIES MAP ══════════ */
@@ -4615,10 +4722,11 @@ function renderCitiesAdmin(){
   placed.forEach(c=>{
     const cx=c.pos_x*14000, cy=c.pos_y*9500;
     const g=document.createElementNS('http://www.w3.org/2000/svg','g');
-    g.setAttribute('data-id',c.id);g.classList.add('adm-city');g.style.cursor='move';
+    g.setAttribute('data-id',c.id);g.classList.add('adm-city');g.setAttribute('pointer-events','all');g.style.cursor='move';
     const dot=document.createElementNS('http://www.w3.org/2000/svg','circle');
     dot.setAttribute('cx',cx);dot.setAttribute('cy',cy);dot.setAttribute('r','80');
     dot.style.fill='#a0d7ff';dot.style.stroke='rgba(0,30,80,0.7)';dot.style.strokeWidth='16';
+    dot.setAttribute('pointer-events','all');
     const txt=document.createElementNS('http://www.w3.org/2000/svg','text');
     txt.setAttribute('x',cx);txt.setAttribute('y',cy-100);txt.setAttribute('text-anchor','middle');
     txt.style.fill='#e8f4ff';txt.setAttribute('font-size',75);txt.style.fontFamily='Arial,sans-serif';txt.style.pointerEvents='none';
@@ -4669,8 +4777,8 @@ function updateCityFromProps(){
 }
 
 function startCityDrag(e,id,el,svgX,svgY){
+  e.stopPropagation();e.preventDefault();
   if(curTool!=='cities')return;
-  e.stopPropagation();
   selectCity(id,el);
   cityDrag=true;cityDragEl=el;cityDragId=id;
   const p=screen2svg(e.clientX,e.clientY);
@@ -4863,7 +4971,7 @@ async function saveEdit(){
     }
     showN(editMode==='create'?'✅ Запис додано':'💾 Збережено');
     closeEdit(); loadMem(); loadPend();
-    const rp=await fetch(`${API}/api/people`);people=await rp.json();renderDots();
+    const rp=await fetch(`${API}/api/people?page=1&limit=500`);const pd=await rp.json();people=pd.items||pd;renderDots();
   }catch{showN('❌ Помилка збереження',true);}
 }
 

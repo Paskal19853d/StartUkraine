@@ -3,7 +3,7 @@
 Запуск: python -m uvicorn Paskal:app --reload --port 8000
 БД:     MySQL / MariaDB (налаштування у .env)
 """
-import os, time, asyncio, hashlib, threading, re, base64, secrets, string, html as _html, json
+import os, time, asyncio, hashlib, threading, re, base64, secrets, string, html as _html, json, logging
 import urllib.request, urllib.error, urllib.parse
 import bcrypt
 from typing import Optional, List
@@ -12,6 +12,12 @@ import pymysql
 import pymysql.cursors
 from dotenv import load_dotenv
 from dbutils.pooled_db import PooledDB
+
+try:
+    import redis
+    _HAS_REDIS = True
+except ImportError:
+    _HAS_REDIS = False
 
 try:
     import psutil as _psutil
@@ -27,6 +33,18 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 load_dotenv()
+
+# ── Security Logging ─────────────────────────────────────
+log_dir = os.path.join(os.path.dirname(__file__), "logs")
+os.makedirs(log_dir, exist_ok=True)
+_sec_logger = logging.getLogger("security")
+_sec_logger.setLevel(logging.INFO)
+_fh = logging.FileHandler(os.path.join(log_dir, "security.log"), encoding="utf-8")
+_fh.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(message)s"))
+_sec_logger.addHandler(_fh)
+
+def sec_log(event: str, ip: str, detail: str = ""):
+    _sec_logger.info(f"[{event}] IP={ip} {detail}")
 
 # ── OAuth Config (з .env) ────────────────────────────────
 GOOGLE_CLIENT_ID     = os.getenv("GOOGLE_CLIENT_ID", "")
@@ -58,9 +76,9 @@ def _init_pool():
     global _POOL
     _POOL = PooledDB(
         creator=pymysql,
-        maxconnections=20,   # макс. одночасних з'єднань
-        mincached=2,         # мін. з'єднань у режимі очікування
-        maxcached=10,        # макс. з'єднань у режимі очікування
+        maxconnections=50,   # макс. одночасних з'єднань (для 500+ users)
+        mincached=5,         # мін. з'єднань у режимі очікування
+        maxcached=20,        # макс. з'єднань у режимі очікування
         blocking=True,       # чекати вільне з'єднання (не кидати помилку)
         host=_DB_CFG["host"],
         port=_DB_CFG["port"],
@@ -80,6 +98,74 @@ def get_db():
         cfg = {**_DB_CFG, "database": _DB_NAME}
         return pymysql.connect(**cfg)
     return _POOL.connection()
+
+
+# ── Redis Cache ───────────────────────────────────────────
+_redis: redis.Redis | None = None
+
+def _init_redis():
+    global _redis
+    if not _HAS_REDIS:
+        return
+    rurl = os.getenv("REDIS_URL")
+    if rurl:
+        try:
+            _redis = redis.from_url(rurl, decode_responses=True, socket_connect_timeout=2)
+            _redis.ping()
+            print("[INFO] Redis connected", flush=True)
+        except Exception as e:
+            print(f"[WARN] Redis unavailable ({e}), caching disabled", flush=True)
+            _redis = None
+    else:
+        # Пробуємо localhost за замовчуванням
+        try:
+            _redis = redis.Redis(host="127.0.0.1", port=6379, db=0, decode_responses=True, socket_connect_timeout=2)
+            _redis.ping()
+            print("[INFO] Redis connected (localhost)", flush=True)
+        except Exception:
+            _redis = None
+
+def cache_get(key: str):
+    if not _redis:
+        return None
+    try:
+        return _redis.get(key)
+    except Exception:
+        return None
+
+def cache_set(key: str, value, ttl: int = 60):
+    if not _redis:
+        return
+    try:
+        _redis.setex(key, ttl, value)
+    except Exception:
+        pass
+
+def cache_delete(key: str):
+    if not _redis:
+        return
+    try:
+        _redis.delete(key)
+    except Exception:
+        pass
+
+def cache_flush_all():
+    """Invalidate all cached data after bulk changes."""
+    cache_delete("stats")
+    cache_delete("colors")
+    cache_delete("labels")
+    cache_delete("cities")
+    for k in range(1, 100):
+        cache_delete(f"people:p{k}:l50")
+        cache_delete(f"people:p{k}:l100")
+
+def cache_flush_memorials():
+    """Invalidate memorial-related caches (stats, labels, people pages)."""
+    cache_delete("stats")
+    cache_delete("labels")
+    for k in range(1, 100):
+        cache_delete(f"people:p{k}:l50")
+        cache_delete(f"people:p{k}:l100")
 
 
 def hash_pass(p: str) -> str:
@@ -141,7 +227,10 @@ def init_db():
                 added_by VARCHAR(100) DEFAULT '',
                 INDEX idx_approved (approved),
                 INDEX idx_name     (last, first),
-                INDEX idx_search   (last(50), first(50), grp(50), loc(100))
+                INDEX idx_search   (last(50), first(50), grp(50), loc(100)),
+                INDEX idx_rating_likes (rating DESC, likes DESC),
+                INDEX idx_grp (grp(50)),
+                INDEX idx_approved_rating (approved, rating DESC, likes DESC)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         """)
 
@@ -264,6 +353,36 @@ def init_db():
             pass
         try:
             c.execute("UPDATE users SET role='admin' WHERE is_admin=1 AND role='user'")
+        except Exception:
+            pass
+        # Migration: FULLTEXT index for fast search
+        try:
+            c.execute("ALTER TABLE memorials ADD FULLTEXT INDEX idx_fulltext_search (last, first, mid, grp, loc, descr)")
+        except Exception:
+            pass  # index already exists or engine doesn't support it
+        # Migration: performance indexes
+        try:
+            c.execute("ALTER TABLE memorials ADD INDEX idx_rating_likes (rating DESC, likes DESC)")
+        except Exception:
+            pass
+        try:
+            c.execute("ALTER TABLE memorials ADD INDEX idx_grp (grp(50))")
+        except Exception:
+            pass
+        try:
+            c.execute("ALTER TABLE memorials ADD INDEX idx_approved_rating (approved, rating DESC, likes DESC)")
+        except Exception:
+            pass
+        try:
+            c.execute("ALTER TABLE users ADD INDEX idx_last_seen (last_seen)")
+        except Exception:
+            pass
+        try:
+            c.execute("ALTER TABLE search_logs ADD INDEX idx_created_at (created_at)")
+        except Exception:
+            pass
+        try:
+            c.execute("ALTER TABLE search_logs ADD INDEX idx_query (query(50))")
         except Exception:
             pass
 
@@ -944,6 +1063,65 @@ app.mount("/js",  StaticFiles(directory="js"),  name="js")
 def startup():
     init_db()
     _init_pool()
+    _init_redis()
+
+
+# ── Health & Metrics ──────────────────────────────────────
+_app_start_time = time.time()
+
+@app.get("/health")
+def health_check():
+    """Ендпоінт для моніторингу — перевірка стану сервісу."""
+    status = {"status": "ok", "uptime": round(time.time() - _app_start_time, 1)}
+    # Перевірка БД
+    try:
+        db = get_db()
+        with db.cursor() as c:
+            c.execute("SELECT 1")
+        db.close()
+        status["db"] = "connected"
+    except Exception as e:
+        status["db"] = f"error: {str(e)[:80]}"
+        status["status"] = "degraded"
+    # Перевірка Redis
+    if _redis:
+        try:
+            _redis.ping()
+            status["redis"] = "connected"
+        except Exception as e:
+            status["redis"] = f"error: {str(e)[:80]}"
+    else:
+        status["redis"] = "not configured"
+    # Системні метрики
+    if _HAS_PSUTIL:
+        status["cpu"] = round(_psutil.cpu_percent(), 1)
+        status["memory_mb"] = round(_psutil.Process().memory_info().rss / 1024 / 1024, 1)
+    return status
+
+@app.get("/metrics")
+def metrics():
+    """Prometheus-style метрики для моніторингу."""
+    db = get_db()
+    m = []
+    # Загальна статистика
+    with db.cursor() as c:
+        c.execute("SELECT COUNT(*) AS cnt FROM memorials WHERE approved=1")
+        m.append(f'zoryna_memorials_total {c.fetchone()["cnt"]}')
+        c.execute("SELECT COUNT(*) AS cnt FROM memorials WHERE approved=0")
+        m.append(f'zoryna_memorials_pending {c.fetchone()["cnt"]}')
+        c.execute("SELECT COUNT(*) AS cnt FROM users WHERE banned=0")
+        m.append(f'zoryna_users_active {c.fetchone()["cnt"]}')
+    db.close()
+    # Uptime
+    uptime = time.time() - _app_start_time
+    m.append(f'zoryna_uptime_seconds {uptime:.0f}')
+    # Cache status
+    m.append(f'zoryna_redis_enabled {_redis is not None}')
+    # System
+    if _HAS_PSUTIL:
+        m.append(f'zoryna_cpu_percent {_psutil.cpu_percent()}')
+        m.append(f'zoryna_memory_bytes {_psutil.Process().memory_info().rss}')
+    return "\n".join(m), 200, {"Content-Type": "text/plain"}
 
 
 # ── Static routes ─────────────────────────────────────────
@@ -1189,16 +1367,19 @@ def _basic_auth_user(request: Request):
     ip = _get_ip(request)
     fail_key = f"admin_fail:{ip}"
     if _rl.blocked(fail_key, 10, 300):
+        sec_log("ADMIN_RATE_LIMIT", ip)
         raise HTTPException(429, "Забагато спроб. Зачекайте 5 хвилин.")
     try:
         decoded = base64.b64decode(auth[6:]).decode("utf-8")
         email, password = decoded.split(":", 1)
     except Exception:
         _rl.check(fail_key, 10, 300)
+        sec_log("AUTH_MALFORMED", ip, "bad basic auth header")
         raise HTTPException(403, "Доступ заборонено")
     u = get_user(email, password)
     if not u or u.get("is_banned"):
         _rl.check(fail_key, 10, 300)
+        sec_log("AUTH_FAIL", ip, f"email={email[:50]}")
         raise HTTPException(403, "Доступ заборонено")
     return u
 
@@ -1296,20 +1477,34 @@ def yt_check(vid: str):
         return {"embeddable": True}
 
 @app.get("/api/people")
-def get_people(request: Request):
-    ip = _get_ip(request)
+def get_people(page: int = 1, limit: int = 50, request: Request = None):
+    ip = _get_ip(request) if request else "unknown"
     if not _rl.check(f"pub:{ip}", 60, 60):
-        raise HTTPException(429, "Забагато запитів. Зачекайте.")
+        sec_log("RATE_LIMIT", ip, "pub endpoint"); raise HTTPException(429, "Забагато запитів. Зачекайте.")
+    page = max(1, page)
+    limit = max(1, min(limit, 100))
+    # Redis cache
+    cache_key = f"people:p{page}:l{limit}"
+    cached = cache_get(cache_key)
+    if cached:
+        return json.loads(cached)
+    offset = (page - 1) * limit
     db = get_db()
     with db.cursor() as c:
+        c.execute("SELECT COUNT(*) AS cnt FROM memorials WHERE approved=1")
+        total = c.fetchone()["cnt"]
         c.execute(
             "SELECT id,last,first,mid,birth,death,bury,loc,photo,color,pos_x,pos_y,"
             "grp,`rank`,`position`,unit,likes,rating,video_url,approved,added_by "
-            "FROM memorials WHERE approved=1 ORDER BY rating DESC, likes DESC"
+            "FROM memorials WHERE approved=1 ORDER BY rating DESC, likes DESC "
+            "LIMIT %s OFFSET %s",
+            (limit, offset)
         )
         rows = c.fetchall()
     db.close()
-    return rows
+    result = {"items": rows, "total": total, "page": page, "limit": limit, "pages": (total + limit - 1) // limit}
+    cache_set(cache_key, json.dumps(result, ensure_ascii=False), ttl=60)
+    return result
 
 @app.get("/api/memorial/{mid}")
 def get_memorial(mid: int):
@@ -1327,14 +1522,30 @@ def search(q: str = "", request: Request = None):
     ip = _get_ip(request) if request else "unknown"
     # 30 запитів / хв з одного IP
     if not _rl.check(f"search:{ip}", 30, 60):
-        raise HTTPException(429, "Забагато пошукових запитів. Зачекайте хвилину.")
+        sec_log("RATE_LIMIT", ip, "search endpoint"); raise HTTPException(429, "Забагато пошукових запитів. Зачекайте хвилину.")
     q = q.strip()[:200]
     if len(q) < 2:
         return []
     db = get_db()
     with db.cursor() as c:
-        c.execute("SELECT * FROM memorials WHERE approved=1")
-        rows = c.fetchall()
+        # FULLTEXT пошук через MATCH...AGAINST — набагато швидше ніж LIKE
+        try:
+            # Boolean mode підтримує короткі запити (min 3 символи за замовчуванням)
+            c.execute("""
+                SELECT * FROM memorials WHERE approved=1 AND MATCH(last,first,mid,grp,loc,descr)
+                AGAINST(%s IN BOOLEAN MODE)
+            """, (q,))
+            rows = c.fetchall()
+        except Exception:
+            # Fallback на LIKE якщо FULLTEXT ще не створено
+            like = f"%{q}%"
+            c.execute("""
+                SELECT * FROM memorials WHERE approved=1 AND (
+                    last LIKE %s OR first LIKE %s OR mid LIKE %s OR grp LIKE %s OR loc LIKE %s
+                    OR bury LIKE %s OR circ LIKE %s OR descr LIKE %s
+                )
+            """, (like, like, like, like, like, like, like, like))
+            rows = c.fetchall()
 
     scored = []
     for r in rows:
@@ -1428,37 +1639,52 @@ def search_stats(request: Request):
 
 @app.get("/api/stats")
 def get_stats():
+    cached = cache_get("stats")
+    if cached:
+        return json.loads(cached)
     db = get_db()
     with db.cursor() as c:
-        c.execute("SELECT COUNT(*) AS cnt FROM memorials WHERE approved=1")
-        total = c.fetchone()["cnt"]
-        c.execute("SELECT COALESCE(SUM(likes),0) AS s FROM memorials WHERE approved=1")
-        likes = c.fetchone()["s"]
+        # Один замість двох — оптимізація
+        c.execute(
+            "SELECT COUNT(*) AS total, COALESCE(SUM(likes),0) AS likes FROM memorials WHERE approved=1"
+        )
+        row = c.fetchone()
     db.close()
-    return {"total": total, "likes": likes}
+    result = {"total": int(row["total"]), "likes": int(row["likes"])}
+    cache_set("stats", json.dumps(result), ttl=30)
+    return result
 
 @app.get("/api/colors")
 def get_colors(request: Request):
     ip = _get_ip(request)
     if not _rl.check(f"pub:{ip}", 60, 60):
         raise HTTPException(429, "Забагато запитів. Зачекайте.")
+    cached = cache_get("colors")
+    if cached:
+        return json.loads(cached)
     db = get_db()
     with db.cursor() as c:
         c.execute("SELECT `key`, value, label FROM colors")
         rows = c.fetchall()
     db.close()
-    return {r["key"]: {"value": r["value"], "label": r["label"]} for r in rows}
+    result = {r["key"]: {"value": r["value"], "label": r["label"]} for r in rows}
+    cache_set("colors", json.dumps(result, ensure_ascii=False), ttl=300)
+    return result
 
 @app.get("/api/labels")
 def get_labels(request: Request):
     ip = _get_ip(request)
     if not _rl.check(f"pub:{ip}", 60, 60):
         raise HTTPException(429, "Забагато запитів. Зачекайте.")
+    cached = cache_get("labels")
+    if cached:
+        return json.loads(cached)
     db = get_db()
     with db.cursor() as c:
         c.execute("SELECT * FROM map_labels ORDER BY id")
         rows = c.fetchall()
     db.close()
+    cache_set("labels", json.dumps(rows, ensure_ascii=False), ttl=300)
     return rows
 
 @app.get("/api/cities")
@@ -1466,11 +1692,15 @@ def get_cities(request: Request):
     ip = _get_ip(request)
     if not _rl.check(f"pub:{ip}", 60, 60):
         raise HTTPException(429, "Забагато запитів. Зачекайте.")
+    cached = cache_get("cities")
+    if cached:
+        return json.loads(cached)
     db = get_db()
     with db.cursor() as c:
         c.execute("SELECT id,name,pos_x,pos_y,tier,color FROM cities WHERE pos_x > 0 ORDER BY tier DESC, name")
         rows = c.fetchall()
     db.close()
+    cache_set("cities", json.dumps(rows, ensure_ascii=False), ttl=300)
     return rows
 
 @app.get("/api/admin/cities")
@@ -1499,6 +1729,7 @@ def admin_update_city(cid: int, u: CityUpdate, request: Request):
     with db.cursor() as c:
         c.execute(f"UPDATE cities SET {','.join(fields)} WHERE id=%s", vals)
     db.commit(); db.close()
+    cache_delete("cities")
     return {"ok": True}
 
 @app.post("/api/admin/city")
@@ -1516,6 +1747,7 @@ def admin_create_city(u: CityCreate, request: Request):
         )
         new_id = c.lastrowid
     db.commit(); db.close()
+    cache_delete("cities")
     return {"ok": True, "id": new_id}
 
 @app.delete("/api/admin/city/{cid}")
@@ -1525,6 +1757,7 @@ def admin_delete_city(cid: int, request: Request):
     with db.cursor() as c:
         c.execute("DELETE FROM cities WHERE id=%s", (cid,))
     db.commit(); db.close()
+    cache_delete("cities")
     return {"ok": True}
 
 @app.post("/api/people")
@@ -1597,6 +1830,7 @@ def like(mid: int, fp: Optional[str] = "anon", request: Request = None):
         c.execute("SELECT likes FROM memorials WHERE id=%s", (mid,))
         row = c.fetchone()
     db.close()
+    cache_delete("stats")  # likes changed
     return {"ok": True, "likes": row["likes"] if row else 0}
 
 @app.post("/api/auth/register")
@@ -1635,10 +1869,12 @@ def login(u: UserLogin, request: Request):
 
     # IP-rate-limit: 10 спроб / 5 хв
     if not _rl.check(f"login_ip:{ip}", 10, 300):
+        sec_log("LOGIN_RATE_LIMIT", ip, f"email={u.email[:50]}")
         raise HTTPException(429, "Забагато спроб входу. Зачекайте 5 хвилин.")
 
     # Lockout по email+IP після 5 невдалих спроб
     if _is_locked(ip, u.email):
+        sec_log("LOGIN_LOCKOUT", ip, f"email={u.email[:50]}")
         raise HTTPException(429, "Акаунт тимчасово заблоковано через підозрілу активність. Зачекайте 15 хвилин.")
 
     db = get_db()
@@ -1652,6 +1888,7 @@ def login(u: UserLogin, request: Request):
         if row:
             db.close()
         _record_fail(ip, u.email)
+        sec_log("LOGIN_FAIL", ip, f"email={u.email[:50]}")
         raise HTTPException(401, "Невірний email або пароль")
     if row["is_banned"]:
         bu = row.get("ban_until") or 0
@@ -1886,17 +2123,8 @@ def approve(mid: int, request: Request):
         c.execute("UPDATE memorials SET approved=1 WHERE id=%s", (mid,))
     db.commit()
     db.close()
+    cache_flush_memorials()
     return {"ok": True}
-
-@app.get("/api/admin/memorials")
-def admin_get_memorials(request: Request):
-    require_moder(request)
-    db = get_db()
-    with db.cursor() as c:
-        c.execute("SELECT * FROM memorials ORDER BY id DESC")
-        rows = c.fetchall()
-    db.close()
-    return rows
 
 @app.post("/api/admin/memorial")
 def admin_add_person(p: PersonIn, request: Request):
@@ -1914,6 +2142,7 @@ def admin_add_person(p: PersonIn, request: Request):
         new_id = c.lastrowid
     db.commit()
     db.close()
+    cache_flush_memorials()
     return {"ok": True, "id": new_id}
 
 @app.delete("/api/admin/memorial/{mid}")
@@ -1924,6 +2153,7 @@ def delete_memorial(mid: int, request: Request):
         c.execute("DELETE FROM memorials WHERE id=%s", (mid,))
     db.commit()
     db.close()
+    cache_flush_memorials()
     return {"ok": True}
 
 # ── CSV Export / Import ────────────────────────────────────
@@ -2193,6 +2423,7 @@ async def import_csv_apply(request: Request):
             skipped += 1
             errors.append(f"Рядок {i} ({last} {first}): {str(ex)[:120]}")
     db.close()
+    cache_flush_memorials()
     return {"ok": True, "inserted": inserted, "skipped": skipped, "errors": errors[:50]}
 
 
@@ -2218,7 +2449,7 @@ def update_memorial(mid: int, p: PersonUpdate, request: Request):
         'circ':200,'grp':100,'rank':100,'position':100,'unit':200,
     }
     fields, vals = [], []
-    for f, v in p.dict(exclude_none=True).items():
+    for f, v in p.model_dump(exclude_none=True).items():
         if f not in _MEMORIAL_COL_MAP:
             raise HTTPException(400, f"Поле '{f}' не дозволено")
         if f in _TEXT_MAXLEN and v is not None:
@@ -2245,6 +2476,7 @@ def update_memorial(mid: int, p: PersonUpdate, request: Request):
         c.execute("UPDATE memorials SET " + ",".join(fields) + " WHERE id=%s", vals)
     db.commit()
     db.close()
+    cache_flush_memorials()
     return {"ok": True}
 
 @app.get("/api/memorial/{mid}/awards")
@@ -2417,6 +2649,7 @@ def update_color(c_body: ColorUpdate, request: Request):
         )
     db.commit()
     db.close()
+    cache_delete("colors")
     return {"ok": True}
 
 @app.put("/api/admin/colors/batch")
@@ -2432,6 +2665,7 @@ def update_colors_batch(colors: List[ColorUpdate], request: Request):
             )
     db.commit()
     db.close()
+    cache_delete("colors")
     return {"ok": True}
 
 @app.post("/api/admin/sea-svg")
@@ -2459,6 +2693,7 @@ async def upload_sea_svg(
         )
     db.commit()
     db.close()
+    cache_delete("colors")
     return {"ok": True, "bytes": len(raw)}
 
 @app.delete("/api/admin/sea-svg")
@@ -2469,6 +2704,7 @@ def delete_sea_svg(request: Request):
         c.execute("DELETE FROM colors WHERE `key`='sea_svg_content'")
     db.commit()
     db.close()
+    cache_delete("colors")
     return {"ok": True}
 
 @app.put("/api/admin/label/{lid}")
@@ -2484,6 +2720,7 @@ def update_label(lid: int, lbl: LabelUpdate, request: Request):
         c.execute("UPDATE map_labels SET " + ",".join(fields) + " WHERE id=%s", vals)
     db.commit()
     db.close()
+    cache_delete("labels")
     return {"ok": True}
 
 @app.get("/api/admin/stats")
@@ -2491,11 +2728,24 @@ def admin_stats(request: Request):
     require_moder(request)
     db = get_db()
     with db.cursor() as c:
-        c.execute("SELECT COUNT(*) AS cnt FROM memorials");              total    = c.fetchone()["cnt"]
-        c.execute("SELECT COUNT(*) AS cnt FROM memorials WHERE approved=1"); approved = c.fetchone()["cnt"]
-        c.execute("SELECT COUNT(*) AS cnt FROM memorials WHERE approved=0"); pend     = c.fetchone()["cnt"]
-        c.execute("SELECT COUNT(*) AS cnt FROM users");                  users    = c.fetchone()["cnt"]
-        c.execute("SELECT COALESCE(SUM(likes),0) AS s FROM memorials"); likes    = c.fetchone()["s"]
+        # 5 запитів → 3 (оптимізація)
+        c.execute(
+            "SELECT COUNT(*) AS cnt FROM memorials"
+        )
+        total = c.fetchone()["cnt"]
+        c.execute(
+            "SELECT COUNT(*) AS cnt, COALESCE(SUM(likes),0) AS likes FROM memorials WHERE approved=1"
+        )
+        row1 = c.fetchone()
+        approved, likes = row1["cnt"], row1["likes"]
+        c.execute(
+            "SELECT COUNT(*) AS cnt FROM memorials WHERE approved=0"
+        )
+        pend = c.fetchone()["cnt"]
+        c.execute(
+            "SELECT COUNT(*) AS cnt FROM users"
+        )
+        users = c.fetchone()["cnt"]
     db.close()
     return {
         "total": total, "approved": approved, "pending": pend,
