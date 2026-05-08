@@ -4,12 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Адмін — Зоряна Памʼять</title>
+<link rel="stylesheet" href="/fonts/uicons/uicons.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"
         integrity="sha256-Mh46P6mNpKqpV9EL5Xy7UU3gmJ7tj51ya10FkCzQGQQ="
         crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
 .adm-ico { width:15px;height:15px;display:inline-block;vertical-align:middle;flex-shrink:0;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round; }
+[class^="fi-rr-"],[class*=" fi-rr-"]{font-size:13px;vertical-align:middle;line-height:1;margin-right:3px}
 :root{
   --bg:#080808;--surface:#111111;--surface2:#181818;--surface3:#1e1e1e;
   --border:rgba(255,255,255,.06);--border2:rgba(255,255,255,.11);--border3:rgba(255,255,255,.18);
@@ -135,6 +137,9 @@ html,body{height:100%;font-family:"Segoe UI",sans-serif;background:var(--bg);col
 .rg-toggle input:checked+.rg-slider{background:var(--accent)}
 .rg-toggle input:checked+.rg-slider:before{transform:translateX(20px)}
 .rg-toggle input:disabled+.rg-slider{opacity:.4;cursor:not-allowed}
+.em-inp{padding:7px 10px;background:var(--input-bg,var(--panel));border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;transition:border-color .15s}
+.em-inp:focus{outline:none;border-color:var(--accent)}
+.em-inp.em-dirty{border-color:#fb8c00}
 
 /* ── MAP SECTION (labels + memorials) ── */
 #sec-map-editor{padding:0 !important;overflow:hidden !important}
@@ -362,6 +367,22 @@ tr:hover td{background:rgba(255,255,255,.02)}
   <!-- city / buildings -->
   <symbol id="ico-city" viewBox="0 0 24 24"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><line x1="10" y1="6" x2="14" y2="6"/><line x1="10" y1="10" x2="14" y2="10"/><line x1="10" y1="14" x2="14" y2="14"/><line x1="10" y1="18" x2="14" y2="18"/></symbol>
   <symbol id="ico-auth" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><circle cx="12" cy="16" r="1" fill="currentColor"/></symbol>
+  <symbol id="ico-email" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></symbol>
+  <symbol id="ico-save" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></symbol>
+  <symbol id="ico-refresh" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></symbol>
+  <symbol id="ico-send" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></symbol>
+  <symbol id="ico-eye" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="ico-edit" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></symbol>
+  <symbol id="ico-trash" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></symbol>
+  <symbol id="ico-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></symbol>
+  <symbol id="ico-server" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></symbol>
+  <symbol id="ico-check" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></symbol>
+  <symbol id="ico-x" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></symbol>
+  <symbol id="ico-warn" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></symbol>
+  <symbol id="ico-pause" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></symbol>
+  <symbol id="ico-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></symbol>
+  <symbol id="ico-lock" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol>
+  <symbol id="ico-upload" viewBox="0 0 24 24"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></symbol>
 </svg>
 
 <!-- Hamburger (mobile) -->
@@ -371,12 +392,12 @@ tr:hover td{background:rgba(255,255,255,.02)}
 <!-- LOGIN -->
 <div id="login-screen">
   <div class="lb">
-    <h2>🔐 Адміністратор</h2>
+    <h2><i class="fi-rr-lock"></i> Адміністратор</h2>
     <p>Вхід до панелі управління Зоряна Памʼять</p>
     <div class="lf"><label>Email</label><input type="email" id="adm-email"></div>
     <div class="lf"><label>Пароль</label><input type="password" id="adm-pass" onkeydown="if(event.key==='Enter')adminLogin()"></div>
     <button id="btn-adm-login" onclick="adminLogin()">Увійти в панель</button>
-    <div id="lerr">❌ Невірний логін або пароль</div>
+    <div id="lerr"><i class="fi-rr-cross"></i> Невірний логін або пароль</div>
   </div>
 </div>
 
@@ -398,6 +419,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
     <div class="nav-item"        draggable="true" onclick="showSec('pend')"      data-s="pend">      <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-hourglass"/></svg></span>Модерація<span class="nb" id="pend-nb"></span></div>
     <div class="nav-item"        draggable="true" onclick="showSec('users')"     data-s="users">     <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-users"/></svg></span>Користувачі</div>
     <div class="nav-item"        draggable="true" onclick="showSec('authreg')"   data-s="authreg">   <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-auth"/></svg></span>Реєстрація</div>
+    <div class="nav-item"        draggable="true" onclick="showSec('emailcfg')"  data-s="emailcfg">  <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-email"/></svg></span>Електронна пошта</div>
     <div class="nav-item"        draggable="true" onclick="showSec('mapeditor')" data-s="mapeditor"> <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-map"/></svg></span>Редактор карти</div>
     <div class="nav-item"        draggable="true" onclick="showSec('social')"    data-s="social">    <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-share"/></svg></span>Соцмережі</div>
     <div class="nav-item"        draggable="true" onclick="showSec('colors')"    data-s="colors">    <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-palette"/></svg></span>Кольори</div>
@@ -411,7 +433,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
       <p>Адмін: <strong id="adm-name">—</strong> <span id="adm-role-badge" style="font-size:9px;margin-left:4px"></span></p>
       <div class="online-section">
         <div class="online-header" onclick="_toggleOnlineList()">
-          <span>🟢 Онлайн: <strong id="adm-online">—</strong></span>
+          <span><span style="color:#4ade80;font-size:8px">●</span> Онлайн: <strong id="adm-online">—</strong></span>
           <span id="online-arrow">▴</span>
         </div>
         <div id="online-users-list" class="online-list"></div>
@@ -429,9 +451,9 @@ tr:hover td{background:rgba(255,255,255,.02)}
       <div class="adm-stat"><span class="dot"></span>Онлайн: <strong id="tb-online">—</strong></div>
       <div class="spacer"></div>
       <button id="btn-theme" onclick="toggleAdminTheme()" title="Змінити тему" style="display:flex;align-items:center;gap:6px;background:var(--surface3);border:1px solid var(--border2);border-radius:20px;padding:5px 13px;cursor:pointer;font-size:11px;color:var(--text2);transition:all .2s">
-        <span id="theme-ico">🌙</span><span id="theme-lbl">Темна</span>
+        <span id="theme-ico"><i class="fi-rr-moon"></i></span><span id="theme-lbl">Темна</span>
       </button>
-      <a class="link-btn" href="/" target="_blank" rel="noopener noreferrer">🌐 Відкрити сайт</a>
+      <a class="link-btn" href="/" target="_blank" rel="noopener noreferrer"><i class="fi-rr-globe"></i>Відкрити сайт</a>
     
     </div>
 
@@ -455,12 +477,12 @@ tr:hover td{background:rgba(255,255,255,.02)}
         <div class="chart-grid">
           <!-- Visits chart -->
           <div class="chart-box" style="flex:2;min-width:320px">
-            <h3>📈 Запити за останні 24 години</h3>
+            <h3><i class="fi-rr-chart-line-up"></i> Запити за останні 24 години</h3>
             <canvas id="visits-chart" height="120"></canvas>
           </div>
           <!-- Server load -->
           <div class="chart-box" style="flex:1;min-width:280px">
-            <h3>⚡ Навантаження сервера</h3>
+            <h3><i class="fi-rr-database"></i> Навантаження сервера</h3>
             <div class="srv-bars">
               <div class="srv-bar-row">
                 <div class="srv-bar-label"><span>CPU</span><strong id="srv-cpu">—</strong></div>
@@ -472,9 +494,9 @@ tr:hover td{background:rgba(255,255,255,.02)}
               </div>
             </div>
             <div class="srv-info-grid">
-              <div class="srv-info-item"><div class="val" id="srv-online">—</div><div class="key">🟢 Онлайн</div></div>
-              <div class="srv-info-item"><div class="val" id="srv-uptime" style="font-size:13px">—</div><div class="key">⏱ Аптайм</div></div>
-              <div class="srv-info-item"><div class="val" id="srv-reqs">—</div><div class="key">📥 Запитів</div></div>
+              <div class="srv-info-item"><div class="val" id="srv-online">—</div><div class="key">Онлайн</div></div>
+              <div class="srv-info-item"><div class="val" id="srv-uptime" style="font-size:13px">—</div><div class="key">Аптайм</div></div>
+              <div class="srv-info-item"><div class="val" id="srv-reqs">—</div><div class="key">Запитів</div></div>
             </div>
           </div>
         </div>
@@ -485,9 +507,9 @@ tr:hover td{background:rgba(255,255,255,.02)}
         <div class="sec-title"><svg class="adm-ico"><use href="#ico-doc"/></svg> Всі записи</div>
         <div style="margin-bottom:8px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
           <button class="btn btn-p" onclick="openCreateModal()">＋ Додати запис</button>
-          <button class="btn" onclick="exportCsv()" title="Завантажити всі записи у CSV">📤 Експорт CSV</button>
-          <button class="btn btn-g" onclick="exportXlsx()" title="Завантажити всі записи у Excel (.xlsx) — великі бази автоматично розбиваються на частини">📊 Експорт XLSX</button>
-          <button class="btn" onclick="document.getElementById('csv-import-input').click()" title="Завантажити з CSV — потрапить на модерацію">📥 Імпорт CSV</button>
+          <button class="btn" onclick="exportCsv()" title="Завантажити всі записи у CSV"><i class="fi-rr-cloud-upload"></i> Експорт CSV</button>
+          <button class="btn btn-g" onclick="exportXlsx()" title="Завантажити всі записи у Excel (.xlsx) — великі бази автоматично розбиваються на частини"><i class="fi-rr-chart-line-up"></i> Експорт XLSX</button>
+          <button class="btn" onclick="document.getElementById('csv-import-input').click()" title="Завантажити з CSV — потрапить на модерацію"><i class="fi-rr-arrow-down"></i> Імпорт CSV</button>
           <input type="file" id="csv-import-input" accept=".csv" style="display:none" onchange="handleCsvImport(event)">
           <label style="font-size:11px;color:var(--muted);margin-left:8px">Рядків:
             <select id="mem-page-size-sel" onchange="memSetPageSize(+this.value)"
@@ -500,10 +522,10 @@ tr:hover td{background:rgba(255,255,255,.02)}
               <option value="9999">Всі</option>
             </select>
           </label>
-          <button class="btn btn-b" onclick="memResetColWidths()" title="Скинути ширину колонок">⟳ Колонки</button>
+          <button class="btn btn-b" onclick="memResetColWidths()" title="Скинути ширину колонок"><i class="fi-rr-refresh"></i> Колонки</button>
         </div>
         <div style="margin-bottom:10px;display:flex;gap:8px;align-items:center">
-          <input id="mem-search" type="text" placeholder="🔍 Пошук за ПІБ, позивним, підрозділом..."
+          <input id="mem-search" type="text" placeholder="Пошук за ПІБ, позивним, підрозділом..."
             style="flex:1;max-width:420px;background:var(--surface2);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;outline:none"
             oninput="memDoSearch(this.value)">
           <span id="mem-search-hint" style="font-size:11px;color:var(--muted)"></span>
@@ -559,7 +581,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
           <div class="user-stat-card"><div class="val" id="ust-admins" style="color:#d4a800">—</div><div class="key">Адмін/Модер</div></div>
         </div>
         <div class="users-filter-bar">
-          <input id="users-search" type="text" placeholder="🔍 Пошук по імені, email, ID…" oninput="filterUsersTable()">
+          <input id="users-search" type="text" placeholder="Пошук по імені, email, ID…" oninput="filterUsersTable()">
           <select id="users-f-status" onchange="filterUsersTable()">
             <option value="all">Всі статуси</option>
             <option value="active">Активні</option>
@@ -584,7 +606,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
             </select>
           </label>
           <span id="users-count-hint" style="font-size:11px;color:var(--muted)"></span>
-          <button class="btn btn-b" onclick="loadUsers()">↺ Оновити</button>
+          <button class="btn btn-b" onclick="loadUsers()"><i class="fi-rr-refresh"></i>Оновити</button>
         </div>
         <div id="users-pagination-top" style="display:none;gap:8px;align-items:center;justify-content:center;margin-bottom:8px;flex-wrap:wrap">
           <button class="btn btn-b" id="upg-prev-top" onclick="usersPage(-1)">◀ Назад</button>
@@ -738,6 +760,143 @@ tr:hover td{background:rgba(255,255,255,.02)}
         <div id="rg-save-hint" style="font-size:12px;color:var(--accent);min-height:20px;padding-left:4px"></div>
       </div>
 
+      <!-- EMAIL / SMTP SETTINGS -->
+      <div id="sec-emailcfg" class="section">
+        <div class="sec-title"><svg class="adm-ico"><use href="#ico-email"/></svg> Електронна пошта (SMTP)</div>
+
+        <!-- Статус -->
+        <div id="em-status-bar" style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:8px;margin-bottom:20px;font-size:13px;background:var(--panel);border:1px solid var(--border)">
+          <span id="em-status-ico" style="font-size:20px"><i class="fi-rr-clock"></i></span>
+          <div>
+            <div id="em-status-text" style="font-weight:600">Перевірка…</div>
+            <div id="em-status-sub"  style="font-size:11px;color:var(--muted)"></div>
+          </div>
+        </div>
+
+        <!-- Швидке заповнення провайдера -->
+        <div class="rg-group">
+          <div class="rg-group-title">Швидке заповнення провайдера</div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;padding:12px 0">
+            <button class="btn btn-b" onclick="_emailPreset('gmail')">Gmail</button>
+            <button class="btn btn-b" onclick="_emailPreset('ukrnet')">Ukr.net</button>
+            <button class="btn btn-b" onclick="_emailPreset('outlook')">Outlook / Hotmail</button>
+            <button class="btn btn-b" onclick="_emailPreset('yahoo')">Yahoo</button>
+            <button class="btn btn-b" onclick="_emailPreset('meta')">Meta.ua</button>
+          </div>
+        </div>
+
+        <!-- Параметри з'єднання -->
+        <div class="rg-group">
+          <div class="rg-group-title">Параметри з'єднання</div>
+
+          <div class="rg-row" style="align-items:flex-start;padding:12px 0">
+            <div class="rg-row-info">
+              <div class="rg-row-label">SMTP-сервер</div>
+              <div class="rg-row-desc">Хост вашого поштового провайдера</div>
+            </div>
+            <input id="em-host" type="text" class="em-inp" placeholder="smtp.gmail.com"
+              style="width:220px" oninput="_emChanged()">
+          </div>
+
+          <div class="rg-row" style="align-items:flex-start;padding:12px 0">
+            <div class="rg-row-info">
+              <div class="rg-row-label">Порт</div>
+              <div class="rg-row-desc">587 — STARTTLS &nbsp;·&nbsp; 465 — SSL/TLS &nbsp;·&nbsp; 25 — без шифрування</div>
+            </div>
+            <input id="em-port" type="number" class="em-inp" placeholder="587"
+              style="width:90px" oninput="_emChanged()">
+          </div>
+
+          <div class="rg-row" style="align-items:flex-start;padding:12px 0">
+            <div class="rg-row-info">
+              <div class="rg-row-label">Тип шифрування</div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px;min-width:180px">
+              <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:13px">
+                <input type="radio" name="em-secure" value="starttls" id="em-sec-starttls" onchange="_emChanged()"> STARTTLS (рекомендовано)
+              </label>
+              <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:13px">
+                <input type="radio" name="em-secure" value="ssl" onchange="_emChanged()"> SSL/TLS
+              </label>
+              <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:13px">
+                <input type="radio" name="em-secure" value="none" onchange="_emChanged()"> Без шифрування
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Авторизація -->
+        <div class="rg-group">
+          <div class="rg-group-title">Авторизація</div>
+
+          <div class="rg-row" style="align-items:flex-start;padding:12px 0">
+            <div class="rg-row-info">
+              <div class="rg-row-label">Email / логін</div>
+              <div class="rg-row-desc">Адреса, з якої надсилаються листи</div>
+            </div>
+            <input id="em-user" type="email" class="em-inp" placeholder="noreply@gmail.com"
+              style="width:240px" oninput="_emChanged()">
+          </div>
+
+          <div class="rg-row" style="align-items:flex-start;padding:12px 0">
+            <div class="rg-row-info">
+              <div class="rg-row-label">Пароль / App Password</div>
+              <div class="rg-row-desc">
+                Gmail: увімкніть двоетапну перевірку → Паролі застосунків<br>
+                <a href="https://myaccount.google.com/apppasswords" target="_blank" style="color:var(--accent);font-size:11px">→ myaccount.google.com/apppasswords</a>
+              </div>
+            </div>
+            <div style="position:relative;width:240px">
+              <input id="em-pass" type="password" class="em-inp" placeholder="•••••••••••••••• (16 символів)"
+                style="width:100%;padding-right:36px" oninput="_emChanged()">
+              <button onclick="_emTogglePass()" title="Показати/сховати"
+                style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:2px"><i class="fi-rr-eye"></i></button>
+            </div>
+          </div>
+
+          <div class="rg-row" style="align-items:flex-start;padding:12px 0;border-bottom:none">
+            <div class="rg-row-info">
+              <div class="rg-row-label">Ім'я відправника</div>
+              <div class="rg-row-desc">Відображається в полі «Від» (якщо порожньо — використовується Email)</div>
+            </div>
+            <input id="em-from" type="text" class="em-inp" placeholder="Зоряна Пам'ять <noreply@gmail.com>"
+              style="width:280px" oninput="_emChanged()">
+          </div>
+        </div>
+
+        <!-- Додатково -->
+        <div class="rg-group">
+          <div class="rg-group-title">Додатково</div>
+          <div class="rg-row" style="border-bottom:none">
+            <div class="rg-row-info">
+              <div class="rg-row-label">Відправка листів увімкнена</div>
+              <div class="rg-row-desc">Якщо вимкнено — коди реєстрації повертаються в DEV-режимі</div>
+            </div>
+            <label class="rg-toggle">
+              <input type="checkbox" id="em-enabled" onchange="_emChanged()">
+              <span class="rg-slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Кнопки збереження -->
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px">
+          <button class="btn btn-p" id="em-save-btn" onclick="saveEmailSettings()"><i class="fi-rr-disk"></i>Зберегти налаштування</button>
+          <button class="btn" onclick="_loadEmailSettings()"><i class="fi-rr-refresh"></i>Скасувати</button>
+        </div>
+        <div id="em-save-hint" style="font-size:12px;min-height:18px;margin-bottom:16px"></div>
+
+        <!-- Тест відправки -->
+        <div class="rg-group">
+          <div class="rg-group-title">Тест відправки</div>
+          <div style="padding:12px 0;display:flex;flex-wrap:wrap;gap:10px;align-items:center">
+            <input id="em-test-to" type="email" class="em-inp" placeholder="your@email.com" style="flex:1;min-width:200px;max-width:300px">
+            <button class="btn btn-p" id="em-test-btn" onclick="testEmailSend()"><i class="fi-rr-paper-plane"></i> Надіслати тестовий лист</button>
+          </div>
+          <div id="em-test-hint" style="font-size:12px;min-height:18px;padding-bottom:10px"></div>
+        </div>
+      </div>
+
       <!-- MAP EDITOR -->
       <div id="sec-mapeditor" class="section" id="sec-map-editor">
         <div id="map-editor-layout">
@@ -745,22 +904,22 @@ tr:hover td{background:rgba(255,255,255,.02)}
           <div id="map-canvas-wrap">
             <!-- Import pick-mode banner -->
             <div id="imp-pick-banner">
-              <span>🎯 Клікніть на карті щоб встановити місце Зірки</span>
+              <span><i class="fi-rr-target"></i> Клікніть на карті щоб встановити місце Зірки</span>
               <span style="margin-left:auto"></span>
               <button class="btn" style="font-size:11px;background:rgba(0,0,0,.25);color:#1a1200;border-color:rgba(0,0,0,.3)" onclick="_impPickCancel()">✕ Скасувати</button>
             </div>
             <!-- Edit modal pick-mode banner -->
             <div id="edit-pick-banner">
-              <span>🎯 Клікніть на карті щоб встановити місце Зірки для цього запису</span>
+              <span><i class="fi-rr-target"></i> Клікніть на карті щоб встановити місце Зірки для цього запису</span>
               <span style="margin-left:auto"></span>
               <button class="btn" style="font-size:11px;background:rgba(0,0,0,.25);color:#1a1200;border-color:rgba(0,0,0,.3)" onclick="_editPickCancel()">✕ Скасувати</button>
             </div>
             <!-- Toolbar -->
             <div id="map-toolbar">
-              <button class="map-tool-btn active" id="tool-labels" onclick="setTool('labels')">🏷 Підписи областей</button>
-              <button class="map-tool-btn" id="tool-dots" onclick="setTool('dots')">📍 Точки меморіалів</button>
-              <button class="map-tool-btn" id="tool-cities" onclick="setTool('cities')">🏙 Міста</button>
-              <button class="map-tool-btn" onclick="resetMapView()">⌂ Скинути вигляд</button>
+              <button class="map-tool-btn active" id="tool-labels" onclick="setTool('labels')"><i class="fi-rr-label"></i> Підписи областей</button>
+              <button class="map-tool-btn" id="tool-dots" onclick="setTool('dots')"><i class="fi-rr-map-pin"></i> Точки меморіалів</button>
+              <button class="map-tool-btn" id="tool-cities" onclick="setTool('cities')"><i class="fi-rr-map-marker"></i> Міста</button>
+              <button class="map-tool-btn" onclick="resetMapView()">Скинути вигляд</button>
               <button class="map-tool-btn" onclick="zoomMapOut()">−</button>
               <span id="map-zoom-lbl" title="Подвійний клік — скинути зум" ondblclick="resetMapView()"
                 style="font-size:11px;color:var(--accent);min-width:36px;text-align:center;cursor:pointer;padding:4px 6px;border-radius:5px;border:1px solid rgba(0,200,255,.25);user-select:none">1.0×</span>
@@ -2824,11 +2983,11 @@ tr:hover td{background:rgba(255,255,255,.02)}
           <!-- MAP SIDEBAR -->
           <div id="map-sidebar">
             <div id="map-sidebar-title">
-              <span id="map-sidebar-mode">🏷 Підписи</span>
-              <button class="btn btn-p" id="save-all-dots-btn" onclick="saveAny()" style="font-size:10px;padding:5px 10px">💾 Зберегти</button>
+              <span id="map-sidebar-mode"><i class="fi-rr-label"></i> Підписи</span>
+              <button class="btn btn-p" id="save-all-dots-btn" onclick="saveAny()" style="font-size:10px;padding:5px 10px"><i class="fi-rr-disk"></i>Зберегти</button>
             </div>
             <div id="map-props-panel">
-              <div class="no-sel" id="no-sel-msg">👆 Клікніть на підпис, точку або місто щоб редагувати</div>
+              <div class="no-sel" id="no-sel-msg">Клікніть на підпис, точку або місто щоб редагувати</div>
               <!-- Label props -->
               <div id="label-props" style="display:none">
                 <div class="prop-group">
@@ -2858,7 +3017,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
                     <input type="color" id="prop-color-pick" style="width:36px;height:36px;border:none;border-radius:6px;cursor:pointer;background:none" oninput="document.getElementById('prop-color').value=this.value;updateLabelFromProps()">
                   </div>
                 </div>
-                <button class="prop-save-btn" onclick="saveSelected()">💾 Зберегти в базу</button>
+                <button class="prop-save-btn" onclick="saveSelected()"><i class="fi-rr-disk"></i>Зберегти в базу</button>
               </div>
               <!-- Dot props -->
               <div id="dot-props" style="display:none">
@@ -2885,8 +3044,8 @@ tr:hover td{background:rgba(255,255,255,.02)}
                     <input type="color" id="dprop-color-pick" style="width:36px;height:36px;border:none;border-radius:6px;cursor:pointer" oninput="document.getElementById('dprop-color').value=this.value;updateDotFromProps()">
                   </div>
                 </div>
-                <button class="prop-save-btn" onclick="saveAllChangedDots()">💾 Зберегти всі зміни</button>
-                <button class="prop-save-btn" style="background:rgba(0,200,255,.15);border:1px solid rgba(0,200,255,.3);color:#00c8ff;margin-top:6px" onclick="openEditModal()">✏️ Редагувати повністю</button>
+                <button class="prop-save-btn" onclick="saveAllChangedDots()"><i class="fi-rr-disk"></i>Зберегти всі зміни</button>
+                <button class="prop-save-btn" style="background:rgba(0,200,255,.15);border:1px solid rgba(0,200,255,.3);color:#00c8ff;margin-top:6px" onclick="openEditModal()"><i class="fi-rr-pencil"></i>Редагувати повністю</button>
               </div>
               <!-- City props -->
               <div id="city-props" style="display:none">
@@ -2911,12 +3070,12 @@ tr:hover td{background:rgba(255,255,255,.02)}
                     <option value="3">3 — Столиця</option>
                   </select>
                 </div>
-                <button class="prop-save-btn" onclick="saveSelectedCity()">💾 Зберегти в базу</button>
+                <button class="prop-save-btn" onclick="saveSelectedCity()"><i class="fi-rr-disk"></i>Зберегти в базу</button>
               </div>
               <!-- Unplaced cities -->
               <div id="unplaced-cities" style="display:none">
                 <div class="prop-label" style="padding:10px 12px 6px;color:var(--muted);font-size:11px">Нерозміщені міста — натисніть щоб поставити на карту:</div>
-                <input id="unplaced-search" placeholder="🔍 Фільтр..." oninput="filterUnplaced(this.value)"
+                <input id="unplaced-search" placeholder="Фільтр..." oninput="filterUnplaced(this.value)"
                   style="width:calc(100% - 24px);margin:0 12px 6px;box-sizing:border-box;padding:5px 8px;background:var(--panel);border:1px solid var(--border);color:var(--text);border-radius:4px;font-size:12px;outline:none">
                 <div id="unplaced-list" style="max-height:220px;overflow-y:auto"></div>
               </div>
@@ -2935,8 +3094,8 @@ tr:hover td{background:rgba(255,255,255,.02)}
           <span id="prev-text" style="font-size:12px">Текст прикладу</span>
         </div>
         <div style="display:flex;gap:10px;margin-bottom:16px">
-          <button class="btn btn-p" onclick="saveAllColors()">💾 Зберегти всі зміни</button>
-          <button class="btn" onclick="loadColors()">↺ Скасувати зміни</button>
+          <button class="btn btn-p" onclick="saveAllColors()"><i class="fi-rr-disk"></i>Зберегти всі зміни</button>
+          <button class="btn" onclick="loadColors()"><i class="fi-rr-refresh"></i>Скасувати зміни</button>
         </div>
         <div class="colors-grid" id="colors-grid"></div>
       </div>
@@ -2947,8 +3106,8 @@ tr:hover td{background:rgba(255,255,255,.02)}
         <p style="font-size:12px;color:var(--muted);margin:0 0 16px">Активуйте тумблером і вкажіть посилання на сторінку.</p>
         <div id="social-grid" style="display:flex;flex-direction:column;gap:12px"></div>
         <div style="display:flex;gap:10px;margin-top:18px">
-          <button class="btn btn-p" onclick="saveSocialLinks()">💾 Зберегти</button>
-          <button class="btn" onclick="renderSocialGrid()">↺ Скасувати</button>
+          <button class="btn btn-p" onclick="saveSocialLinks()"><i class="fi-rr-disk"></i>Зберегти</button>
+          <button class="btn" onclick="renderSocialGrid()"><i class="fi-rr-refresh"></i>Скасувати</button>
         </div>
       </div>
 
@@ -2956,8 +3115,8 @@ tr:hover td{background:rgba(255,255,255,.02)}
       <div id="sec-smoke" class="section">
         <div class="sec-title"><svg class="adm-ico"><use href="#ico-smoke"/></svg> Ефект диму</div>
         <div style="display:flex;gap:10px;margin-bottom:16px">
-          <button class="btn btn-p" onclick="saveAllColors()">💾 Зберегти</button>
-          <button class="btn" onclick="loadColors()">↺ Скасувати</button>
+          <button class="btn btn-p" onclick="saveAllColors()"><i class="fi-rr-disk"></i>Зберегти</button>
+          <button class="btn" onclick="loadColors()"><i class="fi-rr-refresh"></i>Скасувати</button>
         </div>
         <div id="smoke-grid"></div>
       </div>
@@ -2966,8 +3125,8 @@ tr:hover td{background:rgba(255,255,255,.02)}
       <div id="sec-sea" class="section">
         <div class="sec-title"><svg class="adm-ico"><use href="#ico-waves"/></svg> Хвилі морів</div>
         <div style="display:flex;gap:10px;margin-bottom:16px">
-          <button class="btn btn-p" onclick="saveAllColors()">💾 Зберегти</button>
-          <button class="btn" onclick="loadColors()">↺ Скасувати</button>
+          <button class="btn btn-p" onclick="saveAllColors()"><i class="fi-rr-disk"></i>Зберегти</button>
+          <button class="btn" onclick="loadColors()"><i class="fi-rr-refresh"></i>Скасувати</button>
         </div>
         <div id="sea-grid"></div>
       </div>
@@ -2976,8 +3135,8 @@ tr:hover td{background:rgba(255,255,255,.02)}
       <div id="sec-icons" class="section">
         <div class="sec-title"><svg class="adm-ico"><use href="#ico-star"/></svg> Іконки сайту</div>
         <div style="display:flex;gap:10px;margin-bottom:16px">
-          <button class="btn btn-p" onclick="saveAllColors()">💾 Зберегти</button>
-          <button class="btn" onclick="loadColors()">↺ Скасувати</button>
+          <button class="btn btn-p" onclick="saveAllColors()"><i class="fi-rr-disk"></i>Зберегти</button>
+          <button class="btn" onclick="loadColors()"><i class="fi-rr-refresh"></i>Скасувати</button>
         </div>
         <div id="icons-grid"></div>
       </div>
@@ -2986,8 +3145,8 @@ tr:hover td{background:rgba(255,255,255,.02)}
       <div id="sec-photo" class="section">
         <div class="sec-title"><svg class="adm-ico"><use href="#ico-photo"/></svg> Фото на карті</div>
         <div style="display:flex;gap:10px;margin-bottom:16px">
-          <button class="btn btn-p" onclick="saveAllColors()">💾 Зберегти</button>
-          <button class="btn" onclick="loadColors()">↺ Скасувати</button>
+          <button class="btn btn-p" onclick="saveAllColors()"><i class="fi-rr-disk"></i>Зберегти</button>
+          <button class="btn" onclick="loadColors()"><i class="fi-rr-refresh"></i>Скасувати</button>
         </div>
         <div id="photo-grid"></div>
       </div>
@@ -3007,11 +3166,11 @@ tr:hover td{background:rgba(255,255,255,.02)}
                   style="background:var(--bg);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px">
             <option value="">Всі рівні</option>
             <option value="1">★ Столиця</option>
-            <option value="2">🏛 Обласний</option>
-            <option value="3">🏘 Районний</option>
+            <option value="2">Обласний</option>
+            <option value="3">Районний</option>
             <option value="0">— Без рівня</option>
           </select>
-          <input type="text" id="city-search" placeholder="🔍 Назва або ID…" oninput="renderCitiesTable()"
+          <input type="text" id="city-search" placeholder="Назва або ID…" oninput="renderCitiesTable()"
                  style="flex:1;min-width:140px;padding:7px 12px;background:var(--panel);border:1px solid var(--border);color:var(--text);border-radius:6px;font-size:12px;outline:none">
         </div>
         <!-- Таблиця -->
@@ -3039,7 +3198,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
 <div id="user-modal">
   <div class="em-box">
     <button id="um-close" onclick="closeUserModal()">✕</button>
-    <h3>✏️ Редагування користувача</h3>
+    <h3><i class="fi-rr-pencil"></i>Редагування користувача</h3>
     <input type="hidden" id="um-uid">
     <div class="em-grid">
       <div class="em-f"><label>Імʼя</label><input type="text" id="um-name"></div>
@@ -3052,9 +3211,9 @@ tr:hover td{background:rgba(255,255,255,.02)}
       </div>
     </div>
     <div class="em-actions">
-      <button class="btn btn-r" onclick="deleteUser(+document.getElementById('um-uid').value)">🗑 Видалити</button>
+      <button class="btn btn-r" onclick="deleteUser(+document.getElementById('um-uid').value)"><i class="fi-rr-trash"></i>Видалити</button>
       <button class="btn" onclick="closeUserModal()">Скасувати</button>
-      <button class="btn btn-b" onclick="saveUserEdit()">💾 Зберегти</button>
+      <button class="btn btn-b" onclick="saveUserEdit()"><i class="fi-rr-disk"></i>Зберегти</button>
     </div>
   </div>
 </div>
@@ -3165,15 +3324,15 @@ tr:hover td{background:rgba(255,255,255,.02)}
     </div>
     <!-- Coordinates picker -->
     <div id="em-coords-section" style="margin-bottom:10px;padding:10px 14px;border:1px solid rgba(248,113,113,.35);border-radius:8px;background:rgba(248,113,113,.06)">
-      <div style="font-size:11px;color:var(--muted);margin-bottom:6px">📍 Місце Зірки на карті <span style="color:#f87171;font-size:10px">★ обов'язково для відображення</span></div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:6px"><i class="fi-rr-map-pin"></i> Місце Зірки на карті <span style="color:#f87171;font-size:10px">★ обов'язково для відображення</span></div>
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
         <span id="em-coords-txt" style="font-size:11px;font-family:monospace;color:#f87171">не задано</span>
-        <button class="btn btn-b" style="font-size:11px;padding:4px 12px" onclick="_editPickStart()">🗺 Вибрати місце Зірки</button>
+        <button class="btn btn-b" style="font-size:11px;padding:4px 12px" onclick="_editPickStart()"><i class="fi-rr-map-marker"></i> Вибрати місце Зірки</button>
       </div>
     </div>
     <!-- Awards section -->
     <div style="margin-bottom:10px;padding:10px 14px;border:1px solid var(--border2);border-radius:8px;background:rgba(255,255,255,.02)">
-      <div style="font-size:11px;color:var(--muted);margin-bottom:8px">🏅 Нагороди та відзнаки</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:8px"><i class="fi-rr-medal"></i> Нагороди та відзнаки</div>
       <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
         <select id="em-award-sel" style="flex:1;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:6px 10px;font-size:12px">
           <option value="">— обрати нагороду —</option>
@@ -3184,7 +3343,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
     </div>
     <div class="em-actions">
       <button class="btn" onclick="closeEdit()">Скасувати</button>
-      <button class="btn btn-p" onclick="saveEdit()">💾 Зберегти</button>
+      <button class="btn btn-p" onclick="saveEdit()"><i class="fi-rr-disk"></i>Зберегти</button>
     </div>
   </div>
 </div>
@@ -3192,7 +3351,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
 <div id="adm-notif"></div>
 
 <script>
-const API = 'http://127.0.0.1:8000';
+const API = '';
 const AUTH_COOKIE = 'zp_admin_auth';
 const AUTH_DAYS   = 30;
 
@@ -3252,10 +3411,10 @@ async function adminLogin() {
     if (r.status === 429) {
       const d = await r.json().catch(()=>({}));
       const msg = d.detail || 'Забагато спроб. Зачекайте.';
-      errEl.textContent = '🔒 ' + msg;
+      errEl.innerHTML = '<i class="fi-rr-lock"></i> ' + msg;
       errEl.style.display = 'block';
       _loginLocked = true;
-      setTimeout(()=>{ _loginLocked=false; errEl.style.display='none'; errEl.textContent='❌ Невірний логін або пароль'; }, 60000);
+      setTimeout(()=>{ _loginLocked=false; errEl.style.display='none'; errEl.innerHTML='<i class="fi-rr-cross"></i> Невірний логін або пароль'; }, 60000);
       return;
     }
     const d = await r.json();
@@ -3272,7 +3431,7 @@ async function adminLogin() {
     initAll();
   } catch {
     _loginAttempts++;
-    errEl.textContent = `❌ Невірний логін або пароль (спроба ${_loginAttempts})`;
+    errEl.innerHTML = `<i class="fi-rr-cross"></i> Невірний логін або пароль (спроба ${_loginAttempts})`;
     errEl.style.display='block';
   }
 }
@@ -3334,6 +3493,7 @@ function showSec(id) {
   if(id==='pend')      loadPend();
   if(id==='users')     loadUsers();
   if(id==='authreg')   _loadRegSettings();
+  if(id==='emailcfg')  _loadEmailSettings();
   if(id==='mapeditor') initMapEditor();
   if(id==='colors')    loadColors();
   if(id==='social')  { if(Object.keys(COLORS).length>0) renderSocialGrid();   else loadColors(); }
@@ -3602,8 +3762,8 @@ function renderMemPage() {
       <td style="overflow:hidden">
         <strong style="white-space:nowrap;font-size:12px">${name}</strong>${ytBadge}
         ${p.mid ? `<br><small style="color:var(--muted);font-size:10px">${h(p.mid)}</small>` : ''}
-        ${p.grp  ? `<br><small style="color:#4fc3f7;font-size:10px">📻 ${h(p.grp)}</small>` : ''}
-        ${p.unit ? `<br><small style="color:#a0c070;font-size:10px">🪖 ${h(p.unit)}</small>` : ''}
+        ${p.grp  ? `<br><small style="color:#4fc3f7;font-size:10px"><i class="fi-rr-walkie-talkie"></i> ${h(p.grp)}</small>` : ''}
+        ${p.unit ? `<br><small style="color:#a0c070;font-size:10px"><i class="fi-rr-helmet-battle"></i> ${h(p.unit)}</small>` : ''}
       </td>
       <td style="font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${h(rankStr)}">${h(rankStr)}</td>
       <td style="font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden">${h(dates)}</td>
@@ -3615,8 +3775,8 @@ function renderMemPage() {
       <td style="text-align:center;font-size:11px">⭐${p.likes||0}</td>
       <td>
         <div style="display:flex;gap:4px;flex-wrap:nowrap">
-          <button class="btn btn-b" style="flex:1;min-width:70px;font-size:11px" onclick="openEditById(${p.id})">✏️ Редагувати</button>
-          ${curAdminRole==='admin'?`<button class="btn btn-r" style="flex:1;min-width:70px;font-size:11px" onclick="delMem(${p.id},'${safeNameJs}')">🗑 Видалити</button>`:''}
+          <button class="btn btn-b" style="flex:1;min-width:70px;font-size:11px" onclick="openEditById(${p.id})"><i class="fi-rr-pencil"></i>Редагувати</button>
+          ${curAdminRole==='admin'?`<button class="btn btn-r" style="flex:1;min-width:70px;font-size:11px" onclick="delMem(${p.id},'${safeNameJs}')"><i class="fi-rr-trash"></i>Видалити</button>`:''}
         </div>
       </td>
     </tr>`;
@@ -3699,7 +3859,7 @@ function _initMemResize() {
 /* ── CSV EXPORT ─────────────────────────────────────────── */
 async function exportCsv() {
   try {
-    showN('⏳ Формується файл…');
+    showN('Формується файл…');
     const r = await fetch(`${API}/api/admin/export/csv`, {headers: authH()});
     if (!r.ok) throw new Error(r.status);
     const blob = await r.blob();
@@ -3708,8 +3868,8 @@ async function exportCsv() {
     const date = new Date().toISOString().slice(0,10);
     a.href = url; a.download = `memorials_${date}.csv`; a.click();
     URL.revokeObjectURL(url);
-    showN(`✅ Файл завантажено`);
-  } catch { showN('❌ Помилка експорту', true); }
+    showN(`Файл завантажено`);
+  } catch { showN('Помилка експорту', true); }
 }
 
 /* ── XLSX EXPORT ────────────────────────────────────────── */
@@ -3727,20 +3887,20 @@ const _XLSX_COLS = {
 };
 
 async function exportXlsx() {
-  if (typeof XLSX === 'undefined') { showN('❌ Бібліотека XLSX не завантажена', true); return; }
+  if (typeof XLSX === 'undefined') { showN('Бібліотека XLSX не завантажена', true); return; }
   try {
-    showN('⏳ Завантаження даних із БД…');
+    showN('Завантаження даних із БД…');
     const r = await fetch(`${API}/api/admin/export/json`, {headers: authH()});
     if (!r.ok) throw new Error(r.status);
     const rows = await r.json();
-    if (!rows.length) { showN('⚠️ База порожня', true); return; }
+    if (!rows.length) { showN('База порожня', true); return; }
 
     const date = new Date().toISOString().slice(0, 10);
     const cols = Object.keys(_XLSX_COLS);
     const header = Object.values(_XLSX_COLS);
     const totalFiles = Math.ceil(rows.length / _XLSX_CHUNK);
 
-    showN(`📊 Генерація ${totalFiles > 1 ? `${totalFiles} файлів` : 'файлу'} (${rows.length} записів)…`);
+    showN(`Генерація ${totalFiles > 1 ? `${totalFiles} файлів` : 'файлу'} (${rows.length} записів)…`);
 
     for (let i = 0; i < totalFiles; i++) {
       const chunk = rows.slice(i * _XLSX_CHUNK, (i + 1) * _XLSX_CHUNK);
@@ -3762,13 +3922,13 @@ async function exportXlsx() {
       XLSX.writeFile(wb, `memorials_${date}${suffix}.xlsx`);
 
       if (i < totalFiles - 1) {
-        showN(`📊 Файл ${i + 1}/${totalFiles} завантажено, готую наступний…`);
+        showN(`Файл ${i + 1}/${totalFiles} завантажено, готую наступний…`);
         await new Promise(res => setTimeout(res, 500));
       }
     }
 
-    showN(`✅ Готово: ${totalFiles} файл(ів), ${rows.length} записів`);
-  } catch(e) { showN('❌ Помилка експорту XLSX', true); console.error(e); }
+    showN(`Готово: ${totalFiles} файл(ів), ${rows.length} записів`);
+  } catch(e) { showN('Помилка експорту XLSX', true); console.error(e); }
 }
 
 /* ── CSV IMPORT ─────────────────────────────────────────── */
@@ -3817,7 +3977,7 @@ async function handleCsvImport(e) {
   const file = e.target.files[0];
   e.target.value = '';
   if (!file) return;
-  showN('⏳ Аналіз файлу…');
+  showN('Аналіз файлу…');
   const fd = new FormData();
   fd.append('file', file);
   try {
@@ -3825,8 +3985,8 @@ async function handleCsvImport(e) {
     if (!r.ok) throw new Error(r.status);
     const data = await r.json();
     _openImpPreview(data);
-    showN(`📋 Знайдено ${data.rows.length} записів — перегляньте перед імпортом`);
-  } catch { showN('❌ Помилка аналізу файлу', true); }
+    showN(`Знайдено ${data.rows.length} записів — перегляньте перед імпортом`);
+  } catch { showN('Помилка аналізу файлу', true); }
 }
 
 function _openImpPreview(data) {
@@ -3834,7 +3994,7 @@ function _openImpPreview(data) {
   const errDiv = document.getElementById('imp-parse-errors');
   if (data.parse_errors && data.parse_errors.length) {
     errDiv.style.display = 'block';
-    errDiv.innerHTML = data.parse_errors.map(e => `<div>⚠️ ${h(e)}</div>`).join('');
+    errDiv.innerHTML = data.parse_errors.map(e => `<div><i class="fi-rr-exclamation"></i> ${h(e)}</div>`).join('');
   } else {
     errDiv.style.display = 'none';
   }
@@ -3847,8 +4007,8 @@ function _renderImpTable() {
   document.getElementById('imp-tb').innerHTML = _impRows.map((r, i) => {
     const dupTip = r._matches.map(m=>`#${m.id} ${m.last} ${m.first} (${m.birth||'?'} – ${m.death||'?'})`).join('; ');
     const statusHtml = r._status === 'duplicate'
-      ? `<span title="${h(dupTip)}" style="background:rgba(251,191,36,.12);color:#fbbf24;border:1px solid rgba(251,191,36,.3);border-radius:4px;padding:2px 5px;font-size:10px;cursor:help;white-space:nowrap">⚠️ ${r._matches.length} збіг</span>`
-      : `<span style="background:rgba(74,222,128,.1);color:#4ade80;border:1px solid rgba(74,222,128,.2);border-radius:4px;padding:2px 5px;font-size:10px;white-space:nowrap">🆕 Нове</span>`;
+      ? `<span title="${h(dupTip)}" style="background:rgba(251,191,36,.12);color:#fbbf24;border:1px solid rgba(251,191,36,.3);border-radius:4px;padding:2px 5px;font-size:10px;cursor:help;white-space:nowrap"><i class="fi-rr-exclamation"></i> ${r._matches.length} збіг</span>`
+      : `<span style="background:rgba(74,222,128,.1);color:#4ade80;border:1px solid rgba(74,222,128,.2);border-radius:4px;padding:2px 5px;font-size:10px;white-space:nowrap">Нове</span>`;
     const dim = r._selected ? '' : 'opacity:.35;';
     const photoSrc = (r.photo||'').trim();
     const photoCell = photoSrc
@@ -3864,7 +4024,7 @@ function _renderImpTable() {
       : `<span style="opacity:.25;display:block;text-align:center">—</span>`;
     const _aw = r._awards && r._awards.length;
     const awardsCount = _aw
-      ? `<span style="color:#4ade80;font-weight:600" title="${r._awards.map(a=>a.name).join(', ')}">🏅${r._awards.length}</span>`
+      ? `<span style="color:#4ade80;font-weight:600" title="${r._awards.map(a=>a.name).join(', ')}"><i class="fi-rr-medal"></i>${r._awards.length}</span>`
       : (r._status === 'duplicate' && r._matches.length && r._matches[0].awards_count > 0
           ? `<span style="color:#c09000;font-weight:600">${r._matches[0].awards_count}</span>`
           : '—');
@@ -3884,14 +4044,14 @@ function _renderImpTable() {
       <td style="text-align:center;padding:4px">${photoCell}</td>
       <td style="text-align:center;padding:4px">${videoCell}</td>
       <td style="text-align:center;font-size:11px;padding:4px">${awardsCount}</td>
-      <td style="text-align:center;padding:4px" title="${(parseFloat(r.pos_x)>0&&parseFloat(r.pos_y)>0)?`x:${(+r.pos_x).toFixed(4)} y:${(+r.pos_y).toFixed(4)}`:'Координати не задано — натисніть ✏️ щоб обрати'}">
+      <td style="text-align:center;padding:4px" title="${(parseFloat(r.pos_x)>0&&parseFloat(r.pos_y)>0)?`x:${(+r.pos_x).toFixed(4)} y:${(+r.pos_y).toFixed(4)}`:'Координати не задано — натисніть кнопку Редагувати'}">
         ${(parseFloat(r.pos_x)>0&&parseFloat(r.pos_y)>0)
           ? `<span style="color:#4ade80;font-size:14px">●</span>`
           : `<span style="color:#f87171;font-size:14px;cursor:pointer" onclick="_impEdit(${i})" title="Обрати місце на карті">!</span>`}
       </td>
       <td style="padding:4px">
         <div style="display:flex;gap:3px">
-          <button class="btn" style="font-size:10px;padding:2px 7px" onclick="_impEdit(${i})" title="Редагувати">✏️</button>
+          <button class="btn" style="font-size:10px;padding:2px 7px" onclick="_impEdit(${i})" title="Редагувати"><i class="fi-rr-pencil"></i></button>
           <button class="btn btn-r" style="font-size:10px;padding:2px 7px" onclick="_impDel(${i})" title="Видалити">✕</button>
         </div>
       </td>
@@ -3905,9 +4065,9 @@ function _updateImpStats() {
   const dupC  = _impRows.filter(r => r._status === 'duplicate').length;
   const sel   = _impRows.filter(r => r._selected).length;
   document.getElementById('imp-stats').innerHTML =
-    `Всього: <b>${total}</b> &nbsp;|&nbsp; 🆕 <b style="color:#4ade80">${newC}</b> нових &nbsp;|&nbsp; ⚠️ <b style="color:#fbbf24">${dupC}</b> дублікатів`;
+    `Всього: <b>${total}</b> &nbsp;|&nbsp; Нові: <b style="color:#4ade80">${newC}</b> &nbsp;|&nbsp; Дублікати: <b style="color:#fbbf24">${dupC}</b>`;
   const btn = document.getElementById('imp-apply-btn');
-  if (btn) btn.textContent = `✅ Імпортувати вибрані (${sel})`;
+  if (btn) btn.innerHTML = `<i class="fi-rr-check"></i> Імпортувати вибрані (${sel})`;
   document.getElementById('imp-chk-all').indeterminate = sel > 0 && sel < total;
   document.getElementById('imp-chk-all').checked = sel === total && total > 0;
 }
@@ -4038,14 +4198,14 @@ function _impEdit(i) {
     </div>`;
   }).join('') + `
   <div style="grid-column:span 2;padding:10px;border:1px solid ${hasCoords?'rgba(74,222,128,.3)':'rgba(248,113,113,.35)'};border-radius:8px;background:${hasCoords?'rgba(74,222,128,.06)':'rgba(248,113,113,.06)'}">
-    <div style="font-size:11px;color:var(--muted);margin-bottom:6px">📍 Місце Зірки на карті <span style="color:#f87171;font-size:10px">★ обов'язково</span></div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:6px"><i class="fi-rr-map-pin"></i> Місце Зірки на карті <span style="color:#f87171;font-size:10px">★ обов'язково</span></div>
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
       <span style="font-size:11px;font-family:monospace;color:${hasCoords?'#4ade80':'#f87171'}">${coordsTxt}</span>
-      <button class="btn btn-b" style="font-size:11px;padding:4px 12px" onclick="saveImpEdit();_impPickStart(${i})">🗺 Вибрати місце Зірки</button>
+      <button class="btn btn-b" style="font-size:11px;padding:4px 12px" onclick="saveImpEdit();_impPickStart(${i})"><i class="fi-rr-map-marker"></i> Вибрати місце Зірки</button>
     </div>
   </div>
   <div style="grid-column:span 2;padding:10px;border:1px solid var(--border2);border-radius:8px;background:rgba(255,255,255,.02)">
-    <div style="font-size:11px;color:var(--muted);margin-bottom:8px">🏅 Нагороди та відзнаки</div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:8px"><i class="fi-rr-medal"></i> Нагороди та відзнаки</div>
     <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
       <select id="ief-award-sel" style="flex:1;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:6px 10px;font-size:12px">
         <option value="">— обрати нагороду —</option>
@@ -4183,16 +4343,16 @@ function _editRemoveAward(isExisting, existingId, newIdx) {
 
 async function applyImport() {
   const rows = _impRows.filter(r => r._selected);
-  if (!rows.length) { showN('⚠️ Немає вибраних рядків', true); return; }
+  if (!rows.length) { showN('Немає вибраних рядків', true); return; }
   const noCoords = rows.filter(r => !(parseFloat(r.pos_x) > 0 && parseFloat(r.pos_y) > 0));
   if (noCoords.length) {
-    showN(`❌ ${noCoords.length} запис(ів) без координат. Відкрийте кожен → 🗺 Вибрати місце Зірки.`, true);
+    showN(`${noCoords.length} запис(ів) без координат. Відкрийте кожен → Вибрати місце Зірки.`, true);
     return;
   }
   if (!confirm(`Імпортувати ${rows.length} записів? Вони потраплять на модерацію.`)) return;
   const btn = document.getElementById('imp-apply-btn');
   if (btn) btn.disabled = true;
-  showN(`⏳ Імпортування ${rows.length} записів…`);
+  showN(`Імпортування ${rows.length} записів…`);
   try {
     const r = await fetch(`${API}/api/admin/import/apply`, {
       method: 'POST',
@@ -4201,11 +4361,11 @@ async function applyImport() {
     });
     if (!r.ok) throw new Error(r.status);
     const d = await r.json();
-    showN(`✅ Імпортовано: ${d.inserted}, пропущено: ${d.skipped}`);
+    showN(`Імпортовано: ${d.inserted}, пропущено: ${d.skipped}`);
     if (d.errors && d.errors.length) console.warn('[import errors]', d.errors);
     closeImpOverlay();
     loadMem(); loadPend();
-  } catch { showN('❌ Помилка імпорту', true); if (btn) btn.disabled = false; }
+  } catch { showN('Помилка імпорту', true); if (btn) btn.disabled = false; }
 }
 
 async function loadPend() {
@@ -4221,23 +4381,23 @@ async function loadPend() {
       <td style="font-size:11px">${h(p.bury)||'—'}</td>
       <td style="font-size:11px">${h(p.added_by)||'—'}</td>
       <td style="display:flex;gap:5px">
-        <button class="btn btn-g" onclick="approveMem(${p.id})">✅</button>
-        <button class="btn btn-b" onclick="openEditById(${p.id})">✏️</button>
-        <button class="btn btn-r" onclick="delMem(${p.id})">🗑</button>
+        <button class="btn btn-g" onclick="approveMem(${p.id})" title="Схвалити"><i class="fi-rr-check"></i></button>
+        <button class="btn btn-b" onclick="openEditById(${p.id})" title="Редагувати"><i class="fi-rr-pencil"></i></button>
+        <button class="btn btn-r" onclick="delMem(${p.id})" title="Видалити"><i class="fi-rr-trash"></i></button>
       </td>
     </tr>`).join('');
 }
 
-async function approveMem(id){try{const r=await fetch(`${API}/api/admin/approve/${id}`,{method:'POST',headers:authH()});if(!r.ok)throw new Error(r.status);showN('✅ Схвалено');loadPend();loadStats();}catch{showN('❌ Помилка схвалення',true);}}
+async function approveMem(id){try{const r=await fetch(`${API}/api/admin/approve/${id}`,{method:'POST',headers:authH()});if(!r.ok)throw new Error(r.status);showN('Схвалено');loadPend();loadStats();}catch{showN('Помилка схвалення',true);}}
 async function delMem(id, name=''){
-  const msg = `⚠️ ВИДАЛЕННЯ ЗАПИСУ\n\n${name ? '"'+name+'"' : 'ID: '+id}\n\nЦю дію неможливо скасувати.\nВсі дані про цього героя будуть втрачені назавжди.\n\nПродовжити?`;
+  const msg = `ВИДАЛЕННЯ ЗАПИСУ\n\n${name ? '"'+name+'"' : 'ID: '+id}\n\nЦю дію неможливо скасувати.\nВсі дані про цього героя будуть втрачені назавжди.\n\nПродовжити?`;
   if(!confirm(msg)) return;
   try{
     const r=await fetch(`${API}/api/admin/memorial/${id}`,{method:'DELETE',headers:authH()});
     if(!r.ok)throw new Error(r.status);
-    showN('🗑 Запис видалено');
+    showN('Запис видалено');
     loadMem(); loadStats();
-  }catch{showN('❌ Помилка видалення',true);}
+  }catch{showN('Помилка видалення',true);}
 }
 
 /* ══════════ USERS ══════════ */
@@ -4258,7 +4418,7 @@ async function loadUsers() {
     const sel = document.getElementById('users-page-size-sel');
     if (sel) sel.value = String(_usersPageSize);
     _loadRegSettings();
-  } catch { showN('❌ Помилка завантаження користувачів', true); }
+  } catch { showN('Помилка завантаження користувачів', true); }
 }
 
 async function _loadRegSettings() {
@@ -4287,9 +4447,207 @@ async function saveRegSetting(key, val) {
     });
     if (!r.ok) throw new Error();
     const hint = document.getElementById('rg-save-hint');
-    if (hint) { hint.textContent = '✅ Збережено'; setTimeout(() => hint.textContent = '', 2000); }
+    if (hint) { hint.textContent = 'Збережено'; setTimeout(() => hint.textContent = '', 2000); }
   } catch {
-    showN('❌ Помилка збереження', true);
+    showN('Помилка збереження', true);
+  }
+}
+
+/* ══════════════════════════════════════════════════════
+   EMAIL / SMTP SETTINGS
+   ══════════════════════════════════════════════════════ */
+const _EMAIL_PRESETS = {
+  gmail:   { host:'smtp.gmail.com',        port:587, secure:'starttls' },
+  ukrnet:  { host:'smtp.ukr.net',          port:465, secure:'ssl'      },
+  outlook: { host:'smtp.office365.com',    port:587, secure:'starttls' },
+  yahoo:   { host:'smtp.mail.yahoo.com',   port:587, secure:'starttls' },
+  meta:    { host:'smtp.meta.ua',          port:465, secure:'ssl'      },
+};
+
+function _emailPreset(name) {
+  const p = _EMAIL_PRESETS[name];
+  if (!p) return;
+  const h = document.getElementById('em-host');
+  const po = document.getElementById('em-port');
+  if (h)  { h.value = p.host; h.classList.add('em-dirty'); }
+  if (po) { po.value = p.port; po.classList.add('em-dirty'); }
+  const radios = document.querySelectorAll('[name="em-secure"]');
+  radios.forEach(r => { r.checked = r.value === p.secure; });
+  _emChanged();
+  showN(`Заповнено для ${name}. Введіть Email і пароль, потім збережіть.`);
+}
+
+function _emChanged() {
+  document.querySelectorAll('#sec-emailcfg .em-inp').forEach(el => el.classList.add('em-dirty'));
+  const btn = document.getElementById('em-save-btn');
+  if (btn) btn.style.boxShadow = '0 0 0 2px #fb8c00';
+}
+
+function _emTogglePass() {
+  const inp = document.getElementById('em-pass');
+  if (!inp) return;
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+}
+
+function _emSetStatus(host, user, hasPass, enabled) {
+  const bar  = document.getElementById('em-status-bar');
+  if (!bar) return;
+  const configured = !!(host && user);
+  const on = enabled !== '0';
+
+  let html = '';
+  if (!configured) {
+    bar.style.background = 'rgba(229,57,53,.08)';
+    bar.style.borderColor = '#e53935';
+    html = `<span style="font-size:18px"><i class="fi-rr-cross"></i></span>
+      <div style="flex:1">
+        <div style="font-weight:700;color:#e53935">SMTP не налаштований</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">
+          Листи не надсилаються — активний DEV-режим (код повертається в API)
+        </div>
+      </div>`;
+  } else if (!on) {
+    bar.style.background = 'rgba(251,140,0,.08)';
+    bar.style.borderColor = '#fb8c00';
+    html = `<span style="font-size:18px"><i class="fi-rr-pause"></i></span>
+      <div style="flex:1">
+        <div style="font-weight:700;color:#fb8c00">Відправку вимкнено</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">
+          ${user} · ${host} — увімкніть перемикач нижче
+        </div>
+      </div>`;
+  } else {
+    bar.style.background = 'rgba(67,160,71,.08)';
+    bar.style.borderColor = '#43a047';
+    const passTag = hasPass
+      ? `<span style="background:rgba(67,160,71,.2);color:#43a047;border-radius:4px;padding:1px 7px;font-size:10px">пароль ✓</span>`
+      : `<span style="background:rgba(229,57,53,.15);color:#e53935;border-radius:4px;padding:1px 7px;font-size:10px">пароль не задано</span>`;
+    html = `<span style="font-size:18px"><i class="fi-rr-check"></i></span>
+      <div style="flex:1">
+        <div style="font-weight:700;color:#43a047;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          Налаштовано ${passTag}
+        </div>
+        <div style="font-size:12px;margin-top:4px;display:flex;flex-wrap:wrap;gap:12px">
+          <span><i class="fi-rr-envelope"></i> <b>${user}</b></span>
+          <span><i class="fi-rr-screen"></i> ${host}</span>
+        </div>
+      </div>`;
+  }
+  bar.innerHTML = html;
+}
+
+async function _loadEmailSettings() {
+  try {
+    // Читаємо напряму з /api/colors — без auth, як усі інші секції
+    const r = await fetch(`${API}/api/colors`);
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
+    const g = k => (d[k]?.value ?? '');
+
+    const host    = g('smtp_host');
+    const port    = g('smtp_port') || '587';
+    const user    = g('smtp_user');
+    const from_   = g('smtp_from');
+    const secure  = g('smtp_secure') || 'starttls';
+    const enabled = g('smtp_enabled') !== '0' ? '1' : '0';
+    const hasPass = g('smtp_pass_set') === '1';   // smtp_pass замінено флагом
+
+    // Заповнюємо форму
+    const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
+    set('em-host', host);
+    set('em-port', port);
+    set('em-user', user);
+    set('em-pass', '');
+    set('em-from', from_);
+    const passEl = document.getElementById('em-pass');
+    if (passEl) passEl.placeholder = hasPass
+      ? '•••••••• (збережено — залиш порожнім щоб не змінювати)'
+      : 'Пароль або App Password';
+    document.querySelectorAll('[name="em-secure"]').forEach(rb => { rb.checked = rb.value === secure; });
+    const enEl = document.getElementById('em-enabled');
+    if (enEl) enEl.checked = enabled === '1';
+
+    // Статус
+    _emSetStatus(host, user, hasPass, enabled);
+
+    // Знімаємо «брудний» стан
+    document.querySelectorAll('#sec-emailcfg .em-inp').forEach(el => el.classList.remove('em-dirty'));
+    const btn = document.getElementById('em-save-btn');
+    if (btn) btn.style.boxShadow = '';
+  } catch(e) {
+    console.error('_loadEmailSettings', e);
+    const bar = document.getElementById('em-status-bar');
+    if (bar) {
+      bar.style.borderColor = '#e53935';
+      bar.innerHTML = `<span style="font-size:18px"><i class="fi-rr-exclamation"></i></span>
+        <div style="color:#e53935;font-weight:600">Помилка завантаження налаштувань</div>`;
+    }
+  }
+}
+
+async function saveEmailSettings() {
+  const host   = document.getElementById('em-host')?.value.trim() || '';
+  const port   = document.getElementById('em-port')?.value.trim() || '587';
+  const user   = document.getElementById('em-user')?.value.trim() || '';
+  const pass   = document.getElementById('em-pass')?.value || '';
+  const from   = document.getElementById('em-from')?.value.trim() || '';
+  const secure = document.querySelector('[name="em-secure"]:checked')?.value || 'starttls';
+  const enabled = document.getElementById('em-enabled')?.checked ? '1' : '0';
+
+  const batch = [
+    { key:'smtp_host',    value: host    },
+    { key:'smtp_port',    value: port    },
+    { key:'smtp_user',    value: user    },
+    { key:'smtp_from',    value: from    },
+    { key:'smtp_secure',  value: secure  },
+    { key:'smtp_enabled', value: enabled },
+  ];
+  // Пароль — тільки якщо введено новий
+  if (pass) batch.push({ key:'smtp_pass', value: pass });
+
+  const hint = document.getElementById('em-save-hint');
+  const btn  = document.getElementById('em-save-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Зберігаємо…'; }
+  try {
+    const r = await fetch(`${API}/api/admin/colors/batch`, {
+      method:'PUT', headers:{...authH(),'Content-Type':'application/json'},
+      body: JSON.stringify(batch)
+    });
+    if (!r.ok) throw new Error((await r.json()).detail || 'Помилка');
+    if (hint) { hint.style.color='var(--accent)'; hint.textContent='Збережено'; setTimeout(()=>hint.textContent='',3000); }
+    document.querySelectorAll('#sec-emailcfg .em-inp').forEach(el=>el.classList.remove('em-dirty'));
+    if (btn) btn.style.boxShadow = '';
+    // Оновлення статусу — без затримки на кеш Redis (він вимкнений)
+    await _loadEmailSettings();
+  } catch(e) {
+    if (hint) { hint.style.color='#e53935'; hint.textContent=e.message; }
+    showN('Помилка збереження: '+e.message, true);
+  } finally {
+    if (btn) { btn.disabled=false; btn.innerHTML='<i class="fi-rr-disk"></i> Зберегти налаштування'; }
+  }
+}
+
+async function testEmailSend() {
+  const to   = document.getElementById('em-test-to')?.value.trim();
+  const hint = document.getElementById('em-test-hint');
+  const btn  = document.getElementById('em-test-btn');
+  if (!to) { if(hint){hint.style.color='#e53935';hint.textContent='Введіть email для тесту';} return; }
+  if (btn) { btn.disabled=true; btn.textContent='Надсилаємо…'; }
+  if (hint) hint.textContent = '';
+  try {
+    const r = await fetch(`${API}/api/admin/email/test`, {
+      method:'POST', headers:{...authH(),'Content-Type':'application/json'},
+      body: JSON.stringify({ to })
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.detail||'Помилка');
+    if (hint) { hint.style.color='#43a047'; hint.textContent=d.message; }
+    showN('Тестовий лист надіслано на '+to);
+  } catch(e) {
+    if (hint) { hint.style.color='#e53935'; hint.textContent=e.message; }
+    showN(e.message, true);
+  } finally {
+    if (btn) { btn.disabled=false; btn.innerHTML='<i class="fi-rr-paper-plane"></i> Надіслати тестовий лист'; }
   }
 }
 
@@ -4378,9 +4736,9 @@ function _renderUsersTable(data) {
   document.getElementById('users-tb').innerHTML = data.map(u => {
     let statusBadge;
     if (u.ban_status === 'perm') {
-      statusBadge = `<span class="badge br">🚫 Бан</span>`;
+      statusBadge = `<span class="badge br"><i class="fi-rr-ban"></i> Бан</span>`;
     } else if (u.ban_status === 'temp') {
-      statusBadge = `<span class="badge" style="background:rgba(212,168,0,.12);color:#d4a800;border:1px solid rgba(212,168,0,.3)">⏳ ${_fmtBanDur(u.ban_remaining)}</span>`;
+      statusBadge = `<span class="badge" style="background:rgba(212,168,0,.12);color:#d4a800;border:1px solid rgba(212,168,0,.3)"><i class="fi-rr-clock"></i> ${_fmtBanDur(u.ban_remaining)}</span>`;
     } else if (u.ban_status === 'expired') {
       statusBadge = `<span class="badge" style="background:rgba(200,200,200,.08);color:var(--muted);border:1px solid var(--border)">Бан закінчився</span>`;
     } else {
@@ -4392,10 +4750,10 @@ function _renderUsersTable(data) {
     const roleMap = {admin:'<span class="badge by">Адмін</span>',moder:'<span class="badge bb" style="color:#00aadd">Модер</span>',user:'<span class="badge">Юзер</span>'};
     const roleBadge = roleMap[u.role] || roleMap.user;
     const banBtn = u.is_banned
-      ? `<button class="btn btn-g" style="font-size:10px" onclick="unbanUser(${u.id})">✅ Розблок</button>`
-      : `<button class="btn btn-r" style="font-size:10px" onclick="openBanMenu(${u.id},this)">🚫 Бан ▾</button>`;
+      ? `<button class="btn btn-g" style="font-size:10px" onclick="unbanUser(${u.id})"><i class="fi-rr-check"></i>Розблок</button>`
+      : `<button class="btn btn-r" style="font-size:10px" onclick="openBanMenu(${u.id},this)"><i class="fi-rr-ban"></i> Бан ▾</button>`;
     const actions = `<div style="display:flex;gap:4px;flex-wrap:wrap">
-      <button class="btn btn-b" style="font-size:10px" onclick="openUserModal(${u.id})">✏️ Ред.</button>
+      <button class="btn btn-b" style="font-size:10px" onclick="openUserModal(${u.id})"><i class="fi-rr-pencil"></i>Ред.</button>
       ${u.role !== 'admin' ? banBtn : ''}
     </div>`;
     return `<tr>
@@ -4444,8 +4802,8 @@ async function saveUserEdit() {
     ]);
     if (!r1.ok) { const e=await r1.json(); throw new Error(e.detail||r1.status); }
     if (!r2.ok) { const e=await r2.json(); throw new Error(e.detail||r2.status); }
-    showN('✅ Збережено'); closeUserModal(); loadUsers();
-  } catch(e) { showN(`❌ ${e.message}`, true); }
+    showN('Збережено'); closeUserModal(); loadUsers();
+  } catch(e) { showN(`${e.message}`, true); }
 }
 
 function _closeUserBanMenu() {
@@ -4461,13 +4819,13 @@ function openBanMenu(uid, btn) {
     background:#060c1a;border:1px solid var(--border2);border-radius:8px;padding:6px;
     display:flex;flex-direction:column;gap:2px;min-width:165px;box-shadow:0 4px 20px rgba(0,0,0,.6)`;
   [
-    {label:'⏳ 1 годину',  dur:3600},
-    {label:'⏳ 6 годин',   dur:21600},
-    {label:'⏳ 1 день',    dur:86400},
-    {label:'⏳ 3 дні',     dur:259200},
-    {label:'⏳ 7 днів',    dur:604800},
-    {label:'⏳ 30 днів',   dur:2592000},
-    {label:'🚫 Назавжди',  dur:0},
+    {label:'1 годину',  dur:3600},
+    {label:'6 годин',   dur:21600},
+    {label:'1 день',    dur:86400},
+    {label:'3 дні',     dur:259200},
+    {label:'7 днів',    dur:604800},
+    {label:'30 днів',   dur:2592000},
+    {label:'Назавжди',  dur:0},
   ].forEach(o => {
     const b = document.createElement('button');
     b.className = 'btn btn-r';
@@ -4490,9 +4848,9 @@ async function applyBan(uid, duration) {
       body: JSON.stringify({duration, reason:''})
     });
     if (!r.ok) throw new Error(r.status);
-    showN(duration ? `⏳ Заблоковано на ${_fmtBanDur(duration)}` : '🚫 Заблоковано назавжди');
+    showN(duration ? `Заблоковано на ${_fmtBanDur(duration)}` : 'Заблоковано назавжди');
     loadUsers();
-  } catch { showN('❌ Помилка блокування', true); }
+  } catch { showN('Помилка блокування', true); }
 }
 
 async function unbanUser(id) {
@@ -4500,8 +4858,8 @@ async function unbanUser(id) {
   try {
     const r = await fetch(`${API}/api/admin/unban/${id}`, {method:'POST', headers:authH()});
     if (!r.ok) throw new Error(r.status);
-    showN('✅ Розблоковано'); loadUsers();
-  } catch { showN('❌ Помилка розблокування', true); }
+    showN('Розблоковано'); loadUsers();
+  } catch { showN('Помилка розблокування', true); }
 }
 
 async function deleteUser(uid) {
@@ -4509,8 +4867,8 @@ async function deleteUser(uid) {
   try {
     const r = await fetch(`${API}/api/admin/user/${uid}`, {method:'DELETE', headers:authH()});
     if (!r.ok) { const e=await r.json(); throw new Error(e.detail||r.status); }
-    showN('🗑 Користувача видалено'); closeUserModal(); loadUsers();
-  } catch(e) { showN(`❌ ${e.message}`, true); }
+    showN('Користувача видалено'); closeUserModal(); loadUsers();
+  } catch(e) { showN(`${e.message}`, true); }
 }
 
 /* ══════════════════════════════════
@@ -4679,17 +5037,17 @@ function setTool(t){
   const btn=document.getElementById('save-all-dots-btn');
   if(btn){
     if(t==='dots'){
-      btn.textContent='💾 Зберегти всі зміни';
+      btn.innerHTML='<i class="fi-rr-disk"></i> Зберегти всі зміни';
       btn.onclick=saveAllChangedDots;
     }else if(t==='labels'){
-      btn.textContent='💾 Зберегти';
+      btn.innerHTML='<i class="fi-rr-disk"></i> Зберегти';
       btn.onclick=saveSelected;
     }else if(t==='cities'){
-      btn.textContent='💾 Зберегти';
+      btn.innerHTML='<i class="fi-rr-disk"></i> Зберегти';
       btn.onclick=saveSelectedCity;
     }
   }
-  document.getElementById('map-sidebar-mode').textContent=t==='labels'?'🏷 Підписи':t==='dots'?'📍 Точки меморіалів':'🏙 Міста';
+  document.getElementById('map-sidebar-mode').innerHTML=t==='labels'?'<i class="fi-rr-label"></i> Підписи':t==='dots'?'<i class="fi-rr-map-pin"></i> Точки меморіалів':'<i class="fi-rr-map-marker"></i> Міста';
   showToolHints();
 }
 
@@ -4949,11 +5307,11 @@ function updateSaveButtonState() {
   if (!btn) return;
   const count = _changedDots.size;
   if (count > 0) {
-    btn.textContent = `💾 Зберегти всі зміни (${count})`;
+    btn.innerHTML = `<i class="fi-rr-disk"></i> Зберегти всі зміни (${count})`;
     btn.style.background = 'rgba(0,200,255,.25)';
     btn.style.borderColor = 'rgba(0,200,255,.5)';
   } else {
-    btn.textContent = '💾 Зберегти всі зміни';
+    btn.innerHTML = '<i class="fi-rr-disk"></i> Зберегти всі зміни';
     btn.style.background = 'rgba(255,255,255,.05)';
     btn.style.borderColor = 'rgba(255,255,255,.1)';
   }
@@ -4968,8 +5326,8 @@ async function saveSelected(){
       {method:'PUT',headers:authH({'Content-Type':'application/json'}),
        body:JSON.stringify({id:l.id,name:l.name,x:l.x,y:l.y,color:l.color,size:l.size})});
     if(!r.ok)throw new Error(r.status);
-    showN('💾 Підпис збережено');
-  }catch{showN('❌ Помилка збереження підпису',true);}
+    showN('Підпис збережено');
+  }catch{showN('Помилка збереження підпису',true);}
 }
 
 async function saveSelectedDot(){
@@ -4982,19 +5340,19 @@ async function saveSelectedDot(){
     if(!r.ok)throw new Error(r.status);
     _changedDots.delete(p.id);
     updateSaveButtonState();
-    showN('💾 Точку збережено');
-  }catch{showN('❌ Помилка збереження точки',true);}
+    showN('Точку збережено');
+  }catch{showN('Помилка збереження точки',true);}
 }
 
 /* ── SAVE ALL CHANGED DOTS ── */
 async function saveAllChangedDots(){
   const changed = [..._changedDots];
   if (changed.length === 0) {
-    showN('ℹ️ Немає змін для збереження');
+    showN('Немає змін для збереження');
     return;
   }
   const btn = document.getElementById('save-all-dots-btn');
-  if (btn) { btn.disabled = true; btn.textContent = '⏳ Збереження...'; }
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fi-rr-clock"></i> Збереження...'; }
   
   let saved = 0, errors = 0;
   for (const id of changed) {
@@ -5013,8 +5371,8 @@ async function saveAllChangedDots(){
   updateSaveButtonState();
   if (btn) { btn.disabled = false; updateSaveButtonState(); }
   
-  if (errors === 0) showN(`✅ Збережено ${saved} точок`);
-  else showN(`⚠️ Збережено: ${saved}, помилок: ${errors}`);
+  if (errors === 0) showN(`Збережено ${saved} точок`);
+  else showN(`Збережено: ${saved}, помилок: ${errors}`);
 }
 
 function saveAny(){
@@ -5031,9 +5389,9 @@ function saveSelectedDot(){
     const r=fetch(`${API}/api/admin/memorial/${p.id}`,
       {method:'PUT',headers:authH({'Content-Type':'application/json'}),
        body:JSON.stringify({pos_x:p.pos_x,pos_y:p.pos_y,color:p.color})}).then(()=>{
-      _changedDots.delete(p.id);updateSaveButtonState();showN('💾 Точку збережено');
-    }).catch(()=>showN('❌ Помилка збереження точки',true));
-  }catch{showN('❌ Помилка збереження точки',true);}
+      _changedDots.delete(p.id);updateSaveButtonState();showN('Точку збережено');
+    }).catch(()=>showN('Помилка збереження точки',true));
+  }catch{showN('Помилка збереження точки',true);}
 }
 
 /* ══════════ CITIES MAP ══════════ */
@@ -5128,9 +5486,9 @@ async function saveSelectedCity(){
       {method:'PUT',headers:authH({'Content-Type':'application/json'}),
        body:JSON.stringify({pos_x:c.pos_x,pos_y:c.pos_y,tier:c.tier})});
     if(!r.ok)throw new Error(r.status);
-    showN('💾 Місто збережено');
+    showN('Місто збережено');
     renderCitiesAdmin();
-  }catch{showN('❌ Помилка збереження міста',true);}
+  }catch{showN('Помилка збереження міста',true);}
 }
 
 /* ══════════ RANK POGON — Wikimedia Special:FilePath (no hash needed) ══════════ */
@@ -5263,9 +5621,9 @@ async function saveEdit(){
     video_url:document.getElementById('e-video').value.trim(),
     descr:document.getElementById('e-desc').value,
   };
-  if(!body.last||!body.first){showN('❌ Вкажіть прізвище та імʼя',true);return;}
-  if(body.photo && !_V.chkUrl(body.photo)){showN('❌ Фото URL має починатись з https://',true);return;}
-  if(body.video_url && !body.video_url.match(/youtu\.be\/|youtube\.com\//)){showN('❌ Відео URL має бути посиланням YouTube',true);return;}
+  if(!body.last||!body.first){showN('Вкажіть прізвище та імʼя',true);return;}
+  if(body.photo && !_V.chkUrl(body.photo)){showN('Фото URL має починатись з https://',true);return;}
+  if(body.video_url && !body.video_url.match(/youtu\.be\/|youtube\.com\//)){showN('Відео URL має бути посиланням YouTube',true);return;}
   try{
     let r, savedId;
     if(editMode==='create'){
@@ -5292,10 +5650,10 @@ async function saveEdit(){
         {method:'POST',headers:authH({'Content-Type':'application/json'}),
          body:JSON.stringify({name:aw.name,img_file:aw.img_file||'',sort_order:0})}).catch(()=>{});
     }
-    showN(editMode==='create'?'✅ Запис додано':'💾 Збережено');
+    showN(editMode==='create'?'Запис додано':'Збережено');
     closeEdit(); loadMem(); loadPend();
     const rp=await fetch(`${API}/api/people?page=1&limit=500`);const pd=await rp.json();people=pd.items||pd;renderDots();
-  }catch{showN('❌ Помилка збереження',true);}
+  }catch{showN('Помилка збереження',true);}
 }
 
 /* ══════════ COOKIE HELPERS (admin draft) ══════════ */
@@ -5338,7 +5696,7 @@ function _showDraftBanner(ts) {
     bar = document.createElement('div');
     bar.id = 'draft-banner';
     bar.style.cssText = 'position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#1a3a1a;border:1px solid #2a8050;border-radius:8px;padding:10px 18px;font-size:12px;color:#6ec88a;z-index:9999;display:flex;align-items:center;gap:12px;box-shadow:0 4px 20px rgba(0,0,0,.5)';
-    bar.innerHTML = `<span>📋 Чорновик завантажено з куки (<span id="draft-ts"></span>)</span>
+    bar.innerHTML = `<span>Чорновик завантажено з куки (<span id="draft-ts"></span>)</span>
       <button onclick="discardDraft()" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:5px;color:#c8d4e0;padding:3px 10px;cursor:pointer;font-size:11px">Відхилити</button>
       <button onclick="saveAllColors()" style="background:rgba(42,128,80,.3);border:1px solid #2a8050;border-radius:5px;color:#6ec88a;padding:3px 10px;cursor:pointer;font-size:11px">Зберегти в БД</button>`;
     document.body.appendChild(bar);
@@ -5440,7 +5798,7 @@ function renderColors(){
 
   const zoomBlock=`
   <div style="grid-column:1/-1;background:rgba(0,200,255,.06);border:1px solid rgba(0,200,255,.2);border-radius:8px;padding:14px 16px;margin-bottom:4px">
-    <div style="font-size:11px;color:#00c8ff;font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px">🔍 Зум та межі районів</div>
+    <div style="font-size:11px;color:#00c8ff;font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px"><i class="fi-rr-search"></i> Зум та межі районів</div>
     <div style="display:flex;flex-wrap:wrap;gap:10px">
       ${zoomKeys.map(k=>COLORS[k]?renderColorRow(k,COLORS[k]):'').join('')}
     </div>
@@ -5471,11 +5829,11 @@ function renderColors(){
   };
 
   const dotBlock  = mkBlock('⭐','Зірки памʼяті',      '#fda4af', '253,164,175', _dotBlockKeys);
-  const bgBlock   = mkBlock('🎨','Фон та поверхні',   '#7dd3fc', '125,211,252', _bgBlockKeys);
-  const txtBlock  = mkBlock('📝','Текст та акценти',   '#a5b4fc', '165,180,252', _txtBlockKeys);
-  const mapBlock  = mkBlock('🗺','Карта',              '#86efac', '134,239,172', _mapBlockKeys);
-  const logoBlock = mkBlock('🔤','Логотип',            '#fcd34d', '252,211,77',  _logoBlockKeys);
-  const uiBlock   = mkBlock('🔘','Кнопки',             '#f9a8d4', '249,168,212', _uiBlockKeys);
+  const bgBlock   = mkBlock('','Фон та поверхні',   '#7dd3fc', '125,211,252', _bgBlockKeys);
+  const txtBlock  = mkBlock('','Текст та акценти',   '#a5b4fc', '165,180,252', _txtBlockKeys);
+  const mapBlock  = mkBlock('','Карта',              '#86efac', '134,239,172', _mapBlockKeys);
+  const logoBlock = mkBlock('','Логотип',            '#fcd34d', '252,211,77',  _logoBlockKeys);
+  const uiBlock   = mkBlock('','Кнопки',             '#f9a8d4', '249,168,212', _uiBlockKeys);
 
   // sea_* і icon_* — тільки у власних секціях, не тут
   const extraEntries = Object.entries(COLORS).filter(([k])=>!knownKeys.has(k) && !k.startsWith('sea_') && !k.startsWith('icon_'));
@@ -5548,7 +5906,7 @@ function renderSmokeSection(){
     <div id="smoke-settings-body" style="${smokeEnabled?'':'opacity:.35;pointer-events:none'}">
     <div style="display:flex;flex-direction:column;gap:22px">
 
-    <div style="font-size:11px;color:#4fc3f7;font-weight:700;text-transform:uppercase;letter-spacing:.07em">🎨 Колір диму</div>
+    <div style="font-size:11px;color:#4fc3f7;font-weight:700;text-transform:uppercase;letter-spacing:.07em">Колір диму</div>
     <div style="display:flex;flex-wrap:wrap;gap:18px;align-items:flex-end">
       <div>
         <div style="font-size:11px;color:var(--text2);margin-bottom:6px">Колір «від»</div>
@@ -5582,7 +5940,7 @@ function renderSmokeSection(){
 
     <!-- Cookie toggle -->
     <div style="border-top:1px solid rgba(79,195,247,.12);padding-top:18px">
-      <div style="font-size:11px;color:#4fc3f7;font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:14px">🍪 Куки користувача</div>
+      <div style="font-size:11px;color:#4fc3f7;font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:14px">Куки користувача</div>
       <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
         <div>
           <div style="font-size:12px;color:var(--text);font-weight:500">Зберігати вибір диму у браузері</div>
@@ -5749,7 +6107,7 @@ function renderSeaSection(){
     <div id="sea-settings-body" style="${seaEnabled?'':'opacity:.35;pointer-events:none'}">
     <div style="display:flex;flex-direction:column;gap:22px">
 
-    <div style="font-size:11px;color:#38bdf8;font-weight:700;text-transform:uppercase;letter-spacing:.07em">🗂 SVG-карта морів</div>
+    <div style="font-size:11px;color:#38bdf8;font-weight:700;text-transform:uppercase;letter-spacing:.07em">SVG-карта морів</div>
     <div style="display:flex;flex-wrap:wrap;gap:14px;align-items:flex-start">
       <div style="flex:1;min-width:260px">
         <div style="font-size:11px;color:var(--text2);margin-bottom:8px">
@@ -5761,7 +6119,7 @@ function renderSeaSection(){
                border-radius:7px;padding:9px 16px;font-size:12px;color:#38bdf8;transition:background .2s"
                onmouseover="this.style.background='rgba(56,189,248,.22)'"
                onmouseout="this.style.background='rgba(56,189,248,.12)'">
-          📂 Обрати SVG файл
+          <i class="fi-rr-folder"></i> Обрати SVG файл
           <input type="file" accept=".svg,image/svg+xml" style="display:none"
             onchange="uploadSeaSvg(this)">
         </label>
@@ -5772,7 +6130,7 @@ function renderSeaSection(){
         </div>
         ${hasSvg ? `<button onclick="deleteSeaSvg()" style="margin-top:8px;background:rgba(192,64,64,.15);
           border:1px solid rgba(192,64,64,.4);border-radius:6px;color:#f87171;font-size:11px;
-          padding:5px 12px;cursor:pointer">🗑 Видалити SVG</button>` : ''}
+          padding:5px 12px;cursor:pointer"><i class="fi-rr-trash"></i>Видалити SVG</button>` : ''}
       </div>
 
       <div id="sea-svg-transform" style="${hasSvg ? '' : 'opacity:.4;pointer-events:none'}">
@@ -5793,7 +6151,7 @@ function renderSeaSection(){
       </div>
     </div>
 
-    <div style="font-size:11px;color:#38bdf8;font-weight:700;text-transform:uppercase;letter-spacing:.07em">🎨 Колір та видимість</div>
+    <div style="font-size:11px;color:#38bdf8;font-weight:700;text-transform:uppercase;letter-spacing:.07em">Колір та видимість</div>
     <div style="display:flex;flex-wrap:wrap;gap:18px;align-items:flex-end">
       <div>
         <div style="font-size:11px;color:var(--text2);margin-bottom:6px">Колір хвиль</div>
@@ -5809,7 +6167,7 @@ function renderSeaSection(){
       ${sl('sea-bl-v',   0,  12, 1, blur,        'sea_blur',           'Розмитість px', 'px')}
     </div>
 
-    <div style="font-size:11px;color:#38bdf8;font-weight:700;text-transform:uppercase;letter-spacing:.07em">🌊 Хвилі</div>
+    <div style="font-size:11px;color:#38bdf8;font-weight:700;text-transform:uppercase;letter-spacing:.07em">Хвилі</div>
     <div style="display:flex;flex-wrap:wrap;gap:18px;align-items:flex-end">
       ${sl('sea-dir-v',  0, 360,  5, waveDir,     'sea_wave_dir',   'Напрямок °', '°')}
       ${sl('sea-spd-v',  1,  20,  1, waveSpeed,   'sea_wave_speed', 'Швидкість')}
@@ -5858,9 +6216,9 @@ function renderSeaSection(){
 async function uploadSeaSvg(input) {
   const file = input.files[0];
   if (!file) return;
-  if (file.size > 500_000) { showN('❌ SVG файл занадто великий (макс 500 КБ)'); return; }
+  if (file.size > 500_000) { showN('SVG файл занадто великий (макс 500 КБ)'); return; }
   const status = document.getElementById('sea-svg-status');
-  if (status) status.innerHTML = '<span style="color:#facc15">⏳ Завантаження…</span>';
+  if (status) status.innerHTML = '<span style="color:#facc15"><i class="fi-rr-clock"></i> Завантаження…</span>';
   try {
     const fd = new FormData();
     fd.append('file', file);
@@ -5869,15 +6227,15 @@ async function uploadSeaSvg(input) {
     if (!r.ok) { const err = await r.json(); throw new Error(err.detail||r.status); }
     const data = await r.json();
     if (status) status.innerHTML = `<span style="color:#4ade80">✓ ${h(file.name)} (${Math.round(data.bytes/1024)} КБ)</span>`;
-    showN('✅ SVG карту морів збережено');
+    showN('SVG карту морів збережено');
     /* Сповіщаємо index.html перезавантажити COLORS */
     try { const bc=new BroadcastChannel('zoryana_sea'); bc.postMessage({type:'sea_reload'}); bc.close(); } catch(_){}
     /* Оновлюємо локальний кеш COLORS щоб hasSvg відображався без перезавантаження */
     if (!COLORS['sea_svg_content']) COLORS['sea_svg_content'] = { value: '1', label: '' };
     else COLORS['sea_svg_content'].value = '1';
   } catch(err) {
-    if (status) status.innerHTML = `<span style="color:#f87171">❌ ${h(err.message)}</span>`;
-    showN('❌ Помилка завантаження: ' + err.message);
+    if (status) status.innerHTML = `<span style="color:#f87171"><i class="fi-rr-cross"></i> ${h(err.message)}</span>`;
+    showN('Помилка завантаження: ' + err.message);
   }
 }
 
@@ -5885,10 +6243,10 @@ async function deleteSeaSvg() {
   try {
     await fetch(`${API}/api/admin/sea-svg`, { method:'DELETE', headers: authH() });
     delete COLORS['sea_svg_content'];
-    showN('🗑 SVG видалено — море не відображається');
+    showN('SVG видалено — море не відображається');
     try { const bc=new BroadcastChannel('zoryana_sea'); bc.postMessage({type:'sea_reload'}); bc.close(); } catch(_){}
     renderSeaSection();
-  } catch(err) { showN('❌ ' + err.message); }
+  } catch(err) { showN('' + err.message); }
 }
 
 /* ══════════ ICONS SECTION ══════════ */
@@ -5923,7 +6281,7 @@ function renderIconsSection() {
   const logoRad = g('admin_logo_radius') || '8';
   const logoCard = `
     <div style="padding:18px 20px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px">
-      <div style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.07em;margin-bottom:3px">🖼 Логотип бічного меню</div>
+      <div style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.07em;margin-bottom:3px">Логотип бічного меню</div>
       <div style="font-size:11px;color:var(--muted);margin-bottom:14px">Зображення над назвою панелі. Вставте URL (https://...). Порожньо — логотип прихований.</div>
       <div style="margin-bottom:12px">
         <div style="font-size:10px;color:var(--muted);margin-bottom:5px">URL зображення</div>
@@ -6163,7 +6521,7 @@ async function _autoSaveToDb() {
     batch.forEach(({key, value}) => { if(COLORS[key]) COLORS[key].value = value; });
     pendColors = {};
     _saveDraftCookie();
-    showN('💾 Автозбережено');
+    showN('Автозбережено');
     _broadcastColors(batch);
   } catch{ }
 }
@@ -6235,7 +6593,7 @@ function applyAdminTheme(t) {
   document.documentElement.classList.toggle('theme-light', t === 'light');
   const ico = document.getElementById('theme-ico');
   const lbl = document.getElementById('theme-lbl');
-  if (ico) ico.textContent = t === 'light' ? '☀️' : '🌙';
+  if (ico) ico.innerHTML = t === 'light' ? '<i class="fi-rr-sun"></i>' : '<i class="fi-rr-moon"></i>';
   if (lbl) lbl.textContent = t === 'light' ? 'Світла' : 'Темна';
 }
 
@@ -6469,7 +6827,7 @@ async function saveSocialLinks() {
       if (!firstErr) firstErr = `${f.label}: ${msg}`;
     }
   });
-  if (firstErr) { showN('❌ ' + firstErr); return; }
+  if (firstErr) { showN('' + firstErr); return; }
 
   const grid = document.getElementById('social-grid');
   const order = grid ? [...grid.querySelectorAll('.soc-card')].map(c=>c.dataset.socId).join(',') : '';
@@ -6486,8 +6844,8 @@ async function saveSocialLinks() {
     if (!r.ok) throw new Error(r.status);
     batch.forEach(({key,value}) => { if(COLORS[key]) COLORS[key].value=value; else COLORS[key]={value,label:''}; });
     pendColors = {};
-    showN('💾 Соцмережі збережено!');
-  } catch(e) { showN('❌ Помилка: '+e.message); }
+    showN('Соцмережі збережено!');
+  } catch(e) { showN('Помилка: '+e.message); }
 }
 
 async function saveAllColors(){
@@ -6497,14 +6855,14 @@ async function saveAllColors(){
     const r=await fetch(`${API}/api/admin/colors/batch`,
       {method:'PUT',headers:authH({'Content-Type':'application/json'}),body:JSON.stringify(batch)});
     if(!r.ok)throw new Error(r.status);
-    showN('💾 Збережено в БД!');
+    showN('Збережено в БД!');
     _broadcastColors(batch);
     pendColors = {};
     const bar = document.getElementById('draft-banner');
     if (bar) bar.remove();
     await loadColors();
     _saveDraftCookie();
-  }catch{showN('❌ Помилка збереження кольорів',true);}
+  }catch{showN('Помилка збереження кольорів',true);}
 }
 
 /* ══════════ HELPERS ══════════ */
@@ -7047,7 +7405,7 @@ async function loadCitiesAdmin() {
     _citiesAdminList = await r.json();
     // синхронізуємо з citiesAdmin для map editor
     citiesAdmin = _citiesAdminList.map(c => ({...c}));
-  } catch { showN('❌ Помилка завантаження міст', true); return; }
+  } catch { showN('Помилка завантаження міст', true); return; }
   _updateCityCounters();
   renderCitiesTable();
 }
@@ -7076,7 +7434,7 @@ function renderCitiesTable() {
   if (tier !== '')                  list = list.filter(c => String(c.tier) === tier);
   if (q) list = list.filter(c => c.name.toLowerCase().includes(q) || String(c.id).includes(q));
 
-  const TIER = ['—', '★ Столиця', '🏛 Обласний', '🏘 Районний'];
+  const TIER = ['—', '★ Столиця', 'Обласний', 'Районний'];
 
   const tbody = document.getElementById('cities-tbody');
   if (!list.length) {
@@ -7090,7 +7448,7 @@ function renderCitiesTable() {
     return `<tr data-cid="${c.id}">
       <td>
         <span style="font-family:monospace;color:var(--muted);font-size:11px;cursor:pointer"
-              title="Скопіювати ID" onclick="navigator.clipboard.writeText('${c.id}');showN('📋 ID ${c.id} скопійовано')">${c.id}</span>
+              title="Скопіювати ID" onclick="navigator.clipboard.writeText('${c.id}');showN('ID ${c.id} скопійовано')">${c.id}</span>
       </td>
       <td>
         <span class="cname-view" style="cursor:pointer" title="Двічі клікніть щоб редагувати"
@@ -7107,8 +7465,8 @@ function renderCitiesTable() {
                        color:var(--text);font-size:11px;padding:3px 6px;max-width:110px">
           <option value="0" ${c.tier===0?'selected':''}>—</option>
           <option value="1" ${c.tier===1?'selected':''}>★ Столиця</option>
-          <option value="2" ${c.tier===2?'selected':''}>🏛 Обласний</option>
-          <option value="3" ${c.tier===3?'selected':''}>🏘 Районний</option>
+          <option value="2" ${c.tier===2?'selected':''}>Обласний</option>
+          <option value="3" ${c.tier===3?'selected':''}>Районний</option>
         </select>
       </td>
       <td style="text-align:center">
@@ -7126,9 +7484,9 @@ function renderCitiesTable() {
         <span class="badge ${placed?'bg':'by'}" style="font-size:10px">${placed?'На карті':'Без місця'}</span>
       </td>
       <td style="display:flex;gap:4px;flex-wrap:wrap">
-        <button class="btn btn-b" onclick="startCityNameEdit(${c.id})" title="Редагувати назву">✏️</button>
-        <button class="btn btn-b" onclick="goToCityOnMap(${c.id})" title="Відкрити в редакторі карти">🗺</button>
-        <button class="btn btn-r" onclick="deleteCityAdmin(${c.id})" title="Видалити">🗑</button>
+        <button class="btn btn-b" onclick="startCityNameEdit(${c.id})" title="Редагувати назву"><i class="fi-rr-pencil"></i></button>
+        <button class="btn btn-b" onclick="goToCityOnMap(${c.id})" title="Відкрити в редакторі карти"><i class="fi-rr-map-marker"></i></button>
+        <button class="btn btn-r" onclick="deleteCityAdmin(${c.id})" title="Видалити"><i class="fi-rr-trash"></i></button>
       </td>
     </tr>`;
   }).join('');
@@ -7178,9 +7536,9 @@ async function saveCityField(id, field, value) {
       body: JSON.stringify({[field]: field==='tier'?+value:value}),
     });
     if (!r.ok) throw new Error(r.status);
-    showN('💾 Збережено');
+    showN('Збережено');
   } catch {
-    showN('❌ Помилка збереження', true);
+    showN('Помилка збереження', true);
     loadCitiesAdmin();
   }
 }
@@ -7191,12 +7549,12 @@ async function deleteCityAdmin(id) {
   try {
     const r = await fetch(`${API}/api/admin/city/${id}`, {method:'DELETE', headers:authH()});
     if (!r.ok) throw new Error(r.status);
-    showN('🗑 Видалено');
+    showN('Видалено');
     _citiesAdminList = _citiesAdminList.filter(x => x.id !== id);
     if (citiesAdmin) citiesAdmin = citiesAdmin.filter(x => x.id !== id);
     _updateCityCounters();
     renderCitiesTable();
-  } catch { showN('❌ Помилка видалення', true); }
+  } catch { showN('Помилка видалення', true); }
 }
 
 function goToCityOnMap(id) {
@@ -7234,8 +7592,8 @@ function openAddCityModal() {
           <select id="ac-tier" style="width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:7px 10px;font-size:12px">
             <option value="0">— Без рівня</option>
             <option value="1">★ Столиця</option>
-            <option value="2">🏛 Обласний</option>
-            <option value="3">🏘 Районний</option>
+            <option value="2">Обласний</option>
+            <option value="3">Районний</option>
           </select>
         </div>
         <div>
@@ -7244,7 +7602,7 @@ function openAddCityModal() {
                  style="width:50px;height:36px;padding:2px;border:1px solid var(--border2);border-radius:6px;background:transparent;cursor:pointer">
         </div>
       </div>
-      <div style="font-size:11px;color:var(--muted);margin-bottom:16px">Координати встановіть після додавання через редактор карти (🗺).</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:16px">Координати встановіть після додавання через редактор карти.</div>
       <div style="display:flex;gap:8px">
         <button class="btn btn-p" onclick="saveNewCity()" style="flex:1">Додати</button>
         <button class="btn" onclick="document.getElementById('add-city-modal').remove()">Скасувати</button>
@@ -7259,7 +7617,7 @@ async function saveNewCity() {
   const name  = document.getElementById('ac-name')?.value.trim();
   const tier  = +(document.getElementById('ac-tier')?.value || 0);
   const color = document.getElementById('ac-color')?.value || '#a0d7ff';
-  if (!name) { showN('❌ Введіть назву міста', true); return; }
+  if (!name) { showN('Введіть назву міста', true); return; }
   try {
     const r = await fetch(`${API}/api/admin/city`, {
       method: 'POST',
@@ -7268,10 +7626,10 @@ async function saveNewCity() {
     });
     if (!r.ok) throw new Error(r.status);
     const d = await r.json();
-    showN(`✅ Місто «${name}» додано (ID ${d.id})`);
+    showN(`Місто «${name}» додано (ID ${d.id})`);
     document.getElementById('add-city-modal')?.remove();
     await loadCitiesAdmin();
-  } catch { showN('❌ Помилка додавання', true); }
+  } catch { showN('Помилка додавання', true); }
 }
 
 /* ══════════ INIT ══════════ */
@@ -7287,7 +7645,7 @@ async function _handleAuthFail() {
   _admCookieDel(AUTH_COOKIE);
   document.getElementById('login-screen').style.display='flex';
   document.getElementById('layout').style.display='none';
-  document.getElementById('lerr').textContent='⚠️ Сесія завершена — увійдіть знову';
+  document.getElementById('lerr').innerHTML='<i class="fi-rr-exclamation"></i> Сесія завершена — увійдіть знову';
   document.getElementById('lerr').style.display='block';
 }
 async function initAll(){
@@ -7316,7 +7674,7 @@ async function initAll(){
 
       <!-- header -->
       <div style="display:flex;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px solid var(--border);flex-shrink:0;flex-wrap:wrap">
-        <h2 style="margin:0;font-size:16px;flex:1">📥 Імпорт CSV — перегляд перед завантаженням</h2>
+        <h2 style="margin:0;font-size:16px;flex:1"><i class="fi-rr-arrow-down"></i> Імпорт CSV — перегляд перед завантаженням</h2>
         <div id="imp-stats" style="font-size:12px;color:var(--muted)"></div>
         <button class="btn btn-r" onclick="closeImpOverlay()">✕ Закрити</button>
       </div>
@@ -7325,10 +7683,10 @@ async function initAll(){
       <div style="display:flex;gap:8px;padding:10px 20px;border-bottom:1px solid var(--border);flex-wrap:wrap;flex-shrink:0;align-items:center">
         <button class="btn" onclick="impSelectAll(true)" style="font-size:11px">☑ Всі</button>
         <button class="btn" onclick="impSelectAll(false)" style="font-size:11px">☐ Жодного</button>
-        <button class="btn" onclick="impSelectNew()" style="font-size:11px">🆕 Тільки нові</button>
-        <button class="btn btn-r" onclick="impRemoveDupes()" style="font-size:11px">🗑 Видалити дублікати</button>
+        <button class="btn" onclick="impSelectNew()" style="font-size:11px">Тільки нові</button>
+        <button class="btn btn-r" onclick="impRemoveDupes()" style="font-size:11px"><i class="fi-rr-trash"></i>Видалити дублікати</button>
         <span style="flex:1"></span>
-        <button class="btn btn-g" id="imp-apply-btn" onclick="applyImport()" style="font-size:12px;font-weight:700">✅ Імпортувати вибрані (0)</button>
+        <button class="btn btn-g" id="imp-apply-btn" onclick="applyImport()" style="font-size:12px;font-weight:700"><i class="fi-rr-check"></i>Імпортувати вибрані (0)</button>
       </div>
 
       <!-- table -->
@@ -7348,10 +7706,10 @@ async function initAll(){
               <th style="width:110px">Посада</th>
               <th style="width:110px">Місце загибелі</th>
               <th style="width:110px">Місце поховання</th>
-              <th style="width:44px" title="Фото">📷</th>
-              <th style="width:44px" title="Відео YouTube">▶</th>
-              <th style="width:44px" title="Нагороди">🎖</th>
-              <th style="width:36px" title="Координати на карті">📍</th>
+              <th style="width:44px" title="Фото"><i class="fi-rr-camera"></i></th>
+              <th style="width:44px" title="Відео YouTube"><i class="fi-rr-play"></i></th>
+              <th style="width:44px" title="Нагороди"><i class="fi-rr-medal"></i></th>
+              <th style="width:36px" title="Координати на карті"><i class="fi-rr-map-pin"></i></th>
               <th style="width:72px">Дії</th>
             </tr>
           </thead>
@@ -7368,7 +7726,7 @@ async function initAll(){
 <!-- ══ ROW EDIT MODAL (всередині перегляду імпорту) ════════ -->
 <div id="imp-edit-modal" style="display:none;position:fixed;inset:0;z-index:9100;background:rgba(0,0,0,.75);align-items:center;justify-content:center">
   <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px 28px;width:900px;max-width:97vw;max-height:95vh;overflow-y:auto">
-    <h3 style="margin:0 0 14px;font-size:14px">✏️ Редагування рядка</h3>
+    <h3 style="margin:0 0 14px;font-size:14px"><i class="fi-rr-pencil"></i>Редагування рядка</h3>
     <div id="imp-edit-form"></div>
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px">
       <button class="btn" onclick="closeImpEdit()">Скасувати</button>

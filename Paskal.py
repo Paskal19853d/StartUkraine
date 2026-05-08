@@ -514,6 +514,13 @@ def init_db():
         ("social_linkedin_url",   "",         "Соцмережі — LinkedIn URL"),
         ("social_viber",          "1",        "Соцмережі — Viber (1=показати, 0=сховати)"),
         ("social_viber_url",      "",         "Соцмережі — Viber URL"),
+        ("smtp_host",                "",           "SMTP — хост (напр. smtp.gmail.com)"),
+        ("smtp_port",                "587",        "SMTP — порт (587=STARTTLS, 465=SSL, 25=без шифрування)"),
+        ("smtp_user",                "",           "SMTP — логін/email відправника"),
+        ("smtp_pass",                "",           "SMTP — пароль або App Password"),
+        ("smtp_from",                "",           "SMTP — ім'я відправника (напр. Зоряна Пам'ять <noreply@mail.com>)"),
+        ("smtp_secure",              "starttls",   "SMTP — тип шифрування (starttls/ssl/none)"),
+        ("smtp_enabled",             "1",          "SMTP — увімкнути відправку листів (1=так, 0=вимкнути)"),
         ("reg_enabled",              "1",          "Реєстрація — дозволити нову реєстрацію (1=так, 0=ні)"),
         ("reg_allow_google",         "1",          "Реєстрація — дозволити вхід через Google OAuth (1=так, 0=ні)"),
         ("reg_field_mid",            "required",   "Реєстрація — поле По батькові (required/optional/hidden)"),
@@ -1059,6 +1066,7 @@ _ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://127.0.0.1:8000,http://lo
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_ALLOWED_ORIGINS,
+    allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization"],
 )
@@ -1098,8 +1106,9 @@ async def security_headers(request, call_next):
     return response
 
 # Статичні файли (img)
-app.mount("/img", StaticFiles(directory="img"), name="img")
-app.mount("/js",  StaticFiles(directory="js"),  name="js")
+app.mount("/img",   StaticFiles(directory="img"),   name="img")
+app.mount("/js",    StaticFiles(directory="js"),    name="js")
+app.mount("/fonts", StaticFiles(directory="fonts"), name="fonts")
 
 @app.on_event("startup")
 def startup():
@@ -1317,38 +1326,66 @@ def _email_verification_html(code: str, nickname: str) -> str:
 </div>
 </body></html>"""
 
-def _send_email(to_addr: str, subject: str, html_body: str) -> tuple[bool, str]:
-    """Надсилає email. Повертає (success, error_msg)."""
-    host = os.getenv("SMTP_HOST", "")
-    port = int(os.getenv("SMTP_PORT", "587"))
-    user = os.getenv("SMTP_USER", "")
-    pw   = os.getenv("SMTP_PASS", "")
-    from_addr = os.getenv("SMTP_FROM", user) or user
+def _get_smtp_config() -> dict:
+    """Зчитує SMTP-налаштування: DB має пріоритет над .env."""
+    db = get_db()
+    with db.cursor() as c:
+        c.execute("SELECT `key`, value FROM colors WHERE `key` LIKE 'smtp_%'")
+        rows = {r["key"]: r["value"] for r in c.fetchall()}
+    db.close()
+    def pick(db_key, env_key, default=""):
+        return rows.get(db_key, "") or os.getenv(env_key, "") or default
+    host    = pick("smtp_host",    "SMTP_HOST")
+    port_s  = pick("smtp_port",    "SMTP_PORT", "587")
+    user    = pick("smtp_user",    "SMTP_USER")
+    pw      = pick("smtp_pass",    "SMTP_PASS")
+    from_   = pick("smtp_from",    "SMTP_FROM") or user
+    secure  = rows.get("smtp_secure", "starttls") or "starttls"
+    enabled = rows.get("smtp_enabled", "1")
+    try:
+        port = int(port_s)
+    except (ValueError, TypeError):
+        port = 587
+    return {"host": host, "port": port, "user": user, "pw": pw,
+            "from": from_, "secure": secure, "enabled": enabled}
 
-    if not host or not user:
-        # SMTP не налаштований — dev-режим: логуємо код
+def _send_email(to_addr: str, subject: str, html_body: str) -> tuple[bool, str]:
+    """Надсилає email. DB-налаштування мають пріоритет над .env."""
+    cfg = _get_smtp_config()
+    if cfg["enabled"] == "0":
+        return False, "Відправка листів вимкнена в налаштуваннях"
+    if not cfg["host"] or not cfg["user"]:
         logging.warning(f"[DEV] Email to {to_addr}: {subject}\n{html_body[:200]}")
-        return False, "SMTP не налаштований (SMTP_HOST/SMTP_USER відсутні в .env)"
+        return False, "SMTP не налаштований"
 
     msg = MIMEMultipart("alternative")
     msg["Subject"] = subject
-    msg["From"]    = from_addr
+    msg["From"]    = cfg["from"]
     msg["To"]      = to_addr
     msg.attach(MIMEText(html_body, "html", "utf-8"))
 
     try:
-        with smtplib.SMTP(host, port, timeout=15) as srv:
-            srv.ehlo()
-            srv.starttls()
-            srv.login(user, pw)
-            srv.sendmail(from_addr, [to_addr], msg.as_string())
+        if cfg["secure"] == "ssl":
+            import ssl as _ssl
+            ctx = _ssl.create_default_context()
+            with smtplib.SMTP_SSL(cfg["host"], cfg["port"], timeout=15, context=ctx) as srv:
+                srv.login(cfg["user"], cfg["pw"])
+                srv.sendmail(cfg["from"], [to_addr], msg.as_string())
+        else:
+            with smtplib.SMTP(cfg["host"], cfg["port"], timeout=15) as srv:
+                srv.ehlo()
+                if cfg["secure"] == "starttls":
+                    srv.starttls()
+                if cfg["user"]:
+                    srv.login(cfg["user"], cfg["pw"])
+                srv.sendmail(cfg["from"], [to_addr], msg.as_string())
         return True, ""
     except smtplib.SMTPAuthenticationError:
-        return False, "Помилка авторизації SMTP (перевірте SMTP_USER/SMTP_PASS)"
+        return False, "Помилка авторизації (перевірте логін/пароль)"
     except smtplib.SMTPException as e:
-        return False, f"SMTP помилка: {str(e)[:100]}"
+        return False, f"SMTP помилка: {str(e)[:120]}"
     except Exception as e:
-        return False, f"Помилка відправки: {str(e)[:100]}"
+        return False, f"Помилка з'єднання: {str(e)[:120]}"
 
 def _validate_password(pw: str):
     if not _PASS_RE.match(pw):
@@ -1814,7 +1851,13 @@ def get_colors(request: Request):
         c.execute("SELECT `key`, value, label FROM colors")
         rows = c.fetchall()
     db.close()
-    result = {r["key"]: {"value": r["value"], "label": r["label"]} for r in rows}
+    result = {}
+    for r in rows:
+        # smtp_pass не повертаємо публічно — замість нього булевий флаг
+        if r["key"] == "smtp_pass":
+            result["smtp_pass_set"] = {"value": "1" if r["value"] else "0", "label": ""}
+        else:
+            result[r["key"]] = {"value": r["value"], "label": r["label"]}
     cache_set("colors", json.dumps(result, ensure_ascii=False), ttl=300)
     return result
 
@@ -2091,7 +2134,8 @@ def send_code(u: SendCodeReq, request: Request):
     ok, err = _send_email(data["email"], "Код підтвердження реєстрації — Зоряна Пам'ять", html_body)
     if not ok:
         # Dev-режим: повертаємо code у відповіді якщо SMTP не налаштований
-        smtp_configured = bool(os.getenv("SMTP_HOST") and os.getenv("SMTP_USER"))
+        _c = _get_smtp_config()
+        smtp_configured = bool(_c["host"] and _c["user"] and _c["enabled"] != "0")
         if not smtp_configured:
             sec_log("REG_CODE_DEV", ip, f"email={data['email']} code={code}")
             return {"ok": True, "dev": True, "code": code,
@@ -3079,6 +3123,25 @@ def update_colors_batch(colors: List[ColorUpdate], request: Request):
     db.close()
     cache_delete("colors")
     return {"ok": True}
+
+class SmtpTestReq(BaseModel):
+    to: str
+
+@app.post("/api/admin/email/test")
+def email_test(body: SmtpTestReq, request: Request):
+    """Надсилає тестовий лист для перевірки SMTP."""
+    require_admin(request)
+    to = body.to.strip()
+    if not re.match(r'^[^@\s]+@[^@\s]+\.[^@\s]+$', to):
+        raise HTTPException(400, "Невірний email для тесту")
+    html = ("<h2 style='color:#00aadd'>✅ SMTP працює!</h2>"
+            "<p>Тестовий лист надіслано з адмін-панелі <b>Зоряна Пам'ять</b>.</p>"
+            "<p style='color:#888;font-size:12px'>Якщо ви отримали цей лист — "
+            "налаштування пошти вірні.</p>")
+    ok, err = _send_email(to, "Тест SMTP — Зоряна Пам'ять", html)
+    if not ok:
+        raise HTTPException(503, err)
+    return {"ok": True, "message": f"Тестовий лист надіслано на {to}"}
 
 @app.post("/api/admin/sea-svg")
 async def upload_sea_svg(
