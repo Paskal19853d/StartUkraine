@@ -1178,6 +1178,14 @@ mark.shl {
 }
 .atab.active { color: var(--accent); border-color: var(--accent); }
 
+/* ── Підказки полів форми ──────────────────────────── */
+.f-hint { font-size:10px; min-height:14px; margin-top:2px; transition:color .2s; }
+.f-hint.ok  { color:#43a047; }
+.f-hint.err { color:#e53935; }
+.f-hint.inf { color:var(--muted,#7a8a9a); }
+input.f-ok  { border-color:#43a047 !important; }
+input.f-err { border-color:#e53935 !important; }
+
 /* ── OAuth кнопки ──────────────────────────────────── */
 .oauth-btns { display:flex; flex-direction:column; gap:10px; margin-bottom:18px; }
 .oauth-btn {

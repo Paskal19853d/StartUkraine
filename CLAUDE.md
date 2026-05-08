@@ -37,9 +37,9 @@
 
 ```
 treetex/
-├── Paskal.py            # Весь backend (FastAPI, 131KB, ~5000+ рядків)
-├── index.html           # Головна публічна сторінка (984KB)
-├── admin.html           # Адмін-панель (1.2MB)
+├── Paskal.py            # Весь backend (FastAPI, ~5500+ рядків)
+├── index.html           # Головна публічна сторінка (~1MB)
+├── admin.html           # Адмін-панель (~1.3MB)
 ├── Style.css            # Глобальні стилі (36KB)
 ├── script.js            # Frontend JS (53KB)
 ├── faq.html / rules.html / terms.html
@@ -48,6 +48,7 @@ treetex/
 ├── iconfont.ttf         # Кастомний шрифт іконок
 ├── gunicorn.conf.py     # Prod налаштування
 ├── migrations.sql       # Індекси та міграції БД
+├── setup_awards.py      # Скрипт масового завантаження зображень нагород + заповнення awards_catalog
 ├── requirements.txt     # Python залежності
 ├── .env                 # Секрети (не комітити!)
 ├── .env.example         # Шаблон .env
@@ -57,17 +58,20 @@ treetex/
 ├── img/
 │   ├── foto_false.png   # Placeholder фото
 │   ├── novidio.gif      # Video placeholder
-│   └── social/          # Іконки соцмереж (PNG)
+│   ├── social/          # Іконки соцмереж (PNG, 8 штук)
+│   ├── awards/          # Зображення нагород — 31+ PNG, локальні (завантажені з Wikimedia)
+│   └── ranks/           # Погони звань — 21 PNG (UA_shoulder_mark_01..17 + 4 генеральські)
 ├── js/
 │   ├── sea.js           # Анімація хвиль
 │   └── dat.gui.min.js   # GUI контроли
 ├── fonts/uicons/        # Flaticon UIcons (woff2, woff, css) — ЛОКАЛЬНІ
 ├── Doc/                 # SVG діаграми архітектури
 ├── logs/security.log    # Лог безпеки
-├── MASTER_GUIDE.md      # Повний гайд розгортання (читати!)
-├── SECURITY_RULES.md    # Політики безпеки (читати!)
-├── PRODUCTION.md        # Чеклист продакшн
-└── CLAUDE.md            # Цей файл
+├── CLAUDE.md            # Цей файл (читати ПЕРШИМ!)
+├── DATABASE.md          # Детальна схема БД (всі таблиці, колонки, індекси)
+├── MASTER_GUIDE.md      # Гайд розгортання
+├── SECURITY_RULES.md    # Політики безпеки
+└── PRODUCTION.md        # Чеклист продакшн
 ```
 
 ---
@@ -101,6 +105,9 @@ unit VARCHAR(200)                 -- підрозділ
 #### `users` — акаунти
 ```sql
 id, name, email UNIQUE, password (bcrypt)
+first_name, last_name, middle_name VARCHAR(100)  -- ПІБ (незмінні після реєстрації)
+nickname VARCHAR(100) UNIQUE                     -- нік (змінюваний, лише латиниця)
+phone VARCHAR(20)                                -- +380XXXXXXXXX
 role VARCHAR(20)  -- 'admin' | 'moder' | 'user'
 is_banned, ban_until, last_seen, notes
 ```
@@ -128,9 +135,23 @@ id, name, pos_x, pos_y DOUBLE, tier INT, color
 -- 400+ міст України
 ```
 
-#### `memorial_awards` — нагороди
+#### `memorial_awards` — нагороди (прив'язані до конкретного меморіалу)
 ```sql
-id, memorial_id FK, name, img_file, award_date, descr, sort_order
+id, memorial_id FK, name, img_file VARCHAR(300), award_date, descr, sort_order
+-- img_file = локальна назва файлу (напр. "order_courage_1.png") → /img/awards/{file}
+```
+
+#### `awards_catalog` — каталог всіх нагород (єдине джерело)
+```sql
+id INT AUTO_INCREMENT PRIMARY KEY
+name        VARCHAR(200) NOT NULL
+img_file    VARCHAR(200) NOT NULL        -- файл в img/awards/
+category    VARCHAR(30)  DEFAULT 'military'  -- hero|order|cross|medal|badge
+description TEXT
+sort_order  INT DEFAULT 0
+UNIQUE KEY uq_img (img_file)
+-- Заповнюється через setup_awards.py (31+ нагород)
+-- API: GET /api/awards/catalog
 ```
 
 #### `search_logs` — аналітика пошуку
@@ -164,13 +185,15 @@ id, query, results_count, created_at
 | POST | `/api/auth/register` | Реєстрація |
 | POST | `/api/auth/login` | Вхід (cookie) |
 | POST | `/api/auth/logout` | Вихід |
-| GET | `/api/auth/me` | Поточний користувач |
+| GET | `/api/auth/me` | Поточний користувач (повертає розширені поля) |
+| PUT | `/api/auth/profile` | Оновити профіль (нік, email, телефон, пароль — не ФІО) |
 | GET | `/api/auth/google` | Google OAuth |
 | GET | `/api/auth/diia` | Дія OAuth |
 
 ### Адмін (Basic Auth або cookie `admin_session`)
 | Метод | Endpoint | Опис |
 |-------|----------|------|
+| GET | `/api/admin/memorials?page=1&limit=500` | **Всі** записи з пагінацією (для адмін-панелі) |
 | GET | `/api/admin/pending` | Черга модерації |
 | POST | `/api/admin/approve/{id}` | Схвалити |
 | DELETE | `/api/admin/memorial/{id}` | Видалити |
@@ -185,6 +208,11 @@ id, query, results_count, created_at
 | POST | `/api/admin/import/apply` | Імпорт CSV |
 | GET | `/api/admin/stats` | Статистика адмін |
 | GET | `/api/admin/server-stats` | CPU/RAM |
+
+### Каталог нагород (публічний)
+| Метод | Endpoint | Опис |
+|-------|----------|------|
+| GET | `/api/awards/catalog` | Список нагород з `awards_catalog` (name, img_file, category, description, sort_order) |
 
 ---
 
@@ -311,6 +339,11 @@ SECRET_KEY=...
 - Chart.js: запити за 24 год
 - BroadcastChannel: синхронізація між вкладками
 - Теми: темна/світла, змінюється через `toggleAdminTheme()`
+- **"Всі записи" (sec-mem)**: клієнтська пагінація (`allPeople`/`filteredPeople`), пошук (`memDoSearch`), перемикач рядків 10/25/50/100/200/Всі (`memSetPageSize`)
+- **"Користувачі" (sec-users)**: клієнтська пагінація (`_usersData`/`_filteredUsers`/`_usersPage`/`_usersPageSize`), пошук+фільтри за роллю/статусом, перемикач рядків 10/25/50/100/Всі (`usersSetPageSize`), кнопки Вперед/Назад (`usersPage`)
+- **Нагороди**: `AWARDS_DATA_ADM` завантажується з `/api/awards/catalog` при старті (`_loadAwardsCatalog`)
+- **Погони**: `RANK_POGON_IMG` → локальні PNG у `img/ranks/` (не Wikimedia!)
+- **Зображення нагород**: `_wikiImg()` → `/img/awards/{file}` (не Wikimedia CDN!)
 
 ### Соціальні мережі (8 штук)
 - Facebook, Twitter/X, Instagram, YouTube, Telegram, TikTok, LinkedIn, Viber
@@ -337,10 +370,10 @@ SECRET_KEY=...
 
 ## 11. ПРАВИЛА РОБОТИ ДЛЯ CLAUDE
 
-### При старті нової задачі
-1. Прочитати `CLAUDE.md` (цей файл)
-2. При необхідності прочитати `MASTER_GUIDE.md` та `SECURITY_RULES.md`
-3. Перевірити актуальність даних через читання `Paskal.py` / HTML файлів
+### При старті нової задачі — ОБОВ'ЯЗКОВО
+1. Прочитати **всі MD файли** проекту: `CLAUDE.md`, `DATABASE.md`, `MASTER_GUIDE.md`, `SECURITY_RULES.md`, `PRODUCTION.md`
+2. Під час роботи **оновлювати MD файли** при зміні архітектури, нових ендпоінтів, таблиць, файлів
+3. Перевірити актуальність через читання `Paskal.py` / HTML файлів перед правками
 
 ### Що НЕ змінювати без явного запиту
 - Структуру БД (таблиці, колонки) — тільки через `migrations.sql`
@@ -364,9 +397,16 @@ SECRET_KEY=...
 - `BroadcastChannel('zoryana_colors')` для синхронізації між вкладками
 
 ### При зміні MD файлів
-- Оновлювати `CLAUDE.md` якщо змінилась структура проекту, стек або важлива логіка
+- `CLAUDE.md` — при зміні структури проекту, стеку, ендпоінтів, таблиць БД, правил роботи
+- `DATABASE.md` — при зміні схеми БД (нові таблиці, колонки, індекси)
 - `MASTER_GUIDE.md` — деталі деплою та налаштування
 - `SECURITY_RULES.md` — аудит безпеки
+
+### Нагороди та зображення
+- Зображення нагород: `img/awards/*.png` — локальні, завантажені через `setup_awards.py`
+- Погони звань: `img/ranks/*.png` — локальні PNG (UA_shoulder_mark_01..17 + 4 генеральські)
+- Щоб додати нові нагороди: 1) Покласти PNG в `img/awards/` 2) Вставити запис в `awards_catalog` через setup_awards.py або SQL
+- **НЕ використовувати Wikimedia CDN** для нагород і погонів — тільки локальні файли
 
 ---
 
@@ -378,7 +418,7 @@ SECRET_KEY=...
 | Redis опціональний | Без Redis — кеш відсутній, все йде в MySQL |
 | `memorial.db` | Старий SQLite файл, НЕ використовується, залишений для референсу |
 | SVG карта | 883KB — велика, в prod кешувати через Nginx |
-| admin.html | 1.2MB — великий файл, всі зміни обережно (читати перед правкою) |
+| admin.html | ~1.3MB — великий файл, ЗАВЖДИ читати перед правкою |
 | `colors` таблиця | Використовується для ВСІХ налаштувань (не тільки кольорів) |
 | Fingerprint likes | Ненадійний (VPN обходить), але достатній для базового захисту |
 | Google OAuth | Redirect URI має бути точним (в Google Console) |
@@ -412,4 +452,4 @@ sudo systemctl reload nginx
 
 ---
 
-*Оновлено: 2026-05-07. Версія проекту: v2.0*
+*Оновлено: 2026-05-08. Версія проекту: v2.1*

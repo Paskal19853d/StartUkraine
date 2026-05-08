@@ -111,6 +111,31 @@ html,body{height:100%;font-family:"Segoe UI",sans-serif;background:var(--bg);col
 .section.active{display:block}
 .sec-title{font-size:17px;font-weight:700;margin-bottom:18px;display:flex;align-items:center;gap:10px}
 
+/* ── AUTH / REGISTRATION SECTION ── */
+.rg-group{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:0 18px;margin-bottom:18px;max-width:720px}
+.rg-group-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);padding:12px 0 8px;border-bottom:1px solid var(--border);margin-bottom:2px}
+.rg-row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:13px 0;border-bottom:1px solid var(--border)}
+.rg-row:last-child{border-bottom:none}
+.rg-row-info{flex:1;min-width:0}
+.rg-row-label{font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px;display:flex;align-items:center;gap:6px}
+.rg-row-desc{font-size:11px;color:var(--muted);line-height:1.4}
+.rg-row-disabled{opacity:.45;pointer-events:none}
+.rg-badge-fixed{font-size:10px;background:rgba(0,170,221,.12);color:var(--accent);border:1px solid rgba(0,170,221,.25);border-radius:4px;padding:2px 8px;white-space:nowrap}
+.rg-badge-soon{font-size:9px;background:rgba(255,193,7,.15);color:#d4a800;border:1px solid rgba(255,193,7,.3);border-radius:4px;padding:1px 6px;vertical-align:middle}
+.rg-sel{background:var(--panel);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;cursor:pointer;min-width:140px}
+.rg-sel:focus{outline:none;border-color:var(--accent)}
+.rg-fields-table{width:100%;border-collapse:collapse;font-size:13px}
+.rg-fields-table th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:6px 8px 8px;border-bottom:1px solid var(--border)}
+.rg-fields-table td{padding:9px 8px;border-bottom:1px solid var(--border);vertical-align:middle}
+.rg-fields-table tr:last-child td{border-bottom:none}
+.rg-toggle{position:relative;display:inline-block;width:44px;height:24px;flex-shrink:0}
+.rg-toggle input{opacity:0;width:0;height:0}
+.rg-slider{position:absolute;inset:0;background:var(--border);border-radius:12px;cursor:pointer;transition:background .2s}
+.rg-slider:before{content:'';position:absolute;left:3px;top:3px;width:18px;height:18px;background:#fff;border-radius:50%;transition:transform .2s}
+.rg-toggle input:checked+.rg-slider{background:var(--accent)}
+.rg-toggle input:checked+.rg-slider:before{transform:translateX(20px)}
+.rg-toggle input:disabled+.rg-slider{opacity:.4;cursor:not-allowed}
+
 /* ── MAP SECTION (labels + memorials) ── */
 #sec-map-editor{padding:0 !important;overflow:hidden !important}
 #map-editor-layout{display:flex;height:100%;overflow:hidden}
@@ -336,6 +361,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
   <symbol id="ico-star" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></symbol>
   <!-- city / buildings -->
   <symbol id="ico-city" viewBox="0 0 24 24"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><line x1="10" y1="6" x2="14" y2="6"/><line x1="10" y1="10" x2="14" y2="10"/><line x1="10" y1="14" x2="14" y2="14"/><line x1="10" y1="18" x2="14" y2="18"/></symbol>
+  <symbol id="ico-auth" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><circle cx="12" cy="16" r="1" fill="currentColor"/></symbol>
 </svg>
 
 <!-- Hamburger (mobile) -->
@@ -371,6 +397,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
     <div class="nav-item"        draggable="true" onclick="showSec('mem')"       data-s="mem">       <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-doc"/></svg></span>Записи</div>
     <div class="nav-item"        draggable="true" onclick="showSec('pend')"      data-s="pend">      <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-hourglass"/></svg></span>Модерація<span class="nb" id="pend-nb"></span></div>
     <div class="nav-item"        draggable="true" onclick="showSec('users')"     data-s="users">     <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-users"/></svg></span>Користувачі</div>
+    <div class="nav-item"        draggable="true" onclick="showSec('authreg')"   data-s="authreg">   <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-auth"/></svg></span>Реєстрація</div>
     <div class="nav-item"        draggable="true" onclick="showSec('mapeditor')" data-s="mapeditor"> <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-map"/></svg></span>Редактор карти</div>
     <div class="nav-item"        draggable="true" onclick="showSec('social')"    data-s="social">    <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-share"/></svg></span>Соцмережі</div>
     <div class="nav-item"        draggable="true" onclick="showSec('colors')"    data-s="colors">    <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-palette"/></svg></span>Кольори</div>
@@ -546,7 +573,23 @@ tr:hover td{background:rgba(255,255,255,.02)}
             <option value="moder">Модератори</option>
             <option value="admin">Адміни</option>
           </select>
+          <label style="font-size:11px;color:var(--muted)">Рядків:
+            <select id="users-page-size-sel" onchange="usersSetPageSize(+this.value)"
+              style="background:var(--panel);border:1px solid var(--border);border-radius:5px;color:var(--text);padding:5px 8px;font-size:11px;margin-left:4px">
+              <option value="10">10</option>
+              <option value="25" selected>25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+              <option value="9999">Всі</option>
+            </select>
+          </label>
+          <span id="users-count-hint" style="font-size:11px;color:var(--muted)"></span>
           <button class="btn btn-b" onclick="loadUsers()">↺ Оновити</button>
+        </div>
+        <div id="users-pagination-top" style="display:none;gap:8px;align-items:center;justify-content:center;margin-bottom:8px;flex-wrap:wrap">
+          <button class="btn btn-b" id="upg-prev-top" onclick="usersPage(-1)">◀ Назад</button>
+          <span id="upg-info-top" style="color:var(--muted);font-size:12px"></span>
+          <button class="btn btn-b" id="upg-next-top" onclick="usersPage(1)">Вперед ▶</button>
         </div>
         <div class="tbl-wrap"><table id="users-table">
           <thead><tr>
@@ -556,6 +599,143 @@ tr:hover td{background:rgba(255,255,255,.02)}
           </tr></thead>
           <tbody id="users-tb"></tbody>
         </table></div>
+        <div id="users-pagination" style="display:none;gap:8px;align-items:center;justify-content:center;margin-top:10px;flex-wrap:wrap">
+          <button class="btn btn-b" id="upg-prev" onclick="usersPage(-1)">◀ Назад</button>
+          <span id="upg-info" style="color:var(--muted);font-size:12px"></span>
+          <button class="btn btn-b" id="upg-next" onclick="usersPage(1)">Вперед ▶</button>
+        </div>
+
+      </div>
+
+      <!-- AUTH / REGISTRATION SETTINGS -->
+      <div id="sec-authreg" class="section">
+        <div class="sec-title"><svg class="adm-ico"><use href="#ico-auth"/></svg> Реєстрація та авторизація</div>
+
+        <!-- ── Блок 1: Загальне ─────────────────────────── -->
+        <div class="rg-group">
+          <div class="rg-group-title">Загальне</div>
+          <div class="rg-row">
+            <div class="rg-row-info">
+              <div class="rg-row-label">Відкрита реєстрація</div>
+              <div class="rg-row-desc">Нові користувачі можуть створювати акаунти</div>
+            </div>
+            <label class="rg-toggle">
+              <input type="checkbox" id="rg-enabled" onchange="saveRegSetting('reg_enabled',this.checked?'1':'0')">
+              <span class="rg-slider"></span>
+            </label>
+          </div>
+          <div class="rg-row">
+            <div class="rg-row-info">
+              <div class="rg-row-label">Вхід через Google</div>
+              <div class="rg-row-desc">Дозволити авторизацію через Google OAuth</div>
+            </div>
+            <label class="rg-toggle">
+              <input type="checkbox" id="rg-allow-google" onchange="saveRegSetting('reg_allow_google',this.checked?'1':'0')">
+              <span class="rg-slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <!-- ── Блок 2: Поля реєстрації ──────────────────── -->
+        <div class="rg-group">
+          <div class="rg-group-title">Поля реєстрації</div>
+          <table class="rg-fields-table">
+            <thead><tr><th>Поле</th><th>Статус</th></tr></thead>
+            <tbody>
+              <tr>
+                <td>Прізвище</td>
+                <td><span class="rg-badge-fixed">Завжди обов'язкове</span></td>
+              </tr>
+              <tr>
+                <td>Ім'я</td>
+                <td><span class="rg-badge-fixed">Завжди обов'язкове</span></td>
+              </tr>
+              <tr>
+                <td>По батькові</td>
+                <td>
+                  <select class="rg-sel" id="rg-field-mid" onchange="saveRegSetting('reg_field_mid',this.value)">
+                    <option value="required">Обов'язкове</option>
+                    <option value="optional">Необов'язкове</option>
+                    <option value="hidden">Приховане</option>
+                  </select>
+                </td>
+              </tr>
+              <tr>
+                <td>Нік</td>
+                <td><span class="rg-badge-fixed">Завжди обов'язкове</span></td>
+              </tr>
+              <tr>
+                <td>Телефон</td>
+                <td>
+                  <select class="rg-sel" id="rg-field-phone" onchange="saveRegSetting('reg_field_phone',this.value)">
+                    <option value="required">Обов'язкове</option>
+                    <option value="optional">Необов'язкове</option>
+                    <option value="hidden">Приховане</option>
+                  </select>
+                </td>
+              </tr>
+              <tr>
+                <td>Пароль</td>
+                <td><span class="rg-badge-fixed">Завжди обов'язкове</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- ── Блок 3: Підтвердження ─────────────────────── -->
+        <div class="rg-group">
+          <div class="rg-group-title">Підтвердження</div>
+          <div class="rg-row">
+            <div class="rg-row-info">
+              <div class="rg-row-label">Підтвердження email кодом</div>
+              <div class="rg-row-desc">Надсилати 6-значний код на пошту при реєстрації. Якщо вимкнено — реєстрація завершується одразу без email-коду</div>
+            </div>
+            <label class="rg-toggle">
+              <input type="checkbox" id="rg-email-verify" onchange="saveRegSetting('reg_require_email_verify',this.checked?'1':'0')">
+              <span class="rg-slider"></span>
+            </label>
+          </div>
+          <div class="rg-row rg-row-disabled">
+            <div class="rg-row-info">
+              <div class="rg-row-label">Підтвердження телефону SMS <span class="rg-badge-soon">Незабаром</span></div>
+              <div class="rg-row-desc">Потребує підключення SMS API (Twilio або ін.)</div>
+            </div>
+            <label class="rg-toggle">
+              <input type="checkbox" id="rg-phone-verify" disabled>
+              <span class="rg-slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <!-- ── Блок 4: Додатково ─────────────────────────── -->
+        <div class="rg-group">
+          <div class="rg-group-title">Додатково</div>
+          <div class="rg-row" style="align-items:flex-start;padding:14px 0">
+            <div class="rg-row-info">
+              <div class="rg-row-label">Мінімальна довжина пароля</div>
+              <div class="rg-row-desc">Від 8 до 20 символів (потрібні великі+малі літери та цифри)</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;margin-left:24px">
+              <input type="number" id="rg-min-pass" min="8" max="20" value="10"
+                style="width:70px;padding:7px 10px;background:var(--input-bg,var(--panel));border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:14px;text-align:center"
+                onchange="saveRegSetting('reg_min_pass_len',Math.max(8,Math.min(20,+this.value||10)).toString())">
+              <span style="font-size:12px;color:var(--muted)">симв.</span>
+            </div>
+          </div>
+          <div class="rg-row" style="align-items:flex-start;padding:14px 0;border-bottom:none">
+            <div class="rg-row-info">
+              <div class="rg-row-label">Повідомлення після реєстрації</div>
+              <div class="rg-row-desc">Текст сповіщення, яке бачить новий користувач</div>
+            </div>
+            <div style="margin-left:24px;flex:1;max-width:340px">
+              <input type="text" id="rg-welcome-msg" maxlength="120"
+                style="width:100%;padding:7px 10px;background:var(--input-bg,var(--panel));border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px"
+                onblur="saveRegSetting('reg_welcome_msg',this.value.trim()||'Вітаємо!')">
+            </div>
+          </div>
+        </div>
+
+        <div id="rg-save-hint" style="font-size:12px;color:var(--accent);min-height:20px;padding-left:4px"></div>
       </div>
 
       <!-- MAP EDITOR -->
@@ -3153,6 +3333,7 @@ function showSec(id) {
   if(id==='mem')       loadMem();
   if(id==='pend')      loadPend();
   if(id==='users')     loadUsers();
+  if(id==='authreg')   _loadRegSettings();
   if(id==='mapeditor') initMapEditor();
   if(id==='colors')    loadColors();
   if(id==='social')  { if(Object.keys(COLORS).length>0) renderSocialGrid();   else loadColors(); }
@@ -4061,6 +4242,9 @@ async function delMem(id, name=''){
 
 /* ══════════ USERS ══════════ */
 let _usersData = [];
+let _filteredUsers = [];
+let _usersPage = 0;
+let _usersPageSize = parseInt(localStorage.getItem('users_page_size') || '25') || 25;
 let _usersBanMenu = null;
 
 async function loadUsers() {
@@ -4069,8 +4253,44 @@ async function loadUsers() {
     if (!r.ok) throw new Error(r.status);
     _usersData = await r.json();
     _renderUserStats();
+    _usersPage = 0;
     filterUsersTable();
+    const sel = document.getElementById('users-page-size-sel');
+    if (sel) sel.value = String(_usersPageSize);
+    _loadRegSettings();
   } catch { showN('❌ Помилка завантаження користувачів', true); }
+}
+
+async function _loadRegSettings() {
+  try {
+    const r = await fetch(`${API}/api/colors`);
+    const d = await r.json();
+    const g = (k, def) => (d[k]?.value ?? def);
+    const chk = (id, val) => { const el = document.getElementById(id); if(el) el.checked = val === '1'; };
+    const sel = (id, val) => { const el = document.getElementById(id); if(el) el.value = val; };
+    const inp = (id, val) => { const el = document.getElementById(id); if(el) el.value = val; };
+    chk('rg-enabled',      g('reg_enabled','1'));
+    chk('rg-allow-google', g('reg_allow_google','1'));
+    sel('rg-field-mid',    g('reg_field_mid','required'));
+    sel('rg-field-phone',  g('reg_field_phone','optional'));
+    chk('rg-email-verify', g('reg_require_email_verify','1'));
+    inp('rg-min-pass',     g('reg_min_pass_len','10'));
+    inp('rg-welcome-msg',  g('reg_welcome_msg','Вітаємо!'));
+  } catch(e) { console.error('_loadRegSettings', e); }
+}
+
+async function saveRegSetting(key, val) {
+  try {
+    const r = await fetch(`${API}/api/admin/color`, {
+      method: 'PUT', headers: {...authH(), 'Content-Type': 'application/json'},
+      body: JSON.stringify({key, value: val})
+    });
+    if (!r.ok) throw new Error();
+    const hint = document.getElementById('rg-save-hint');
+    if (hint) { hint.textContent = '✅ Збережено'; setTimeout(() => hint.textContent = '', 2000); }
+  } catch {
+    showN('❌ Помилка збереження', true);
+  }
 }
 
 function _renderUserStats() {
@@ -4087,7 +4307,7 @@ function filterUsersTable() {
   const rl = document.getElementById('users-f-role')?.value   || 'all';
   let data = _usersData;
   if (q) data = data.filter(u =>
-    u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q) || String(u.id).includes(q)
+    (u.name||'').toLowerCase().includes(q) || (u.email||'').toLowerCase().includes(q) || String(u.id).includes(q)
   );
   if (st === 'active') data = data.filter(u => u.ban_status === 'active');
   else if (st === 'temp')   data = data.filter(u => u.ban_status === 'temp');
@@ -4096,7 +4316,44 @@ function filterUsersTable() {
   if (rl === 'admin') data = data.filter(u => u.role === 'admin');
   else if (rl === 'moder') data = data.filter(u => u.role === 'moder');
   else if (rl === 'user') data = data.filter(u => u.role === 'user' || !u.role);
-  _renderUsersTable(data);
+  _filteredUsers = data;
+  _usersPage = 0;
+  _renderUsersPage();
+}
+
+function _renderUsersPage() {
+  const displaySize = _usersPageSize >= 9999 ? (_filteredUsers.length || 1) : _usersPageSize;
+  const total = _filteredUsers.length;
+  const totalPages = Math.ceil(total / displaySize) || 1;
+  _usersPage = Math.max(0, Math.min(_usersPage, totalPages - 1));
+  const slice = _filteredUsers.slice(_usersPage * displaySize, (_usersPage + 1) * displaySize);
+  _renderUsersTable(slice);
+  const pgText = total > displaySize
+    ? `Сторінка ${_usersPage + 1} з ${totalPages} (знайдено: ${total})`
+    : `Знайдено: ${total}`;
+  const hint = document.getElementById('users-count-hint');
+  if (hint) hint.textContent = _usersData.length !== total ? `Знайдено: ${total} з ${_usersData.length}` : `Всього: ${total}`;
+  ['upg-info','upg-info-top'].forEach(id => { const el=document.getElementById(id); if(el) el.textContent = `Сторінка ${_usersPage + 1} з ${totalPages}`; });
+  const isFirst = _usersPage === 0, isLast = _usersPage >= totalPages - 1;
+  ['upg-prev','upg-prev-top'].forEach(id => { const el=document.getElementById(id); if(el) el.disabled = isFirst; });
+  ['upg-next','upg-next-top'].forEach(id => { const el=document.getElementById(id); if(el) el.disabled = isLast; });
+  // показуємо пагінацію завжди (крім режиму "Всі"), кнопки disabled коли одна сторінка
+  const show = _usersPageSize < 9999;
+  ['users-pagination','users-pagination-top'].forEach(id => { const el=document.getElementById(id); if(el) el.style.display = show ? 'flex' : 'none'; });
+}
+
+function usersPage(dir) {
+  _usersPage += dir;
+  _renderUsersPage();
+}
+
+function usersSetPageSize(n) {
+  n = +n;
+  if (!n || n < 1) n = 25;
+  _usersPageSize = n;
+  _usersPage = 0;
+  localStorage.setItem('users_page_size', String(n));
+  _renderUsersPage();
 }
 
 function _fmtRelTime(ts) {

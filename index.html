@@ -97,7 +97,8 @@
     <button id="search-clear" onclick="si.value='';closeDrop();this.style.display='none';" title="Очистити">✕</button>
     <div id="sdrop"></div>
   </div>
-  <span id="un"></span>
+  <span id="un" onclick="openProfile()" style="cursor:pointer" title="Мій профіль"></span>
+  <button id="btn-profile" onclick="openProfile()" style="display:none">Профіль</button>
   <button id="btn-logout" onclick="doLogout()">Вийти</button>
   <button id="btn-auth" onclick="openAuth()">Увійти</button>
   <button id="btn-add" onclick="onAdd()"><span class="add-ico">+</span><span class="add-txt"> ДОДАТИ</span></button>
@@ -2282,31 +2283,125 @@
 
 <!-- AUTH -->
 <div class="mov" id="mauth">
-  <div class="mo" style="max-width:380px">
+  <div class="mo" style="max-width:640px">
     <button class="moc" onclick="closeAuth()">&#10005;</button>
     <h2>&#128272; Вхід / Реєстрація</h2>
-
-    
-
     <div class="atabs">
       <div class="atab active" id="tlogin" onclick="switchTab('login')">Увійти</div>
       <div class="atab" id="treg" onclick="switchTab('reg')">Реєстрація</div>
     </div>
+
+    <!-- ── Форма входу ── -->
     <div id="plogin">
-      <div class="fr full" style="margin-bottom:10px"><div class="fg"><label>Email</label><input type="email" id="lemail" placeholder="you@email.com"></div></div>
-      <div class="fr full" style="margin-bottom:16px"><div class="fg"><label>Пароль</label><input type="password" id="lpass" placeholder="min 6 символів"></div></div>
+      <div class="fr full" style="margin-bottom:10px"><div class="fg"><label>Email</label><input type="email" id="lemail" placeholder="you@email.com" autocomplete="email"></div></div>
+      <div class="fr full" style="margin-bottom:16px"><div class="fg"><label>Пароль</label><input type="password" id="lpass" placeholder="Пароль" autocomplete="current-password"></div></div>
       <button class="fsub" onclick="doLogin()">Увійти</button>
     </div>
+
+    <!-- ── Форма реєстрації (одна форма, без скролу) ── -->
     <div id="preg" style="display:none">
-      <div class="fr full" style="margin-bottom:10px"><div class="fg"><label>Імʼя</label><input id="rname" placeholder="Ваше імʼя"></div></div>
-      <div class="fr full" style="margin-bottom:10px"><div class="fg"><label>Email</label><input type="email" id="remail" placeholder="you@email.com"></div></div>
-      <div class="fr full" style="margin-bottom:16px"><div class="fg"><label>Пароль</label><input type="password" id="rpass" placeholder="min 6 символів"></div></div>
-      <button class="fsub" onclick="doRegister()">Зареєструватись</button>
-    </div><br>
-    <div class="oauth-sep"><span>або</span></div>
-    <!-- OAuth -->
+      <!-- Рядок 1: Прізвище + Ім'я -->
+      <div class="fr">
+        <div class="fg">
+          <label>Прізвище * <span id="cnt-last" style="float:right;font-size:10px;color:var(--muted)">0/50</span></label>
+          <input id="r-last" maxlength="50" placeholder="Шевченко" autocomplete="family-name"
+            oninput="_fName(this,'cnt-last','hint-last')" onblur="_blurName(this,'hint-last')">
+          <div id="hint-last" class="f-hint"></div>
+        </div>
+        <div class="fg">
+          <label>Імʼя * <span id="cnt-first" style="float:right;font-size:10px;color:var(--muted)">0/50</span></label>
+          <input id="r-first" maxlength="50" placeholder="Олег" autocomplete="given-name"
+            oninput="_fName(this,'cnt-first','hint-first')" onblur="_blurName(this,'hint-first')">
+          <div id="hint-first" class="f-hint"></div>
+        </div>
+      </div>
+      <!-- Рядок 2: По батькові + Нік -->
+      <div class="fr">
+        <div class="fg" id="freg-mid">
+          <label id="lbl-mid">По батькові * <span id="cnt-mid" style="float:right;font-size:10px;color:var(--muted)">0/50</span></label>
+          <input id="r-mid" maxlength="50" placeholder="Миколайович" autocomplete="additional-name"
+            oninput="_fName(this,'cnt-mid','hint-mid')" onblur="_blurName(this,'hint-mid')">
+          <div id="hint-mid" class="f-hint"></div>
+        </div>
+        <div class="fg">
+          <label>Нік * <span id="cnt-nick" style="float:right;font-size:10px;color:var(--muted)">0/50</span></label>
+          <input id="r-nick" maxlength="50" placeholder="oleg_ua або oleg_ua" autocomplete="username"
+            oninput="_fNick(this,'cnt-nick','hint-nick')" onblur="_blurNick(this,'hint-nick')">
+          <div id="hint-nick" class="f-hint inf">Укр/лат літери, цифри, _ . -</div>
+        </div>
+      </div>
+      <!-- Рядок 3: Email + Телефон -->
+      <div class="fr">
+        <div class="fg">
+          <label>Email *</label>
+          <input type="email" id="r-email" maxlength="100" placeholder="you@email.com" autocomplete="email"
+            oninput="_fEmail(this,'hint-email')" onblur="_fEmail(this,'hint-email')">
+          <div id="hint-email" class="f-hint"></div>
+        </div>
+        <div class="fg" id="freg-phone">
+          <label id="lbl-phone">Телефон</label>
+          <input id="r-phone" maxlength="18" placeholder="0671234567" autocomplete="tel" inputmode="tel"
+            oninput="_fPhone(this,'hint-phone')">
+          <div id="hint-phone" class="f-hint inf">Необов'язково</div>
+        </div>
+      </div>
+      <!-- Код підтвердження — з'являється після відправки -->
+      <div id="reg-code-row" style="display:none;margin-bottom:6px">
+        <div style="display:flex;align-items:center;gap:10px;background:var(--surface);
+                    border-radius:8px;padding:8px 12px;margin-bottom:8px">
+          <span style="font-size:18px">✉️</span>
+          <div style="flex:1;font-size:12px;color:var(--text-secondary)">
+            Код надіслано на <strong id="reg-email-display" style="color:var(--accent)"></strong>.
+            <span style="display:block;font-size:10px;margin-top:1px">Перевірте папку «Спам» якщо не знайшли</span>
+          </div>
+        </div>
+        <div class="fr">
+          <div class="fg" style="flex:1">
+            <label>Код підтвердження з листа *</label>
+            <input id="r-code" type="text" inputmode="numeric" maxlength="6"
+              placeholder="000000"
+              style="text-align:center;font-size:22px;letter-spacing:8px;font-family:'Courier New',monospace;font-weight:700"
+              oninput="_fCode(this)" autocomplete="one-time-code">
+            <div id="hint-code" class="f-hint" style="text-align:center"></div>
+          </div>
+          <div style="display:flex;flex-direction:column;justify-content:flex-end;padding-bottom:4px;gap:4px;min-width:90px">
+            <button id="btn-resend" class="btn btn-b" style="font-size:11px;padding:7px 10px;white-space:nowrap"
+              onclick="doResendCode()">↺ Повторно</button>
+            <span id="resend-timer" style="font-size:10px;color:var(--muted);text-align:center"></span>
+          </div>
+        </div>
+      </div>
+      <!-- Рядок 4: Пароль + підтвердження пароля -->
+      <div class="fr">
+        <div class="fg">
+          <label>Пароль * <span id="lbl-pass-min" style="font-size:10px;color:var(--muted)">(мін. 10 симв.)</span></label>
+          <input type="password" id="r-pass" maxlength="72" placeholder="мінімум 10 символів" autocomplete="new-password"
+            oninput="checkPassStrength(this.value)">
+          <div id="pass-strength-bar" style="height:3px;border-radius:2px;margin-top:3px;background:var(--surface)">
+            <div id="pass-strength-fill" style="height:100%;width:0;border-radius:2px;transition:all .3s"></div>
+          </div>
+          <div id="pass-strength-hint" class="f-hint"></div>
+        </div>
+        <div class="fg">
+          <label>Підтвердження пароля *</label>
+          <input type="password" id="r-pass2" maxlength="72" placeholder="повторіть пароль" autocomplete="new-password"
+            oninput="_fPass2(this,'hint-pass2')">
+          <div id="hint-pass2" class="f-hint"></div>
+        </div>
+      </div>
+      <!-- Умови -->
+      <label style="display:flex;gap:8px;align-items:flex-start;margin-bottom:12px;cursor:pointer;font-size:12px;color:var(--text-secondary)">
+        <input type="checkbox" id="r-terms" style="margin-top:2px;flex-shrink:0">
+        Погоджуюсь з <a href="/terms.html" target="_blank" style="color:var(--accent)">умовами використання сервісу</a>
+      </label>
+      <!-- Кнопки: Надіслати код / Зареєструватись -->
+      <button class="fsub" id="btn-send-code" onclick="doSendCode()">Надіслати код підтвердження на email</button>
+      <button class="fsub" id="btn-do-register" onclick="doRegister()" style="display:none">Зареєструватись</button>
+    </div>
+
+    <div class="oauth-sep" id="auth-oauth-sep"><span>або</span></div>
     <div class="oauth-btns">
-      <a href="/api/auth/google" class="oauth-btn oauth-google">
+      <a href="/api/auth/google" id="auth-google-btn" class="oauth-btn oauth-google">
         <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
           <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615Z"/>
           <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18Z"/>
@@ -2323,6 +2418,77 @@
         Продовжити з Дія
       </a>
     </div>
+  </div>
+</div>
+
+<!-- Модал профілю -->
+<div class="mov" id="mprofile">
+  <div class="mo" style="max-width:420px">
+    <button class="moc" onclick="closeProfile()">&#10005;</button>
+    <h2>&#128100; Мій профіль</h2>
+    <div style="background:var(--surface);border-radius:10px;padding:12px 14px;margin-bottom:16px">
+      <div style="font-size:12px;color:var(--text-secondary);margin-bottom:6px">ПІБ (незмінне)</div>
+      <div id="pf-fio" style="font-weight:600;color:var(--text-primary)"></div>
+    </div>
+    <div class="fr full">
+      <div class="fg">
+        <label>Нік <span id="cnt-pf-nick" style="float:right;font-size:10px;color:var(--muted)"></span></label>
+        <input id="pf-nick" maxlength="50" placeholder="мій_нік або мій_нік_укр" autocomplete="username"
+          oninput="_fNick(this,'cnt-pf-nick','hint-pf-nick')" onblur="_blurNick(this,'hint-pf-nick')">
+        <div id="hint-pf-nick" class="f-hint inf">Укр/латинські літери, цифри, _ . -</div>
+      </div>
+    </div>
+    <div class="fr full">
+      <div class="fg">
+        <label>Email</label>
+        <input type="email" id="pf-email" maxlength="100" placeholder="you@email.com" autocomplete="email"
+          oninput="_fEmail(this,'hint-pf-email')" onblur="_fEmail(this,'hint-pf-email')">
+        <div id="hint-pf-email" class="f-hint"></div>
+      </div>
+    </div>
+    <div class="fr full">
+      <div class="fg">
+        <label>Підтвердження Email</label>
+        <input type="email" id="pf-email2" maxlength="100" placeholder="повторіть email"
+          oninput="_fEmail2(this,'hint-pf-email2')" onblur="_fEmail2(this,'hint-pf-email2')">
+        <div id="hint-pf-email2" class="f-hint"></div>
+      </div>
+    </div>
+    <div class="fr full">
+      <div class="fg">
+        <label>Телефон</label>
+        <input id="pf-phone" maxlength="18" placeholder="0671234567 або +380671234567" autocomplete="tel" inputmode="tel"
+          oninput="_fPhone(this,'hint-pf-phone')">
+        <div id="hint-pf-phone" class="f-hint inf">Лише українські номери</div>
+      </div>
+    </div>
+    <div style="border-top:1px solid var(--border);margin:10px 0 10px"></div>
+    <div style="font-size:11px;color:var(--text-secondary);margin-bottom:6px">Зміна пароля (заповніть якщо хочете змінити)</div>
+    <div class="fr full">
+      <div class="fg">
+        <label>Поточний пароль</label>
+        <input type="password" id="pf-oldpass" maxlength="72" placeholder="поточний пароль" autocomplete="current-password">
+      </div>
+    </div>
+    <div class="fr full" style="margin-bottom:0">
+      <div class="fg">
+        <label>Новий пароль</label>
+        <input type="password" id="pf-newpass" maxlength="72" placeholder="мінімум 10 символів" autocomplete="new-password"
+          oninput="checkPassStrength(this.value,'pf-')">
+      </div>
+    </div>
+    <div id="pf-pass-strength-bar" style="height:4px;border-radius:2px;margin-bottom:3px;background:var(--surface)"><div id="pf-pass-strength-fill" style="height:100%;width:0;border-radius:2px;transition:all .3s"></div></div>
+    <div id="pf-pass-strength-hint" class="f-hint" style="margin-bottom:8px"></div>
+    <div class="fr full">
+      <div class="fg">
+        <label>Підтвердження нового пароля</label>
+        <input type="password" id="pf-newpass2" maxlength="72" placeholder="повторіть пароль" autocomplete="new-password"
+          oninput="_fPass2(this,'hint-pf-newpass2')">
+        <div id="hint-pf-newpass2" class="f-hint" style="margin-bottom:8px"></div>
+      </div>
+    </div>
+    <button class="fsub" onclick="doUpdateProfile()">Зберегти зміни</button>
+    <button class="btn btn-b" onclick="closeProfile()" style="margin-top:8px;width:100%">Скасувати</button>
   </div>
 </div>
 
@@ -2418,7 +2584,72 @@ async function loadColors() {
     window.COLORS = COLORS;
     applyColors();
     applySocialLinks();
+    _applyRegSettings();
   } catch { console.warn('Кольори не завантажено — використовуємо типові'); }
+}
+
+function _applyRegSettings() {
+  const g = (k, d='') => getC(k) || d;
+
+  // ── Реєстрація відкрита / закрита ──────────────────────
+  const regEnabled = g('reg_enabled','1') === '1';
+  const tabReg = document.getElementById('treg');
+  if (tabReg) tabReg.style.display = regEnabled ? '' : 'none';
+  // Якщо реєстрація закрита і зараз відкрита — переключити на вхід
+  if (!regEnabled) {
+    const preg = document.getElementById('preg');
+    if (preg && preg.style.display !== 'none') switchTab('login');
+  }
+
+  // ── Google OAuth ────────────────────────────────────────
+  const allowGoogle = g('reg_allow_google','1') === '1';
+  const googleBtn   = document.getElementById('auth-google-btn');
+  const oauthSep    = document.getElementById('auth-oauth-sep');
+  if (googleBtn) googleBtn.style.display = allowGoogle ? '' : 'none';
+  // Сховати роздільник якщо всі OAuth-кнопки приховані
+  if (oauthSep) oauthSep.style.display = allowGoogle ? '' : 'none';
+
+  // ── Поле "По батькові" ──────────────────────────────────
+  const fieldMid  = g('reg_field_mid','required');
+  const fregMid   = document.getElementById('freg-mid');
+  const lblMid    = document.getElementById('lbl-mid');
+  const cntMid    = document.getElementById('cnt-mid');
+  if (fregMid) fregMid.style.display = fieldMid === 'hidden' ? 'none' : '';
+  if (lblMid) {
+    const star = fieldMid === 'required' ? ' *' : '';
+    const optTxt = fieldMid === 'optional'
+      ? ' <span style="font-size:10px;color:var(--muted)">(необов\'язково)</span>' : '';
+    lblMid.innerHTML = 'По батькові' + star + optTxt +
+      ' <span id="cnt-mid" style="float:right;font-size:10px;color:var(--muted)">'+(cntMid?cntMid.textContent:'0/50')+'</span>';
+  }
+
+  // ── Поле "Телефон" ──────────────────────────────────────
+  const fieldPhone = g('reg_field_phone','optional');
+  const fregPhone  = document.getElementById('freg-phone');
+  const lblPhone   = document.getElementById('lbl-phone');
+  const hintPhone  = document.getElementById('hint-phone');
+  if (fregPhone) fregPhone.style.display = fieldPhone === 'hidden' ? 'none' : '';
+  if (lblPhone)  lblPhone.textContent = fieldPhone === 'required' ? 'Телефон *' : 'Телефон';
+  if (hintPhone) {
+    hintPhone.textContent = fieldPhone === 'required'
+      ? 'Обов\'язковий (+380XXXXXXXXX або 0XXXXXXXXX)'
+      : 'Необов\'язково';
+    hintPhone.className = 'f-hint ' + (fieldPhone === 'required' ? '' : 'inf');
+  }
+
+  // ── Мінімальна довжина пароля ───────────────────────────
+  const minPass = parseInt(g('reg_min_pass_len','10')) || 10;
+  const lblPMin = document.getElementById('lbl-pass-min');
+  if (lblPMin) lblPMin.textContent = `(мін. ${minPass} симв.)`;
+
+  // ── Кнопка відправки / реєстрації ──────────────────────
+  const emailVerify = g('reg_require_email_verify','1') === '1';
+  const btnSend = document.getElementById('btn-send-code');
+  if (btnSend && !btnSend.disabled) {
+    btnSend.textContent = emailVerify
+      ? 'Надіслати код підтвердження на email'
+      : 'Зареєструватись';
+  }
 }
 
 function applySocialLinks() {
@@ -3686,44 +3917,433 @@ si.addEventListener('focus', () => {
 });
 /* ── Auth ── */
 function updateAuthUI(){
-  const un=document.getElementById('un'),ba=document.getElementById('btn-auth'),bl=document.getElementById('btn-logout');
-  if(curUser){un.textContent=curUser.name;un.style.display='block';bl.style.display='block';ba.style.display='none';}
-  else{un.style.display='none';bl.style.display='none';ba.style.display='block';}
+  const un=document.getElementById('un'),ba=document.getElementById('btn-auth'),bl=document.getElementById('btn-logout'),bp=document.getElementById('btn-profile');
+  if(curUser){
+    const nick=curUser.nickname?('@'+curUser.nickname):(curUser.name||'');
+    un.textContent=nick;un.style.display='block';bl.style.display='block';ba.style.display='none';
+    if(bp)bp.style.display='none';
+  }else{un.style.display='none';bl.style.display='none';ba.style.display='block';if(bp)bp.style.display='none';}
 }
 function openAuth(){document.getElementById('mauth').classList.add('open');}
 function closeAuth(){document.getElementById('mauth').classList.remove('open');}
 function switchTab(t){
   document.getElementById('plogin').style.display=t==='login'?'':'none';
-  document.getElementById('preg').style.display=t==='reg'?'':'none';
   document.getElementById('tlogin').classList.toggle('active',t==='login');
   document.getElementById('treg').classList.toggle('active',t==='reg');
+  if(t==='reg'){
+    document.getElementById('preg').style.display='';
+    switchRegStep(1); // завжди починаємо з кроку 1
+  } else {
+    document.getElementById('preg').style.display='none';
+    const p2=document.getElementById('preg2'); if(p2) p2.style.display='none';
+  }
 }
 async function doLogin(){
   const email=document.getElementById('lemail').value.trim();
   const pass=document.getElementById('lpass').value;
+  if(!email||!pass){showN("Заповніть email та пароль",true);return;}
   try{
     const r=await fetch(API+'/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:pass})});
     const d=await r.json();
     if(!d.ok)throw new Error(d.detail||'Помилка');
-    curUser={...d.user}; localStorage.setItem('mu',JSON.stringify(curUser));
-    updateAuthUI();closeAuth();showN("Ласкаво просимо, "+curUser.name+"!");
+    curUser={...d.user};localStorage.setItem('mu',JSON.stringify(curUser));
+    updateAuthUI();closeAuth();showN("Ласкаво просимо, "+(curUser.nickname||curUser.name)+"!");
   }catch(e){showN(e.message||"Невірний email або пароль",true);}
 }
-async function doRegister(){
-  const name=document.getElementById('rname').value.trim();
-  const email=document.getElementById('remail').value.trim();
-  const pass=document.getElementById('rpass').value;
-  if(!name||!email||!pass){showN("Заповніть всі поля",true);return;}
-  if(pass.length<6){showN("Пароль мінімум 6 символів",true);return;}
+/* ═══════════════════════════════════════════════════════
+   ФІЛЬТРИ ВВОДУ — реєстрація / профіль
+   ═══════════════════════════════════════════════════════ */
+
+// Дозволені символи для імені: Кирилиця (повна, з укр. специфікою),
+// дефіс і апостроф. Без цифр, латиниці, пробілів.
+const _RE_NAME_STRIP = /[^А-ЯҐЄІЇа-яґєіїʼ'ʼ\-]/gu;
+// Для ніку: Кирилиця + Латиниця + цифри + _ . -
+const _RE_NICK_STRIP = /[^А-ЯҐЄІЇа-яґєіїA-Za-z0-9_.\-]/gu;
+// Дозволені оператори UA (3-й знак: 3-9 для мобільних)
+const _RE_PHONE_VALID = /^0([3-9]\d)\d{7}$/;
+
+function _hint(id, text, cls) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = text;
+  el.className = 'f-hint' + (cls ? ' ' + cls : '');
+}
+function _cnt(id, len, max) {
+  const el = document.getElementById(id);
+  if (el) { el.textContent = len + '/' + max; el.style.color = len >= max ? '#e53935' : ''; }
+}
+function _borderState(el, state) {
+  el.classList.remove('f-ok','f-err');
+  if (state) el.classList.add(state);
+}
+
+/* ── Ім'я / Прізвище / По батькові ──────────────── */
+function _fName(el, cntId, hintId) {
+  const caret = el.selectionStart;
+  const before = el.value.length;
+  // Нормалізуємо апострофи до стандартного '
+  let v = el.value.replace(/[ʼʼ`]/g, "'");
+  // Прибираємо всі недопустимі символи
+  v = v.replace(_RE_NAME_STRIP, '');
+  // Не більше одного дефісу підряд, не більше одного апострофа підряд
+  v = v.replace(/-{2,}/g, '-').replace(/'{2,}/g, "'");
+  // Не починатись з дефісу або апострофа
+  v = v.replace(/^[-']+/, '');
+  // Авто-капіталізація: перша літера + після дефісу
+  v = v.replace(/(^|-)([а-яґєіїа-я])/gu, (_, sep, ch) => sep + ch.toUpperCase());
+  // Ліміт
+  if (v.length > 50) v = v.slice(0, 50);
+  el.value = v;
+  // Відновлюємо позицію курсору
+  try { const p = Math.max(0, caret - (before - v.length)); el.setSelectionRange(p, p); } catch {}
+  _cnt(cntId, v.length, 50);
+  // Підказка
+  if (!v) { _hint(hintId, '', ''); _borderState(el, null); return; }
+  if (v.length < 2) { _hint(hintId, 'Мінімум 2 символи', 'err'); _borderState(el, 'f-err'); }
+  else { _hint(hintId, '✓', 'ok'); _borderState(el, 'f-ok'); }
+}
+function _blurName(el, hintId) {
+  const v = el.value.trim();
+  // Не може закінчуватись на дефіс або апостроф
+  el.value = v.replace(/[-']+$/, '');
+  if (v.length >= 2) { _hint(hintId, '✓', 'ok'); _borderState(el, 'f-ok'); }
+  else if (v.length > 0) { _hint(hintId, 'Мінімум 2 символи', 'err'); _borderState(el, 'f-err'); }
+}
+
+/* ── Нік ─────────────────────────────────────────── */
+function _fNick(el, cntId, hintId) {
+  const caret = el.selectionStart;
+  const before = el.value.length;
+  let v = el.value.replace(_RE_NICK_STRIP, '').slice(0, 50);
+  // Не може починатись з крапки або дефісу
+  v = v.replace(/^[.\-]+/, '');
+  el.value = v;
+  try { const p = Math.max(0, caret - (before - v.length)); el.setSelectionRange(p, p); } catch {}
+  _cnt(cntId, v.length, 50);
+  if (!v) { _hint(hintId, 'Укр/латинські літери, цифри, _ . -', 'inf'); _borderState(el, null); return; }
+  if (v.length < 2) { _hint(hintId, 'Мінімум 2 символи', 'err'); _borderState(el, 'f-err'); }
+  else { _hint(hintId, '✓ @' + v, 'ok'); _borderState(el, 'f-ok'); }
+}
+function _blurNick(el, hintId) {
+  const v = el.value.replace(/[.\-]+$/, ''); // не може закінчуватись на . або -
+  el.value = v;
+  if (v.length >= 2) { _hint(hintId, '✓ @' + v, 'ok'); _borderState(el, 'f-ok'); }
+  else if (v) { _hint(hintId, 'Мінімум 2 символи', 'err'); _borderState(el, 'f-err'); }
+}
+
+/* ── Email ───────────────────────────────────────── */
+const _RE_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+function _fEmail(el, hintId) {
+  const v = el.value.trim();
+  if (!v) { _hint(hintId, '', ''); _borderState(el, null); return; }
+  if (_RE_EMAIL.test(v)) { _hint(hintId, '✓', 'ok'); _borderState(el, 'f-ok'); }
+  else { _hint(hintId, 'Невірний формат', 'err'); _borderState(el, 'f-err'); }
+}
+function _fEmail2(el, hintId) {
+  const v = el.value.trim();
+  const ref = document.getElementById('r-email')?.value.trim() || document.getElementById('pf-email')?.value.trim() || '';
+  if (!v) { _hint(hintId, '', ''); _borderState(el, null); return; }
+  if (v === ref) { _hint(hintId, '✓ Збігаються', 'ok'); _borderState(el, 'f-ok'); }
+  else { _hint(hintId, 'Email не збігається', 'err'); _borderState(el, 'f-err'); }
+}
+
+/* ── Телефон ─────────────────────────────────────── */
+function _fPhone(el, hintId) {
+  const raw = el.value;
+  // Витягуємо лише цифри
+  let digits = raw.replace(/\D/g, '');
+  // Нормалізуємо: прибираємо код країни якщо є
+  if (digits.startsWith('380'))      digits = '0' + digits.slice(3);
+  else if (digits.startsWith('38'))  digits = '0' + digits.slice(2);
+  else if (digits.startsWith('8') && digits.length === 11) digits = '0' + digits.slice(1);
+  // Обрізаємо до 10 цифр
+  digits = digits.slice(0, 10);
+  // Форматуємо: 0XX XXX-XX-XX
+  let fmt = digits;
+  if (digits.length > 3)  fmt = digits.slice(0,3) + ' ' + digits.slice(3);
+  if (digits.length > 6)  fmt = digits.slice(0,3) + ' ' + digits.slice(3,6) + '-' + digits.slice(6);
+  if (digits.length > 8)  fmt = digits.slice(0,3) + ' ' + digits.slice(3,6) + '-' + digits.slice(6,8) + '-' + digits.slice(8,10);
+  el.value = fmt;
+  // Підказка
+  if (!digits) { _hint(hintId, "Необов'язково. Лише українські номери", 'inf'); _borderState(el, null); return; }
+  if (digits.length < 10) {
+    _hint(hintId, 'Ще ' + (10 - digits.length) + ' цифр(и)', 'inf'); _borderState(el, null);
+  } else if (_RE_PHONE_VALID.test(digits)) {
+    _hint(hintId, '✓ +38 ' + fmt, 'ok'); _borderState(el, 'f-ok');
+  } else {
+    _hint(hintId, '✗ Невірний оператор (підтримуємо 03X–09X)', 'err'); _borderState(el, 'f-err');
+  }
+}
+
+/* ── Підтвердження пароля ────────────────────────── */
+function _fPass2(el, hintId) {
+  const v = el.value;
+  const ref = document.getElementById('r-pass')?.value || document.getElementById('pf-newpass')?.value || '';
+  if (!v) { _hint(hintId, '', ''); _borderState(el, null); return; }
+  if (v === ref) { _hint(hintId, '✓ Збігаються', 'ok'); _borderState(el, 'f-ok'); }
+  else { _hint(hintId, 'Паролі не збігаються', 'err'); _borderState(el, 'f-err'); }
+}
+
+function _passScore(pw){
+  let s=0;
+  if(pw.length>=10)s++;if(pw.length>=14)s++;
+  if(/[A-Z]/.test(pw))s++;if(/[a-z]/.test(pw))s++;
+  if(/\d/.test(pw))s++;if(/[^A-Za-z\d]/.test(pw))s++;
+  return Math.min(s,5);
+}
+function checkPassStrength(pw,pfx=''){
+  const score=_passScore(pw);
+  const colors=['#e53935','#e53935','#fb8c00','#fdd835','#43a047','#1b5e20'];
+  const labels=['','Дуже слабкий','Слабкий','Прийнятний','Добрий','Відмінний'];
+  const fill=document.getElementById(pfx+'pass-strength-fill');
+  const hint=document.getElementById(pfx+'pass-strength-hint');
+  if(fill){fill.style.width=(pw?score*20+'%':'0');fill.style.background=colors[score];}
+  if(hint)hint.textContent=pw?(labels[score]||''):'';
+}
+// Витягує чисті цифри телефону з відформатованого рядка
+function _phoneRaw(formatted) {
+  let d = formatted.replace(/\D/g, '');
+  if (d.startsWith('380')) d = '0' + d.slice(3);
+  else if (d.startsWith('38')) d = '0' + d.slice(2);
+  else if (d.startsWith('8') && d.length === 11) d = '0' + d.slice(1);
+  return d.slice(0, 10);
+}
+
+// Стан реєстрації
+let _regEmail = '';         // email що очікує підтвердження
+let _regResendAt = 0;       // unix-мс коли дозволено повторний відправ
+let _regResendTimer = null; // intervalId для таймера
+
+function _showCodeRow(show) {
+  const row = document.getElementById('reg-code-row');
+  const btnSend = document.getElementById('btn-send-code');
+  const btnReg  = document.getElementById('btn-do-register');
+  if (row)     row.style.display     = show ? '' : 'none';
+  if (btnSend) btnSend.style.display = show ? 'none' : '';
+  if (btnReg)  btnReg.style.display  = show ? ''     : 'none';
+  if (show) { const c = document.getElementById('r-code'); if(c){c.value='';c.focus();} }
+}
+
+function switchRegStep(step) {
+  // Зворотна сумісність: крок 1 = скинути форму
+  if (step === 1) {
+    _showCodeRow(false);
+    clearInterval(_regResendTimer);
+    const t = document.getElementById('resend-timer'); if(t) t.textContent = '';
+    _regEmail = '';
+  }
+}
+
+function _fCode(el) {
+  // Лише цифри, рівно 6
+  el.value = el.value.replace(/\D/g, '').slice(0, 6);
+  const hint = document.getElementById('hint-code');
+  if (!hint) return;
+  if (el.value.length === 6) { hint.textContent = '✓ Готово до підтвердження'; hint.className = 'f-hint ok'; }
+  else if (el.value.length > 0) { hint.textContent = `Введіть ще ${6 - el.value.length} цифр`; hint.className = 'f-hint inf'; }
+  else { hint.textContent = ''; hint.className = 'f-hint'; }
+}
+
+function _startResendTimer(seconds) {
+  clearInterval(_regResendTimer);
+  const btn = document.getElementById('btn-resend');
+  const tmr = document.getElementById('resend-timer');
+  let left = seconds;
+  if (btn) btn.disabled = true;
+  const tick = () => {
+    if (left <= 0) {
+      clearInterval(_regResendTimer);
+      if (btn) btn.disabled = false;
+      if (tmr) tmr.textContent = '';
+      return;
+    }
+    if (tmr) tmr.textContent = `(через ${left}с)`;
+    left--;
+  };
+  tick();
+  _regResendTimer = setInterval(tick, 1000);
+}
+
+function _collectRegData() {
+  return {
+    last:     document.getElementById('r-last').value.trim(),
+    first:    document.getElementById('r-first').value.trim(),
+    mid:      document.getElementById('r-mid').value.trim(),
+    nick:     document.getElementById('r-nick').value.trim(),
+    email:    document.getElementById('r-email').value.trim(),
+    phoneRaw: _phoneRaw(document.getElementById('r-phone').value),
+    pass:     document.getElementById('r-pass').value,
+    pass2:    document.getElementById('r-pass2').value,
+    terms:    document.getElementById('r-terms').checked,
+  };
+}
+
+function _validateRegForm(f) {
+  const fieldMid   = getC('reg_field_mid',   'required');
+  const fieldPhone = getC('reg_field_phone',  'optional');
+  const minPass    = Math.max(8, parseInt(getC('reg_min_pass_len','10')) || 10);
+
+  if (!f.last || f.last.length < 2)   { showN("Введіть прізвище (мін. 2 символи)", true); document.getElementById('r-last').focus(); return false; }
+  if (!f.first || f.first.length < 2) { showN("Введіть ім'я (мін. 2 символи)", true); document.getElementById('r-first').focus(); return false; }
+  if (fieldMid === 'required' && (!f.mid || f.mid.length < 2)) {
+    showN("Введіть по батькові (мін. 2 символи)", true); document.getElementById('r-mid').focus(); return false;
+  }
+  if (!f.nick || f.nick.length < 2)   { showN("Нік: мінімум 2 символи", true); document.getElementById('r-nick').focus(); return false; }
+  if (!f.email || !_RE_EMAIL.test(f.email)) { showN("Введіть коректний email", true); document.getElementById('r-email').focus(); return false; }
+  if (fieldPhone === 'required' && !f.phoneRaw) {
+    showN("Введіть номер телефону", true); document.getElementById('r-phone').focus(); return false;
+  }
+  if (fieldPhone !== 'hidden' && f.phoneRaw && (f.phoneRaw.length !== 10 || !_RE_PHONE_VALID.test(f.phoneRaw))) {
+    showN("Невірний номер телефону. Формат: 0671234567", true); return false;
+  }
+  if (f.pass !== f.pass2) { showN("Паролі не збігаються", true); return false; }
+  const passRe = new RegExp(`^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).{${minPass},}$`);
+  if (!passRe.test(f.pass)) {
+    showN(`Пароль: мін. ${minPass} символів, великі та малі латинські літери, цифри`, true);
+    document.getElementById('r-pass').focus(); return false;
+  }
+  if (!f.terms) { showN("Необхідно погодитись з умовами використання", true); return false; }
+  return true;
+}
+
+async function _sendCodeRequest(email, f) {
+  const phoneOut = f.phoneRaw.length === 10 ? '+38' + f.phoneRaw : '';
+  const r = await fetch(API+'/api/auth/send-code', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({
+      last_name:f.last, first_name:f.first, middle_name:f.mid,
+      nickname:f.nick, email, phone:phoneOut,
+      password:f.pass, terms_agreed:f.terms
+    })
+  });
+  const d = await r.json();
+  if (!d.ok) throw new Error(d.detail||'Помилка');
+  return d;
+}
+
+async function doSendCode() {
+  const f = _collectRegData();
+  if (!_validateRegForm(f)) return;
+  const btn = document.getElementById('btn-send-code');
+  btn.disabled = true; btn.textContent = 'Надсилаємо…';
+  try {
+    const d = await _sendCodeRequest(f.email, f);
+    // Якщо підтвердження email вимкнено — сервер реєструє одразу
+    if (d.registered && d.user) {
+      curUser = {...d.user}; localStorage.setItem('mu', JSON.stringify(curUser));
+      updateAuthUI(); closeAuth();
+      showN(d.welcome || ("Вітаємо, @" + (d.user.nickname||d.user.name) + "!"));
+      return;
+    }
+    _regEmail = f.email;
+    const disp = document.getElementById('reg-email-display');
+    if (disp) disp.textContent = f.email;
+    if (d.dev && d.code) {
+      const inp = document.getElementById('r-code');
+      if (inp) { inp.value = d.code; _fCode(inp); }
+      showN('⚠ DEV: код ' + d.code + ' (SMTP не налаштований)', false);
+    } else {
+      showN('✉ Код надіслано на ' + f.email);
+    }
+    _showCodeRow(true);
+    _startResendTimer(60);
+  } catch(e) {
+    showN(e.message||"Помилка відправки коду", true);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = getC('reg_require_email_verify','1') === '1'
+      ? 'Надіслати код підтвердження на email'
+      : 'Зареєструватись';
+  }
+}
+
+async function doResendCode() {
+  if (!_regEmail) { switchRegStep(1); return; }
+  const f = _collectRegData();
+  const btn = document.getElementById('btn-resend');
+  if (btn) btn.disabled = true;
+  try {
+    const d = await _sendCodeRequest(_regEmail, f);
+    if (d.dev && d.code) {
+      const inp = document.getElementById('r-code');
+      if (inp) { inp.value = d.code; _fCode(inp); }
+      showN('⚠ DEV: код ' + d.code);
+    } else {
+      showN('✉ Код надіслано повторно на ' + _regEmail);
+    }
+    _startResendTimer(60);
+  } catch(e) { showN(e.message||"Помилка", true); }
+  finally { if (btn) btn.disabled = false; }
+}
+
+async function doRegister() {
+  const code = (document.getElementById('r-code').value||'').trim();
+  if (code.length !== 6) { showN("Введіть 6-значний код з листа", true); document.getElementById('r-code').focus(); return; }
+  if (!_regEmail) { switchRegStep(1); return; }
+  const btn = document.getElementById('btn-do-register');
+  btn.disabled = true; btn.textContent = 'Перевіряємо…';
+  try {
+    const r = await fetch(API+'/api/auth/register', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({email: _regEmail, code})
+    });
+    const d = await r.json();
+    if (!d.ok) throw new Error(d.detail||'Помилка');
+    curUser = {...d.user}; localStorage.setItem('mu', JSON.stringify(curUser));
+    updateAuthUI(); closeAuth();
+    showN("Вітаємо, @" + (d.user.nickname||d.user.name) + "! Реєстрацію завершено.");
+  } catch(e) {
+    showN(e.message||"Помилка перевірки коду", true);
+    if ((e.message||'').includes('знову') || (e.message||'').includes('ліміт')) {
+      setTimeout(() => switchRegStep(1), 1800);
+    }
+  } finally {
+    btn.disabled = false; btn.textContent = 'Зареєструватись';
+  }
+}
+function doLogout(){
+  fetch(API+'/api/auth/logout',{method:'POST'}).catch(()=>{});
+  curUser=null;localStorage.removeItem('mu');updateAuthUI();showN("До побачення!");
+}
+function openProfile(){
+  if(!curUser){openAuth();return;}
+  document.getElementById('pf-fio').textContent=
+    [curUser.last_name,curUser.first_name,curUser.middle_name].filter(Boolean).join(' ')||curUser.name||'';
+  document.getElementById('pf-nick').value=curUser.nickname||'';
+  document.getElementById('pf-email').value=curUser.email||'';
+  document.getElementById('pf-email2').value='';
+  document.getElementById('pf-phone').value=curUser.phone||'';
+  document.getElementById('pf-oldpass').value='';
+  document.getElementById('pf-newpass').value='';
+  document.getElementById('pf-newpass2').value='';
+  document.getElementById('mprofile').classList.add('open');
+}
+function closeProfile(){document.getElementById('mprofile').classList.remove('open');}
+async function doUpdateProfile(){
+  const nick=document.getElementById('pf-nick').value.trim();
+  const email=document.getElementById('pf-email').value.trim();
+  const email2=document.getElementById('pf-email2').value.trim();
+  const phone=document.getElementById('pf-phone').value.trim();
+  const oldpass=document.getElementById('pf-oldpass').value;
+  const newpass=document.getElementById('pf-newpass').value;
+  const newpass2=document.getElementById('pf-newpass2').value;
+  if(email&&email!==curUser.email&&email!==email2){showN("Email адреси не збігаються",true);return;}
+  if(newpass&&newpass!==newpass2){showN("Нові паролі не збігаються",true);return;}
+  if(newpass&&_passScore(newpass)<2){showN("Новий пароль занадто слабкий",true);return;}
+  const body={};
+  if(nick&&nick!==curUser.nickname){body.nickname=nick;}
+  if(email&&email!==curUser.email){body.email=email;body.email_confirm=email2;}
+  if(phone!==curUser.phone){body.phone=phone;}
+  if(newpass){body.old_password=oldpass;body.password=newpass;}
+  if(!Object.keys(body).length){showN("Нічого не змінено",false);closeProfile();return;}
   try{
-    const r=await fetch(API+'/api/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,email,password:pass})});
+    const r=await fetch(API+'/api/auth/profile',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     const d=await r.json();
     if(!d.ok)throw new Error(d.detail||'Помилка');
-    curUser={...d.user}; localStorage.setItem('mu',JSON.stringify(curUser));
-    updateAuthUI();closeAuth();showN("Вітаємо, "+name+"!");
-  }catch(e){showN(e.message||"Помилка реєстрації",true);}
+    curUser={...curUser,...d.user};localStorage.setItem('mu',JSON.stringify(curUser));
+    updateAuthUI();closeProfile();showN("Профіль оновлено!");
+  }catch(e){showN(e.message||"Помилка збереження",true);}
 }
-function doLogout(){curUser=null;localStorage.removeItem('mu');updateAuthUI();showN("До побачення!");}
 
 /* ── Add ── */
 function onAdd(){

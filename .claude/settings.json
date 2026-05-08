@@ -10,7 +10,10 @@
       "WebFetch(domain:uk.wikipedia.org)",
       "Bash(git -C /d/OSPanel/OpenServer/domains/localhost/treetex log --oneline -20)",
       "Bash(read f *)",
-      "Bash([ -f \"D:/OSPanel/OpenServer/domains/localhost/treetex/img/awards/$f\" ])"
+      "Bash([ -f \"D:/OSPanel/OpenServer/domains/localhost/treetex/img/awards/$f\" ])",
+      "Bash(curl -s -X POST \"http://127.0.0.1:8000/api/auth/register\" -H \"Content-Type: application/json\" -d \"{\\\\\"last_name\\\\\":\\\\\"Шевченко\\\\\",\\\\\"first_name\\\\\":\\\\\"Олег\\\\\",\\\\\"middle_name\\\\\":\\\\\"Миколайович\\\\\",\\\\\"nickname\\\\\":\\\\\"oleg_test\\\\\",\\\\\"email\\\\\":\\\\\"test_reg@example.com\\\\\",\\\\\"email_confirm\\\\\":\\\\\"test_reg@example.com\\\\\",\\\\\"phone\\\\\":\\\\\"\\\\\",\\\\\"password\\\\\":\\\\\"Test123456\\\\\",\\\\\"terms_agreed\\\\\":true}\")",
+      "PowerShell(python -m py_compile \"D:\\\\OSPanel\\\\OpenServer\\\\domains\\\\localhost\\\\treetex\\\\Paskal.py\")",
+      "PowerShell(if \\($?\\) { \"OK\" })"
     ]
   }
 }

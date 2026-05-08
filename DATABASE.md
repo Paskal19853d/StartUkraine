@@ -1,7 +1,7 @@
 # DATABASE.md — База даних zoryana_pamyat
 
 > MySQL/MariaDB · Хост: 127.0.0.1:3306 · Користувач: root · Кодування: utf8mb4_unicode_ci  
-> Оновлено: 2026-05-07 · Поточний стан: 8 таблиць, ~960+ рядків
+> Оновлено: 2026-05-08 · Поточний стан: 9 таблиць
 
 ---
 
@@ -25,16 +25,17 @@ D:\OSPanel\modules\MySQL-8.4\bin\mysql.exe -h 127.0.0.1 -P 3306 -u root -proot z
 
 ## Огляд таблиць
 
-| Таблиця | Рядків | Призначення |
-|---------|--------|-------------|
-| `memorials` | 123 | Записи загиблих — основна таблиця |
-| `users` | 1 | Адміністратори та зареєстровані користувачі |
-| `colors` | 88 | ВСІ налаштування сайту (кольори + конфіг) |
-| `cities` | 463 | Міста України на карті |
-| `map_labels` | 24 | Підписи областей на SVG-карті |
-| `memorial_awards` | 152 | Нагороди/відзнаки до меморіалів |
-| `likes_log` | 0 | Журнал лайків (дедублікація) |
-| `search_logs` | 123 | Аналітика пошукових запитів |
+| Таблиця | Призначення |
+|---------|-------------|
+| `memorials` | Записи загиблих — основна таблиця |
+| `users` | Адміністратори та зареєстровані користувачі |
+| `colors` | ВСІ налаштування сайту (кольори + конфіг) |
+| `cities` | Міста України на карті |
+| `map_labels` | Підписи областей на SVG-карті |
+| `awards_catalog` | **Каталог нагород** (єдине джерело: 31+ нагород) — завантажується через `/api/awards/catalog` |
+| `memorial_awards` | Нагороди/відзнаки до конкретних меморіалів |
+| `likes_log` | Журнал лайків (дедублікація) |
+| `search_logs` | Аналітика пошукових запитів |
 
 ---
 
@@ -128,8 +129,13 @@ UPDATE memorials SET likes=likes+1, rating=... WHERE id=%s
 | Колонка | Тип | NULL | За замовч. | Опис |
 |---------|-----|------|-----------|------|
 | `id` | INT AUTO_INCREMENT | NO | — | Первинний ключ |
-| `name` | VARCHAR(100) | NO | — | Відображуване ім'я |
+| `name` | VARCHAR(100) | NO | — | Повне ПІБ (last + first + mid), для backward compat |
+| `first_name` | VARCHAR(100) | NO | `''` | Ім'я (незмінне після реєстрації) |
+| `last_name` | VARCHAR(100) | NO | `''` | Прізвище (незмінне після реєстрації) |
+| `middle_name` | VARCHAR(100) | NO | `''` | По батькові (незмінне після реєстрації) |
+| `nickname` | VARCHAR(100) | YES | NULL | Нік (унікальний, змінюваний, лише латиниця/цифри/_ .-) |
 | `email` | VARCHAR(120) | NO | — | Email (унікальний, логін) |
+| `phone` | VARCHAR(20) | NO | `''` | Телефон (+380XXXXXXXXX) |
 | `password` | VARCHAR(255) | NO | — | bcrypt (12 rounds) або legacy SHA256 |
 | `is_admin` | TINYINT | YES | `0` | Застарілий прапор (мігровано в `role`) |
 | `is_banned` | TINYINT | YES | `0` | 1 = заблокований |
@@ -145,7 +151,13 @@ UPDATE memorials SET likes=likes+1, rating=... WHERE id=%s
 |-------|-----|---------|-------------|
 | `PRIMARY` | BTREE | `id` | — |
 | `email` | UNIQUE BTREE | `email` | Унікальний логін |
+| `idx_nickname` | UNIQUE BTREE | `nickname` | Унікальний нік |
 | `idx_last_seen` | BTREE | `last_seen` | Визначення "онлайн" (last_seen > now-300) |
+
+### Правила зміни даних
+- **Незмінні після реєстрації:** `first_name`, `last_name`, `middle_name`
+- **Змінювані користувачем:** `nickname`, `email`, `phone`, `password`
+- **Змінювані лише адміном:** `role`, `is_banned`, `ban_until`, `notes`
 
 ### Поточні акаунти
 ```
@@ -319,6 +331,12 @@ label VARCHAR(100)  -- Опис для адмін-панелі
 | `admin_logo_height` | `30` | Висота логотипу (px) |
 | `admin_logo_radius` | `0` | Заокруглення (px) |
 
+#### Реєстрація
+| Ключ | Значення | Опис |
+|------|----------|------|
+| `reg_enabled` | `1` | 1 = реєстрація відкрита, 0 = закрита (адмін перемикає в sec-users) |
+| `reg_require_phone` | `0` | 1 = телефон обов'язковий при реєстрації |
+
 #### Інше
 | Ключ | Значення | Опис |
 |------|----------|------|
@@ -388,9 +406,65 @@ label VARCHAR(100)  -- Опис для адмін-панелі
 
 ---
 
+## Таблиця `awards_catalog` (NEW)
+
+**Призначення:** Єдиний каталог всіх нагород України — незалежний від конкретних меморіалів. Слугує джерелом для вибору нагород в адмін-панелі. Завантажується через `GET /api/awards/catalog`.
+
+### Схема
+```sql
+CREATE TABLE awards_catalog (
+  id          INT AUTO_INCREMENT PRIMARY KEY,
+  name        VARCHAR(200) NOT NULL,
+  img_file    VARCHAR(200) NOT NULL,        -- назва файлу в img/awards/
+  category    VARCHAR(30)  NOT NULL DEFAULT 'military',
+  description TEXT,
+  sort_order  INT NOT NULL DEFAULT 0,
+  UNIQUE KEY uq_img (img_file)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+```
+
+### Колонки
+
+| Колонка | Тип | Опис |
+|---------|-----|------|
+| `id` | INT AUTO_INCREMENT | PK |
+| `name` | VARCHAR(200) | Назва нагороди (укр.) |
+| `img_file` | VARCHAR(200) | Ім'я файлу PNG у `img/awards/` |
+| `category` | VARCHAR(30) | `hero` / `order` / `cross` / `medal` / `badge` |
+| `description` | TEXT | Офіційний опис нагороди |
+| `sort_order` | INT | Порядок (нижче = важливіше) |
+
+### Категорії
+| Категорія | Опис |
+|-----------|------|
+| `hero` | Герой України |
+| `order` | Ордени |
+| `cross` | Хрести |
+| `medal` | Медалі |
+| `badge` | Нагрудні знаки / відзнаки |
+
+### Поточні дані
+```
+31 нагорода: 1 звання героя, 15 орденів, 2 хрести, 7 медалей, 4 відзнаки
+Зображення: img/awards/*.png (локально, завантажені через setup_awards.py)
+```
+
+### Як поповнювати
+```bash
+# Масово через скрипт:
+python -X utf8 setup_awards.py
+
+# Або вручну:
+INSERT INTO awards_catalog (name, img_file, category, description, sort_order)
+VALUES ('Назва нагороди', 'img_file.png', 'medal', 'Опис', 250);
+# + покласти PNG в img/awards/
+```
+
+---
+
 ## Таблиця `memorial_awards`
 
-**Призначення:** Нагороди та відзнаки, прив'язані до конкретного меморіалу.
+**Призначення:** Нагороди/відзнаки, прив'язані до конкретного меморіалу (зв'язок N:1).
 
 ### Колонки
 
@@ -399,24 +473,23 @@ label VARCHAR(100)  -- Опис для адмін-панелі
 | `id` | INT AUTO_INCREMENT | NO | PK |
 | `memorial_id` | INT | NO | FK → `memorials.id` |
 | `name` | VARCHAR(200) | NO | Назва нагороди |
-| `img_file` | VARCHAR(300) | YES | Назва файлу (Wikimedia Commons) |
+| `img_file` | VARCHAR(300) | YES | **Локальна** назва файлу (напр. `order_courage_1.png`) → `img/awards/{file}` |
 | `award_date` | DATE | YES | Дата нагородження |
 | `descr` | TEXT | YES | Опис |
 | `sort_order` | INT | NO, `0` | Порядок відображення |
 
-### Як підвантажуються зображення
+### ⚠️ Важливо: img_file — локальні файли
 ```javascript
-// В admin.html
+// В admin.html та index.html
 function _wikiImg(file, w) {
-  return `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(file)}?width=${w}`;
+  return `/img/awards/${encodeURIComponent(file)}`;  // ЛОКАЛЬНО, не Wikimedia!
 }
-// img_file = "badge_oath.png" → повний Wikimedia URL
 ```
 
 ### Поточні дані
 ```
 152 записи нагород для різних меморіалів
-Приклади: "Відзнака «За вірність присязі»", "Орден «За мужність» II ст."
+img_file = локальні PNG назви (напр. "order_courage_1.png", "medal_defender.png")
 ```
 
 ---
@@ -537,4 +610,4 @@ SELECT COUNT(*) FROM users WHERE last_seen > %s AND is_banned=0
 
 ---
 
-*Оновлено: 2026-05-07 · Дані актуальні на момент вивчення БД*
+*Оновлено: 2026-05-08 · Додано таблицю awards_catalog, уточнено img_file в memorial_awards*

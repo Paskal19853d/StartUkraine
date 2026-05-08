@@ -4,6 +4,9 @@
 БД:     MySQL / MariaDB (налаштування у .env)
 """
 import os, time, asyncio, hashlib, threading, re, base64, secrets, string, html as _html, json, logging
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 import urllib.request, urllib.error, urllib.parse
 import bcrypt
 from typing import Optional, List
@@ -385,6 +388,22 @@ def init_db():
             c.execute("ALTER TABLE search_logs ADD INDEX idx_query (query(50))")
         except Exception:
             pass
+        # Migration: extended user profile fields
+        for _col, _sql in [
+            ("first_name",  "ALTER TABLE users ADD COLUMN first_name  VARCHAR(100) NOT NULL DEFAULT ''"),
+            ("last_name",   "ALTER TABLE users ADD COLUMN last_name   VARCHAR(100) NOT NULL DEFAULT ''"),
+            ("middle_name", "ALTER TABLE users ADD COLUMN middle_name VARCHAR(100) NOT NULL DEFAULT ''"),
+            ("nickname",    "ALTER TABLE users ADD COLUMN nickname     VARCHAR(100) DEFAULT NULL"),
+            ("phone",       "ALTER TABLE users ADD COLUMN phone        VARCHAR(20)  NOT NULL DEFAULT ''"),
+        ]:
+            try:
+                c.execute(_sql)
+            except Exception:
+                pass
+        try:
+            c.execute("ALTER TABLE users ADD UNIQUE INDEX idx_nickname (nickname)")
+        except Exception:
+            pass
 
         # ── memorial_awards ───────────────────────────────
         c.execute("""
@@ -495,6 +514,15 @@ def init_db():
         ("social_linkedin_url",   "",         "Соцмережі — LinkedIn URL"),
         ("social_viber",          "1",        "Соцмережі — Viber (1=показати, 0=сховати)"),
         ("social_viber_url",      "",         "Соцмережі — Viber URL"),
+        ("reg_enabled",              "1",          "Реєстрація — дозволити нову реєстрацію (1=так, 0=ні)"),
+        ("reg_allow_google",         "1",          "Реєстрація — дозволити вхід через Google OAuth (1=так, 0=ні)"),
+        ("reg_field_mid",            "required",   "Реєстрація — поле По батькові (required/optional/hidden)"),
+        ("reg_field_phone",          "optional",   "Реєстрація — поле Телефон (required/optional/hidden)"),
+        ("reg_require_phone",        "0",          "Реєстрація — обов'язковий телефон [застаріле, використовуй reg_field_phone]"),
+        ("reg_require_email_verify", "1",          "Реєстрація — підтвердження email кодом (1=так, 0=без підтвердження)"),
+        ("reg_require_phone_verify", "0",          "Реєстрація — підтвердження телефону SMS (1=так, 0=ні) [потребує SMS API]"),
+        ("reg_min_pass_len",         "10",         "Реєстрація — мінімальна довжина пароля (8–20)"),
+        ("reg_welcome_msg",          "Вітаємо на Зоряна Пам'ять!", "Реєстрація — повідомлення після успішної реєстрації"),
     ]
     with db.cursor() as c:
         for key, val, label in defaults:
@@ -923,6 +951,20 @@ _rl = _RateLimiter()
 _sessions: dict = {}
 _sessions_lock = threading.Lock()
 
+# ── Pending email verifications ────────────────────────────
+# {email: {code, hash_pw, data{...}, expires, attempts}}
+_pending_reg: dict = {}
+_pending_reg_lock = threading.Lock()
+_PENDING_TTL = 600        # 10 хвилин
+_PENDING_MAX_ATTEMPTS = 5 # максимум спроб введення коду
+
+def _pending_cleanup():
+    now = time.time()
+    with _pending_reg_lock:
+        expired = [k for k, v in _pending_reg.items() if v["expires"] < now]
+        for k in expired:
+            del _pending_reg[k]
+
 def _session_create(user_id: int) -> str:
     token = secrets.token_hex(32)
     expires = time.time() + 86400 * 7  # 7 днів
@@ -1234,6 +1276,92 @@ def _validate_date(s) -> str | None:
         raise HTTPException(400, f"Невалідний формат дати (очікується РРРР-ММ-ДД): {s[:20]}")
     return s
 
+_PASS_RE = re.compile(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d!@#$%^&*()\-_=+\[\]{};:\'",.<>?/\\|`~]{10,72}$')
+_NICK_RE = re.compile(r'^[Ѐ-ӿa-zA-Z0-9_.\-]{2,50}$')  # Cyrillic + Latin + digits + _.-
+_PHONE_RE = re.compile(r'^380[3-9]\d{8}$')
+
+def _email_verification_html(code: str, nickname: str) -> str:
+    return f"""<!DOCTYPE html>
+<html lang="uk"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:20px;background:#060e1a;font-family:Arial,sans-serif">
+<div style="max-width:480px;margin:0 auto">
+  <div style="background:#0d1f35;border-radius:14px;overflow:hidden;border:1px solid #1a3a5c">
+    <div style="background:linear-gradient(135deg,#0e2060,#0a1840);padding:24px;text-align:center">
+      <div style="font-size:32px">★</div>
+      <h1 style="margin:6px 0 0;color:#f0c030;font-size:18px;letter-spacing:1px">ЗОРЯНА ПАМ'ЯТЬ</h1>
+      <p style="color:#8ab0d0;font-size:12px;margin:4px 0 0">Меморіальна платформа</p>
+    </div>
+    <div style="padding:28px 28px 20px">
+      <h2 style="color:#00c8ff;margin:0 0 12px;font-size:16px">Підтвердження реєстрації</h2>
+      <p style="color:#a0b8d0;font-size:14px;margin:0 0 20px">
+        Вітаємо, <strong style="color:#d0dce8">@{nickname}</strong>!<br>
+        Ваш код підтвердження email:
+      </p>
+      <div style="background:#05101e;border:2px solid #00c8ff;border-radius:12px;
+                  padding:22px 0;text-align:center;margin:0 0 20px">
+        <span style="font-size:40px;font-weight:700;letter-spacing:14px;color:#f0c030;
+                     font-family:'Courier New',monospace">{code}</span>
+      </div>
+      <p style="color:#607080;font-size:12px;margin:0;line-height:1.6">
+        ⏱ Код дійсний <strong style="color:#8a9cb0">10 хвилин</strong>.<br>
+        🔒 Нікому не передавайте цей код.<br>
+        Якщо ви не реєструвались — просто проігноруйте цей лист.
+      </p>
+    </div>
+    <div style="background:#040c18;padding:12px 28px;text-align:center;
+                font-size:11px;color:#3a5060;border-top:1px solid #0d2040">
+      © Зоряна Пам'ять · Цей лист надіслано автоматично, не відповідайте на нього
+    </div>
+  </div>
+</div>
+</body></html>"""
+
+def _send_email(to_addr: str, subject: str, html_body: str) -> tuple[bool, str]:
+    """Надсилає email. Повертає (success, error_msg)."""
+    host = os.getenv("SMTP_HOST", "")
+    port = int(os.getenv("SMTP_PORT", "587"))
+    user = os.getenv("SMTP_USER", "")
+    pw   = os.getenv("SMTP_PASS", "")
+    from_addr = os.getenv("SMTP_FROM", user) or user
+
+    if not host or not user:
+        # SMTP не налаштований — dev-режим: логуємо код
+        logging.warning(f"[DEV] Email to {to_addr}: {subject}\n{html_body[:200]}")
+        return False, "SMTP не налаштований (SMTP_HOST/SMTP_USER відсутні в .env)"
+
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = subject
+    msg["From"]    = from_addr
+    msg["To"]      = to_addr
+    msg.attach(MIMEText(html_body, "html", "utf-8"))
+
+    try:
+        with smtplib.SMTP(host, port, timeout=15) as srv:
+            srv.ehlo()
+            srv.starttls()
+            srv.login(user, pw)
+            srv.sendmail(from_addr, [to_addr], msg.as_string())
+        return True, ""
+    except smtplib.SMTPAuthenticationError:
+        return False, "Помилка авторизації SMTP (перевірте SMTP_USER/SMTP_PASS)"
+    except smtplib.SMTPException as e:
+        return False, f"SMTP помилка: {str(e)[:100]}"
+    except Exception as e:
+        return False, f"Помилка відправки: {str(e)[:100]}"
+
+def _validate_password(pw: str):
+    if not _PASS_RE.match(pw):
+        raise HTTPException(400, "Пароль: мінімум 10 символів, великі та малі латинські літери, цифри")
+
+def _get_color_val(key: str, default: str = "") -> str:
+    db = get_db()
+    with db.cursor() as c:
+        c.execute("SELECT value FROM colors WHERE `key`=%s", (key,))
+        row = c.fetchone()
+    db.close()
+    return row["value"] if row else default
+
 def _validate_color(v: str) -> str:
     if not v:
         return '#4fc3f7'
@@ -1285,11 +1413,30 @@ class PersonUpdate(BaseModel):
     rank: Optional[str] = None; position: Optional[str] = None
     unit: Optional[str] = None
 
+class SendCodeReq(BaseModel):
+    last_name: str
+    first_name: str
+    middle_name: str
+    nickname: str
+    email: str
+    phone: str = ""
+    password: str
+    terms_agreed: bool
+
 class UserReg(BaseModel):
-    name: str; email: str; password: str
+    email: str
+    code:  str
 
 class UserLogin(BaseModel):
     email: str; password: str
+
+class UserProfileUpdate(BaseModel):
+    nickname:      Optional[str] = None
+    email:         Optional[str] = None
+    email_confirm: Optional[str] = None
+    phone:         Optional[str] = None
+    password:      Optional[str] = None
+    old_password:  Optional[str] = None
 
 class ColorUpdate(BaseModel):
     key: str; value: str
@@ -1833,35 +1980,183 @@ def like(mid: int, fp: Optional[str] = "anon", request: Request = None):
     cache_delete("stats")  # likes changed
     return {"ok": True, "likes": row["likes"] if row else 0}
 
-@app.post("/api/auth/register")
-def register(u: UserReg, request: Request):
+def _validate_reg_fields(u) -> dict:
+    """Спільна валідація полів реєстрації. Повертає dict підготовлених даних."""
+    if _get_color_val("reg_enabled", "1") != "1":
+        raise HTTPException(403, "Реєстрація тимчасово закрита")
+    if not u.terms_agreed:
+        raise HTTPException(400, "Необхідно погодитись з умовами використання")
+    last  = _sanitize_text(u.last_name.strip(),  100)
+    first = _sanitize_text(u.first_name.strip(), 100)
+    if len(last) < 2:  raise HTTPException(400, "Прізвище: мінімум 2 символи")
+    if len(first) < 2: raise HTTPException(400, "Ім'я: мінімум 2 символи")
+    # По батькові — залежно від налаштування
+    field_mid = _get_color_val("reg_field_mid", "required")
+    mid = _sanitize_text(u.middle_name.strip(), 100)
+    if field_mid == "required" and len(mid) < 2:
+        raise HTTPException(400, "По батькові: мінімум 2 символи")
+    if field_mid == "hidden":
+        mid = ""
+    nick  = u.nickname.strip()
+    if not _NICK_RE.match(nick):
+        raise HTTPException(400, "Нік: 2–50 символів, літери (укр/лат), цифри, _ . -")
+    if len(u.email) > 120 or not re.match(r'^[^@\s]+@[^@\s]+\.[^@\s]+$', u.email):
+        raise HTTPException(400, "Невірний формат email")
+    # Телефон — залежно від налаштування
+    field_phone = _get_color_val("reg_field_phone", "optional")
+    phone = ""
+    if field_phone != "hidden" and u.phone.strip():
+        digits = re.sub(r'\D', '', u.phone)
+        if digits.startswith('0') and len(digits) == 10:  digits = '38' + digits
+        if digits.startswith('8') and len(digits) == 11:  digits = '3' + digits
+        if not _PHONE_RE.match(digits):
+            raise HTTPException(400, "Телефон: формат +380XXXXXXXXX або 0XXXXXXXXX")
+        phone = f"+{digits}"
+    elif field_phone == "required" and not u.phone.strip():
+        raise HTTPException(400, "Номер телефону обов'язковий")
+    # Пароль — мінімальна довжина з налаштувань
+    try:
+        min_len = max(8, min(20, int(_get_color_val("reg_min_pass_len", "10") or "10")))
+    except ValueError:
+        min_len = 10
+    if len(u.password) < min_len:
+        raise HTTPException(400, f"Пароль: мінімум {min_len} символів")
+    _validate_password(u.password)
+    name_parts = [last, first, mid] if mid else [last, first]
+    return {"last": last, "first": first, "mid": mid, "nick": nick,
+            "email": u.email.lower(), "phone": phone,
+            "name": " ".join(name_parts)}
+
+
+@app.post("/api/auth/send-code")
+def send_code(u: SendCodeReq, request: Request):
+    """Крок 1: валідує дані, надсилає 6-значний код підтвердження на email."""
     ip = _get_ip(request)
-    # 3 реєстрації / год з одного IP
-    if not _rl.check(f"reg:{ip}", 3, 3600):
-        raise HTTPException(429, "Забагато реєстрацій. Спробуйте пізніше.")
-    if len(u.password) < 6:
-        raise HTTPException(400, "Пароль мінімум 6 символів")
-    if len(u.name.strip()) < 2 or len(u.name) > 100:
-        raise HTTPException(400, "Ім'я має бути від 2 до 100 символів")
-    if len(u.email) > 120:
-        raise HTTPException(400, "Email занадто довгий")
+    # Валідація полів ПЕРЕД рейт-лімітером — помилки заповнення не спалюють ліміт
+    data = _validate_reg_fields(u)
+    if not _rl.check(f"reg_send:{ip}", 10, 3600):
+        raise HTTPException(429, "Забагато запитів. Зачекайте годину.")
+    email_key = f"reg_send_email:{data['email']}"
+    if not _rl.check(email_key, 3, 600):
+        raise HTTPException(429, "Код вже надіслано. Перевірте пошту або зачекайте 10 хвилин.")
+    # Перевіряємо унікальність email і ніку ДО відправки листа
     db = get_db()
     with db.cursor() as c:
-        c.execute("SELECT id FROM users WHERE email=%s", (u.email,))
+        c.execute("SELECT id FROM users WHERE email=%s", (data["email"],))
         if c.fetchone():
             db.close()
             raise HTTPException(400, "Email вже зареєстрований")
+        c.execute("SELECT id FROM users WHERE nickname=%s", (data["nick"],))
+        if c.fetchone():
+            db.close()
+            raise HTTPException(400, "Цей нік вже зайнятий")
+    db.close()
+    # Якщо підтвердження email вимкнено — реєструємо одразу без коду
+    if _get_color_val("reg_require_email_verify", "1") == "0":
+        pw_hash = hash_pass(u.password)
+        db2 = get_db()
+        with db2.cursor() as c:
+            c.execute(
+                "INSERT INTO users (name,first_name,last_name,middle_name,nickname,email,phone,password,role)"
+                " VALUES (%s,%s,%s,%s,%s,%s,%s,%s,'user')",
+                (data["name"], data["first"], data["last"], data["mid"],
+                 data["nick"], data["email"], data["phone"], pw_hash)
+            )
+            db2.commit()
+            c.execute(
+                "SELECT id,name,first_name,last_name,middle_name,nickname,email,phone,role"
+                " FROM users WHERE email=%s", (data["email"],)
+            )
+            row = c.fetchone()
+        db2.close()
+        welcome = _get_color_val("reg_welcome_msg", "Вітаємо!")
+        sec_log("REGISTER_DIRECT", ip, f"email={data['email']} nick={data['nick']}")
+        token = _session_create(row["id"])
+        resp = JSONResponse({"ok": True, "registered": True, "user": row, "welcome": welcome})
+        resp.set_cookie(key="admin_session", value=token, httponly=True,
+                        secure=False, samesite="lax", max_age=86400 * 7, path="/")
+        return resp
+    code = "".join(secrets.choice("0123456789") for _ in range(6))
+    pw_hash = hash_pass(u.password)  # хешуємо пароль одразу
+    with _pending_reg_lock:
+        _pending_cleanup()
+        _pending_reg[data["email"]] = {
+            "code":     code,
+            "pw_hash":  pw_hash,
+            "data":     data,
+            "expires":  time.time() + _PENDING_TTL,
+            "attempts": 0,
+        }
+    html_body = _email_verification_html(code, data["nick"])
+    ok, err = _send_email(data["email"], "Код підтвердження реєстрації — Зоряна Пам'ять", html_body)
+    if not ok:
+        # Dev-режим: повертаємо code у відповіді якщо SMTP не налаштований
+        smtp_configured = bool(os.getenv("SMTP_HOST") and os.getenv("SMTP_USER"))
+        if not smtp_configured:
+            sec_log("REG_CODE_DEV", ip, f"email={data['email']} code={code}")
+            return {"ok": True, "dev": True, "code": code,
+                    "message": "SMTP не налаштований — код повернуто для тестування"}
+        raise HTTPException(503, f"Не вдалось надіслати лист: {err}")
+    sec_log("REG_CODE_SENT", ip, f"email={data['email']}")
+    return {"ok": True, "message": "Код підтвердження надіслано на вашу пошту"}
+
+
+@app.post("/api/auth/register")
+def register(u: UserReg, request: Request):
+    """Крок 2: перевіряє код і створює акаунт."""
+    ip = _get_ip(request)
+    if not _rl.check(f"reg_verify:{ip}", 10, 300):
+        raise HTTPException(429, "Забагато спроб. Зачекайте.")
+    email = u.email.lower().strip()
+    code  = u.code.strip()
+    with _pending_reg_lock:
+        pending = _pending_reg.get(email)
+        if not pending:
+            raise HTTPException(400, "Код не знайдено або минув термін дії (10 хв). Почніть реєстрацію знову.")
+        if time.time() > pending["expires"]:
+            del _pending_reg[email]
+            raise HTTPException(400, "Термін дії коду минув. Натисніть 'Надіслати повторно'.")
+        pending["attempts"] += 1
+        if pending["attempts"] > _PENDING_MAX_ATTEMPTS:
+            del _pending_reg[email]
+            raise HTTPException(400, "Перевищено ліміт спроб. Почніть реєстрацію знову.")
+        if pending["code"] != code:
+            left = _PENDING_MAX_ATTEMPTS - pending["attempts"]
+            raise HTTPException(400, f"Невірний код. Залишилось спроб: {left}")
+        # Код вірний — беремо дані та видаляємо pending
+        reg_data = pending["data"]
+        pw_hash  = pending["pw_hash"]
+        del _pending_reg[email]
+    # Ще раз перевіряємо унікальність (race condition guard)
+    db = get_db()
+    with db.cursor() as c:
+        c.execute("SELECT id FROM users WHERE email=%s", (email,))
+        if c.fetchone():
+            db.close()
+            raise HTTPException(400, "Email вже зареєстрований")
+        c.execute("SELECT id FROM users WHERE nickname=%s", (reg_data["nick"],))
+        if c.fetchone():
+            db.close()
+            raise HTTPException(400, "Цей нік вже зайнятий")
         c.execute(
-            "INSERT INTO users (name,email,password) VALUES (%s,%s,%s)",
-            (u.name.strip(), u.email.lower(), hash_pass(u.password))
+            "INSERT INTO users (name,first_name,last_name,middle_name,nickname,email,phone,password,role)"
+            " VALUES (%s,%s,%s,%s,%s,%s,%s,%s,'user')",
+            (reg_data["name"], reg_data["first"], reg_data["last"], reg_data["mid"],
+             reg_data["nick"], email, reg_data["phone"], pw_hash)
         )
         db.commit()
         c.execute(
-            "SELECT id,name,email,is_admin,role FROM users WHERE email=%s", (u.email,)
+            "SELECT id,name,first_name,last_name,middle_name,nickname,email,phone,role"
+            " FROM users WHERE email=%s", (email,)
         )
         row = c.fetchone()
     db.close()
-    return {"ok": True, "user": row}
+    sec_log("REGISTER", ip, f"email={email} nick={reg_data['nick']}")
+    token = _session_create(row["id"])
+    resp = JSONResponse({"ok": True, "user": row})
+    resp.set_cookie(key="admin_session", value=token, httponly=True,
+                    secure=False, samesite="lax", max_age=86400 * 7, path="/")
+    return resp
 
 @app.post("/api/auth/login")
 def login(u: UserLogin, request: Request):
@@ -1950,11 +2245,99 @@ def auth_me(request: Request):
         raise HTTPException(401, "Сесія застаріла")
     db = get_db()
     with db.cursor() as c:
-        c.execute("SELECT id,name,email,is_admin,role FROM users WHERE id=%s", (sess["user_id"],))
+        c.execute(
+            "SELECT id,name,first_name,last_name,middle_name,nickname,email,phone,is_admin,role"
+            " FROM users WHERE id=%s", (sess["user_id"],)
+        )
         row = c.fetchone()
     db.close()
     if not row:
         raise HTTPException(401, "Користувача не знайдено")
+    return {"ok": True, "user": row}
+
+
+@app.put("/api/auth/profile")
+def update_profile(u: UserProfileUpdate, request: Request):
+    token = request.cookies.get("admin_session")
+    if not token:
+        raise HTTPException(401, "Не авторизовано")
+    sess = _session_get(token)
+    if not sess:
+        raise HTTPException(401, "Сесія застаріла")
+    user_id = sess["user_id"]
+    db = get_db()
+    with db.cursor() as c:
+        c.execute(
+            "SELECT id,name,first_name,last_name,middle_name,nickname,email,phone,password,role"
+            " FROM users WHERE id=%s", (user_id,)
+        )
+        cur = c.fetchone()
+    if not cur:
+        db.close()
+        raise HTTPException(404, "Користувача не знайдено")
+    updates = {}
+    # nickname
+    if u.nickname is not None:
+        nick = u.nickname.strip()
+        if not _NICK_RE.match(nick):
+            db.close()
+            raise HTTPException(400, "Нік: 2–50 символів, літери (укр/лат), цифри, _ . -")
+        with db.cursor() as c:
+            c.execute("SELECT id FROM users WHERE nickname=%s AND id!=%s", (nick, user_id))
+            if c.fetchone():
+                db.close()
+                raise HTTPException(400, "Цей нік вже зайнятий")
+        updates["nickname"] = nick
+    # email
+    if u.email is not None:
+        if u.email != u.email_confirm:
+            db.close()
+            raise HTTPException(400, "Email адреси не збігаються")
+        if len(u.email) > 120 or not re.match(r'^[^@\s]+@[^@\s]+\.[^@\s]+$', u.email):
+            db.close()
+            raise HTTPException(400, "Невірний формат email")
+        with db.cursor() as c:
+            c.execute("SELECT id FROM users WHERE email=%s AND id!=%s", (u.email.lower(), user_id))
+            if c.fetchone():
+                db.close()
+                raise HTTPException(400, "Email вже зареєстрований")
+        updates["email"] = u.email.lower()
+    # phone
+    if u.phone is not None:
+        if u.phone.strip():
+            digits = re.sub(r'\D', '', u.phone)
+            if digits.startswith('0') and len(digits) == 10:
+                digits = '38' + digits
+            if digits.startswith('8') and len(digits) == 11:
+                digits = '3' + digits
+            if not _PHONE_RE.match(digits):
+                db.close()
+                raise HTTPException(400, "Телефон: формат +380XXXXXXXXX або 0XXXXXXXXX")
+            updates["phone"] = f"+{digits}"
+        else:
+            updates["phone"] = ""
+    # password
+    if u.password:
+        if not verify_pass(u.old_password or "", cur["password"]):
+            db.close()
+            raise HTTPException(400, "Поточний пароль невірний")
+        _validate_password(u.password)
+        updates["password"] = hash_pass(u.password)
+    if not updates:
+        db.close()
+        return {"ok": True, "user": cur}
+    cols = ", ".join(f"`{k}`=%s" for k in updates)
+    vals = list(updates.values()) + [user_id]
+    with db.cursor() as c:
+        c.execute(f"UPDATE users SET {cols} WHERE id=%s", vals)
+    db.commit()
+    with db.cursor() as c:
+        c.execute(
+            "SELECT id,name,first_name,last_name,middle_name,nickname,email,phone,role"
+            " FROM users WHERE id=%s", (user_id,)
+        )
+        row = c.fetchone()
+    db.close()
     return {"ok": True, "user": row}
 
 
@@ -1988,6 +2371,8 @@ def _oauth_set_session(resp: RedirectResponse, user_id: int) -> RedirectResponse
 def auth_google():
     if not GOOGLE_CLIENT_ID:
         return RedirectResponse("/?oauth_error=google_not_configured", status_code=302)
+    if _get_color_val("reg_allow_google", "1") != "1":
+        return RedirectResponse("/?oauth_error=google_disabled", status_code=302)
     params = urllib.parse.urlencode({
         "client_id":     GOOGLE_CLIENT_ID,
         "redirect_uri":  f"{OAUTH_REDIRECT_BASE}/api/auth/google/callback",
