@@ -2383,19 +2383,19 @@
 <script>
 const API = 'http://127.0.0.1:8000';
 const RANK_POGON_IMG = {
-  'Солдат':'UA_shoulder_mark_01.svg','Старший солдат':'UA_shoulder_mark_02.svg',
-  'Молодший сержант':'UA_shoulder_mark_03.svg','Сержант':'UA_shoulder_mark_04.svg',
-  'Старший сержант':'UA_shoulder_mark_05.svg','Головний сержант':'UA_shoulder_mark_06.svg',
-  'Штаб-сержант':'UA_shoulder_mark_07.svg','Майстер-сержант':'UA_shoulder_mark_08.svg',
-  'Старший майстер-сержант':'UA_shoulder_mark_09.svg','Головний майстер-сержант':'UA_shoulder_mark_10-0.svg',
-  'Молодший лейтенант':'UA_shoulder_mark_11.svg','Лейтенант':'UA_shoulder_mark_12.svg',
-  'Старший лейтенант':'UA_shoulder_mark_13.svg','Капітан':'UA_shoulder_mark_14.svg',
-  'Майор':'UA_shoulder_mark_15.svg','Підполковник':'UA_shoulder_mark_16.svg',
-  'Полковник':'UA_shoulder_mark_17.svg',
-  'Бригадний генерал':'Погон_бригадного_генерала_ЗСУ_(2020).svg',
-  'Генерал-майор':'Погон_генерал-майора_ЗСУ_(2020).svg',
-  'Генерал-лейтенант':'Погон_генерал-лейтенанта_ЗСУ_(2020).svg',
-  'Генерал':'Погон_генерала_ЗСУ_(2020).svg',
+  'Солдат':'UA_shoulder_mark_01.png','Старший солдат':'UA_shoulder_mark_02.png',
+  'Молодший сержант':'UA_shoulder_mark_03.png','Сержант':'UA_shoulder_mark_04.png',
+  'Старший сержант':'UA_shoulder_mark_05.png','Головний сержант':'UA_shoulder_mark_06.png',
+  'Штаб-сержант':'UA_shoulder_mark_07.png','Майстер-сержант':'UA_shoulder_mark_08.png',
+  'Старший майстер-сержант':'UA_shoulder_mark_09.png','Головний майстер-сержант':'UA_shoulder_mark_10-0.png',
+  'Молодший лейтенант':'UA_shoulder_mark_11.png','Лейтенант':'UA_shoulder_mark_12.png',
+  'Старший лейтенант':'UA_shoulder_mark_13.png','Капітан':'UA_shoulder_mark_14.png',
+  'Майор':'UA_shoulder_mark_15.png','Підполковник':'UA_shoulder_mark_16.png',
+  'Полковник':'UA_shoulder_mark_17.png',
+  'Бригадний генерал':'Погон_бригадного_генерала_ЗСУ_(2020).png',
+  'Генерал-майор':'Погон_генерал-майора_ЗСУ_(2020).png',
+  'Генерал-лейтенант':'Погон_генерал-лейтенанта_ЗСУ_(2020).png',
+  'Генерал':'Погон_генерала_ЗСУ_(2020).png',
 };
 window.API = API;
 function h(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
@@ -3358,7 +3358,7 @@ function _renderCardDetails(p){
   if(crankEl)  crankEl.textContent=p.rank||'—';
   if(crankImg){
     const pf=p.rank?RANK_POGON_IMG[p.rank]:null;
-    if(pf){crankImg.src='https://commons.wikimedia.org/wiki/Special:FilePath/'+encodeURIComponent(pf)+'?width=56';crankImg.style.display='inline-block';}
+    if(pf){crankImg.src='/img/ranks/'+encodeURIComponent(pf);crankImg.style.display='inline-block';}
     else crankImg.style.display='none';
   }
 
@@ -3424,23 +3424,16 @@ function closeCard(){
 function fd(s){if(!s)return'?';try{return new Date(s).toLocaleDateString('uk-UA',{day:'numeric',month:'long',year:'numeric'});}catch{return s;}}
 
 /* ── Awards ── */
-const AWARDS_DATA = [
-  { name:'Герой України (Золота Зірка)',              file:'Medal_of_Golden_Star_Ukraine.jpg',                         desc:'За здійснення видатного подвигу або визначний особистий внесок у державне будівництво та захист суверенітету України' },
-  { name:'Орден «За мужність» I ступеня',             file:'Mugnist-1.jpg',                                            desc:'За особисту мужність і героїзм, виявлені в бойових діях при захисті державного суверенітету та територіальної цілісності України' },
-  { name:'Орден «За мужність» II ступеня',            file:'Mugnist-2.jpg',                                            desc:'За мужність і відвагу в бойових діях, самовіддане виконання військового обов\'язку' },
-  { name:'Орден «За мужність» III ступеня',           file:'Mugnist-3.jpg',                                            desc:'За особисту мужність і стійкість, виявлені при виконанні військового та громадянського обов\'язку' },
-  { name:'Орден Богдана Хмельницького I ступеня',     file:'Order_of_Bohdan_Khmelnytsky_1st_Class_of_Ukraine.png',     desc:'За видатні заслуги у зміцненні обороноздатності держави, вагомий внесок у розвиток Збройних Сил України' },
-  { name:'Орден Богдана Хмельницького II ступеня',    file:'Order_of_Bohdan_Khmelnytsky_2nd_Class_of_Ukraine.png',     desc:'За значний внесок у зміцнення обороноздатності держави та розвиток Збройних Сил' },
-  { name:'Орден Богдана Хмельницького III ступеня',   file:'Order_of_Bohdan_Khmelnytsky_3rd_Class_of_Ukraine.png',     desc:'За мужність і відвагу при виконанні бойових завдань, сумлінну військову службу' },
-  { name:'Орден Данила Галицького',                   file:'Order_of_Danylo_Halytsky_of_Ukraine.png',                  desc:'За визначні заслуги у захисті державного суверенітету, зміцненні обороноздатності та безпеки України' },
-  { name:'Хрест бойових заслуг',                      file:'Cross_of_Combat_Merit_2.jpg',                              desc:'За особисту мужність і умілі дії в боях при захисті державного суверенітету та територіальної цілісності України' },
-  { name:'Медаль «Захиснику Вітчизни»',               file:'Ukraine-Defender_of_the_Motherland_Medal.PNG',             desc:'За захист державного суверенітету та територіальної цілісності України, зразкове виконання військового обов\'язку' },
-  { name:'Медаль «За поранення»',                     file:'Wound_Medal_(Ukraine).png',                                desc:'Вручається військовослужбовцям, які отримали поранення (контузію, травму, каліцтво) під час виконання бойових завдань' },
-  { name:'Медаль «За військову службу Україні»',      file:'За_військову_службу_Україні.jpg',                          desc:'За зразкове виконання військового обов\'язку, бездоганну службу та вагомий внесок у зміцнення обороноздатності держави' },
-];
+let AWARDS_DATA = [];
+(async () => {
+  try {
+    const r = await fetch(`${API}/api/awards/catalog`);
+    AWARDS_DATA = (await r.json()).map(a => ({name: a.name, file: a.img_file, desc: a.description||''}));
+  } catch { /* fallback: порожній список */ }
+})();
 
 function _wikiImg(file, w){
-  return `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(file)}?width=${w||80}`;
+  return `/img/awards/${encodeURIComponent(file)}`;
 }
 
 async function openAwards(){

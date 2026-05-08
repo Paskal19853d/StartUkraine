@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Zoryana Pam'yat - Project Blueprint</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+    --bg-dark: #0a0e14;
+    --bg-block: #1a1f29;
+    --bg-hover: #242b38;
+    --text-primary: #e6edf3;
+    --text-secondary: #8b949e;
+    --accent-blue: #58a6ff;
+    --accent-green: #3fb950;
+    --accent-orange: #d29922;
+    --accent-red: #f85149;
+    --accent-purple: #a371f7;
+    --accent-cyan: #39d0d0;
+    --border: #30363d;
+    --thread-get: #58a6ff;
+    --thread-post: #3fb950;
+    --thread-put: #d29922;
+    --thread-delete: #f85149;
+    --thread-ws: #a371f7;
+    --thread-static: #8b949e;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+    height: 100%;
+    font-family: 'Space Grotesk', sans-serif;
+    background: var(--bg-dark);
+    color: var(--text-primary);
+    overflow: hidden;
+}
+#toolbar {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 50px;
+    background: linear-gradient(180deg, #161b22 0%, #0d1117 100%);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    gap: 12px;
+    z-index: 1000;
+}
+#toolbar h1 {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--accent-cyan);
+    margin-right: 20px;
+}
+.btn {
+    background: var(--bg-block);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    padding: 6px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    font-family: inherit;
+    transition: all 0.2s;
+}
+.btn:hover { background: var(--bg-hover); border-color: var(--accent-blue); }
+.btn-primary { background: var(--accent-blue); border-color: var(--accent-blue); color: #000; font-weight: 600; }
+.btn-primary:hover { background: #79b8ff; }
+#zoom-controls { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+#zoom-controls span { font-size: 12px; color: var(--text-secondary); }
+#canvas-wrap {
+    position: fixed;
+    top: 50px; left: 0; right: 0; bottom: 0;
+    overflow: auto;
+}
+#blocks-container {
+    position: absolute;
+    width: 2000px;
+    height: 1500px;
+}
+#canvas {
+    position: absolute;
+    width: 2000px;
+    height: 1500px;
+    pointer-events: none;
+}
+.block {
+    position: absolute;
+    background: #c42b1c;
+    border: 3px solid #ff6b5b;
+    border-radius: 10px;
+    padding: 15px 20px;
+    min-width: 200px;
+    cursor: grab;
+    user-select: none;
+    box-shadow: 0 8px 30px rgba(196,43,28,0.6);
+    z-index: 10;
+}
+.block.frontend { background: #c42b1c; border-color: #ff6b5b; }
+.block.backend { background: #1c5fc4; border-color: #5b9fff; }
+.block.database { background: #1c7c4c; border-color: #5bff9f; }
+.block.config { background: #5c4a1c; border-color: #ffcf5b; }
+.block:hover { transform: scale(1.05); z-index: 100; }
+.block.dragging { cursor: grabbing; transform: scale(1.1); z-index: 1000; }
+.block .name {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 5px;
+}
+.block .info {
+    font-size: 10px;
+    color: rgba(255,255,255,0.8);
+}
+.block .count {
+    display: inline-block;
+    background: rgba(0,0,0,0.4);
+    padding: 3px 8px;
+    border-radius: 5px;
+    font-size: 11px;
+    margin-top: 5px;
+    color: #fff;
+}
+.block .info {
+    font-size: 10px;
+    color: rgba(255,255,255,0.7);
+    margin-top: 4px;
+}
+.block .count {
+    display: inline-block;
+    background: rgba(0,0,0,0.3);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    margin-top: 6px;
+}
+.block.backend { background: linear-gradient(135deg, #1c5fc4 0%, #0e3d8b 50%, #1c5fc4 100%); border-color: #5b9fff; box-shadow: 0 4px 20px rgba(28,95,196,0.3); }
+.block.backend:hover { box-shadow: 0 6px 30px rgba(28,95,196,0.5); }
+.block.database { background: linear-gradient(135deg, #1c7c4c 0%, #0e5c2b 50%, #1c7c4c 100%); border-color: #5bff9f; box-shadow: 0 4px 20px rgba(28,124,76,0.3); }
+.block.database:hover { box-shadow: 0 6px 30px rgba(28,124,76,0.5); }
+.block.config { background: linear-gradient(135deg, #5c4a1c 0%, #3d2e0e 50%, #5c4a1c 100%); border-color: #ffcf5b; box-shadow: 0 4px 20px rgba(92,74,28,0.3); }
+.block.config:hover { box-shadow: 0 6px 30px rgba(92,74,28,0.5); }
+.block-legend {
+    position: fixed;
+    bottom: 20px; left: 20px;
+    background: rgba(22,27,34,0.95);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 11px;
+    z-index: 500;
+}
+.block-legend h3 { font-size: 12px; margin-bottom: 8px; color: var(--text-secondary); }
+.legend-item { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.legend-color { width: 14px; height: 14px; border-radius: 3px; }
+.thread-line {
+    position: absolute;
+    pointer-events: none;
+    z-index: 1;
+}
+.thread-endpoint {
+    position: absolute;
+    background: var(--bg-block);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    white-space: nowrap;
+    z-index: 50;
+    pointer-events: auto;
+}
+.thread-endpoint.get { border-color: var(--thread-get); color: var(--thread-get); }
+.thread-endpoint.post { border-color: var(--thread-post); color: var(--thread-post); }
+.thread-endpoint.put { border-color: var(--thread-put); color: var(--thread-put); }
+.thread-endpoint.delete { border-color: var(--thread-delete); color: var(--thread-delete); }
+.thread-endpoint.ws { border-color: var(--thread-ws); color: var(--thread-ws); }
+.details-panel {
+    position: fixed;
+    top: 50px; right: 0;
+    width: 320px;
+    bottom: 0;
+    background: rgba(22,27,34,0.98);
+    border-left: 1px solid var(--border);
+    padding: 16px;
+    overflow-y: auto;
+    display: none;
+    z-index: 200;
+}
+.details-panel.active { display: block; }
+.details-panel h2 { font-size: 14px; margin-bottom: 12px; color: var(--accent-cyan); }
+.details-panel .func-item {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    padding: 4px 8px;
+    margin-bottom: 4px;
+    background: var(--bg-block);
+    border-radius: 4px;
+    color: var(--text-secondary);
+    cursor: pointer;
+}
+.details-panel .func-item:hover { background: var(--bg-hover); color: var(--text-primary); }
+.search-box {
+    position: relative;
+    margin-left: auto;
+}
+.search-box input {
+    background: var(--bg-block);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    width: 200px;
+    outline: none;
+}
+.search-box input:focus { border-color: var(--accent-blue); }
+.filter-btns { display: flex; gap: 6px; }
+.filter-btns .btn.active { background: var(--accent-blue); color: #000; border-color: var(--accent-blue); }
+</style>
+</head>
+<body>
+
+<div id="toolbar">
+    <h1>⚡ ZORYANA PAM'YAT - PROJECT BLUEPRINT</h1>
+    <button class="btn" onclick="resetView()">⟳ Сброс</button>
+    <button class="btn btn-primary" onclick="exportSVG()">⬇ Экспорт</button>
+    <div class="filter-btns">
+        <button class="btn active" data-filter="all" onclick="filterBlocks('all')">Все</button>
+        <button class="btn" data-filter="backend" onclick="filterBlocks('backend')">Backend</button>
+        <button class="btn" data-filter="frontend" onclick="filterBlocks('frontend')">Frontend</button>
+        <button class="btn" data-filter="database" onclick="filterBlocks('database')">БД</button>
+        <button class="btn" data-filter="config" onclick="filterBlocks('config')">Config</button>
+    </div>
+    <div class="search-box">
+        <input type="text" placeholder="Поиск..." oninput="searchBlocks(this.value)">
+    </div>
+    <div id="zoom-controls">
+        <button class="btn" onclick="zoomIn()">+</button>
+        <span id="zoom-level">100%</span>
+        <button class="btn" onclick="zoomOut()">-</button>
+    </div>
+</div>
+
+<div id="canvas-wrap">
+    <div id="blocks-container"></div>
+    <svg id="canvas"></svg>
+</div>
+
+<div class="block-legend">
+    <h3>Категории файлов:</h3>
+    <div class="legend-item">
+        <div class="legend-color" style="background: linear-gradient(135deg, #c42b1c, #8b1a0e);"></div>
+        <span>Frontend (HTML/JS/CSS)</span>
+    </div>
+    <div class="legend-item">
+        <div class="legend-color" style="background: linear-gradient(135deg, #1c5fc4, #0e3d8b);"></div>
+        <span>Backend (Python)</span>
+    </div>
+    <div class="legend-item">
+        <div class="legend-color" style="background: linear-gradient(135deg, #1c7c4c, #0e5c2b);"></div>
+        <span>Database (SQL)</span>
+    </div>
+    <div class="legend-item">
+        <div class="legend-color" style="background: linear-gradient(135deg, #5c4a1c, #3d2e0e);"></div>
+        <span>Config & Assets</span>
+    </div>
+</div>
+
+<div class="details-panel" id="details-panel">
+    <h2 id="details-title">Детали</h2>
+    <div id="details-content"></div>
+</div>
+
+<script>
+// Data from full analysis
+const projectData = {
+    files: [
+        // BACKEND
+        { id: 'paskal', name: 'Paskal.py', type: 'backend', lines: 2573, info: 'FastAPI backend', funcs: [
+            'init_db()', '_init_pool()', 'get_db()', 'cache_get/set/delete()', 'hash_pass()', 'verify_pass()',
+            '_session_create/get/delete()', '_RateLimiter', '_sanitize_svg()', 'get_user()', 'require_admin()',
+            '_normalize()', '_fuzzy_score()', 'yt_check()', 'get_people()', 'get_memorial()', 'search()',
+            'like()', 'register()', 'login()', 'logout()', 'auth_google/diia()',
+            'admin_approve/delete/update()', 'import_csv()', 'export_csv()', 'update_color()',
+            'get_stats()', 'health_check()', 'metrics()'
+        ]},
+        { id: 'requirements', name: 'requirements.txt', type: 'config', lines: 15, info: 'Python dependencies' },
+        { id: 'migrations', name: 'migrations.sql', type: 'database', lines: 47, info: 'SQL indexes & migrations' },
+        
+        // FRONTEND
+        { id: 'index', name: 'index.html', type: 'frontend', lines: 3892, info: 'Public page with map', funcs: [
+            'WebGL Canvas', 'SVG Map', 'Search', 'renderMemPage()', 'loadPeople()',
+            'applyColors()', 'renderLabels()', 'showDot()', 'openCard()', 'toggleSmoke()'
+        ]},
+        { id: 'admin', name: 'admin.html', type: 'frontend', lines: 6739, info: 'Admin panel', funcs: [
+            'showSec()', 'loadStats()', 'loadMem()', 'loadPend()', 'approveMem()',
+            'loadUsers()', 'banUser()', 'renderColors()', 'renderSeaSection()',
+            'renderIconsSection()', 'renderSmokeSection()', 'exportCsv()', 'importCsv()'
+        ]},
+        { id: 'script', name: 'script.js', type: 'frontend', lines: 1659, info: 'WebGL fluid simulation' },
+        { id: 'style', name: 'Style.css', type: 'frontend', lines: 1221, info: 'Global styles' },
+        { id: 'faqq', name: 'faq.html', type: 'frontend', lines: 832, info: 'FAQ page' },
+        { id: 'rules', name: 'rules.html', type: 'frontend', lines: 691, info: 'Rules page' },
+        { id: 'terms', name: 'terms.html', type: 'frontend', lines: 683, info: 'Terms page' },
+        
+        // CONFIG
+        { id: 'gunicorn', name: 'gunicorn.conf.py', type: 'config', lines: 45, info: 'Gunicorn config' },
+        { id: 'env', name: '.env', type: 'config', lines: 15, info: 'Secrets & config' },
+        { id: 'map', name: 'ukraine-map.svg', type: 'config', lines: 2009, info: 'Interactive map' },
+        { id: 'start', name: 'start.bat', type: 'config', lines: 10, info: 'Dev startup' },
+        
+        // DATABASE related
+        { id: 'memorials', name: 'memorials', type: 'database', lines: 1, info: 'Main table (20+ fields, indexes)' },
+        { id: 'users', name: 'users', type: 'database', lines: 1, info: 'Users table' },
+        { id: 'colors', name: 'colors', type: 'database', lines: 1, info: 'Settings (60+ keys)' },
+        { id: 'cities', name: 'cities', type: 'database', lines: 1, info: '400+ cities' },
+        { id: 'map_labels', name: 'map_labels', type: 'database', lines: 1, info: '25 oblasts' },
+        { id: 'likes_log', name: 'likes_log', type: 'database', lines: 1, info: 'Like logs' },
+        { id: 'memorial_awards', name: 'memorial_awards', type: 'database', lines: 1, info: 'Awards table' }
+    ],
+    
+    apiEndpoints: [
+        // Public API
+        { method: 'GET', path: '/api/people', to: 'paskal', toFunc: 'get_people()', type: 'get' },
+        { method: 'GET', path: '/api/memorial/{mid}', to: 'paskal', toFunc: 'get_memorial()', type: 'get' },
+        { method: 'GET', path: '/api/search', to: 'paskal', toFunc: 'search()', type: 'get' },
+        { method: 'GET', path: '/api/stats', to: 'paskal', toFunc: 'get_stats()', type: 'get' },
+        { method: 'GET', path: '/api/colors', to: 'paskal', toFunc: 'get_colors()', type: 'get' },
+        { method: 'GET', path: '/api/labels', to: 'paskal', toFunc: 'get_labels()', type: 'get' },
+        { method: 'GET', path: '/api/cities', to: 'paskal', toFunc: 'get_cities()', type: 'get' },
+        { method: 'POST', path: '/api/like/{mid}', to: 'paskal', toFunc: 'like()', type: 'post' },
+        { method: 'POST', path: '/api/people', to: 'paskal', toFunc: 'add_person()', type: 'post' },
+        
+        // Auth API
+        { method: 'POST', path: '/api/auth/register', to: 'paskal', toFunc: 'register()', type: 'post' },
+        { method: 'POST', path: '/api/auth/login', to: 'paskal', toFunc: 'login()', type: 'post' },
+        { method: 'POST', path: '/api/auth/logout', to: 'paskal', toFunc: 'logout()', type: 'post' },
+        { method: 'GET', path: '/api/auth/me', to: 'paskal', toFunc: 'auth_me()', type: 'get' },
+        { method: 'GET', path: '/api/auth/google', to: 'paskal', toFunc: 'auth_google()', type: 'get' },
+        { method: 'GET', path: '/api/auth/diia', to: 'paskal', toFunc: 'auth_diia()', type: 'get' },
+        
+        // Admin API
+        { method: 'GET', path: '/api/admin/pending', to: 'paskal', toFunc: 'pending()', type: 'get' },
+        { method: 'POST', path: '/api/admin/approve/{mid}', to: 'paskal', toFunc: 'approve()', type: 'post' },
+        { method: 'POST', path: '/api/admin/memorial', to: 'paskal', toFunc: 'admin_add_person()', type: 'post' },
+        { method: 'PUT', path: '/api/admin/memorial/{mid}', to: 'paskal', toFunc: 'update_memorial()', type: 'put' },
+        { method: 'DELETE', path: '/api/admin/memorial/{mid}', to: 'paskal', toFunc: 'delete_memorial()', type: 'delete' },
+        { method: 'GET', path: '/api/admin/users', to: 'paskal', toFunc: 'get_users()', type: 'get' },
+        { method: 'PUT', path: '/api/admin/color', to: 'paskal', toFunc: 'update_color()', type: 'put' },
+        { method: 'PUT', path: '/api/admin/colors/batch', to: 'paskal', toFunc: 'update_color()', type: 'put' },
+        { method: 'GET', path: '/api/admin/cities', to: 'paskal', toFunc: 'admin_get_cities()', type: 'get' },
+        { method: 'POST', path: '/api/admin/city', to: 'paskal', toFunc: 'admin_create_city()', type: 'post' },
+        { method: 'PUT', path: '/api/admin/city/{cid}', to: 'paskal', toFunc: 'admin_update_city()', type: 'put' },
+        { method: 'DELETE', path: '/api/admin/city/{cid}', to: 'paskal', toFunc: 'admin_delete_city()', type: 'delete' },
+        { method: 'GET', path: '/api/admin/stats', to: 'paskal', toFunc: 'get_stats()', type: 'get' },
+        { method: 'GET', path: '/api/admin/export/csv', to: 'paskal', toFunc: 'export_csv()', type: 'get' },
+        { method: 'POST', path: '/api/admin/import/preview', to: 'paskal', toFunc: 'import_csv_preview()', type: 'post' },
+        { method: 'POST', path: '/api/admin/import/apply', to: 'paskal', toFunc: 'import_csv_apply()', type: 'post' },
+        
+        // System
+        { method: 'GET', path: '/health', to: 'paskal', toFunc: 'health_check()', type: 'get' },
+        { method: 'GET', path: '/metrics', to: 'paskal', toFunc: 'metrics()', type: 'get' },
+        { method: 'WS', path: '/ws/online', to: 'paskal', toFunc: 'ws_online()', type: 'ws' }
+    ]
+};
+
+// Layout positions for blocks
+const layout = {
+    backend: { x: 50, y: 100 },
+    index: { x: 450, y: 80 },
+    admin: { x: 450, y: 320 },
+    script: { x: 450, y: 500 },
+    style: { x: 450, y: 580 },
+    faqq: { x: 650, y: 80 },
+    rules: { x: 650, y: 160 },
+    terms: { x: 650, y: 240 },
+    gunicorn: { x: 850, y: 100 },
+    env: { x: 850, y: 180 },
+    map: { x: 850, y: 260 },
+    start: { x: 850, y: 340 },
+    requirements: { x: 850, y: 420 },
+    migrations: { x: 250, y: 450 },
+    memorials: { x: 50, y: 450 },
+    users: { x: 50, y: 520 },
+    colors: { x: 50, y: 580 },
+    cities: { x: 150, y: 450 },
+    map_labels: { x: 150, y: 520 },
+    likes_log: { x: 150, y: 580 },
+    memorial_awards: { x: 250, y: 520 }
+};
+
+let scale = 1;
+let offsetX = 0, offsetY = 0;
+let dragging = null;
+let dragStartX, dragStartY;
+let blocks = [];
+
+function init() {
+    console.log('Initializing blueprint...');
+    var container = document.getElementById('blocks-container');
+    var svgCanvas = document.getElementById('canvas');
+    container.innerHTML = '';
+    svgCanvas.innerHTML = '';
+    blocks = [];
+    
+    console.log('Files:', projectData.files.length);
+    
+    // Create blocks
+    var i = 0;
+    projectData.files.forEach(function(file) {
+        console.log('Creating block:', file.name);
+        var pos = layout[file.id] || { x: 100 + (i % 5) * 250, y: 100 + Math.floor(i / 5) * 150 };
+        i++;
+        
+        var block = document.createElement('div');
+        block.className = 'block ' + file.type;
+        block.id = 'block-' + file.id;
+        block.style.cssText = 'position:absolute;left:' + pos.x + 'px;top:' + pos.y + 'px;z-index:10';
+        block.innerHTML = '<div class="name">' + file.name + '</div>' +
+            '<div class="info">' + file.info + '</div>' +
+            '<div class="count">' + file.lines + ' lines</div>';
+        block.dataset.id = file.id;
+        
+        block.addEventListener('mousedown', onDragStart);
+        
+        container.appendChild(block);
+        blocks.push(block);
+    });
+    
+    console.log('Created blocks:', blocks.length);
+    drawThreads();
+}
+
+function drawThreads() {
+    var svgCanvas = document.getElementById('canvas');
+    // Remove old lines
+    svgCanvas.querySelectorAll('.thread-line').forEach(function(e) { e.remove(); });
+    // Remove old labels
+    svgCanvas.querySelectorAll('.thread-endpoint').forEach(function(e) { e.remove(); });
+    
+    projectData.apiEndpoints.forEach(function(api) {
+        var fromBlock = document.getElementById('block-' + api.to);
+        
+        if (!fromBlock) return;
+        
+        var fx = parseInt(fromBlock.style.left) + fromBlock.offsetWidth;
+        var fy = parseInt(fromBlock.style.top) + fromBlock.offsetHeight / 2;
+        
+        // Create line
+        var line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', fx);
+        line.setAttribute('y1', fy);
+        line.setAttribute('x2', fx + 100);
+        line.setAttribute('y2', fy);
+        line.setAttribute('stroke', getThreadColor(api.type));
+        line.setAttribute('stroke-width', '2');
+        line.setAttribute('class', 'thread-line');
+        line.dataset.api = JSON.stringify(api);
+        line.style.pointerEvents = 'auto';
+        line.style.cursor = 'pointer';
+        line.addEventListener('click', onThreadClick);
+        
+        svgCanvas.appendChild(line);
+        
+        // Create endpoint label
+        var label = document.createElement('div');
+        label.className = 'thread-endpoint ' + api.type;
+        label.textContent = api.method + ' ' + api.path;
+        label.style.left = (fx + 10) + 'px';
+        label.style.top = (fy - 10) + 'px';
+        label.style.position = 'absolute';
+        svgCanvas.appendChild(label);
+    });
+}
+
+function onDragStart(e) {
+    dragging = e.target.closest('.block');
+    if (!dragging) return;
+    
+    dragging.classList.add('dragging');
+    dragStartX = e.clientX - dragging.offsetLeft;
+    dragStartY = e.clientY - dragging.offsetTop;
+    
+    document.addEventListener('mousemove', onDrag);
+    document.addEventListener('mouseup', onDragEnd);
+}
+
+function onDrag(e) {
+    if (!dragging) return;
+    
+    const x = e.clientX - dragStartX;
+    const y = e.clientY - dragStartY;
+    
+    dragging.style.left = x + 'px';
+    dragging.style.top = y + 'px';
+    
+    // Update threads
+    drawThreads();
+}
+
+function onDragEnd() {
+    if (dragging) {
+        dragging.classList.remove('dragging');
+        dragging = null;
+    }
+    document.removeEventListener('mousemove', onDrag);
+    document.removeEventListener('mouseup', onDragEnd);
+}
+
+function onBlockClick(e) {
+    var block = e.target.closest('.block');
+    if (!block) return;
+    
+    var funcs = JSON.parse(block.dataset.funcs || '[]');
+    var title = block.querySelector('.name').textContent;
+    var info = block.querySelector('.info').textContent;
+    
+    var panel = document.getElementById('details-panel');
+    var content = document.getElementById('details-content');
+    
+    document.getElementById('details-title').textContent = title;
+    content.innerHTML = '<p style="color: var(--text-secondary); margin-bottom: 12px;">' + info + '</p>' +
+        '<h3 style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px;">Функции (' + funcs.length + '):</h3>' +
+        funcs.map(function(f) { return '<div class="func-item">' + f + '</div>'; }).join('');
+    
+    panel.classList.add('active');
+}
+
+function onThreadClick(e) {
+    var api = JSON.parse(e.target.dataset.api);
+    alert(api.method + ' ' + api.path + '\n→ ' + api.to + ': ' + api.toFunc + '()');
+}
+
+function filterBlocks(type) {
+    document.querySelectorAll('.filter-btns .btn').forEach(function(b) { b.classList.remove('active'); });
+    document.querySelector('[data-filter="' + type + '"]').classList.add('active');
+    
+    blocks.forEach(function(block) {
+        var fileType = projectData.files.find(function(f) { return f.id === block.dataset.id; }).type;
+        var showType = type === 'all' ? true : 
+            (type === 'frontend' ? ['frontend'].indexOf(fileType) >= 0 :
+            (type === 'backend' ? ['backend'].indexOf(fileType) >= 0 :
+            (type === 'database' ? ['database'].indexOf(fileType) >= 0 :
+            (type === 'config' ? ['config'].indexOf(fileType) >= 0 : true)));
+        block.style.display = showType ? 'block' : 'none';
+    });
+    
+    drawThreads();
+}
+
+function searchBlocks(query) {
+    query = query.toLowerCase();
+    blocks.forEach(function(block) {
+        var name = block.querySelector('.name').textContent.toLowerCase();
+        var funcs = block.dataset.funcs || '[]';
+        var hasMatch = name.indexOf(query) >= 0 || funcs.toLowerCase().indexOf(query) >= 0;
+        block.style.opacity = query && !hasMatch ? '0.3' : '1';
+    });
+}
+
+function zoomIn() { scale = Math.min(scale * 1.2, 3); applyZoom(); }
+function zoomOut() { scale = Math.max(scale / 1.2, 0.3); applyZoom(); }
+
+function applyZoom() {
+    document.getElementById('zoom-level').textContent = Math.round(scale * 100) + '%';
+    document.getElementById('canvas-wrap').style.transform = 'scale(' + scale + ')';
+    document.getElementById('canvas-wrap').style.transformOrigin = 'top left';
+}
+
+function resetView() {
+    scale = 1;
+    offsetX = 0;
+    offsetY = 0;
+    applyZoom();
+    init();
+}
+
+function exportSVG() {
+    alert('Экспорт SVG - в разработке');
+}
+
+// Initialize
+console.log('Page loaded, calling init()...');
+init();
+console.log('Done');
+</script>
+
+</body>
+</html>

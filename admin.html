@@ -456,7 +456,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
       <!-- MEMORIALS -->
       <div id="sec-mem" class="section">
         <div class="sec-title"><svg class="adm-ico"><use href="#ico-doc"/></svg> Всі записи</div>
-        <div style="margin-bottom:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <div style="margin-bottom:8px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
           <button class="btn btn-p" onclick="openCreateModal()">＋ Додати запис</button>
           <button class="btn" onclick="exportCsv()" title="Завантажити всі записи у CSV">📤 Експорт CSV</button>
           <button class="btn btn-g" onclick="exportXlsx()" title="Завантажити всі записи у Excel (.xlsx) — великі бази автоматично розбиваються на частини">📊 Експорт XLSX</button>
@@ -469,9 +469,17 @@ tr:hover td{background:rgba(255,255,255,.02)}
               <option value="25">25</option>
               <option value="50">50</option>
               <option value="100">100</option>
+              <option value="200">200</option>
+              <option value="9999">Всі</option>
             </select>
           </label>
           <button class="btn btn-b" onclick="memResetColWidths()" title="Скинути ширину колонок">⟳ Колонки</button>
+        </div>
+        <div style="margin-bottom:10px;display:flex;gap:8px;align-items:center">
+          <input id="mem-search" type="text" placeholder="🔍 Пошук за ПІБ, позивним, підрозділом..."
+            style="flex:1;max-width:420px;background:var(--surface2);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;outline:none"
+            oninput="memDoSearch(this.value)">
+          <span id="mem-search-hint" style="font-size:11px;color:var(--muted)"></span>
         </div>
         <div id="mem-pagination-top" style="display:flex;gap:8px;align-items:center;justify-content:center;margin-bottom:10px;flex-wrap:wrap;">
           <button class="btn btn-b" id="pg-prev-top" onclick="memPage(-1)">◀ Назад</button>
@@ -3125,7 +3133,7 @@ async function tryAutoLogin() {
     document.getElementById('adm-pass').focus();
   } catch { _admCookieDel(AUTH_COOKIE); }
 }
-document.addEventListener('DOMContentLoaded', tryAutoLogin);
+document.addEventListener('DOMContentLoaded', () => { tryAutoLogin(); _loadAwardsCatalog(); });
 
 function _renderRoleBadge() {
   const el = document.getElementById('adm-role-badge');
@@ -3328,17 +3336,23 @@ async function loadServerStats() {
 /* ══════════ MEMORIALS ══════════ */
 
 let allPeople = [];
+let filteredPeople = [];
 let memCurrentPage = 0;
-let memPageSize = parseInt(localStorage.getItem('mem_page_size') || '10') || 10;
+const _MEM_VALID_SIZES = [10,25,50,100,200,9999];
+let memPageSize = (() => {
+  const v = parseInt(localStorage.getItem('mem_page_size') || '25') || 25;
+  return _MEM_VALID_SIZES.includes(v) ? v : 25;
+})();
 let memColWidths = JSON.parse(localStorage.getItem('mem_col_widths') || 'null') || {};
+let _memSearchQ = '';
 
 async function loadMem() {
-  // Пагіноване завантаження всіх записів
   let allMem=[];let pg=1;
   while(true){
     const r=await fetch(`${API}/api/admin/memorials?page=${pg}&limit=500`);
+    if(!r.ok) break;
     const pd=await r.json();
-    const items=pd.items||pd;
+    const items=Array.isArray(pd.items)?pd.items:(Array.isArray(pd)?pd:[]);
     allMem=allMem.concat(items);
     if(pd.pages && pg>=pd.pages) break;
     if(!pd.items) break;
@@ -3346,19 +3360,49 @@ async function loadMem() {
     pg++;
   }
   allPeople = allMem;
+  _memApplyFilter(_memSearchQ);
+  _initMemResize();
+  _memSyncSel();
+}
+
+function _memSyncSel() {
+  const sel = document.getElementById('mem-page-size-sel');
+  if (!sel) return;
+  sel.value = String(memPageSize);
+  // если значения нет среди опций — сбросить на 25
+  if (sel.value !== String(memPageSize)) {
+    memPageSize = 25;
+    localStorage.setItem('mem_page_size', '25');
+    sel.value = '25';
+  }
+}
+
+function _memApplyFilter(q) {
+  _memSearchQ = (q || '').toLowerCase().trim();
+  if (!_memSearchQ) {
+    filteredPeople = allPeople;
+  } else {
+    filteredPeople = allPeople.filter(p => {
+      const s = [p.last,p.first,p.mid,p.grp,p.unit,p.rank,p.loc,String(p.id||'')].filter(Boolean).join(' ').toLowerCase();
+      return s.includes(_memSearchQ);
+    });
+  }
+  const hint = document.getElementById('mem-search-hint');
+  if (hint) hint.textContent = _memSearchQ ? `Знайдено: ${filteredPeople.length} з ${allPeople.length}` : `Всього: ${allPeople.length}`;
   memCurrentPage = 0;
   renderMemPage();
-  _initMemResize();
-  // sync selector
-  const sel = document.getElementById('mem-page-size-sel');
-  if (sel) sel.value = String(memPageSize);
+}
+
+function memDoSearch(q) {
+  _memApplyFilter(q);
 }
 
 function renderMemPage() {
-  const start = memCurrentPage * memPageSize;
-  const slice = allPeople.slice(start, start + memPageSize);
-  const total = allPeople.length;
-  const totalPages = Math.ceil(total / memPageSize) || 1;
+  const displaySize = memPageSize >= 9999 ? filteredPeople.length || 1 : memPageSize;
+  const start = memCurrentPage * displaySize;
+  const slice = filteredPeople.slice(start, start + displaySize);
+  const total = filteredPeople.length;
+  const totalPages = Math.ceil(total / displaySize) || 1;
 
   document.getElementById('mem-tb').innerHTML = slice.map(p => {
     const name = `${h(p.last)} ${h(p.first)}`;
@@ -3409,16 +3453,21 @@ function renderMemPage() {
 }
 
 function memPage(dir) {
-  const totalPages = Math.ceil(allPeople.length / memPageSize) || 1;
+  const displaySize = memPageSize >= 9999 ? filteredPeople.length || 1 : memPageSize;
+  const totalPages = Math.ceil(filteredPeople.length / displaySize) || 1;
   memCurrentPage = Math.max(0, Math.min(memCurrentPage + dir, totalPages - 1));
   renderMemPage();
 }
 
 function memSetPageSize(n) {
+  n = +n;
+  if (!n || n < 1) n = 25;
   memPageSize = n;
   memCurrentPage = 0;
   localStorage.setItem('mem_page_size', String(n));
+  if (!filteredPeople.length && allPeople.length) filteredPeople = allPeople;
   renderMemPage();
+  _memSyncSel();
 }
 
 function memResetColWidths() {
@@ -3731,20 +3780,37 @@ function _impPhotoZoom(src) {
 const _CIRC_OPTS = ['Міна','Ракетний удар','Шахед','Артилерія','Прямий контакт','Снайпер','Авіабомба','Полон','Інше'];
 
 const AWARDS_DATA_ADM = [
-  { name:'Герой України (Золота Зірка)',              file:'Medal_of_Golden_Star_Ukraine.jpg' },
-  { name:'Орден «За мужність» I ступеня',             file:'Mugnist-1.jpg' },
-  { name:'Орден «За мужність» II ступеня',            file:'Mugnist-2.jpg' },
-  { name:'Орден «За мужність» III ступеня',           file:'Mugnist-3.jpg' },
-  { name:'Орден Богдана Хмельницького I ступеня',     file:'Order_of_Bohdan_Khmelnytsky_1st_Class_of_Ukraine.png' },
-  { name:'Орден Богдана Хмельницького II ступеня',    file:'Order_of_Bohdan_Khmelnytsky_2nd_Class_of_Ukraine.png' },
-  { name:'Орден Богдана Хмельницького III ступеня',   file:'Order_of_Bohdan_Khmelnytsky_3rd_Class_of_Ukraine.png' },
-  { name:'Орден Данила Галицького',                   file:'Order_of_Danylo_Halytsky_of_Ukraine.png' },
-  { name:'Хрест бойових заслуг',                      file:'Cross_of_Combat_Merit_2.jpg' },
-  { name:'Медаль «Захиснику Вітчизни»',               file:'Ukraine-Defender_of_the_Motherland_Medal.PNG' },
-  { name:'Медаль «За поранення»',                     file:'Wound_Medal_(Ukraine).png' },
-  { name:'Медаль «За військову службу Україні»',      file:'За_військову_службу_Україні.jpg' },
+  { name:'Герой України (посмертно)',                          file:'hero_ukraine.png' },
+  { name:'Орден «За мужність» I ступеня',                     file:'order_courage_1.png' },
+  { name:'Орден «За мужність» II ступеня',                    file:'order_courage_2.png' },
+  { name:'Орден «За мужність» III ступеня',                   file:'order_courage_3.png' },
+  { name:'Орден Богдана Хмельницького I ступеня',             file:'order_khmelnytsky_1.png' },
+  { name:'Орден Богдана Хмельницького II ступеня',            file:'order_khmelnytsky_2.png' },
+  { name:'Орден Богдана Хмельницького III ступеня',           file:'order_khmelnytsky_3.png' },
+  { name:'Орден Данила Галицького',                           file:'order_galician.png' },
+  { name:'Хрест бойових заслуг',                              file:'cross_combat.png' },
+  { name:'Хрест хоробрих',                                    file:'cross_brave.png' },
+  { name:'Медаль «Захиснику Вітчизни»',                       file:'medal_defender.png' },
+  { name:'Медаль «За поранення»',                             file:'medal_wound.png' },
+  { name:'Медаль «За військову службу Україні»',              file:'medal_service.png' },
+  { name:'Медаль «За бездоганну службу» I ступеня',           file:'medal_flawless.png' },
+  { name:'Медаль «За бездоганну службу» II ступеня',          file:'medal_flawless_2.png' },
+  { name:'Медаль «За бездоганну службу» III ступеня',         file:'medal_flawless_3.png' },
+  { name:'Нагрудний знак «За воїнську доблесть»',             file:'badge_valor.png' },
+  { name:'Відзнака «За вірність присязі»',                    file:'badge_oath.png' },
+  { name:'Відзнака «За заслуги перед ЗСУ»',                   file:'badge_zsu.png' },
+  { name:'Відзнака Президента «За участь в АТО»',             file:'badge_ato.png' },
 ];
-function _wikiImg(file, w){ return `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(file)}?width=${w||80}`; }
+// Перезавантажуємо з БД при старті
+async function _loadAwardsCatalog() {
+  try {
+    const r = await fetch(`${API}/api/awards/catalog`);
+    const data = await r.json();
+    AWARDS_DATA_ADM.length = 0;
+    data.forEach(a => AWARDS_DATA_ADM.push({name: a.name, file: a.img_file}));
+  } catch {}
+}
+function _wikiImg(file, w){ return `/img/awards/${encodeURIComponent(file)}`; }
 
 const _IMP_FIELDS = [
   {k:'last',  l:'Прізвище *',                             san:'name', max:100},
@@ -4812,27 +4878,27 @@ async function saveSelectedCity(){
 
 /* ══════════ RANK POGON — Wikimedia Special:FilePath (no hash needed) ══════════ */
 const RANK_POGON_IMG = {
-  'Солдат':                   'UA_shoulder_mark_01.svg',
-  'Старший солдат':           'UA_shoulder_mark_02.svg',
-  'Молодший сержант':         'UA_shoulder_mark_03.svg',
-  'Сержант':                  'UA_shoulder_mark_04.svg',
-  'Старший сержант':          'UA_shoulder_mark_05.svg',
-  'Головний сержант':         'UA_shoulder_mark_06.svg',
-  'Штаб-сержант':             'UA_shoulder_mark_07.svg',
-  'Майстер-сержант':          'UA_shoulder_mark_08.svg',
-  'Старший майстер-сержант':  'UA_shoulder_mark_09.svg',
-  'Головний майстер-сержант': 'UA_shoulder_mark_10-0.svg',
-  'Молодший лейтенант':       'UA_shoulder_mark_11.svg',
-  'Лейтенант':                'UA_shoulder_mark_12.svg',
-  'Старший лейтенант':        'UA_shoulder_mark_13.svg',
-  'Капітан':                  'UA_shoulder_mark_14.svg',
-  'Майор':                    'UA_shoulder_mark_15.svg',
-  'Підполковник':             'UA_shoulder_mark_16.svg',
-  'Полковник':                'UA_shoulder_mark_17.svg',
-  'Бригадний генерал':        'Погон_бригадного_генерала_ЗСУ_(2020).svg',
-  'Генерал-майор':            'Погон_генерал-майора_ЗСУ_(2020).svg',
-  'Генерал-лейтенант':        'Погон_генерал-лейтенанта_ЗСУ_(2020).svg',
-  'Генерал':                  'Погон_генерала_ЗСУ_(2020).svg',
+  'Солдат':                   'UA_shoulder_mark_01.png',
+  'Старший солдат':           'UA_shoulder_mark_02.png',
+  'Молодший сержант':         'UA_shoulder_mark_03.png',
+  'Сержант':                  'UA_shoulder_mark_04.png',
+  'Старший сержант':          'UA_shoulder_mark_05.png',
+  'Головний сержант':         'UA_shoulder_mark_06.png',
+  'Штаб-сержант':             'UA_shoulder_mark_07.png',
+  'Майстер-сержант':          'UA_shoulder_mark_08.png',
+  'Старший майстер-сержант':  'UA_shoulder_mark_09.png',
+  'Головний майстер-сержант': 'UA_shoulder_mark_10-0.png',
+  'Молодший лейтенант':       'UA_shoulder_mark_11.png',
+  'Лейтенант':                'UA_shoulder_mark_12.png',
+  'Старший лейтенант':        'UA_shoulder_mark_13.png',
+  'Капітан':                  'UA_shoulder_mark_14.png',
+  'Майор':                    'UA_shoulder_mark_15.png',
+  'Підполковник':             'UA_shoulder_mark_16.png',
+  'Полковник':                'UA_shoulder_mark_17.png',
+  'Бригадний генерал':        'Погон_бригадного_генерала_ЗСУ_(2020).png',
+  'Генерал-майор':            'Погон_генерал-майора_ЗСУ_(2020).png',
+  'Генерал-лейтенант':        'Погон_генерал-лейтенанта_ЗСУ_(2020).png',
+  'Генерал':                  'Погон_генерала_ЗСУ_(2020).png',
 };
 
 function drawRankPogon(rankName){
@@ -4840,7 +4906,7 @@ function drawRankPogon(rankName){
   if(!img) return;
   const file=RANK_POGON_IMG[rankName];
   if(!file){img.style.display='none'; return;}
-  img.src='https://commons.wikimedia.org/wiki/Special:FilePath/'+encodeURIComponent(file)+'?width=80';
+  img.src='/img/ranks/'+encodeURIComponent(file);
   img.style.display='block';
 }
 

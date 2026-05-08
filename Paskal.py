@@ -2115,6 +2115,33 @@ def pending(request: Request):
     db.close()
     return rows
 
+@app.get("/api/awards/catalog")
+def get_awards_catalog():
+    db = get_db()
+    with db.cursor() as c:
+        c.execute("SELECT id,name,img_file,category,description,sort_order FROM awards_catalog ORDER BY sort_order,name")
+        rows = c.fetchall()
+    db.close()
+    return rows
+
+@app.get("/api/admin/memorials")
+def admin_all_memorials(page: int = 1, limit: int = 100, request: Request = None):
+    require_moder(request)
+    page = max(1, page)
+    limit = max(1, min(limit, 500))
+    offset = (page - 1) * limit
+    db = get_db()
+    with db.cursor() as c:
+        c.execute("SELECT COUNT(*) AS cnt FROM memorials")
+        total = c.fetchone()["cnt"]
+        c.execute(
+            "SELECT * FROM memorials ORDER BY id DESC LIMIT %s OFFSET %s",
+            (limit, offset)
+        )
+        rows = c.fetchall()
+    db.close()
+    return {"items": rows, "total": total, "page": page, "limit": limit, "pages": (total + limit - 1) // limit}
+
 @app.post("/api/admin/approve/{mid}")
 def approve(mid: int, request: Request):
     require_moder(request)

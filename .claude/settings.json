@@ -8,7 +8,9 @@
       "Bash(grep -v \"^--$\")",
       "WebFetch(domain:ru.wikipedia.org)",
       "WebFetch(domain:uk.wikipedia.org)",
-      "Bash(git -C /d/OSPanel/OpenServer/domains/localhost/treetex log --oneline -20)"
+      "Bash(git -C /d/OSPanel/OpenServer/domains/localhost/treetex log --oneline -20)",
+      "Bash(read f *)",
+      "Bash([ -f \"D:/OSPanel/OpenServer/domains/localhost/treetex/img/awards/$f\" ])"
     ]
   }
 }
