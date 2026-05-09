@@ -16,15 +16,21 @@
   font-display: swap;
 }
 
+body {
+  transition: filter 2s ease;
+}
+
 body.silence-active {
   filter: grayscale(1);
-  transition: filter 1s;
+}
+
+canvas, video {
+  transition: opacity 2s ease;
 }
 
 body.silence-active canvas,
 body.silence-active video {
   opacity: 0.3;
-  transition: opacity 1s;
 }
 
 #silence-overlay {
