@@ -419,6 +419,60 @@ def init_db():
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
         """)
 
+        # ── minute_silence_settings ───────────────────────
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS minute_silence_settings (
+                `key`   VARCHAR(50) PRIMARY KEY,
+                `value` TEXT
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        """)
+        for _sk, _sv in [
+            ("enabled",            "0"),
+            ("time_hhmm",          "10:00"),
+            ("duration_sec",       "60"),
+            ("overlay_text",       "Хвилина мовчання"),
+            ("overlay_subtext",    "Схиляємо голови перед пам'яттю Захисників України"),
+            ("overlay_height",     "15"),
+            ("overlay_bg_color",   "#000000"),
+            ("overlay_text_color", "#ffffff"),
+            ("clock_enabled",      "1"),
+            ("clock_x",            "10"),
+            ("clock_y",            "10"),
+            ("clock_font",         "monospace"),
+            ("clock_font_size",    "20"),
+            ("clock_opacity",      "1"),
+            ("clock_color",        "#ffffff"),
+            ("clock_bg",           "rgba(0,0,0,0.5)"),
+            ("audio_file",         ""),
+            ("audio_volume",       "0.7"),
+            ("force_active",       "0"),
+        ]:
+            c.execute(
+                "INSERT IGNORE INTO minute_silence_settings (`key`,`value`) VALUES (%s,%s)",
+                (_sk, _sv)
+            )
+        # Migration: normalize old CSS font-family values → simple keys
+        _FONT_MIGRATE = {
+            "'LetsGoDigital', monospace": "letsgodigital",
+            "'Cristal', sans-serif":      "cristal",
+            "'POCKC', sans-serif":        "pockc",
+            "'Courier New', monospace":   "courier",
+            "'Unbounded', sans-serif":    "unbounded",
+            "'Geologica', sans-serif":    "geologica",
+            "'Arial', sans-serif":        "arial",
+            "'Georgia', serif":           "georgia",
+            "'Times New Roman', serif":   "times",
+        }
+        c.execute("SELECT `value` FROM minute_silence_settings WHERE `key`='clock_font'")
+        _frow = c.fetchone()
+        if _frow:
+            _fval = (_frow.get("value") if isinstance(_frow, dict) else _frow[0]) or ""
+            if _fval in _FONT_MIGRATE:
+                c.execute(
+                    "UPDATE minute_silence_settings SET `value`=%s WHERE `key`='clock_font'",
+                    (_FONT_MIGRATE[_fval],)
+                )
+
     # ── Admin user ──────────────────────────────────────
     with db.cursor() as c:
         c.execute("SELECT id, password FROM users WHERE email=%s", ("admin@admin.com",))
@@ -1109,6 +1163,8 @@ async def security_headers(request, call_next):
 app.mount("/img",   StaticFiles(directory="img"),   name="img")
 app.mount("/js",    StaticFiles(directory="js"),    name="js")
 app.mount("/fonts", StaticFiles(directory="fonts"), name="fonts")
+os.makedirs("img/audio", exist_ok=True)
+app.mount("/audio", StaticFiles(directory="img/audio"), name="audio")
 
 @app.on_event("startup")
 def startup():
@@ -1210,6 +1266,12 @@ def terms_page(): return FileResponse("terms.html")
 
 @app.get("/faq.html")
 def faq_page(): return FileResponse("faq.html")
+
+@app.get("/silence-module.js")
+def silence_js(): return FileResponse("silence-module.js", media_type="application/javascript")
+
+@app.get("/silence-module.css")
+def silence_css(): return FileResponse("silence-module.css", media_type="text/css")
 
 
 # ── WebSocket онлайн ─────────────────────────────────────
@@ -3264,3 +3326,96 @@ def server_stats(request: Request):
         "total_requests": _request_count,
         "visits_24h":   visits_24h,
     }
+
+
+# ── Хвилина мовчання ─────────────────────────────────────
+
+@app.get("/api/minute-silence/settings")
+def get_silence_settings():
+    db = get_db()
+    with db.cursor() as c:
+        c.execute("SELECT `key`, `value` FROM minute_silence_settings")
+        rows = c.fetchall()
+    db.close()
+    return {r["key"]: r["value"] for r in rows}
+
+
+@app.post("/api/admin/minute-silence/settings")
+async def save_silence_settings(request: Request):
+    require_moder(request)
+    data = await request.json()
+    if not isinstance(data, dict):
+        raise HTTPException(400, "Очікується dict")
+    _allowed = {
+        "enabled", "time_hhmm", "duration_sec",
+        "overlay_text", "overlay_subtext", "overlay_height", "overlay_bg_color", "overlay_text_color",
+        "clock_enabled", "clock_x", "clock_y", "clock_font", "clock_font_size", "clock_opacity", "clock_color", "clock_bg",
+        "audio_volume",
+    }
+    db = get_db()
+    with db.cursor() as c:
+        for k, v in data.items():
+            if k not in _allowed:
+                continue
+            v = _sanitize_text(str(v))[:500]
+            c.execute(
+                "INSERT INTO minute_silence_settings (`key`,`value`) VALUES (%s,%s) "
+                "ON DUPLICATE KEY UPDATE `value`=%s",
+                (k, v, v)
+            )
+    db.commit()
+    db.close()
+    return {"ok": True}
+
+
+@app.post("/api/admin/minute-silence/audio")
+async def upload_silence_audio(request: Request, file: UploadFile = File(...)):
+    require_moder(request)
+    raw = await file.read()
+    if len(raw) > 10_000_000:
+        raise HTTPException(400, "Аудіо файл занадто великий (макс 10 МБ)")
+    ext = os.path.splitext(file.filename or "")[1].lower()
+    if ext not in (".mp3", ".wav", ".ogg", ".m4a"):
+        raise HTTPException(400, "Дозволені формати: mp3, wav, ogg, m4a")
+    fname = "silence_audio" + ext
+    fpath = os.path.join("img", "audio", fname)
+    with open(fpath, "wb") as fh:
+        fh.write(raw)
+    db = get_db()
+    with db.cursor() as c:
+        c.execute(
+            "INSERT INTO minute_silence_settings (`key`,`value`) VALUES ('audio_file',%s) "
+            "ON DUPLICATE KEY UPDATE `value`=%s",
+            (fname, fname)
+        )
+    db.commit()
+    db.close()
+    return {"ok": True, "audio_file": fname}
+
+
+@app.post("/api/admin/minute-silence/test-start")
+def silence_test_start(request: Request):
+    require_moder(request)
+    db = get_db()
+    with db.cursor() as c:
+        c.execute(
+            "INSERT INTO minute_silence_settings (`key`,`value`) VALUES ('force_active','1') "
+            "ON DUPLICATE KEY UPDATE `value`='1'"
+        )
+    db.commit()
+    db.close()
+    return {"ok": True}
+
+
+@app.post("/api/admin/minute-silence/test-stop")
+def silence_test_stop(request: Request):
+    require_moder(request)
+    db = get_db()
+    with db.cursor() as c:
+        c.execute(
+            "INSERT INTO minute_silence_settings (`key`,`value`) VALUES ('force_active','0') "
+            "ON DUPLICATE KEY UPDATE `value`='0'"
+        )
+    db.commit()
+    db.close()
+    return {"ok": True}

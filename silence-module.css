@@ -1,0 +1,72 @@
+/* ── Хвилина мовчання — стилі ─────────────────────────── */
+
+@font-face {
+  font-family: 'LetsGoDigital';
+  src: url('/fonts/Let_s_go_Digital_Regular.ttf') format('truetype');
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Cristal';
+  src: url('/fonts/cristal.ttf') format('truetype');
+  font-display: swap;
+}
+@font-face {
+  font-family: 'POCKC';
+  src: url('/fonts/POCKC___.TTF') format('truetype');
+  font-display: swap;
+}
+
+body.silence-active {
+  filter: grayscale(1);
+  transition: filter 1s;
+}
+
+body.silence-active canvas,
+body.silence-active video {
+  opacity: 0.3;
+  transition: opacity 1s;
+}
+
+#silence-overlay {
+  position: fixed;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  z-index: 9999;
+  display: none;
+  justify-content: center;
+  align-items: center;
+  background: var(--silence-bg, rgba(0,0,0,0.88));
+  color: var(--silence-color, #fff);
+  text-align: center;
+  padding: 28px 20px;
+  box-sizing: border-box;
+}
+
+#silence-overlay .silence-title {
+  font-size: clamp(18px, 3.5vw, 36px);
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+#silence-overlay .silence-sub {
+  font-size: clamp(11px, 1.6vw, 18px);
+  opacity: 0.8;
+  margin-top: 8px;
+  max-width: 90%;
+}
+
+#kyiv-clock {
+  position: fixed;
+  z-index: 9998;
+  padding: 4px 10px;
+  border-radius: 6px;
+  pointer-events: none;
+  display: none;
+  line-height: 1.4;
+}

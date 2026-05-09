@@ -428,6 +428,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
     <div class="nav-item"        draggable="true" onclick="showSec('sea')"       data-s="sea">       <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-waves"/></svg></span>Хвилі морів</div>
     <div class="nav-item"        draggable="true" onclick="showSec('icons')"     data-s="icons">     <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-star"/></svg></span>Іконки</div>
     <div class="nav-item"        draggable="true" onclick="showSec('cities')"    data-s="cities">    <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-city"/></svg></span>Міста</div>
+    <div class="nav-item"        draggable="true" onclick="showSec('silence')"   data-s="silence">   <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-hourglass"/></svg></span>Мовчання</div>
     </div>
     <div class="sb-bottom">
       <p>Адмін: <strong id="adm-name">—</strong> <span id="adm-role-badge" style="font-size:9px;margin-left:4px"></span></p>
@@ -3190,6 +3191,170 @@ tr:hover td{background:rgba(255,255,255,.02)}
         </div>
       </div>
 
+      <!-- SILENCE SECTION -->
+      <div id="sec-silence" class="section">
+        <div class="sec-title"><svg class="adm-ico"><use href="#ico-hourglass"/></svg> Хвилина мовчання</div>
+
+        <!-- Розклад -->
+        <div class="rg-group">
+          <div class="rg-group-title">Розклад</div>
+          <div class="rg-row">
+            <div class="rg-row-info">
+              <div class="rg-row-label">Увімкнено</div>
+              <div class="rg-row-desc">Автоматично вмикати щодня у вказаний час</div>
+            </div>
+            <label class="rg-toggle"><input type="checkbox" id="sl-enabled"><span class="rg-slider"></span></label>
+          </div>
+          <div class="rg-row">
+            <div class="rg-row-info">
+              <div class="rg-row-label">Час (Київ, HH:MM)</div>
+              <div class="rg-row-desc">Щоденний час початку хвилини мовчання</div>
+            </div>
+            <input type="time" id="sl-time" style="background:var(--panel);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:6px 10px;font-size:13px">
+          </div>
+          <div class="rg-row">
+            <div class="rg-row-info">
+              <div class="rg-row-label">Тривалість (сек)</div>
+              <div class="rg-row-desc">Автоматичне завершення через N секунд (10–300)</div>
+            </div>
+            <input type="number" id="sl-duration" min="10" max="300" style="width:80px;background:var(--panel);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:6px 10px;font-size:13px">
+          </div>
+        </div>
+
+        <!-- Оверлей -->
+        <div class="rg-group">
+          <div class="rg-group-title">Оверлей (нижня панель)</div>
+          <div class="rg-row">
+            <div class="rg-row-info">
+              <div class="rg-row-label">Висота панелі (vh)</div>
+              <div class="rg-row-desc">Мінімальна висота фону тексту по вертикалі</div>
+            </div>
+            <input type="range" id="sl-overlay-height" min="5" max="60" step="1" style="width:140px"
+              oninput="document.getElementById('sl-overlay-height-val').textContent=this.value+' vh'">
+            <span id="sl-overlay-height-val" style="margin-left:8px;font-size:13px;opacity:.7;min-width:32px;display:inline-block">15 vh</span>
+          </div>
+          <div class="rg-row">
+            <div class="rg-row-info"><div class="rg-row-label">Основний текст</div></div>
+            <input type="text" id="sl-overlay-text" maxlength="200" style="flex:1;background:var(--panel);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:6px 10px;font-size:13px">
+          </div>
+          <div class="rg-row">
+            <div class="rg-row-info"><div class="rg-row-label">Підтекст</div></div>
+            <input type="text" id="sl-overlay-subtext" maxlength="300" style="flex:1;background:var(--panel);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:6px 10px;font-size:13px">
+          </div>
+          <div class="rg-row">
+            <div class="rg-row-info"><div class="rg-row-label">Колір фону</div></div>
+            <input type="color" id="sl-overlay-bg" style="width:50px;height:36px;border:none;cursor:pointer;background:none">
+          </div>
+          <div class="rg-row">
+            <div class="rg-row-info"><div class="rg-row-label">Колір тексту</div></div>
+            <input type="color" id="sl-overlay-color" style="width:50px;height:36px;border:none;cursor:pointer;background:none">
+          </div>
+        </div>
+
+        <!-- Годинник -->
+        <div class="rg-group">
+          <div class="rg-group-title">Цифровий годинник Київ</div>
+          <div class="rg-row">
+            <div class="rg-row-info">
+              <div class="rg-row-label">Показувати</div>
+              <div class="rg-row-desc">Постійно відображати поточний час (Київ)</div>
+            </div>
+            <label class="rg-toggle"><input type="checkbox" id="sl-clock-enabled"><span class="rg-slider"></span></label>
+          </div>
+          <div class="rg-row">
+            <div class="rg-row-info">
+              <div class="rg-row-label">Позиція X (px від лівого краю)</div>
+              <div class="rg-row-desc">Відстань від лівого краю екрану</div>
+            </div>
+            <input type="number" id="sl-clock-x" min="0" max="3000" style="width:90px;background:var(--panel);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:6px 10px;font-size:13px">
+          </div>
+          <div class="rg-row">
+            <div class="rg-row-info">
+              <div class="rg-row-label">Позиція Y (px від верхнього краю)</div>
+              <div class="rg-row-desc">Відстань від верхнього краю екрану</div>
+            </div>
+            <input type="number" id="sl-clock-y" min="0" max="3000" style="width:90px;background:var(--panel);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:6px 10px;font-size:13px">
+          </div>
+          <div class="rg-row">
+            <div class="rg-row-info"><div class="rg-row-label">Шрифт</div></div>
+            <select id="sl-clock-font" style="background:var(--panel);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:6px 10px;font-size:13px;min-width:200px">
+              <optgroup label="— Завантажені шрифти —">
+              <option value="letsgodigital">Let's Go Digital</option>
+              <option value="cristal">Cristal</option>
+              <option value="pockc">POCKC</option>
+              </optgroup>
+              <optgroup label="— Системні шрифти —">
+              <option value="monospace">Monospace</option>
+              <option value="courier">Courier New</option>
+              <option value="unbounded">Unbounded (логотип сайту)</option>
+              <option value="geologica">Geologica (текст сайту)</option>
+              <option value="arial">Arial</option>
+              <option value="georgia">Georgia</option>
+              <option value="times">Times New Roman</option>
+              </optgroup>
+            </select>
+          </div>
+          <div class="rg-row">
+            <div class="rg-row-info"><div class="rg-row-label">Розмір шрифту (px)</div></div>
+            <input type="number" id="sl-clock-size" min="12" max="72" style="width:80px;background:var(--panel);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:6px 10px;font-size:13px">
+          </div>
+          <div class="rg-row">
+            <div class="rg-row-info">
+              <div class="rg-row-label">Прозорість цифр</div>
+              <div class="rg-row-desc">0 — невидимий, 1 — повністю непрозорий</div>
+            </div>
+            <input type="range" id="sl-clock-opacity" min="0" max="1" step="0.05" style="width:140px"
+              oninput="document.getElementById('sl-clock-opacity-val').textContent=parseFloat(this.value).toFixed(2)">
+            <span id="sl-clock-opacity-val" style="margin-left:8px;font-size:13px;opacity:.7;min-width:28px;display:inline-block">1</span>
+          </div>
+          <div class="rg-row">
+            <div class="rg-row-info"><div class="rg-row-label">Колір тексту</div></div>
+            <input type="color" id="sl-clock-color" style="width:50px;height:36px;border:none;cursor:pointer;background:none">
+          </div>
+          <div class="rg-row">
+            <div class="rg-row-info"><div class="rg-row-label">Фон годинника</div></div>
+            <input type="text" id="sl-clock-bg" maxlength="80" placeholder="rgba(0,0,0,0.5)" style="width:180px;background:var(--panel);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:6px 10px;font-size:13px">
+          </div>
+        </div>
+
+        <!-- Аудіо -->
+        <div class="rg-group">
+          <div class="rg-group-title">Аудіо (тиканий годинник)</div>
+          <div class="rg-row" style="flex-wrap:wrap;gap:8px">
+            <div class="rg-row-info">
+              <div class="rg-row-label">Файл (MP3/WAV/OGG/M4A)</div>
+              <div class="rg-row-desc">Завантажено: <span id="sl-audio-current" style="opacity:.7">—</span></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+              <input type="file" id="sl-audio-file" accept="audio/mp3,audio/wav,audio/ogg,audio/mpeg,.mp3,.wav,.ogg,.m4a"
+                onchange="silenceUploadAudio(this)">
+              <span id="sl-audio-upload-status" style="font-size:12px;opacity:.8"></span>
+            </div>
+          </div>
+          <div class="rg-row" style="flex-wrap:wrap;gap:8px;align-items:center">
+            <div class="rg-row-info"><div class="rg-row-label">Прослухати завантажене</div></div>
+            <audio id="sl-audio-preview" controls style="height:32px;max-width:260px;display:none"></audio>
+            <span id="sl-audio-preview-none" style="font-size:12px;opacity:.5">файл не завантажено</span>
+          </div>
+          <div class="rg-row">
+            <div class="rg-row-info"><div class="rg-row-label">Гучність (0–1)</div></div>
+            <input type="range" id="sl-audio-vol" min="0" max="1" step="0.05" style="width:160px"
+              oninput="document.getElementById('sl-audio-vol-val').textContent=parseFloat(this.value).toFixed(2)">
+            <span id="sl-audio-vol-val" style="margin-left:8px;font-size:13px;opacity:.7">0.7</span>
+          </div>
+        </div>
+
+        <!-- Кнопки -->
+        <div class="rg-group">
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <button class="btn btn-p" onclick="silenceSave()"><i class="fi-rr-disk"></i> Зберегти</button>
+            <button class="btn" onclick="silenceTestStart()"><i class="fi-rr-play"></i> Тест-запуск</button>
+            <button class="btn btn-r" onclick="silenceTestStop()"><i class="fi-rr-stop"></i> Зупинити тест</button>
+          </div>
+          <div id="sl-status" style="margin-top:10px;font-size:13px;opacity:.7"></div>
+        </div>
+      </div>
+
     </div><!-- /content-area -->
   </div><!-- /main -->
 </div><!-- /layout -->
@@ -3502,6 +3667,146 @@ function showSec(id) {
   if(id==='sea')     { if(Object.keys(COLORS).length>0) renderSeaSection();   else loadColors(); }
   if(id==='icons')   { if(Object.keys(COLORS).length>0) renderIconsSection(); else loadColors(); }
   if(id==='cities')  { document.getElementById('city-search').value=''; loadCitiesAdmin(); }
+  if(id==='silence') _loadSilenceSettings();
+}
+
+/* ══════════ ХВИЛИНА МОВЧАННЯ ══════════ */
+async function _loadSilenceSettings(){
+  try{
+    const r=await fetch(API+'/api/minute-silence/settings');
+    if(!r.ok)return;
+    const s=await r.json();
+    const g=id=>document.getElementById(id);
+    if(g('sl-enabled'))    g('sl-enabled').checked   = s.enabled==='1';
+    if(g('sl-time'))       g('sl-time').value         = s.time_hhmm||'10:00';
+    if(g('sl-duration'))   g('sl-duration').value     = s.duration_sec||'60';
+    const oh=parseInt(s.overlay_height||'15',10);
+    if(g('sl-overlay-height'))     g('sl-overlay-height').value           = oh;
+    if(g('sl-overlay-height-val')) g('sl-overlay-height-val').textContent = oh+' vh';
+    if(g('sl-overlay-text'))    g('sl-overlay-text').value    = s.overlay_text||'';
+    if(g('sl-overlay-subtext')) g('sl-overlay-subtext').value = s.overlay_subtext||'';
+    if(g('sl-overlay-bg'))   g('sl-overlay-bg').value   = s.overlay_bg_color||'#000000';
+    if(g('sl-overlay-color'))g('sl-overlay-color').value = s.overlay_text_color||'#ffffff';
+    if(g('sl-clock-enabled')) g('sl-clock-enabled').checked = s.clock_enabled==='1';
+    if(g('sl-clock-x'))    g('sl-clock-x').value     = s.clock_x||'10';
+    if(g('sl-clock-y'))    g('sl-clock-y').value     = s.clock_y||'10';
+    /* нормалізація старих CSS-значень до простих ключів */
+    const _FONT_REV={'\'LetsGoDigital\', monospace':'letsgodigital','\'Cristal\', sans-serif':'cristal','\'POCKC\', sans-serif':'pockc','\'Courier New\', monospace':'courier','\'Unbounded\', sans-serif':'unbounded','\'Geologica\', sans-serif':'geologica','\'Arial\', sans-serif':'arial','\'Georgia\', serif':'georgia','\'Times New Roman\', serif':'times'};
+    const _fontKey = _FONT_REV[s.clock_font] || s.clock_font || 'monospace';
+    if(g('sl-clock-font')) g('sl-clock-font').value = _fontKey;
+    if(g('sl-clock-size')) g('sl-clock-size').value  = s.clock_font_size||'20';
+    const op=parseFloat(s.clock_opacity||'1');
+    if(g('sl-clock-opacity'))     g('sl-clock-opacity').value           = op;
+    if(g('sl-clock-opacity-val')) g('sl-clock-opacity-val').textContent = op.toFixed(2);
+    if(g('sl-clock-color'))g('sl-clock-color').value = s.clock_color||'#ffffff';
+    if(g('sl-clock-bg'))   g('sl-clock-bg').value    = s.clock_bg||'rgba(0,0,0,0.5)';
+    if(g('sl-audio-current')) g('sl-audio-current').textContent = s.audio_file||'—';
+    _silenceSetAudioPreview(s.audio_file||'');
+    const vol = parseFloat(s.audio_volume||'0.7');
+    if(g('sl-audio-vol'))     g('sl-audio-vol').value     = vol;
+    if(g('sl-audio-vol-val')) g('sl-audio-vol-val').textContent = vol.toFixed(2);
+  }catch(e){console.error('_loadSilenceSettings',e);}
+}
+
+async function silenceSave(){
+  const g=id=>document.getElementById(id);
+  const body={
+    enabled:            g('sl-enabled')?.checked?'1':'0',
+    time_hhmm:          g('sl-time')?.value||'10:00',
+    duration_sec:       g('sl-duration')?.value||'60',
+    overlay_height:     g('sl-overlay-height')?.value||'15',
+    overlay_text:       g('sl-overlay-text')?.value||'',
+    overlay_subtext:    g('sl-overlay-subtext')?.value||'',
+    overlay_bg_color:   g('sl-overlay-bg')?.value||'#000000',
+    overlay_text_color: g('sl-overlay-color')?.value||'#ffffff',
+    clock_enabled:      g('sl-clock-enabled')?.checked?'1':'0',
+    clock_x:            g('sl-clock-x')?.value||'10',
+    clock_y:            g('sl-clock-y')?.value||'10',
+    clock_font:         g('sl-clock-font')?.value||'monospace',
+    clock_font_size:    g('sl-clock-size')?.value||'20',
+    clock_opacity:      g('sl-clock-opacity')?.value||'1',
+    clock_color:        g('sl-clock-color')?.value||'#ffffff',
+    clock_bg:           g('sl-clock-bg')?.value||'rgba(0,0,0,0.5)',
+    audio_volume:       g('sl-audio-vol')?.value||'0.7',
+  };
+  const st=g('sl-status');
+  try{
+    const r=await fetch(API+'/api/admin/minute-silence/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    if(!r.ok)throw new Error(r.status);
+    // Notify index.html via BroadcastChannel
+    try{ new BroadcastChannel('zoryana_silence').postMessage({cmd:'settings',settings:body}); }catch(e){}
+    if(st) st.textContent='Збережено';
+    setTimeout(()=>{ if(st) st.textContent=''; },3000);
+  }catch(e){
+    if(st) st.textContent='Помилка: '+e.message;
+  }
+}
+
+async function silenceTestStart(){
+  const st=document.getElementById('sl-status');
+  try{
+    await silenceSave();
+    // Reload settings to get latest audio_file
+    const r=await fetch(API+'/api/minute-silence/settings');
+    const s=r.ok?await r.json():{};
+    await fetch(API+'/api/admin/minute-silence/test-start',{method:'POST'});
+    try{ new BroadcastChannel('zoryana_silence').postMessage({cmd:'start',settings:s}); }catch(e){}
+    if(st) st.textContent='Тест-режим увімкнено';
+    setTimeout(()=>{ if(st) st.textContent=''; },4000);
+  }catch(e){
+    if(st) st.textContent='Помилка: '+e.message;
+  }
+}
+
+async function silenceTestStop(){
+  const st=document.getElementById('sl-status');
+  try{
+    await fetch(API+'/api/admin/minute-silence/test-stop',{method:'POST'});
+    try{ new BroadcastChannel('zoryana_silence').postMessage({cmd:'stop'}); }catch(e){}
+    if(st) st.textContent='Тест-режим зупинено';
+    setTimeout(()=>{ if(st) st.textContent=''; },3000);
+  }catch(e){
+    if(st) st.textContent='Помилка: '+e.message;
+  }
+}
+
+async function silenceUploadAudio(input) {
+  const st = document.getElementById('sl-audio-upload-status');
+  const file = input?.files?.[0];
+  if (!file) return;
+  if (st) { st.textContent = '⏳ Завантаження...'; st.style.color = ''; }
+  try {
+    const fd = new FormData();
+    fd.append('file', file);
+    const r = await fetch(API + '/api/admin/minute-silence/audio', { method: 'POST', body: fd });
+    if (!r.ok) {
+      const err = await r.text().catch(() => r.status);
+      throw new Error(err || r.status);
+    }
+    const j = await r.json();
+    const fname = j.audio_file || '';
+    if (document.getElementById('sl-audio-current')) document.getElementById('sl-audio-current').textContent = fname || '—';
+    _silenceSetAudioPreview(fname);
+    if (st) { st.textContent = '✓ Завантажено: ' + fname; st.style.color = '#4caf50'; }
+    if (input) input.value = '';
+  } catch (e) {
+    if (st) { st.textContent = '✗ Помилка: ' + e.message; st.style.color = '#f44336'; }
+  }
+}
+
+function _silenceSetAudioPreview(fname) {
+  const el = document.getElementById('sl-audio-preview');
+  const none = document.getElementById('sl-audio-preview-none');
+  if (!el) return;
+  if (fname) {
+    el.src = '/audio/' + fname;
+    el.style.display = 'block';
+    if (none) none.style.display = 'none';
+  } else {
+    el.src = '';
+    el.style.display = 'none';
+    if (none) none.style.display = '';
+  }
 }
 
 /* ══════════ NAV DRAG-AND-DROP ══════════ */

@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700&family=Geologica:wght@300;400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="Style.css">
+<link rel="stylesheet" href="/silence-module.css">
 <style id="dynamic-colors">
 /* Кольори завантажуються з БД */
 </style>
@@ -3027,6 +3028,7 @@ function _ytExtractId(url){
   return m?m[1]:null;
 }
 window.addEventListener('mousemove',e=>{
+  if(typeof SilenceModule!=='undefined')SilenceModule._primeAudio();
   if(drag){tr.x=trS.x+(e.clientX-dragS.x);tr.y=trS.y+(e.clientY-dragS.y);clampTr();scheduleApplyTr();document.getElementById('tip').style.display='none';return;}
   _lastMX=e.clientX;_lastMY=e.clientY;
   if(_mousePending)return;
@@ -4692,6 +4694,7 @@ function closeInfo(id){document.getElementById('m-'+id).classList.remove('open')
 })();
 </script>
 
-
+<script src="/silence-module.js"></script>
+<script>document.addEventListener('DOMContentLoaded',function(){SilenceModule.init();});</script>
 </body>
 </html>
