@@ -257,6 +257,8 @@ const SilenceModule = (function () {
     document.body.classList.remove('silence-active');
     if (window._fluidConfig) window._fluidConfig.PAUSED = false;
   }
+  /* transition: filter 2s ease задано в CSS на body —
+     клас видаляється і фільтр плавно повертається до normal */
 
   function _renderOverlay() {
     let el = document.getElementById('silence-overlay');
@@ -275,12 +277,21 @@ const SilenceModule = (function () {
     el.innerHTML =
       '<div class="silence-title">' + _esc(_s.overlay_text || 'Хвилина мовчання') + '</div>' +
       (sub ? '<div class="silence-sub">' + _esc(sub) + '</div>' : '');
-    el.style.display = 'flex';
+    el.style.transition = '';
+    el.style.opacity    = '1';
+    el.style.display    = 'flex';
   }
 
   function _removeOverlay() {
     const el = document.getElementById('silence-overlay');
-    if (el) el.style.display = 'none';
+    if (!el || el.style.display === 'none') return;
+    el.style.transition = 'opacity 2s ease';
+    el.style.opacity    = '0';
+    setTimeout(function () {
+      el.style.display    = 'none';
+      el.style.opacity    = '';
+      el.style.transition = '';
+    }, 2000);
   }
 
   function _startClock() {

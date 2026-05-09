@@ -315,6 +315,23 @@ tr:hover td{background:rgba(255,255,255,.02)}
 .srv-info-item .val{font-size:18px;font-weight:700;color:var(--accent);line-height:1.2}
 .srv-info-item .key{font-size:10px;color:var(--muted);margin-top:2px}
 
+/* ── DASHBOARD WIDGETS ── */
+#dash-canvas{position:relative;width:100%;margin-bottom:24px}
+.dash-widget{position:absolute;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);display:flex;flex-direction:column;overflow:hidden;min-width:180px;min-height:100px;transition:box-shadow .15s}
+.dash-widget.dw-dragging{opacity:.88;z-index:200;box-shadow:0 10px 40px rgba(0,0,0,.55);cursor:grabbing!important}
+.dash-widget.dw-resizing{z-index:200}
+.dw-head{display:flex;align-items:center;gap:6px;padding:9px 12px;cursor:grab;user-select:none;flex-shrink:0;border-bottom:1px solid var(--border2);background:rgba(255,255,255,.015)}
+.dw-head:active,.dash-widget.dw-dragging .dw-head{cursor:grabbing}
+.dw-grip{font-size:13px;color:var(--border2);line-height:1;margin-right:1px;flex-shrink:0}
+.dw-icon{width:12px;height:12px;opacity:.55;flex-shrink:0}
+.dw-title{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dw-body{flex:1;min-height:0;overflow:auto;padding:12px}
+.dw-body.dw-chart{padding:0;overflow:hidden;position:relative}
+.dw-body.dw-chart>canvas{position:absolute;top:0;left:0;width:100%!important;height:100%!important}
+.dw-rsz{position:absolute;right:0;bottom:0;width:20px;height:20px;cursor:nwse-resize;z-index:10}
+.dw-rsz::after{content:'';position:absolute;right:3px;bottom:3px;width:9px;height:9px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);opacity:.45;border-radius:1px}
+.dw-rsz:hover::after{opacity:1}
+.dash-controls{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding:6px 10px;background:rgba(255,255,255,.025);border:1px solid var(--border2);border-radius:var(--radius);font-size:11px;color:var(--muted)}
 /* ── RESPONSIVE ── */
 #hamburger{display:none;position:fixed;top:10px;left:10px;z-index:1000;background:var(--surface);border:1px solid var(--border2);border-radius:8px;color:var(--text);padding:8px 10px;cursor:pointer;font-size:16px}
 #sidebar-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);z-index:900}
@@ -348,6 +365,8 @@ tr:hover td{background:rgba(255,255,255,.02)}
   <symbol id="ico-doc" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></symbol>
   <!-- hourglass -->
   <symbol id="ico-hourglass" viewBox="0 0 24 24"><path d="M5 3h14M5 21h14M6 3l6 8.5L18 3M6 21l6-8.5 6 8.5"/></symbol>
+  <!-- candle (хвилина мовчання) -->
+  <symbol id="ico-candle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2c0 0-2 2.5-2 4 0 1.1.9 2 2 2s2-.9 2-2c0-1.5-2-4-2-4z" fill="currentColor" stroke="none"/><line x1="12" y1="8" x2="12" y2="10"/><rect x="8" y="10" width="8" height="10" rx="1.5"/><line x1="6" y1="20" x2="18" y2="20"/></symbol>
   <!-- users -->
   <symbol id="ico-users" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
   <!-- map -->
@@ -428,7 +447,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
     <div class="nav-item"        draggable="true" onclick="showSec('sea')"       data-s="sea">       <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-waves"/></svg></span>Хвилі морів</div>
     <div class="nav-item"        draggable="true" onclick="showSec('icons')"     data-s="icons">     <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-star"/></svg></span>Іконки</div>
     <div class="nav-item"        draggable="true" onclick="showSec('cities')"    data-s="cities">    <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-city"/></svg></span>Міста</div>
-    <div class="nav-item"        draggable="true" onclick="showSec('silence')"   data-s="silence">   <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-hourglass"/></svg></span>Мовчання</div>
+    <div class="nav-item"        draggable="true" onclick="showSec('silence')"   data-s="silence">   <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-candle"/></svg></span>Хв. Мовчання</div>
     </div>
     <div class="sb-bottom">
       <p>Адмін: <strong id="adm-name">—</strong> <span id="adm-role-badge" style="font-size:9px;margin-left:4px"></span></p>
@@ -474,33 +493,150 @@ tr:hover td{background:rgba(255,255,255,.02)}
           <div class="stat-card" style="border-color:rgba(58,154,96,.3)"><div class="num" id="st-online" style="color:#3a9a60">—</div><div class="lbl"><span class="online-dot"></span>Онлайн зараз</div></div>
         </div>
 
-        <!-- Charts row -->
-        <div class="chart-grid">
-          <!-- Visits chart -->
-          <div class="chart-box" style="flex:2;min-width:320px">
-            <h3><i class="fi-rr-chart-line-up"></i> Запити за останні 24 години</h3>
-            <canvas id="visits-chart" height="120"></canvas>
-          </div>
-          <!-- Server load -->
-          <div class="chart-box" style="flex:1;min-width:280px">
-            <h3><i class="fi-rr-database"></i> Навантаження сервера</h3>
-            <div class="srv-bars">
-              <div class="srv-bar-row">
-                <div class="srv-bar-label"><span>CPU</span><strong id="srv-cpu">—</strong></div>
-                <div class="srv-bar-track"><div class="srv-bar-fill cpu" id="srv-cpu-bar" style="width:0%"></div></div>
-              </div>
-              <div class="srv-bar-row">
-                <div class="srv-bar-label"><span>RAM</span><strong id="srv-ram">—</strong></div>
-                <div class="srv-bar-track"><div class="srv-bar-fill ram" id="srv-ram-bar" style="width:0%"></div></div>
-              </div>
-            </div>
-            <div class="srv-info-grid">
-              <div class="srv-info-item"><div class="val" id="srv-online">—</div><div class="key">Онлайн</div></div>
-              <div class="srv-info-item"><div class="val" id="srv-uptime" style="font-size:13px">—</div><div class="key">Аптайм</div></div>
-              <div class="srv-info-item"><div class="val" id="srv-reqs">—</div><div class="key">Запитів</div></div>
-            </div>
-          </div>
+        <!-- Widget controls bar -->
+        <div class="dash-controls">
+          <span>⠿ Перетягніть панель за заголовок &nbsp;·&nbsp; Змініть розмір за кут ↘</span>
+          <button class="btn" style="font-size:11px;padding:3px 10px" onclick="dwReset()">↺ Скинути</button>
         </div>
+
+        <!-- Free-form widget canvas -->
+        <div id="dash-canvas">
+
+          <div class="dash-widget" id="dw-visits">
+            <div class="dw-head"><span class="dw-grip">⠿</span><svg class="dw-icon adm-ico"><use href="#ico-stats"/></svg><span class="dw-title">Запити за 24 год</span></div>
+            <div class="dw-body dw-chart"><canvas id="visits-chart"></canvas></div>
+            <div class="dw-rsz"></div>
+          </div>
+
+          <div class="dash-widget" id="dw-server">
+            <div class="dw-head"><span class="dw-grip">⠿</span><svg class="dw-icon adm-ico"><use href="#ico-settings"/></svg><span class="dw-title">Навантаження сервера</span></div>
+            <div class="dw-body">
+              <div class="srv-bars">
+                <div class="srv-bar-row">
+                  <div class="srv-bar-label"><span>CPU</span><strong id="srv-cpu">—</strong></div>
+                  <div class="srv-bar-track"><div class="srv-bar-fill cpu" id="srv-cpu-bar" style="width:0%"></div></div>
+                </div>
+                <div class="srv-bar-row">
+                  <div class="srv-bar-label"><span>RAM</span><strong id="srv-ram">—</strong></div>
+                  <div class="srv-bar-track"><div class="srv-bar-fill ram" id="srv-ram-bar" style="width:0%"></div></div>
+                </div>
+              </div>
+              <div class="srv-info-grid" style="margin-top:12px">
+                <div class="srv-info-item"><div class="val" id="srv-online">—</div><div class="key">Онлайн</div></div>
+                <div class="srv-info-item"><div class="val" id="srv-uptime" style="font-size:13px">—</div><div class="key">Аптайм</div></div>
+                <div class="srv-info-item"><div class="val" id="srv-reqs">—</div><div class="key">Запитів</div></div>
+              </div>
+            </div>
+            <div class="dw-rsz"></div>
+          </div>
+
+          <div class="dash-widget" id="dw-daily">
+            <div class="dw-head"><span class="dw-grip">⠿</span><svg class="dw-icon adm-ico"><use href="#ico-stats"/></svg><span class="dw-title">Відвідування за день (30 днів)</span></div>
+            <div class="dw-body dw-chart"><canvas id="daily-chart"></canvas></div>
+            <div class="dw-rsz"></div>
+          </div>
+
+          <div class="dash-widget" id="dw-searches">
+            <div class="dw-head"><span class="dw-grip">⠿</span><svg class="dw-icon adm-ico"><use href="#ico-search"/></svg><span class="dw-title">Пошуки за 7 днів</span></div>
+            <div class="dw-body dw-chart"><canvas id="searches-chart"></canvas></div>
+            <div class="dw-rsz"></div>
+          </div>
+
+          <div class="dash-widget" id="dw-queries">
+            <div class="dw-head"><span class="dw-grip">⠿</span><svg class="dw-icon adm-ico"><use href="#ico-search"/></svg><span class="dw-title">Топ запити (30 днів)</span></div>
+            <div class="dw-body dw-chart"><canvas id="topqueries-chart"></canvas></div>
+            <div class="dw-rsz"></div>
+          </div>
+
+          <div class="dash-widget" id="dw-roles">
+            <div class="dw-head"><span class="dw-grip">⠿</span><svg class="dw-icon adm-ico"><use href="#ico-users"/></svg><span class="dw-title">Ролі користувачів</span></div>
+            <div class="dw-body dw-chart"><canvas id="roles-chart"></canvas></div>
+            <div class="dw-rsz"></div>
+          </div>
+
+          <div class="dash-widget" id="dw-liked">
+            <div class="dw-head"><span class="dw-grip">⠿</span><svg class="dw-icon adm-ico"><use href="#ico-star"/></svg><span class="dw-title">Топ-5 за лайками</span></div>
+            <div class="dw-body">
+              <table style="width:100%;border-collapse:collapse;font-size:12px">
+                <thead><tr>
+                  <th style="text-align:left;padding:4px 6px;color:var(--muted);font-weight:500;border-bottom:1px solid var(--border2)">#</th>
+                  <th style="text-align:left;padding:4px 6px;color:var(--muted);font-weight:500;border-bottom:1px solid var(--border2)">Ім'я</th>
+                  <th style="text-align:right;padding:4px 6px;color:var(--muted);font-weight:500;border-bottom:1px solid var(--border2)">★</th>
+                </tr></thead>
+                <tbody id="dash-top-liked"></tbody>
+              </table>
+            </div>
+            <div class="dw-rsz"></div>
+          </div>
+
+          <div class="dash-widget" id="dw-recent-srch">
+            <div class="dw-head"><span class="dw-grip">⠿</span><svg class="dw-icon adm-ico"><use href="#ico-search"/></svg><span class="dw-title">Останні пошуки</span></div>
+            <div class="dw-body">
+              <table style="width:100%;border-collapse:collapse;font-size:12px">
+                <thead><tr>
+                  <th style="text-align:left;padding:4px 6px;color:var(--muted);font-weight:500;border-bottom:1px solid var(--border2)">Запит</th>
+                  <th style="text-align:center;padding:4px 6px;color:var(--muted);font-weight:500;border-bottom:1px solid var(--border2)">Результ.</th>
+                  <th style="text-align:right;padding:4px 6px;color:var(--muted);font-weight:500;border-bottom:1px solid var(--border2)">Час</th>
+                </tr></thead>
+                <tbody id="dash-recent-searches"></tbody>
+              </table>
+            </div>
+            <div class="dw-rsz"></div>
+          </div>
+
+          <div class="dash-widget" id="dw-seo-info">
+            <div class="dw-head"><span class="dw-grip">⠿</span><svg class="dw-icon adm-ico"><use href="#ico-search"/></svg><span class="dw-title">SEO · Пошукові боти</span></div>
+            <div class="dw-body" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start;padding:10px">
+              <div class="stat-card" style="flex:1;min-width:100px;padding:12px"><div class="num" id="seo-total" style="font-size:22px">—</div><div class="lbl">Візитів ботів (30 д)</div></div>
+              <div class="stat-card" style="flex:1;min-width:100px;padding:12px"><div class="num" id="seo-bots" style="font-size:22px">—</div><div class="lbl">Унікальних ботів</div></div>
+              <div class="stat-card" style="flex:1;min-width:100px;padding:12px"><div class="num" id="seo-top-bot" style="font-size:13px;white-space:nowrap">—</div><div class="lbl">Найактивніший бот</div></div>
+            </div>
+            <div class="dw-rsz"></div>
+          </div>
+
+          <div class="dash-widget" id="dw-bot-daily">
+            <div class="dw-head"><span class="dw-grip">⠿</span><svg class="dw-icon adm-ico"><use href="#ico-stats"/></svg><span class="dw-title">Візити ботів за 7 днів</span></div>
+            <div class="dw-body dw-chart"><canvas id="bot-daily-chart"></canvas></div>
+            <div class="dw-rsz"></div>
+          </div>
+
+          <div class="dash-widget" id="dw-bot-byname">
+            <div class="dw-head"><span class="dw-grip">⠿</span><svg class="dw-icon adm-ico"><use href="#ico-search"/></svg><span class="dw-title">Боти за 30 днів</span></div>
+            <div class="dw-body dw-chart"><canvas id="bot-byname-chart"></canvas></div>
+            <div class="dw-rsz"></div>
+          </div>
+
+          <div class="dash-widget" id="dw-seo-pages">
+            <div class="dw-head"><span class="dw-grip">⠿</span><svg class="dw-icon adm-ico"><use href="#ico-doc"/></svg><span class="dw-title">Топ сторінок (30 днів)</span></div>
+            <div class="dw-body">
+              <table style="width:100%;border-collapse:collapse;font-size:12px">
+                <thead><tr>
+                  <th style="text-align:left;padding:4px 6px;color:var(--muted);font-weight:500;border-bottom:1px solid var(--border2)">Шлях</th>
+                  <th style="text-align:right;padding:4px 6px;color:var(--muted);font-weight:500;border-bottom:1px solid var(--border2)">Перегл.</th>
+                  <th style="text-align:right;padding:4px 6px;color:var(--muted);font-weight:500;border-bottom:1px solid var(--border2)">Ботів</th>
+                </tr></thead>
+                <tbody id="seo-top-pages"></tbody>
+              </table>
+            </div>
+            <div class="dw-rsz"></div>
+          </div>
+
+          <div class="dash-widget" id="dw-seo-recent">
+            <div class="dw-head"><span class="dw-grip">⠿</span><svg class="dw-icon adm-ico"><use href="#ico-eye"/></svg><span class="dw-title">Останні візити ботів</span></div>
+            <div class="dw-body">
+              <table style="width:100%;border-collapse:collapse;font-size:12px">
+                <thead><tr>
+                  <th style="text-align:left;padding:4px 6px;color:var(--muted);font-weight:500;border-bottom:1px solid var(--border2)">Бот</th>
+                  <th style="text-align:left;padding:4px 6px;color:var(--muted);font-weight:500;border-bottom:1px solid var(--border2)">Сторінка</th>
+                  <th style="text-align:right;padding:4px 6px;color:var(--muted);font-weight:500;border-bottom:1px solid var(--border2)">Час</th>
+                </tr></thead>
+                <tbody id="seo-recent"></tbody>
+              </table>
+            </div>
+            <div class="dw-rsz"></div>
+          </div>
+
+        </div><!-- /#dash-canvas -->
       </div>
 
       <!-- MEMORIALS -->
@@ -3193,7 +3329,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
 
       <!-- SILENCE SECTION -->
       <div id="sec-silence" class="section">
-        <div class="sec-title"><svg class="adm-ico"><use href="#ico-hourglass"/></svg> Хвилина мовчання</div>
+        <div class="sec-title"><svg class="adm-ico"><use href="#ico-candle"/></svg> Хвилина мовчання</div>
 
         <!-- Розклад -->
         <div class="rg-group">
@@ -3654,6 +3790,7 @@ function showSec(id) {
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.getElementById('sec-'+id).classList.add('active');
   document.querySelector(`[data-s="${id}"]`).classList.add('active');
+  if(id==='stats')     { loadDashboard(); loadSeoStats(); dwInit(); }
   if(id==='mem')       loadMem();
   if(id==='pend')      loadPend();
   if(id==='users')     loadUsers();
@@ -3960,7 +4097,7 @@ async function loadServerStats() {
         },
         options:{
           responsive: true,
-          maintainAspectRatio: true,
+          maintainAspectRatio: false,
           plugins:{ legend:{display:false}, tooltip:{
             backgroundColor:'rgba(7,13,26,.95)',
             borderColor:'rgba(0,200,255,.3)',
@@ -3977,6 +4114,489 @@ async function loadServerStats() {
       });
     }
   } catch{ }
+}
+
+/* ══════════ WIDGET SYSTEM ══════════ */
+const DW_LS = 'zoryana_dash_v2';
+let _dwState = null;  // { el, mode:'drag'|'resize', sx, sy, sl, st, sw, sh }
+
+function dwInit() {
+  const canvas = document.getElementById('dash-canvas');
+  if (!canvas) return;
+  const saved = (() => { try { return JSON.parse(localStorage.getItem(DW_LS)); } catch { return null; } })();
+  _dwApply(saved);
+  // Bind events once
+  if (!canvas._dwBound) {
+    canvas._dwBound = true;
+    canvas.querySelectorAll('.dw-head').forEach(h => {
+      h.addEventListener('mousedown',  e => _dwDown(e, h.closest('.dash-widget'), 'drag'));
+      h.addEventListener('touchstart', e => _dwDown(e.touches[0], h.closest('.dash-widget'), 'drag'), {passive:false});
+    });
+    canvas.querySelectorAll('.dw-rsz').forEach(r => {
+      r.addEventListener('mousedown',  e => { e.stopPropagation(); _dwDown(e, r.closest('.dash-widget'), 'resize'); });
+      r.addEventListener('touchstart', e => { e.stopPropagation(); _dwDown(e.touches[0], r.closest('.dash-widget'), 'resize'); }, {passive:false});
+    });
+    document.addEventListener('mousemove', _dwMove);
+    document.addEventListener('mouseup',   _dwUp);
+    document.addEventListener('touchmove', e => { if(_dwState) { e.preventDefault(); _dwMove(e.touches[0]); } }, {passive:false});
+    document.addEventListener('touchend',  _dwUp);
+  }
+}
+
+function _dwDefaults() {
+  const canvas = document.getElementById('dash-canvas');
+  const W = canvas ? (canvas.clientWidth || 900) : 900;
+  const G = 14;
+  const c6 = Math.round(W * 0.60) - G;
+  const c4 = W - c6 - G;
+  const c3 = Math.round(W / 3) - G;
+  const c2 = Math.round(W / 2) - G;
+  let y = 0;
+  function row(h) { const r = y; y += h + G; return r; }
+  const r1 = row(230), r2 = row(185), r3 = row(230), r4 = row(250), r5 = row(100), r6 = row(230), r7 = row(255);
+  return {
+    'dw-visits':     {x:0,         y:r1, w:c6,       h:230},
+    'dw-server':     {x:c6+G,      y:r1, w:c4,       h:230},
+    'dw-daily':      {x:0,         y:r2, w:W,        h:185},
+    'dw-searches':   {x:0,         y:r3, w:c3,       h:230},
+    'dw-queries':    {x:c3+G,      y:r3, w:c3,       h:230},
+    'dw-roles':      {x:(c3+G)*2,  y:r3, w:W-(c3+G)*2, h:230},
+    'dw-liked':      {x:0,         y:r4, w:c3,       h:250},
+    'dw-recent-srch':{x:c3+G,      y:r4, w:W-c3-G,  h:250},
+    'dw-seo-info':   {x:0,         y:r5, w:W,        h:100},
+    'dw-bot-daily':  {x:0,         y:r6, w:c6,       h:230},
+    'dw-bot-byname': {x:c6+G,      y:r6, w:c4,       h:230},
+    'dw-seo-pages':  {x:0,         y:r7, w:c2,       h:255},
+    'dw-seo-recent': {x:c2+G,      y:r7, w:c2,       h:255},
+  };
+}
+
+function _dwApply(saved) {
+  const defs = _dwDefaults();
+  const layout = Object.assign({}, defs, saved || {});
+  let maxBottom = 0;
+  document.querySelectorAll('#dash-canvas .dash-widget').forEach(el => {
+    const p = layout[el.id];
+    if (!p) return;
+    el.style.left = p.x + 'px'; el.style.top = p.y + 'px';
+    el.style.width = p.w + 'px'; el.style.height = p.h + 'px';
+    maxBottom = Math.max(maxBottom, p.y + p.h);
+  });
+  const c = document.getElementById('dash-canvas');
+  if (c) c.style.minHeight = (maxBottom + 20) + 'px';
+  // Notify charts to resize after layout applied
+  setTimeout(_dwResizeAllCharts, 80);
+}
+
+function _dwResizeAllCharts() {
+  document.querySelectorAll('#dash-canvas canvas').forEach(cv => {
+    const ch = Chart.getChart(cv);
+    if (ch) ch.resize();
+  });
+}
+
+function _dwUpdateHeight() {
+  let max = 0;
+  document.querySelectorAll('#dash-canvas .dash-widget').forEach(el => {
+    max = Math.max(max, el.offsetTop + el.offsetHeight);
+  });
+  const c = document.getElementById('dash-canvas');
+  if (c) c.style.minHeight = (max + 20) + 'px';
+}
+
+function _dwSave() {
+  const layout = {};
+  document.querySelectorAll('#dash-canvas .dash-widget').forEach(el => {
+    layout[el.id] = {x: el.offsetLeft, y: el.offsetTop, w: el.offsetWidth, h: el.offsetHeight};
+  });
+  localStorage.setItem(DW_LS, JSON.stringify(layout));
+}
+
+function _dwDown(e, el, mode) {
+  if (e.button !== undefined && e.button !== 0) return;
+  e.preventDefault();
+  el.classList.add(mode === 'drag' ? 'dw-dragging' : 'dw-resizing');
+  _dwState = {el, mode, sx: e.clientX, sy: e.clientY, sl: el.offsetLeft, st: el.offsetTop, sw: el.offsetWidth, sh: el.offsetHeight};
+}
+
+function _dwMove(e) {
+  if (!_dwState) return;
+  const {el, mode, sx, sy, sl, st, sw, sh} = _dwState;
+  const dx = e.clientX - sx, dy = e.clientY - sy;
+  const canvas = document.getElementById('dash-canvas');
+  const CW = canvas ? canvas.clientWidth : 900;
+  if (mode === 'drag') {
+    el.style.left = Math.max(0, Math.min(sl + dx, CW - el.offsetWidth)) + 'px';
+    el.style.top  = Math.max(0, st + dy) + 'px';
+    _dwUpdateHeight();
+  } else {
+    const nw = Math.max(180, Math.min(sw + dx, CW - el.offsetLeft));
+    const nh = Math.max(100, sh + dy);
+    el.style.width  = nw + 'px';
+    el.style.height = nh + 'px';
+    el.querySelectorAll('canvas').forEach(cv => { const ch = Chart.getChart(cv); if (ch) ch.resize(); });
+    _dwUpdateHeight();
+  }
+}
+
+function _dwUp() {
+  if (!_dwState) return;
+  _dwState.el.classList.remove('dw-dragging','dw-resizing');
+  _dwSave();
+  _dwState = null;
+}
+
+function dwReset() {
+  localStorage.removeItem(DW_LS);
+  _dwApply(null);
+}
+
+/* ══════════ DASHBOARD ══════════ */
+let _searchesChart = null, _topQueriesChart = null, _rolesChart = null;
+
+async function loadDashboard() {
+  try {
+    const r = await fetch(`${API}/api/admin/dashboard`, {headers: authH()});
+    if (!r.ok) return;
+    const d = await r.json();
+
+    // Top liked table
+    const tlTb = document.getElementById('dash-top-liked');
+    if (tlTb) {
+      tlTb.innerHTML = (d.top_liked||[]).map((m,i)=>
+        `<tr>
+          <td style="padding:5px 6px;color:var(--muted)">${i+1}</td>
+          <td style="padding:5px 6px;color:var(--text)">${_escHtml(m.name)}</td>
+          <td style="padding:5px 6px;text-align:right;color:#d4a800;font-weight:600">${m.likes}</td>
+        </tr>`
+      ).join('') || '<tr><td colspan="3" style="padding:8px 6px;color:var(--muted);font-size:11px">Немає даних</td></tr>';
+    }
+
+    // Recent searches table
+    const rsTb = document.getElementById('dash-recent-searches');
+    if (rsTb) {
+      rsTb.innerHTML = (d.recent_searches||[]).map(s=>{
+        const dt = new Date(s.ts*1000);
+        const timeStr = dt.toLocaleTimeString('uk-UA',{hour:'2-digit',minute:'2-digit'}) + ' ' +
+                        dt.toLocaleDateString('uk-UA',{day:'2-digit',month:'2-digit'});
+        const resColor = s.results===0 ? 'color:#e05050' : 'color:#3a9a60';
+        return `<tr>
+          <td style="padding:4px 6px;color:var(--text);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${_escHtml(s.query)}</td>
+          <td style="padding:4px 6px;text-align:center;${resColor};font-weight:600">${s.results}</td>
+          <td style="padding:4px 6px;text-align:right;color:var(--muted);font-size:11px;white-space:nowrap">${timeStr}</td>
+        </tr>`;
+      }).join('') || '<tr><td colspan="3" style="padding:8px 6px;color:var(--muted);font-size:11px">Немає пошуків</td></tr>';
+    }
+
+    // Searches 7d chart
+    const s7Labels = _fillMissingDays(d.searches_7d||[], 7);
+    const ctx1 = document.getElementById('searches-chart');
+    if (ctx1) {
+      if (_searchesChart) {
+        _searchesChart.data.labels = s7Labels.labels;
+        _searchesChart.data.datasets[0].data = s7Labels.counts;
+        _searchesChart.update('none');
+      } else {
+        _searchesChart = new Chart(ctx1, {
+          type: 'bar',
+          data: {
+            labels: s7Labels.labels,
+            datasets: [{
+              label: 'Пошуки',
+              data: s7Labels.counts,
+              backgroundColor: 'rgba(0,200,255,.55)',
+              borderColor: '#00c8ff',
+              borderWidth: 1,
+              borderRadius: 4,
+            }]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: {display:false}, tooltip: {
+              backgroundColor:'rgba(7,13,26,.95)', borderColor:'rgba(0,200,255,.3)', borderWidth:1,
+              titleColor:'#d0dce8', bodyColor:'#00c8ff',
+              callbacks: { label: item => ' '+item.raw+' пошуків' }
+            }},
+            scales: {
+              x: { grid:{color:'rgba(255,255,255,.05)'}, ticks:{color:'#3a5068',font:{size:10}}, border:{color:'rgba(255,255,255,.08)'} },
+              y: { grid:{color:'rgba(255,255,255,.05)'}, ticks:{color:'#3a5068',font:{size:10}}, border:{color:'rgba(255,255,255,.08)'}, beginAtZero:true }
+            }
+          }
+        });
+      }
+    }
+
+    // Top queries horizontal bar
+    const tqData = (d.top_queries||[]).slice(0,8);
+    const ctx2 = document.getElementById('topqueries-chart');
+    if (ctx2) {
+      if (_topQueriesChart) {
+        _topQueriesChart.data.labels = tqData.map(q=>q.query);
+        _topQueriesChart.data.datasets[0].data = tqData.map(q=>q.cnt);
+        _topQueriesChart.update('none');
+      } else {
+        _topQueriesChart = new Chart(ctx2, {
+          type: 'bar',
+          data: {
+            labels: tqData.map(q=>q.query),
+            datasets: [{
+              label: 'Разів',
+              data: tqData.map(q=>q.cnt),
+              backgroundColor: 'rgba(212,168,0,.6)',
+              borderColor: '#d4a800',
+              borderWidth: 1,
+              borderRadius: 4,
+            }]
+          },
+          options: {
+            indexAxis: 'y',
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: {display:false}, tooltip: {
+              backgroundColor:'rgba(7,13,26,.95)', borderColor:'rgba(212,168,0,.3)', borderWidth:1,
+              titleColor:'#d0dce8', bodyColor:'#d4a800',
+              callbacks: { label: item => ' '+item.raw+' разів' }
+            }},
+            scales: {
+              x: { grid:{color:'rgba(255,255,255,.05)'}, ticks:{color:'#3a5068',font:{size:10}}, border:{color:'rgba(255,255,255,.08)'}, beginAtZero:true },
+              y: { grid:{display:false}, ticks:{color:'#a0b4c8',font:{size:10}}, border:{display:false} }
+            }
+          }
+        });
+      }
+    }
+
+    // Daily visits 30d
+    if (d.daily_30d) _renderDailyChart(d.daily_30d);
+
+    // Roles donut
+    const rolesData = d.users_by_role||[];
+    const roleLabels = rolesData.map(r=>({admin:'Адмін',moder:'Модер',user:'Юзер'}[r.role]||r.role));
+    const roleCounts = rolesData.map(r=>r.cnt);
+    const roleColors = rolesData.map(r=>({admin:'#e05050',moder:'#d4a800',user:'#00c8ff'}[r.role]||'#3a5068'));
+    const ctx3 = document.getElementById('roles-chart');
+    if (ctx3) {
+      if (_rolesChart) {
+        _rolesChart.data.labels = roleLabels;
+        _rolesChart.data.datasets[0].data = roleCounts;
+        _rolesChart.data.datasets[0].backgroundColor = roleColors;
+        _rolesChart.update('none');
+      } else {
+        _rolesChart = new Chart(ctx3, {
+          type: 'doughnut',
+          data: {
+            labels: roleLabels,
+            datasets: [{ data: roleCounts, backgroundColor: roleColors, borderWidth: 2, borderColor: 'var(--surface)' }]
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              legend: { position:'bottom', labels:{color:'#a0b4c8',font:{size:11},padding:10} },
+              tooltip: {
+                backgroundColor:'rgba(7,13,26,.95)', borderColor:'rgba(255,255,255,.1)', borderWidth:1,
+                titleColor:'#d0dce8', bodyColor:'#a0b4c8',
+                callbacks: { label: item => ' '+item.label+': '+item.raw }
+              }
+            }
+          }
+        });
+      }
+    }
+  } catch(e) {}
+}
+
+function _escHtml(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function _fillMissingDays(data, nDays) {
+  const map = {};
+  data.forEach(r=>{ map[r.day]=r.cnt; });
+  const labels=[], counts=[];
+  for(let i=nDays-1;i>=0;i--){
+    const d=new Date(); d.setDate(d.getDate()-i);
+    const key=d.toISOString().slice(0,10);
+    const lbl=d.toLocaleDateString('uk-UA',{day:'2-digit',month:'2-digit'});
+    labels.push(lbl);
+    counts.push(map[key]||0);
+  }
+  return {labels,counts};
+}
+
+/* Daily visits 30d — called inside loadDashboard */
+let _dailyChart = null;
+function _renderDailyChart(daily30d) {
+  const filled = _fillMissingDays(daily30d, 30);
+  const ctx = document.getElementById('daily-chart');
+  if (!ctx) return;
+  if (_dailyChart) {
+    _dailyChart.data.labels = filled.labels;
+    _dailyChart.data.datasets[0].data = filled.counts;
+    _dailyChart.update('none');
+    return;
+  }
+  _dailyChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: filled.labels,
+      datasets: [{
+        label: 'Запити',
+        data: filled.counts,
+        borderColor: '#3a9a60',
+        backgroundColor: 'rgba(58,154,96,.10)',
+        borderWidth: 2,
+        pointRadius: 2,
+        pointBackgroundColor: '#3a9a60',
+        fill: true,
+        tension: 0.35,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend:{display:false}, tooltip:{
+        backgroundColor:'rgba(7,13,26,.95)', borderColor:'rgba(58,154,96,.3)', borderWidth:1,
+        titleColor:'#d0dce8', bodyColor:'#3a9a60',
+        callbacks:{ label: item=>' '+item.raw+' запитів' }
+      }},
+      scales:{
+        x:{ grid:{color:'rgba(255,255,255,.04)'}, ticks:{color:'#3a5068',font:{size:9},maxTicksLimit:10}, border:{color:'rgba(255,255,255,.06)'} },
+        y:{ grid:{color:'rgba(255,255,255,.04)'}, ticks:{color:'#3a5068',font:{size:9}}, border:{color:'rgba(255,255,255,.06)'}, beginAtZero:true }
+      }
+    }
+  });
+}
+
+/* ══════════ SEO STATS ══════════ */
+let _botDailyChart = null, _botByNameChart = null;
+
+// Palette for up to 10 different bots
+const _BOT_COLORS = ['#00c8ff','#d4a800','#3a9a60','#e05050','#a855f7','#f97316','#ec4899','#06b6d4','#84cc16','#6366f1'];
+
+async function loadSeoStats() {
+  try {
+    const r = await fetch(`${API}/api/admin/seo-stats`, {headers: authH()});
+    if (!r.ok) return;
+    const d = await r.json();
+
+    // Mini-cards
+    const elTotal = document.getElementById('seo-total');
+    const elBots  = document.getElementById('seo-bots');
+    const elTop   = document.getElementById('seo-top-bot');
+    if (elTotal) elTotal.textContent = d.total_30d ?? '0';
+    if (elBots)  elBots.textContent  = d.unique_bots ?? '0';
+    if (elTop)   elTop.textContent   = d.by_bot?.[0]?.bot ?? '—';
+
+    // Top pages table
+    const tpTb = document.getElementById('seo-top-pages');
+    if (tpTb) {
+      tpTb.innerHTML = (d.top_pages||[]).map(p=>
+        `<tr>
+          <td style="padding:4px 6px;color:var(--text);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${_escHtml(p.path)}">${_escHtml(p.path)}</td>
+          <td style="padding:4px 6px;text-align:right;color:#00c8ff;font-weight:600">${p.cnt}</td>
+          <td style="padding:4px 6px;text-align:right;color:var(--muted)">${p.bots}</td>
+        </tr>`
+      ).join('') || '<tr><td colspan="3" style="padding:8px 6px;color:var(--muted);font-size:11px">Немає даних</td></tr>';
+    }
+
+    // Recent bot visits
+    const rTb = document.getElementById('seo-recent');
+    if (rTb) {
+      rTb.innerHTML = (d.recent||[]).map(v=>{
+        const dt = new Date(v.ts*1000);
+        const ts = dt.toLocaleTimeString('uk-UA',{hour:'2-digit',minute:'2-digit'})+' '+
+                   dt.toLocaleDateString('uk-UA',{day:'2-digit',month:'2-digit'});
+        return `<tr>
+          <td style="padding:3px 6px;color:#d4a800;white-space:nowrap;font-size:11px">${_escHtml(v.bot)}</td>
+          <td style="padding:3px 6px;color:var(--text2);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px" title="${_escHtml(v.path)}">${_escHtml(v.path)}</td>
+          <td style="padding:3px 6px;text-align:right;color:var(--muted);font-size:10px;white-space:nowrap">${ts}</td>
+        </tr>`;
+      }).join('') || '<tr><td colspan="3" style="padding:8px 6px;color:var(--muted);font-size:11px">Немає даних</td></tr>';
+    }
+
+    // Bot visits by-name horizontal bar
+    const byBot = (d.by_bot||[]).slice(0,10);
+    const ctx2 = document.getElementById('bot-byname-chart');
+    if (ctx2) {
+      if (_botByNameChart) {
+        _botByNameChart.data.labels = byBot.map(b=>b.bot);
+        _botByNameChart.data.datasets[0].data = byBot.map(b=>b.cnt);
+        _botByNameChart.data.datasets[0].backgroundColor = byBot.map((_,i)=>_BOT_COLORS[i%_BOT_COLORS.length]+'99');
+        _botByNameChart.data.datasets[0].borderColor = byBot.map((_,i)=>_BOT_COLORS[i%_BOT_COLORS.length]);
+        _botByNameChart.update('none');
+      } else {
+        _botByNameChart = new Chart(ctx2, {
+          type: 'bar',
+          data: {
+            labels: byBot.map(b=>b.bot),
+            datasets: [{
+              label: 'Візитів',
+              data: byBot.map(b=>b.cnt),
+              backgroundColor: byBot.map((_,i)=>_BOT_COLORS[i%_BOT_COLORS.length]+'99'),
+              borderColor:     byBot.map((_,i)=>_BOT_COLORS[i%_BOT_COLORS.length]),
+              borderWidth: 1, borderRadius: 3,
+            }]
+          },
+          options: {
+            indexAxis: 'y', responsive:true, maintainAspectRatio:false,
+            plugins:{ legend:{display:false}, tooltip:{
+              backgroundColor:'rgba(7,13,26,.95)', borderColor:'rgba(255,255,255,.1)', borderWidth:1,
+              titleColor:'#d0dce8', bodyColor:'#a0b4c8',
+              callbacks:{ label: item=>' '+item.raw+' візитів' }
+            }},
+            scales:{
+              x:{ grid:{color:'rgba(255,255,255,.05)'}, ticks:{color:'#3a5068',font:{size:10}}, border:{color:'rgba(255,255,255,.08)'}, beginAtZero:true },
+              y:{ grid:{display:false}, ticks:{color:'#a0b4c8',font:{size:10}}, border:{display:false} }
+            }
+          }
+        });
+      }
+    }
+
+    // Bot daily stacked bar (7 days)
+    const daily = d.daily_by_bot || [];
+    const botNames = [...new Set(daily.map(r=>r.bot))];
+    const days7 = _fillMissingDays([], 7);
+
+    const ctx1 = document.getElementById('bot-daily-chart');
+    if (ctx1) {
+      const datasets = botNames.map((bot, i) => {
+        const botMap = {};
+        daily.filter(r=>r.bot===bot).forEach(r=>{ botMap[r.day]=r.cnt; });
+        return {
+          label: bot,
+          data: days7.labels.map((_lbl, idx)=>{
+            const key = (()=>{ const d2=new Date(); d2.setDate(d2.getDate()-(6-idx)); return d2.toISOString().slice(0,10); })();
+            return botMap[key]||0;
+          }),
+          backgroundColor: _BOT_COLORS[i%_BOT_COLORS.length]+'bb',
+          borderColor:     _BOT_COLORS[i%_BOT_COLORS.length],
+          borderWidth: 1,
+          borderRadius: 2,
+        };
+      });
+
+      if (_botDailyChart) {
+        _botDailyChart.data.labels = days7.labels;
+        _botDailyChart.data.datasets = datasets;
+        _botDailyChart.update('none');
+      } else {
+        _botDailyChart = new Chart(ctx1, {
+          type: 'bar',
+          data: { labels: days7.labels, datasets: datasets.length ? datasets : [{label:'—',data:Array(7).fill(0),backgroundColor:'#3a5068'}] },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+              legend:{ position:'bottom', labels:{color:'#a0b4c8',font:{size:10},padding:8,boxWidth:10} },
+              tooltip:{ backgroundColor:'rgba(7,13,26,.95)', borderColor:'rgba(255,255,255,.1)', borderWidth:1, titleColor:'#d0dce8', bodyColor:'#a0b4c8', mode:'index', intersect:false }
+            },
+            scales: {
+              x:{ stacked:true, grid:{color:'rgba(255,255,255,.04)'}, ticks:{color:'#3a5068',font:{size:10}}, border:{color:'rgba(255,255,255,.06)'} },
+              y:{ stacked:true, grid:{color:'rgba(255,255,255,.04)'}, ticks:{color:'#3a5068',font:{size:10}}, border:{color:'rgba(255,255,255,.06)'}, beginAtZero:true }
+            }
+          }
+        });
+      }
+    }
+  } catch(e) {}
 }
 
 /* ══════════ MEMORIALS ══════════ */
@@ -7956,8 +8576,13 @@ async function _handleAuthFail() {
 async function initAll(){
   loadStats();
   loadServerStats();
+  loadDashboard();
+  loadSeoStats();
+  dwInit();
   _statsTimer       = setInterval(loadStats, 10000);
   _serverStatsTimer = setInterval(loadServerStats, 15000);
+  setInterval(loadDashboard, 60000);
+  setInterval(loadSeoStats, 120000);
   connectWS();
   // Завантажуємо COLORS щоб відновити тему, логотип та порядок меню одразу після логіну
   try {

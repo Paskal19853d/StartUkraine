@@ -419,6 +419,28 @@ def init_db():
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
         """)
 
+        # ── bot_visits ────────────────────────────────────
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS bot_visits (
+                id         INT PRIMARY KEY AUTO_INCREMENT,
+                bot_name   VARCHAR(60)  NOT NULL,
+                path       VARCHAR(500) NOT NULL,
+                user_agent VARCHAR(300) DEFAULT '',
+                created_at INT          NOT NULL,
+                INDEX idx_bv_bot_ts  (bot_name, created_at),
+                INDEX idx_bv_ts      (created_at),
+                INDEX idx_bv_path    (path(100))
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        """)
+
+        # ── daily_stats ───────────────────────────────────
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS daily_stats (
+                date  DATE PRIMARY KEY,
+                views INT  NOT NULL DEFAULT 0
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        """)
+
         # ── minute_silence_settings ───────────────────────
         c.execute("""
             CREATE TABLE IF NOT EXISTS minute_silence_settings (
@@ -960,8 +982,83 @@ def init_db():
 
 # ── Visit tracking ───────────────────────────────────────
 _visits_hourly: dict = {}   # {hour_ts: count}
+_visits_daily:  dict = {}   # {date_str 'YYYY-MM-DD': count}  — flushed to daily_stats
 _request_count: int  = 0
 _server_start: float = time.time()
+
+# ── Bot detection ─────────────────────────────────────────
+_BOT_PATTERNS: list = [
+    ("Googlebot",            re.compile(r"Googlebot",            re.I)),
+    ("Google-Inspection",    re.compile(r"Google-InspectionTool",re.I)),
+    ("Google AdsBot",        re.compile(r"AdsBot-Google",        re.I)),
+    ("Bingbot",              re.compile(r"bingbot",              re.I)),
+    ("YandexBot",            re.compile(r"YandexBot",            re.I)),
+    ("DuckDuckBot",          re.compile(r"DuckDuckBot",          re.I)),
+    ("Baiduspider",          re.compile(r"Baiduspider",          re.I)),
+    ("Yahoo Slurp",          re.compile(r"\bSlurp\b",            re.I)),
+    ("AhrefsBot",            re.compile(r"AhrefsBot",            re.I)),
+    ("SemrushBot",           re.compile(r"SemrushBot",           re.I)),
+    ("MJ12bot",              re.compile(r"MJ12bot",              re.I)),
+    ("FacebookBot",          re.compile(r"facebookexternalhit|FacebookBot", re.I)),
+    ("Twitterbot",           re.compile(r"Twitterbot",           re.I)),
+    ("LinkedInBot",          re.compile(r"LinkedInBot",          re.I)),
+    ("Applebot",             re.compile(r"Applebot",             re.I)),
+    ("PetalBot",             re.compile(r"PetalBot",             re.I)),
+    ("Bytespider",           re.compile(r"Bytespider",           re.I)),
+    ("DataForSeo",           re.compile(r"DataForSeoBot",        re.I)),
+    ("GPTBot",               re.compile(r"GPTBot",               re.I)),
+    ("ClaudeBot",            re.compile(r"ClaudeBot",            re.I)),
+]
+
+def _detect_bot(ua: str) -> Optional[str]:
+    for name, pat in _BOT_PATTERNS:
+        if pat.search(ua):
+            return name
+    return None
+
+_bot_log_lock = threading.Lock()
+_bot_log_queue: list = []   # [(bot_name, path, ua, ts), ...]  — flushed in background
+
+def _flush_bot_queue():
+    """Write queued bot visits to DB and trim rows older than 30 days."""
+    with _bot_log_lock:
+        batch, _bot_log_queue[:] = _bot_log_queue[:], []
+    if not batch:
+        return
+    try:
+        db = get_db()
+        with db.cursor() as c:
+            for bot_name, path, ua, ts in batch:
+                c.execute(
+                    "INSERT INTO bot_visits (bot_name,path,user_agent,created_at)"
+                    " VALUES (%s,%s,%s,%s)",
+                    (bot_name, path[:500], ua[:300], ts)
+                )
+            cutoff = int(time.time()) - 30 * 86400
+            c.execute("DELETE FROM bot_visits WHERE created_at < %s", (cutoff,))
+        db.commit()
+        db.close()
+    except Exception:
+        pass
+
+def _flush_daily_visits():
+    """Persist in-memory daily visit counters to daily_stats table."""
+    today = time.strftime("%Y-%m-%d")
+    cnt = _visits_daily.get(today, 0)
+    if cnt == 0:
+        return
+    try:
+        db = get_db()
+        with db.cursor() as c:
+            c.execute(
+                "INSERT INTO daily_stats (date, views) VALUES (%s,%s)"
+                " ON DUPLICATE KEY UPDATE views=%s",
+                (today, cnt, cnt)
+            )
+        db.commit()
+        db.close()
+    except Exception:
+        pass
 
 
 # ── Rate limiter ─────────────────────────────────────────
@@ -1129,16 +1226,30 @@ app.add_middleware(
 async def track_visits(request, call_next):
     global _request_count
     _request_count += 1
-    hour = int(time.time() // 3600) * 3600
+    now = time.time()
+    # Hourly buckets (48h window)
+    hour = int(now // 3600) * 3600
     _visits_hourly[hour] = _visits_hourly.get(hour, 0) + 1
-    # Keep only last 48h to avoid memory leak
     cutoff = hour - 48 * 3600
     for k in [k for k in _visits_hourly if k < cutoff]:
         del _visits_hourly[k]
-    # Periodically purge rate-limiter and expired sessions (every ~1000 requests)
+    # Daily counter (persisted to DB every 1000 req)
+    today = time.strftime("%Y-%m-%d")
+    _visits_daily[today] = _visits_daily.get(today, 0) + 1
+    # Bot detection — queue for async DB write
+    ua = request.headers.get("user-agent", "")
+    if ua:
+        bot = _detect_bot(ua)
+        if bot:
+            path = str(request.url.path)
+            with _bot_log_lock:
+                _bot_log_queue.append((bot, path, ua, int(now)))
+    # Periodic maintenance every ~1000 requests
     if _request_count % 1000 == 0:
         _rl.purge(3600)
         _sessions_purge()
+        _flush_daily_visits()
+        _flush_bot_queue()
     return await call_next(request)
 
 @app.middleware("http")
@@ -1235,10 +1346,12 @@ def metrics():
 @app.get("/")
 def index():
     db = get_db()
-    with db.cursor() as c:
-        c.execute("SELECT value FROM colors WHERE `key`='sea_enabled'")
-        row = c.fetchone()
-    db.close()
+    try:
+        with db.cursor() as c:
+            c.execute("SELECT value FROM colors WHERE `key`='sea_enabled'")
+            row = c.fetchone()
+    finally:
+        db.close()
     sea_on = (row["value"] if row else "1") != "0"
     with open("index.html", "r", encoding="utf-8") as f:
         html = f.read()
@@ -1248,6 +1361,9 @@ def index():
 
 @app.get("/admin")
 def admin_page(): return FileResponse("admin.html")
+
+@app.get("/load-test")
+def load_test_page(): return FileResponse("load-test.html")
 
 @app.get("/favicon.ico", include_in_schema=False)
 def favicon(): return FileResponse("favicon.ico")
@@ -3419,3 +3535,164 @@ def silence_test_stop(request: Request):
     db.commit()
     db.close()
     return {"ok": True}
+
+
+# ── Дашборд статистики ────────────────────────────────────
+
+@app.get("/api/admin/dashboard")
+def admin_dashboard(request: Request):
+    require_moder(request)
+    db = get_db()
+    with db.cursor() as c:
+        # Топ-5 за лайками
+        c.execute(
+            "SELECT id, CONCAT(last,' ',first,IF(mid<>'' AND mid IS NOT NULL,CONCAT(' ',mid),'')) AS name,"
+            " likes FROM memorials WHERE approved=1 ORDER BY likes DESC LIMIT 5"
+        )
+        top_liked = c.fetchall()
+
+        # Пошуки за останні 7 днів
+        c.execute(
+            "SELECT DATE(FROM_UNIXTIME(created_at)) AS day, COUNT(*) AS cnt"
+            " FROM search_logs"
+            " WHERE created_at >= UNIX_TIMESTAMP(DATE_SUB(CURDATE(), INTERVAL 6 DAY))"
+            " GROUP BY day ORDER BY day ASC"
+        )
+        searches_7d = c.fetchall()
+
+        # Топ-10 запитів за 30 днів
+        c.execute(
+            "SELECT query, COUNT(*) AS cnt FROM search_logs"
+            " WHERE created_at >= UNIX_TIMESTAMP(DATE_SUB(CURDATE(), INTERVAL 30 DAY))"
+            " GROUP BY LOWER(TRIM(query)) ORDER BY cnt DESC LIMIT 10"
+        )
+        top_queries = c.fetchall()
+
+        # Останні 20 пошуків
+        c.execute(
+            "SELECT query, results_count, created_at FROM search_logs ORDER BY id DESC LIMIT 20"
+        )
+        recent_searches = c.fetchall()
+
+        # Користувачі за роллю
+        c.execute("SELECT role, COUNT(*) AS cnt FROM users GROUP BY role")
+        users_by_role = c.fetchall()
+
+        # Лайки за останні 7 днів
+        c.execute(
+            "SELECT DATE(FROM_UNIXTIME(ts)) AS day, COUNT(*) AS cnt"
+            " FROM likes_log"
+            " WHERE ts >= UNIX_TIMESTAMP(DATE_SUB(CURDATE(), INTERVAL 6 DAY))"
+            " GROUP BY day ORDER BY day ASC"
+        )
+        likes_7d = c.fetchall()
+
+        # Кількість записів за статусом
+        c.execute("SELECT approved, COUNT(*) AS cnt FROM memorials GROUP BY approved")
+        mem_status_rows = c.fetchall()
+
+        # Відвідування за останні 30 днів (з daily_stats)
+        c.execute(
+            "SELECT date, views FROM daily_stats"
+            " WHERE date >= DATE_SUB(CURDATE(), INTERVAL 29 DAY)"
+            " ORDER BY date ASC"
+        )
+        daily_30d_rows = c.fetchall()
+
+    db.close()
+
+    # Merge today's in-memory count into daily_30d
+    today_str = time.strftime("%Y-%m-%d")
+    today_mem = _visits_daily.get(today_str, 0)
+    daily_map = {str(r["date"]): r["views"] for r in daily_30d_rows}
+    if today_str in daily_map:
+        daily_map[today_str] = max(daily_map[today_str], today_mem)
+    else:
+        daily_map[today_str] = today_mem
+
+    mem_status = {"approved": 0, "pending": 0}
+    for r in mem_status_rows:
+        if r["approved"] == 1:
+            mem_status["approved"] = r["cnt"]
+        else:
+            mem_status["pending"] = r["cnt"]
+
+    daily_30d = [{"day": k, "cnt": v} for k, v in sorted(daily_map.items())]
+
+    return {
+        "top_liked":       [{"id": r["id"], "name": r["name"], "likes": r["likes"]} for r in top_liked],
+        "searches_7d":     [{"day": str(r["day"]), "cnt": r["cnt"]} for r in searches_7d],
+        "top_queries":     [{"query": r["query"], "cnt": r["cnt"]} for r in top_queries],
+        "recent_searches": [{"query": r["query"], "results": r["results_count"], "ts": r["created_at"]} for r in recent_searches],
+        "users_by_role":   [{"role": r["role"] or "user", "cnt": r["cnt"]} for r in users_by_role],
+        "likes_7d":        [{"day": str(r["day"]), "cnt": r["cnt"]} for r in likes_7d],
+        "mem_status":      mem_status,
+        "daily_30d":       daily_30d,
+    }
+
+
+# ── SEO / Пошукові боти ──────────────────────────────────
+
+@app.get("/api/admin/seo-stats")
+def seo_stats(request: Request):
+    require_moder(request)
+    # Flush pending queue so data is fresh
+    _flush_bot_queue()
+    now = int(time.time())
+    ts_30d = now - 30 * 86400
+    ts_7d  = now - 7  * 86400
+    db = get_db()
+    with db.cursor() as c:
+        # Загальна кількість візитів ботів (30 днів)
+        c.execute(
+            "SELECT COUNT(*) AS cnt FROM bot_visits WHERE created_at >= %s", (ts_30d,)
+        )
+        total_30d = c.fetchone()["cnt"]
+
+        # Унікальних ботів (30 днів)
+        c.execute(
+            "SELECT COUNT(DISTINCT bot_name) AS cnt FROM bot_visits WHERE created_at >= %s", (ts_30d,)
+        )
+        unique_bots = c.fetchone()["cnt"]
+
+        # Візити по ботах (30 днів)
+        c.execute(
+            "SELECT bot_name, COUNT(*) AS cnt FROM bot_visits"
+            " WHERE created_at >= %s GROUP BY bot_name ORDER BY cnt DESC",
+            (ts_30d,)
+        )
+        by_bot = c.fetchall()
+
+        # Візити по днях і ботах (7 днів) — для графіка
+        c.execute(
+            "SELECT DATE(FROM_UNIXTIME(created_at)) AS day, bot_name, COUNT(*) AS cnt"
+            " FROM bot_visits WHERE created_at >= %s"
+            " GROUP BY day, bot_name ORDER BY day ASC",
+            (ts_7d,)
+        )
+        daily_by_bot = c.fetchall()
+
+        # Топ-15 сторінок (30 днів)
+        c.execute(
+            "SELECT path, COUNT(*) AS cnt, COUNT(DISTINCT bot_name) AS bots"
+            " FROM bot_visits WHERE created_at >= %s"
+            " GROUP BY path ORDER BY cnt DESC LIMIT 15",
+            (ts_30d,)
+        )
+        top_pages = c.fetchall()
+
+        # Останні 30 візитів
+        c.execute(
+            "SELECT bot_name, path, created_at FROM bot_visits ORDER BY id DESC LIMIT 30"
+        )
+        recent = c.fetchall()
+
+    db.close()
+    return {
+        "total_30d":    total_30d,
+        "unique_bots":  unique_bots,
+        "by_bot":       [{"bot": r["bot_name"], "cnt": r["cnt"]} for r in by_bot],
+        "daily_by_bot": [{"day": str(r["day"]), "bot": r["bot_name"], "cnt": r["cnt"]} for r in daily_by_bot],
+        "top_pages":    [{"path": r["path"], "cnt": r["cnt"], "bots": r["bots"]} for r in top_pages],
+        "recent":       [{"bot": r["bot_name"], "path": r["path"], "ts": r["created_at"]} for r in recent],
+    }
