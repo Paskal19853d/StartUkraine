@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#050507">
+<meta name="robots" content="noindex">
+<title>Зоряна Памʼять — Завантаження…</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #050507;
+    --bg-2: #0b0b10;
+    --text: #e8e6e1;
+    --muted: #8a8a93;
+    --dim: #5a5a63;
+    --card: #0f1015;
+    --line: rgba(255,255,255,0.07);
+    --accent: #f0b54a;
+    --accent-soft: rgba(240,181,74,0.12);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--bg); color: var(--text); }
+  body { font-family: 'Inter', system-ui, sans-serif; overflow-x: hidden; -webkit-font-smoothing: antialiased; line-height: 1.6; }
+  .serif { font-family: 'Cormorant Garamond', Georgia, serif; font-weight: 500; letter-spacing: -0.01em; }
+
+  /* Loading screen */
+  #loading-screen {
+    position: fixed; inset: 0; background: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 20px; z-index: 999;
+  }
+  .load-star {
+    width: 48px; height: 48px;
+    background: var(--accent);
+    clip-path: polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);
+    animation: pulse 1.4s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(.85)} }
+  .load-txt { color: var(--muted); font-size: .8rem; letter-spacing: .2em; text-transform: uppercase; }
+
+  /* Error screen */
+  #error-screen {
+    position: fixed; inset: 0; background: var(--bg);
+    display: none; align-items: center; justify-content: center;
+    flex-direction: column; gap: 16px; z-index: 999; text-align: center; padding: 24px;
+  }
+  #error-screen h2 { font-size: 1.4rem; color: var(--text); }
+  #error-screen p { color: var(--muted); font-size: .9rem; }
+  #error-screen a { color: var(--accent); text-decoration: none; font-size: .85rem; }
+
+  /* HERO */
+  .hero {
+    position: relative; height: 100vh; height: 100svh;
+    min-height: 640px; width: 100vw;
+    margin-left: calc(50% - 50vw);
+    overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end;
+  }
+  .hero-photo {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    background-color: #0a0a0a;
+    background-size: cover; background-position: center top; background-repeat: no-repeat;
+    filter: grayscale(.25) contrast(1.05);
+    transition: background-image .4s ease;
+  }
+  .hero-photo.no-photo {
+    background-image: url('/img/bgcard.webp');
+    background-size: cover;
+    background-position: center;
+    filter: grayscale(.15) brightness(.7);
+  }
+  .hero-photo::after {
+    content: ""; position: absolute; inset: 0;
+    background-image:
+      radial-gradient(circle at 20% 30%, rgba(255,255,255,0.03) 0 1px, transparent 1px),
+      radial-gradient(circle at 70% 60%, rgba(255,255,255,0.02) 0 1px, transparent 1px);
+    background-size: 3px 3px, 5px 5px;
+    opacity: .5; mix-blend-mode: overlay; pointer-events: none;
+  }
+  .hero-photo::before {
+    content: ""; position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse at 50% 50%, transparent 30%, rgba(0,0,0,0.55) 100%),
+      linear-gradient(180deg,
+        rgba(5,5,7,0.2)  0%,
+        transparent      15%,
+        transparent      35%,
+        rgba(5,5,7,0.2)  48%,
+        rgba(5,5,7,0.5)  62%,
+        rgba(5,5,7,0.78) 75%,
+        rgba(5,5,7,0.93) 87%,
+        var(--bg)        100%
+      );
+    pointer-events: none;
+  }
+
+  /* Ribbon */
+  .ribbon { position: absolute; top: -10px; left: -10px; width: 220px; height: 220px; overflow: hidden; pointer-events: none; z-index: 4; }
+  .ribbon .band {
+    position: absolute; top: 56px; left: -60px; width: 320px; height: 38px;
+    background: linear-gradient(180deg, #1a1a1a 0%, #050505 45%, #1a1a1a 55%, #2a2a2a 100%);
+    transform: rotate(-45deg);
+    box-shadow: 0 8px 18px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.06), inset 0 -1px 0 rgba(0,0,0,0.6);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .ribbon .band::before,.ribbon .band::after { content:""; position:absolute; width:14px; height:38px; background:linear-gradient(180deg,#050505,#1a1a1a); top:0; }
+  .ribbon .band::before { left:8px; }
+  .ribbon .band::after { right:8px; }
+  .ribbon .fold-tl,.ribbon .fold-br { position:absolute; width:0; height:0; z-index:-1; }
+  .ribbon .fold-tl { top:56px; left:6px; border-style:solid; border-width:0 0 18px 18px; border-color:transparent transparent #000 transparent; filter:brightness(.4); }
+  .ribbon .fold-br { top:130px; left:130px; border-style:solid; border-width:18px 0 0 18px; border-color:transparent transparent transparent #000; filter:brightness(.4); }
+
+  .hero-top {
+    position: absolute; top: 0; left: 0; right: 0;
+    padding: 28px 40px;
+    display: flex; justify-content: space-between; align-items: center;
+    z-index: 3; font-size: 0.7rem; letter-spacing: 0.22em;
+    text-transform: uppercase; color: rgba(255,255,255,0.55);
+  }
+  .hero-top .brand { display:flex; align-items:center; gap:10px; color:var(--accent); font-weight:500; text-decoration:none; }
+  .hero-top .brand .star { width:14px; height:14px; background:var(--accent); clip-path:polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%); }
+  .hero-top .id { color: var(--dim); }
+
+  .hero-content { position:relative; z-index:2; padding:0 40px 80px; max-width:1000px; width:100%; margin:0 auto; }
+  .rank-line { display:flex; align-items:center; gap:14px; color:var(--accent); font-size:.72rem; letter-spacing:.28em; text-transform:uppercase; margin-bottom:22px; }
+  .rank-line::before { content:""; width:36px; height:1px; background:var(--accent); }
+  .hero-name { font-family:'Cormorant Garamond',Georgia,serif; font-weight:500; font-size:clamp(2.6rem,7vw,5.4rem); line-height:1; letter-spacing:-.02em; margin-bottom:14px; }
+  .hero-name em { font-style:italic; color:var(--accent); font-weight:400; }
+  .hero-callsign { font-family:'Cormorant Garamond',serif; font-style:italic; font-size:clamp(1.2rem,2.4vw,1.8rem); color:rgba(255,255,255,.75); margin-bottom:28px; }
+  .hero-dates { display:flex; align-items:center; gap:18px; color:var(--muted); font-size:.95rem; letter-spacing:.04em; flex-wrap:wrap; }
+  .hero-dates .dot { width:4px; height:4px; background:var(--accent); border-radius:50%; }
+  .hero-dates strong { color:var(--text); font-weight:500; }
+
+  .scroll-hint { position:absolute; bottom:28px; left:50%; transform:translateX(-50%); color:var(--muted); font-size:.65rem; letter-spacing:.3em; text-transform:uppercase; z-index:2; animation:bob 2.4s ease-in-out infinite; }
+  @keyframes bob { 0%,100%{transform:translate(-50%,0)} 50%{transform:translate(-50%,6px)} }
+
+  /* SECTIONS */
+  .container { max-width:1000px; margin:0 auto; padding:0 40px; }
+  section.body { padding:100px 0; border-top:1px solid var(--line); }
+  .section-label { color:var(--accent); font-size:.7rem; letter-spacing:.28em; text-transform:uppercase; margin-bottom:24px; display:flex; align-items:center; gap:12px; }
+  .section-label::before { content:"✦"; }
+  .section-title { font-family:'Cormorant Garamond',serif; font-size:clamp(1.8rem,3.4vw,2.6rem); line-height:1.15; letter-spacing:-.01em; margin-bottom:50px; color:var(--text); max-width:720px; }
+
+  /* Info grid */
+  .info-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:1px; background:var(--line); border:1px solid var(--line); border-radius:2px; overflow:hidden; }
+  .info-card { background:var(--bg); padding:26px 24px; }
+  .info-card .lbl { font-size:.62rem; letter-spacing:.22em; text-transform:uppercase; color:var(--dim); margin-bottom:10px; }
+  .info-card .val { font-family:'Cormorant Garamond',serif; font-size:1.35rem; color:var(--text); line-height:1.25; }
+  .info-card .sub { font-size:.8rem; color:var(--muted); margin-top:6px; }
+
+  /* Bio */
+  .bio { font-family:'Cormorant Garamond',serif; font-size:1.35rem; line-height:1.65; color:rgba(232,230,225,.92); max-width:720px; text-wrap:pretty; }
+  .bio p+p { margin-top:1.1em; }
+  .bio .lead::first-letter { font-size:3.4rem; float:left; line-height:.9; padding:6px 12px 0 0; color:var(--accent); font-weight:600; }
+
+  /* Timeline */
+  .timeline { position:relative; padding-left:28px; }
+  .timeline::before { content:""; position:absolute; left:4px; top:6px; bottom:6px; width:1px; background:var(--line); }
+  .t-item { position:relative; padding-bottom:32px; }
+  .t-item::before { content:""; position:absolute; left:-28px; top:8px; width:9px; height:9px; background:var(--bg); border:1px solid var(--accent); border-radius:50%; }
+  .t-item.key::before { background:var(--accent); box-shadow:0 0 0 4px var(--accent-soft); }
+  .t-date { font-family:monospace; font-size:.72rem; letter-spacing:.1em; color:var(--accent); margin-bottom:4px; }
+  .t-title { font-family:'Cormorant Garamond',serif; font-size:1.3rem; color:var(--text); margin-bottom:4px; }
+  .t-body { color:var(--muted); font-size:.95rem; max-width:580px; }
+
+  /* Circ tags */
+  .circ-tags { display:flex; flex-wrap:wrap; gap:10px; margin:18px 0 0; }
+  .circ { background:var(--card); border:1px solid var(--line); color:var(--text); padding:9px 14px; border-radius:999px; font-size:.82rem; letter-spacing:.02em; }
+  .circ .pip { display:inline-block; width:5px; height:5px; background:var(--accent); border-radius:50%; margin-right:8px; vertical-align:middle; }
+
+  /* Awards */
+  .awards-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:14px; margin-top:8px; }
+  .award { display:flex; gap:16px; align-items:flex-start; background:var(--card); border:1px solid var(--line); padding:18px 20px; border-radius:4px; }
+  .award img { width:52px; height:52px; object-fit:contain; flex-shrink:0; border-radius:4px; background:rgba(255,255,255,.03); }
+  .award .medal { flex:0 0 44px; width:44px; height:44px; border-radius:50%; background:radial-gradient(circle at 35% 30%,#f4cc78,var(--accent) 55%,#8a5e1c 100%); display:grid; place-items:center; color:#1a1207; font-weight:700; font-size:.85rem; box-shadow:inset 0 0 0 2px rgba(0,0,0,.15),0 4px 14px rgba(240,181,74,.18); }
+  .award .a-title { font-family:'Cormorant Garamond',serif; font-size:1.15rem; line-height:1.2; }
+  .award .a-meta { color:var(--muted); font-size:.78rem; margin-top:4px; letter-spacing:.04em; }
+
+  /* Video */
+  .video-wrap { width:100%; aspect-ratio:16/9; border-radius:4px; overflow:hidden; border:1px solid var(--line); background:#000; }
+  .video-wrap iframe { width:100%; height:100%; border:none; display:block; }
+  .video-placeholder { width:100%; aspect-ratio:16/9; background:linear-gradient(135deg,#1c1c22 0%,#0a0a0e 100%); border:1px solid var(--line); border-radius:4px; display:grid; place-items:center; color:rgba(255,255,255,.5); }
+  .video-placeholder .play { width:78px; height:78px; border-radius:50%; border:1px solid var(--accent); color:var(--accent); display:grid; place-items:center; font-size:1.4rem; background:rgba(0,0,0,.25); backdrop-filter:blur(6px); }
+
+  /* Tribute */
+  .tribute { background:radial-gradient(circle at 50% 0%,var(--accent-soft),transparent 60%),var(--bg); text-align:center; padding:110px 40px; border-top:1px solid var(--line); border-bottom:1px solid var(--line); }
+  .candle { width:56px; height:88px; margin:0 auto 24px; position:relative; }
+  .candle .flame { width:16px; height:26px; background:radial-gradient(circle at 50% 80%,#ffe7a8 0%,var(--accent) 45%,#d97706 80%,transparent 100%); border-radius:50% 50% 45% 45%/60% 60% 40% 40%; margin:0 auto; filter:blur(.3px); animation:flicker 1.6s ease-in-out infinite; box-shadow:0 0 30px rgba(240,181,74,.6),0 0 60px rgba(240,181,74,.3); }
+  .candle .body { width:18px; height:60px; background:linear-gradient(180deg,#e8e6e1,#b9b6ad); margin:-2px auto 0; border-radius:2px 2px 0 0; }
+  @keyframes flicker { 0%,100%{transform:scale(1) translateY(0);opacity:1} 50%{transform:scale(.92,1.05) translateY(-1px);opacity:.92} }
+  .tribute h2 { font-family:'Cormorant Garamond',serif; font-size:clamp(1.8rem,3vw,2.4rem); margin-bottom:12px; font-weight:500; }
+  .tribute p { color:var(--muted); max-width:480px; margin:0 auto 30px; }
+  .candle-btn { background:var(--accent); color:#1a1207; border:none; padding:14px 32px; border-radius:2px; font-family:'Inter',sans-serif; font-weight:600; font-size:.85rem; letter-spacing:.18em; text-transform:uppercase; cursor:pointer; transition:.2s; }
+  .candle-btn:hover { background:#fff; transform:translateY(-1px); }
+  .tribute-meta { margin-top:26px; color:var(--muted); font-size:.82rem; display:flex; gap:28px; justify-content:center; align-items:center; flex-wrap:wrap; }
+  .tribute-meta strong { color:var(--accent); font-weight:600; }
+
+  /* Back button */
+  .back-btn { display:inline-flex; align-items:center; gap:8px; color:var(--muted); font-size:.78rem; letter-spacing:.12em; text-transform:uppercase; text-decoration:none; transition:.15s; padding:8px 0; }
+  .back-btn:hover { color:var(--accent); }
+  .back-btn svg { opacity:.6; }
+
+  /* Footer */
+  footer { background:var(--bg-2); padding:40px 0 24px; border-top:1px solid var(--line); color:var(--muted); font-size:.82rem; text-align:center; }
+  footer a { color:var(--accent); text-decoration:none; }
+
+  /* Fade-in */
+  .fade-in { opacity:0; transform:translateY(18px); transition:.8s ease; }
+  .fade-in.visible { opacity:1; transform:translateY(0); }
+
+  /* Responsive */
+  @media (max-width:760px) {
+    .hero-top { padding:16px 20px; font-size:.6rem; }
+    .hero-top .id { display:none; }
+    .hero-content { padding:0 20px 56px; }
+    .container { padding:0 20px; }
+    section.body { padding:60px 0; }
+    .section-title { font-size:1.5rem; margin-bottom:32px; }
+    .info-grid { grid-template-columns:1fr 1fr; }
+    .awards-grid { grid-template-columns:1fr; }
+    .tribute { padding:70px 22px; }
+    .hero-name { font-size:clamp(2rem,9vw,3rem); }
+  }
+  @media (max-width:480px) {
+    .info-grid { grid-template-columns:1fr; }
+    .foot-grid { grid-template-columns:1fr; }
+    .hero-name { font-size:clamp(1.8rem,10vw,2.6rem); }
+  }
+  @media (prefers-reduced-motion:reduce) {
+    .fade-in { opacity:1; transform:none; transition:none; }
+    .candle .flame,.scroll-hint { animation:none; }
+  }
+
+  /* ── Hero → Content transition ── */
+  .hero-sep {
+    display: flex; align-items: center; gap: 20px;
+    padding: 56px 40px 0;
+    max-width: 1000px; margin: 0 auto;
+    position: relative; z-index: 1;
+  }
+  .hero-sep .sep-line {
+    flex: 1; height: 1px;
+    background: linear-gradient(90deg, transparent 0%, rgba(240,181,74,.22) 40%, rgba(240,181,74,.22) 60%, transparent 100%);
+  }
+  .hero-sep .sep-star {
+    color: var(--accent); font-size: .6rem; opacity: .45; letter-spacing: .2em;
+  }
+  /* Remove hard border from first two body sections (bio may be hidden) */
+  .hero-sep + section.body,
+  .hero-sep + section.body + section.body {
+    border-top: none;
+    padding-top: 72px;
+  }
+  @media (max-width:760px) {
+    .hero-sep { padding: 40px 20px 0; }
+    .hero-sep + section.body,
+    .hero-sep + section.body + section.body { padding-top: 48px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Loading -->
+<div id="loading-screen">
+  <div class="load-star"></div>
+  <div class="load-txt">Завантаження…</div>
+</div>
+
+<!-- Error -->
+<div id="error-screen">
+  <div class="load-star" style="background:#e05050"></div>
+  <h2>Меморіал не знайдено</h2>
+  <p id="error-msg">Запис відсутній або не опублікований.</p>
+  <a href="/">← Повернутися до карти</a>
+</div>
+
+<!-- Main content (hidden until loaded) -->
+<main id="main-content" style="display:none">
+
+<!-- HERO -->
+<header class="hero" role="banner">
+  <div class="hero-photo no-photo" id="hero-photo"></div>
+  <div class="hero-top">
+    <a href="/" class="brand"><span class="star"></span> Зоряна Памʼять</a>
+    <div class="id" id="hero-id"></div>
+  </div>
+  <div class="hero-content fade-in">
+    <div class="rank-line" id="rank-line">Захисник України</div>
+    <h1 class="hero-name" id="hero-name"></h1>
+    <div class="hero-callsign" id="hero-callsign" style="display:none"></div>
+    <div class="hero-dates" id="hero-dates"></div>
+  </div>
+  <div class="scroll-hint">прокрутіть ↓</div>
+</header>
+
+<div class="hero-sep" aria-hidden="true">
+  <span class="sep-line"></span>
+  <span class="sep-star">✦</span>
+  <span class="sep-line"></span>
+</div>
+
+<!-- BIO -->
+<section class="body" id="sec-bio" style="display:none">
+  <div class="container fade-in">
+    <div class="section-label">Про захисника</div>
+    <div class="bio" id="bio-text"></div>
+  </div>
+</section>
+
+<!-- INFO GRID -->
+<section class="body">
+  <div class="container fade-in">
+    <div class="section-label">Служба</div>
+    <h2 class="section-title" id="info-title">Дані про службу.</h2>
+    <div class="info-grid" id="info-grid"></div>
+    <div id="circ-section" style="display:none;margin-top:36px">
+      <div class="section-label" style="margin-bottom:14px">Обставини</div>
+      <div class="circ-tags" id="circ-tags"></div>
+    </div>
+  </div>
+</section>
+
+<!-- TIMELINE -->
+<section class="body" id="sec-timeline">
+  <div class="container fade-in">
+    <div class="section-label">Хроніка</div>
+    <h2 class="section-title">Життя у датах.</h2>
+    <div class="timeline" id="timeline"></div>
+  </div>
+</section>
+
+<!-- VIDEO -->
+<section class="body" id="sec-video" style="display:none">
+  <div class="container fade-in">
+    <div class="section-label">Відеоспогад</div>
+    <h2 class="section-title" id="video-title">Відео про захисника.</h2>
+    <div id="video-container"></div>
+    <p style="color:var(--muted);margin-top:14px;font-size:.88rem" id="video-caption"></p>
+  </div>
+</section>
+
+<!-- AWARDS -->
+<section class="body" id="sec-awards" style="display:none">
+  <div class="container fade-in">
+    <div class="section-label">Відзнаки</div>
+    <h2 class="section-title">Державні та відомчі нагороди.</h2>
+    <div class="awards-grid" id="awards-grid"></div>
+  </div>
+</section>
+
+<!-- TRIBUTE -->
+<section class="tribute fade-in" aria-label="Вшанування">
+  <div class="candle">
+    <div class="flame"></div>
+    <div class="body"></div>
+  </div>
+  <h2>Зажгти свічку памʼяті</h2>
+  <p>Кожна свічка — це згадка про захисника. Поділіться нею з рідними, щоб світло не згасало.</p>
+  <button class="candle-btn" id="candle-btn">Зажгти свічку</button>
+  <div class="tribute-meta">
+    <span>★ <strong id="likes-count">0</strong> вшанувань</span>
+  </div>
+</section>
+
+</main>
+
+<!-- FOOTER -->
+<footer>
+  <div class="container">
+    <div style="margin-bottom:16px">
+      <a href="/" class="back-btn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+        Повернутися до інтерактивної карти
+      </a>
+    </div>
+    <p>© <a href="/">Зоряна Памʼять</a> — <span id="footer-text">Вічна памʼять Героям України</span></p>
+    <p style="margin-top:6px;font-size:.75rem;color:var(--dim)">Цифровий меморіал захисників і захисниць України &nbsp;·&nbsp; <span id="card-app-version" style="color:var(--dim)">v2.42 beta</span></p>
+  </div>
+</footer>
+
+<script>
+const API = '';
+
+/* helpers */
+function h(s){ return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function fd(s){
+  if(!s) return '';
+  try{ return new Date(s).toLocaleDateString('uk-UA',{day:'numeric',month:'long',year:'numeric'}); }
+  catch{ return s; }
+}
+
+function extractYtId(url){
+  if(!url) return null;
+  const m = url.match(/(?:v=|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+  return m ? m[1] : null;
+}
+
+/* ── settings ────────────────────────── */
+let _cfg = {};
+let _memId = null;
+let _likesTimer = null;
+
+async function loadSettings(){
+  try{
+    const r = await fetch(`${API}/api/card/settings`);
+    if(r.ok) _cfg = await r.json();
+  } catch{}
+
+  /* accent color */
+  if(_cfg.card_accent){
+    const a = _cfg.card_accent;
+    document.documentElement.style.setProperty('--accent', a);
+    /* derive accent-soft */
+    const soft = a.startsWith('#') ? hexToRgba(a, 0.12) : 'rgba(240,181,74,0.12)';
+    document.documentElement.style.setProperty('--accent-soft', soft);
+  }
+  /* background */
+  if(_cfg.card_bg){
+    document.documentElement.style.setProperty('--bg', _cfg.card_bg);
+  }
+  /* no-photo fallback */
+  if(_cfg.card_no_photo_bg){
+    const style = document.querySelector('style');
+    if(style) style.textContent = style.textContent.replace(
+      /url\('[^']*bgcard[^']*'\)/,
+      `url('${_cfg.card_no_photo_bg}')`
+    );
+  }
+  /* footer text */
+  const ftEl = document.getElementById('footer-text');
+  if(ftEl && _cfg.card_footer_text) ftEl.textContent = _cfg.card_footer_text;
+  /* app version */
+  const verEl = document.getElementById('card-app-version');
+  if(verEl && _cfg.app_version) verEl.textContent = 'v' + _cfg.app_version;
+
+  /* ribbon visibility */
+  if(_cfg.card_show_ribbon === '0'){
+    const r = document.querySelector('.ribbon');
+    if(r) r.style.display = 'none';
+  }
+}
+
+function hexToRgba(hex, alpha){
+  const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+/* ── load ─────────────────────────────── */
+async function loadCard(){
+  const params = new URLSearchParams(location.search);
+  const slug   = params.get('slug');
+
+  if(!slug || slug.length < 3){
+    showError('Адресу меморіалу не вказано або вона некоректна.');
+    return;
+  }
+
+  try{
+    const mRes = await fetch(`${API}/api/memorial/by-slug/${encodeURIComponent(slug)}`);
+
+    if(!mRes.ok){
+      showError(mRes.status === 404 ? 'Меморіал не знайдено або ще не опублікований.' : `Помилка сервера: ${mRes.status}`);
+      return;
+    }
+
+    const mem  = await mRes.json();
+    _memId = mem.id;
+    const aRes = await fetch(`${API}/api/memorial/${mem.id}/awards`);
+    const awards = aRes.ok ? await aRes.json() : [];
+    fillPage(mem, awards);
+
+  } catch(e){
+    showError('Не вдалося завантажити дані. Перевірте підключення до мережі.');
+  }
+}
+
+function showError(msg){
+  document.getElementById('loading-screen').style.display = 'none';
+  const errEl = document.getElementById('error-screen');
+  document.getElementById('error-msg').textContent = msg;
+  errEl.style.display = 'flex';
+}
+
+/* ── fill ─────────────────────────────── */
+function fillPage(p, awards){
+  const fullName = [p.last, p.first, p.mid].filter(Boolean).join(' ').trim() || 'Захисник України';
+
+  /* title */
+  document.title = `${fullName} — Зоряна Памʼять`;
+
+  /* HERO ─────────────────────────────── */
+  const heroPhoto = document.getElementById('hero-photo');
+  if(p.photo && p.photo.trim() && !p.photo.includes('foto_false')){
+    const src = p.photo.startsWith('http') ? p.photo : `/${p.photo.replace(/^\//,'')}`;
+    heroPhoto.style.backgroundImage = `url('${src}')`;
+    heroPhoto.classList.remove('no-photo');
+  }
+
+  document.getElementById('hero-id').textContent = `ZP · ID-${String(p.id).padStart(4,'0')}`;
+
+  const rl = document.getElementById('rank-line');
+  const rlParts = [p.rank, p.unit].filter(Boolean);
+  rl.textContent = rlParts.length ? rlParts.join(' · ') : 'Захисник України';
+
+  const nameEl = document.getElementById('hero-name');
+  if(p.last && p.first){
+    nameEl.innerHTML = `${h(p.last)}<br>${h(p.first)}${p.mid ? ` <em>${h(p.mid)}</em>` : ''}`;
+  } else {
+    nameEl.textContent = fullName;
+  }
+
+  if(p.grp){
+    const cs = document.getElementById('hero-callsign');
+    cs.textContent = `позивний «${p.grp}»`;
+    cs.style.display = '';
+  }
+
+  const datesEl = document.getElementById('hero-dates');
+  const birthFmt = fd(p.birth), deathFmt = fd(p.death);
+  if(birthFmt || deathFmt){
+    let dHtml = '';
+    if(birthFmt) dHtml += `<strong>${h(birthFmt)}</strong>`;
+    if(birthFmt && deathFmt) dHtml += `<span class="dot"></span>`;
+    if(deathFmt) dHtml += `<strong>${h(deathFmt)}</strong>`;
+    if(birthFmt && deathFmt){
+      const yBirth = new Date(p.birth).getFullYear();
+      const yDeath = new Date(p.death).getFullYear();
+      if(!isNaN(yBirth) && !isNaN(yDeath)) dHtml += `<span class="dot"></span><span>${yDeath - yBirth} рік</span>`;
+    }
+    datesEl.innerHTML = dHtml;
+  }
+
+  /* BIO ─────────────────────────────── */
+  if(p.descr && p.descr.trim()){
+    const secBio = document.getElementById('sec-bio');
+    const bioEl  = document.getElementById('bio-text');
+    const paras  = p.descr.trim().split(/\n+/);
+    bioEl.innerHTML = paras.map((par, i) =>
+      `<p${i===0?' class="lead"':''}>${h(par)}</p>`
+    ).join('');
+    secBio.style.display = '';
+  }
+
+  /* INFO GRID ──────────────────────── */
+  const gridData = [
+    p.rank     && { lbl:'Звання',         val: p.rank },
+    p.position && { lbl:'Посада',         val: p.position },
+    p.unit     && { lbl:'Підрозділ',      val: p.unit },
+    p.birth    && { lbl:'Дата народження',val: fd(p.birth) },
+    p.death    && { lbl:'Дата загибелі',  val: fd(p.death), sub: 'під час виконання обовʼязків' },
+    p.loc      && { lbl:'Місце загибелі', val: p.loc },
+    p.bury     && { lbl:'Місце поховання',val: p.bury },
+    p.grp      && { lbl:'Позивний',       val: `«${p.grp}»` },
+  ].filter(Boolean);
+
+  const grid = document.getElementById('info-grid');
+  grid.innerHTML = gridData.map(item =>
+    `<div class="info-card">
+      <div class="lbl">${h(item.lbl)}</div>
+      <div class="val">${h(item.val)}</div>
+      ${item.sub ? `<div class="sub">${h(item.sub)}</div>` : ''}
+    </div>`
+  ).join('');
+
+  if(!gridData.length) grid.innerHTML = '<div class="info-card"><div class="lbl">Дані</div><div class="val" style="font-size:1rem;opacity:.5">Інформація уточнюється</div></div>';
+
+  /* CIRC ──────────────────────────── */
+  if(p.circ && p.circ.trim()){
+    document.getElementById('circ-section').style.display = '';
+    document.getElementById('circ-tags').innerHTML =
+      p.circ.split(/[;,\n]+/).map(c => c.trim()).filter(Boolean)
+        .map(c => `<span class="circ"><span class="pip"></span>${h(c)}</span>`).join('');
+  }
+
+  /* TIMELINE ──────────────────────── */
+  const tlEl = document.getElementById('timeline');
+  const tlItems = [];
+  if(p.birth) tlItems.push({ date: fd(p.birth), title: 'Народився', body: '', key: false });
+  if(p.death) tlItems.push({ date: fd(p.death), title: 'Загинув у бою', body: p.loc ? `Поблизу ${p.loc}` : '', key: true });
+  if(!tlItems.length){
+    document.getElementById('sec-timeline').style.display = 'none';
+  } else {
+    tlEl.innerHTML = tlItems.map(t =>
+      `<div class="t-item${t.key?' key':''}">
+        <div class="t-date">${h(t.date)}</div>
+        <div class="t-title">${h(t.title)}</div>
+        ${t.body ? `<div class="t-body">${h(t.body)}</div>` : ''}
+      </div>`
+    ).join('');
+  }
+
+  /* VIDEO ─────────────────────────── */
+  if(p.video_url){
+    const ytId = extractYtId(p.video_url);
+    const secVid = document.getElementById('sec-video');
+    const vidCont = document.getElementById('video-container');
+    if(ytId){
+      document.getElementById('video-title').textContent = `${fullName} — відеоспогад.`;
+      vidCont.innerHTML =
+        `<div class="video-wrap">
+          <iframe src="https://www.youtube.com/embed/${ytId}?rel=0&modestbranding=1"
+                  title="${h(fullName)}" allowfullscreen loading="lazy"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>
+        </div>`;
+      document.getElementById('video-caption').textContent = 'Відеоматеріал про захисника.';
+    } else {
+      vidCont.innerHTML =
+        `<a class="video-placeholder" href="${h(p.video_url)}" target="_blank" rel="noopener">
+          <div class="play">▶</div>
+        </a>`;
+    }
+    secVid.style.display = '';
+  }
+
+  /* AWARDS ────────────────────────── */
+  if(awards && awards.length){
+    const secAw = document.getElementById('sec-awards');
+    const gridAw = document.getElementById('awards-grid');
+    gridAw.innerHTML = awards.map(a => {
+      const imgHtml = a.img_file
+        ? `<img src="/img/awards/${encodeURIComponent(a.img_file)}" alt="${h(a.name)}" onerror="this.style.display='none'">`
+        : `<div class="medal">★</div>`;
+      const metaParts = [a.award_date, a.descr].filter(Boolean);
+      return `<div class="award">
+        ${imgHtml}
+        <div>
+          <div class="a-title">${h(a.name)}</div>
+          ${metaParts.length ? `<div class="a-meta">${metaParts.map(h).join(' · ')}</div>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+    secAw.style.display = '';
+  }
+
+  /* LIKES / CANDLE ────────────────── */
+  const likesEl = document.getElementById('likes-count');
+  let currentLikes = +(p.likes || 0);
+  likesEl.textContent = currentLikes.toLocaleString('uk-UA');
+
+  const candleBtn = document.getElementById('candle-btn');
+  const storageKey = `zp-lit-${p.id}`;
+  if(localStorage.getItem(storageKey)){
+    candleBtn.textContent = 'Свічку запалено';
+    candleBtn.style.cssText = 'background:transparent;color:var(--accent);border:1px solid var(--accent)';
+  }
+  candleBtn.addEventListener('click', async () => {
+    if(localStorage.getItem(storageKey)) return;
+    try{
+      const r = await fetch(`${API}/api/like/${p.id}`, {method:'POST'});
+      if(r.ok){
+        currentLikes++;
+        likesEl.textContent = currentLikes.toLocaleString('uk-UA');
+        localStorage.setItem(storageKey,'1');
+        candleBtn.textContent = 'Свічку запалено';
+        candleBtn.style.cssText = 'background:transparent;color:var(--accent);border:1px solid var(--accent);padding:14px 32px;border-radius:2px;font-size:.85rem;letter-spacing:.18em;text-transform:uppercase;cursor:pointer';
+      }
+    } catch{}
+  });
+
+  /* Show page ─────────────────────── */
+  document.getElementById('loading-screen').style.display = 'none';
+  document.getElementById('main-content').style.display  = '';
+
+  /* Intersection observer for fade-in */
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if(e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.12 });
+  document.querySelectorAll('.fade-in').forEach(el => obs.observe(el));
+}
+
+/* скриваємо секції згідно налаштувань (викликається після fillPage) */
+function applySettingsVisibility(){
+  if(_cfg.card_show_bio      === '0') { const el = document.getElementById('sec-bio');      if(el) el.style.display = 'none'; }
+  if(_cfg.card_show_timeline === '0') { const el = document.getElementById('sec-timeline'); if(el) el.style.display = 'none'; }
+  if(_cfg.card_show_video    === '0') { const el = document.getElementById('sec-video');    if(el) el.style.display = 'none'; }
+  if(_cfg.card_show_awards   === '0') { const el = document.getElementById('sec-awards');   if(el) el.style.display = 'none'; }
+  if(_cfg.card_show_candle   === '0') { const el = document.querySelector('.tribute');       if(el) el.style.display = 'none'; }
+}
+
+function startLikesRefresh(intervalSec) {
+  if (_likesTimer) clearInterval(_likesTimer);
+  const ms = (parseInt(intervalSec) || 0) * 1000;
+  if (!ms || ms < 10000) return;
+  _likesTimer = setInterval(async () => {
+    if (!_memId) return;
+    try {
+      const r = await fetch(`${API}/api/memorial/${_memId}`);
+      if (!r.ok) return;
+      const d = await r.json();
+      const el = document.getElementById('likes-count');
+      if (!el) return;
+      const serverVal = +(d.likes || 0);
+      const curVal = parseInt(el.textContent.replace(/\D/g, '')) || 0;
+      if (serverVal >= curVal) el.textContent = serverVal.toLocaleString('uk-UA');
+    } catch {}
+  }, ms);
+}
+
+(async () => {
+  await loadSettings();
+  await loadCard();
+  applySettingsVisibility();
+  startLikesRefresh(_cfg.card_likes_refresh ?? '60');
+})();
+</script>
+</body>
+</html>

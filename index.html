@@ -5,6 +5,16 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache" />
 <title>Зоряна Памʼять</title>
+<meta name="description" content="Зоряна Пам'ять — інтерактивна карта пам'яті загиблих Захисників України. Вічна пам'ять Героям.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Зоряна Пам'ять — Карта пам'яті Захисників України">
+<meta property="og:description" content="Інтерактивна карта пам'яті загиблих Захисників України. Вічна пам'ять Героям.">
+<meta property="og:url" content="/">
+<meta property="og:site_name" content="Зоряна Пам'ять">
+<meta property="og:locale" content="uk_UA">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Зоряна Пам'ять — Карта пам'яті Захисників України">
+<meta name="twitter:description" content="Інтерактивна карта пам'яті загиблих Захисників України.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700&family=Geologica:wght@300;400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="Style.css">
@@ -83,7 +93,7 @@
 <body>
 <canvas width="1365" height="953"></canvas>
 <header id="topbar">
-  <div id="logo"><span id="logo-star">&#9733;</span> <em id="logo-em">Зоряна</em> Памʼять</div>
+  <div id="logo"><span id="logo-star">&#9733;</span> <em id="logo-em">Зоряна</em> Памʼять<span id="app-version" style="font-size:9px;color:#4a5a6a;margin-left:7px;font-weight:400;letter-spacing:.04em;vertical-align:middle">v2.42 beta</span></div>
   <div class="tstat"><span id="icon-people">👥</span> <strong id="sttotal">0</strong>&nbsp;людей</div>
   <div class="tstat"><span id="icon-likes">⭐</span> <strong id="stlikes">0</strong>&nbsp;зірок</div>
   <div class="tstat"><span class="tdot"></span><strong id="stonline">—</strong>&nbsp;онлайн</div>
@@ -2256,6 +2266,10 @@
       <div id="cvideo-container"></div>
       <div id="cvideo-hint" style="font-size:9px;color:var(--muted);text-align:center;margin-top:4px;opacity:.6;display:none">ПРОБІЛ — звук вкл/викл</div>
     </div>
+    <button id="detail-btn" onclick="openDetailCard()" style="display:flex;align-items:center;justify-content:center;gap:7px;width:100%;margin-bottom:8px;padding:10px 16px;border-radius:10px;border:1px solid rgba(240,181,74,.45);background:rgba(240,181,74,.08);color:#f0b54a;font-family:'Unbounded',sans-serif;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;transition:background .2s,box-shadow .2s" onmouseover="this.style.background='rgba(240,181,74,.18)';this.style.boxShadow='0 3px 14px rgba(240,181,74,.25)'" onmouseout="this.style.background='rgba(240,181,74,.08)';this.style.boxShadow='none'">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      Детальніше
+    </button>
     <button id="lbtn" onclick="doLike()">
       <span>&#11088;</span><span>Зірка памʼяті</span><span id="lcnt">0</span>
     </button>
@@ -2586,6 +2600,11 @@ async function loadColors() {
     applyColors();
     applySocialLinks();
     _applyRegSettings();
+    const ver = COLORS['app_version']?.value;
+    if (ver) {
+      const el = document.getElementById('app-version');
+      if (el) el.textContent = 'v' + ver;
+    }
   } catch { console.warn('Кольори не завантажено — використовуємо типові'); }
 }
 
@@ -3563,7 +3582,7 @@ function _renderVideoBlock(videoUrl){
     if(cvHint) cvHint.style.display='none';
     const ph=document.createElement('div');
     ph.style.cssText='position:relative;width:100%;aspect-ratio:16/9;border-radius:8px;overflow:hidden;border:1px solid var(--border2)';
-    ph.innerHTML='<img src="img/novidio.gif" style="width:100%;height:100%;object-fit:cover;display:block;opacity:.8"><span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.6);font-size:11px;letter-spacing:.08em">ВІДЕО ВІДСУТНЄ</span>';
+    ph.innerHTML='<img src="/img/novidio.gif" style="width:100%;height:100%;object-fit:cover;display:block;opacity:.8"><span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.6);font-size:11px;letter-spacing:.08em">ВІДЕО ВІДСУТНЄ</span>';
     cvCont.appendChild(ph);
   }
 }
@@ -3601,7 +3620,7 @@ function _renderCardDetails(p){
   const img=document.getElementById('cimg');
   if(img){
     if(p.photo&&p.photo.trim()){img.src=p.photo.startsWith('http')?p.photo:`https://${p.photo}`;img.onerror=()=>{img.src='img/foto_false.png';};}
-    else img.src='img/foto_false.png';
+    else img.src='/img/foto_false.png';
   }
 
   _renderVideoBlock(p.video_url);
@@ -3635,6 +3654,12 @@ async function openCard(p){
 
   document.getElementById('card').classList.add('open');
 
+  // Update URL for sharing / SEO back-link
+  const _slug = p.slug || String(p.id);
+  const _title = `${p.last} ${p.first} — Зоряна Пам'ять`;
+  history.pushState({memId: p.id}, _title, '/memorial/' + _slug);
+  document.title = _title;
+
   // ── Фаза 2: підвантажуємо повні дані по запиту ──
   try{
     const res=await fetch(`${API}/api/memorial/${p.id}`);
@@ -3645,6 +3670,11 @@ async function openCard(p){
     _renderCardDetails(full);
   }catch(e){}
 }
+function openDetailCard(){
+  if(!activePerson) return;
+  const slug = activePerson.slug || String(activePerson.id);
+  window.open('/card?slug=' + encodeURIComponent(slug), '_blank');
+}
 function closeCard(){
   document.getElementById('card').classList.remove('open');
   selId=null; activePerson=null;
@@ -3653,6 +3683,8 @@ function closeCard(){
   if(cvCont) cvCont.innerHTML='';
   const cvWrap=document.getElementById('cvideo-wrap');
   if(cvWrap) cvWrap.style.display='none';
+  history.pushState({}, "Зоряна Пам'ять", '/');
+  document.title = "Зоряна Пам'ять";
 }
 function fd(s){if(!s)return'?';try{return new Date(s).toLocaleDateString('uk-UA',{day:'numeric',month:'long',year:'numeric'});}catch{return s;}}
 
@@ -3746,6 +3778,29 @@ async function doLike(){
   particles.push({x:activePerson.x,y:activePerson.y,age:0});
   const b=document.getElementById('lbtn');b.classList.add('burst');setTimeout(()=>b.classList.remove('burst'),400);
   try{await fetch(`${API}/api/like/${id}`,{method:'POST'});}catch{}
+}
+
+let _panelLikesTimer = null;
+function startPanelLikesRefresh() {
+  if (_panelLikesTimer) clearInterval(_panelLikesTimer);
+  const ms = (parseInt(getC('card_likes_refresh', '60')) || 0) * 1000;
+  if (!ms || ms < 10000) return;
+  _panelLikesTimer = setInterval(async () => {
+    if (!selId || !activePerson) return;
+    try {
+      const r = await fetch(`${API}/api/memorial/${selId}`);
+      if (!r.ok || selId !== activePerson.id) return;
+      const d = await r.json();
+      const serverVal = +(d.likes || 0);
+      const el = document.getElementById('lcnt');
+      if (!el) return;
+      const curVal = parseInt(el.textContent) || 0;
+      if (serverVal >= curVal) {
+        el.textContent = serverVal;
+        activePerson.likes = serverVal;
+      }
+    } catch {}
+  }, ms);
 }
 
 /* ── Search (розширений) ── */
@@ -4457,6 +4512,28 @@ document.addEventListener('DOMContentLoaded', () => {
   if (lbl) lbl.textContent = 'Дим увімкнено';
 });
 
+// Open card from SEO redirect: /?open=ivan-petrenko-42
+document.addEventListener('DOMContentLoaded', async () => {
+  const sp = new URLSearchParams(location.search);
+  const openSlug = sp.get('open');
+  if (!openSlug) return;
+  try {
+    const res = await fetch(`${API}/api/memorial/by-slug/${encodeURIComponent(openSlug)}`);
+    if (!res.ok) return;
+    const p = await res.json();
+    // Wait until people list is loaded so map markers are rendered
+    const _waitAndOpen = () => {
+      if (typeof openCard === 'function') {
+        openCard(p);
+        // Clean the ?open= param from URL (openCard already sets /memorial/{slug})
+      } else {
+        setTimeout(_waitAndOpen, 100);
+      }
+    };
+    _waitAndOpen();
+  } catch(e) {}
+});
+
 // Після повного завантаження — синхронізуємо стан з WebGL + будуємо SVG clip
 window.addEventListener('load', () => {
   _applySmokeState();
@@ -4514,6 +4591,7 @@ async function checkOAuthCallback(){
   updateAuthUI();
   connectWS();
   checkOAuthCallback();
+  startPanelLikesRefresh();
   const pl=document.getElementById('preloader');
   if(pl) pl.classList.add('hidden');
 })();

@@ -13,7 +13,37 @@
       "Bash([ -f \"D:/OSPanel/OpenServer/domains/localhost/treetex/img/awards/$f\" ])",
       "Bash(curl -s -X POST \"http://127.0.0.1:8000/api/auth/register\" -H \"Content-Type: application/json\" -d \"{\\\\\"last_name\\\\\":\\\\\"Шевченко\\\\\",\\\\\"first_name\\\\\":\\\\\"Олег\\\\\",\\\\\"middle_name\\\\\":\\\\\"Миколайович\\\\\",\\\\\"nickname\\\\\":\\\\\"oleg_test\\\\\",\\\\\"email\\\\\":\\\\\"test_reg@example.com\\\\\",\\\\\"email_confirm\\\\\":\\\\\"test_reg@example.com\\\\\",\\\\\"phone\\\\\":\\\\\"\\\\\",\\\\\"password\\\\\":\\\\\"Test123456\\\\\",\\\\\"terms_agreed\\\\\":true}\")",
       "PowerShell(python -m py_compile \"D:\\\\OSPanel\\\\OpenServer\\\\domains\\\\localhost\\\\treetex\\\\Paskal.py\")",
-      "PowerShell(if \\($?\\) { \"OK\" })"
+      "PowerShell(if \\($?\\) { \"OK\" })",
+      "Bash(python -c ' *)",
+      "Bash(venv\\\\Scripts\\\\python.exe -c \"import starlette; print\\(starlette.__version__\\)\")",
+      "Bash(cd /d \"d:\\\\OSPanel\\\\OpenServer\\\\domains\\\\localhost\\\\treetex\")",
+      "Bash(\"venv\\\\Scripts\\\\python.exe\" -c \"import starlette; print\\(starlette.__version__\\)\")",
+      "PowerShell(New-Item -ItemType Directory -Force -Path \"D:\\\\OSPanel\\\\OpenServer\\\\domains\\\\localhost\\\\mpu\\\\frontend\\\\libs\")",
+      "PowerShell(Stop-Process -Name \"Docker Desktop\" -Force -ErrorAction SilentlyContinue)",
+      "PowerShell(wsl --list --verbose 2>&1)",
+      "PowerShell(Get-Content \"C:\\\\Users\\\\$env:USERNAME\\\\AppData\\\\Roaming\\\\Docker\\\\settings-store.json\")",
+      "Bash(curl -sf http://localhost:8000/health)",
+      "Bash(curl -s http://localhost:8000/health)",
+      "Bash(curl -s http://localhost:8000/api/alerts/active)",
+      "PowerShell(docker exec mpu-postgres psql -U mpu -d mpu -c \"SELECT region_id, alert_type, started_at, ended_at FROM alerts ORDER BY started_at DESC LIMIT 10;\" 2>&1)",
+      "PowerShell(docker exec mpu-postgres psql -U mpu -d mpu -c \"\\\\d alerts\" 2>&1)",
+      "Bash(python3 -c ' *)",
+      "Bash(Get-ChildItem -Path \"d:/OSPanel/OpenServer/domains/localhost/mpu/frontend/libs/\" -Force)",
+      "Bash(curl -sL \"https://unpkg.com/pmtiles@3.2.0/dist/pmtiles.js\" -o /d/OSPanel/OpenServer/domains/localhost/mpu/frontend/libs/pmtiles.js)",
+      "Bash(curl -sI \"https://cdn.protomaps.com/styles/v4/en/dark.json\")",
+      "Bash(curl -sI \"https://protomaps.github.io/basemaps/dist/v4/dark.json\")",
+      "PowerShell(docker pull protomaps/go-pmtiles:latest 2>&1)",
+      "PowerShell(docker run --rm protomaps/go-pmtiles:latest --help 2>&1)",
+      "PowerShell(docker run --rm protomaps/go-pmtiles:latest extract --help 2>&1)",
+      "Bash(curl -sI \"https://build.protomaps.com/20241201.pmtiles\")",
+      "Bash(curl -sI \"https://build.protomaps.com/20241101.pmtiles\")",
+      "Bash(curl -sI \"https://build.protomaps.com/20241001.pmtiles\")",
+      "PowerShell(docker run --rm alpine sh -c \"wget -q --spider https://download.geofabrik.de/ 2>&1; echo exit:$?\")"
+    ],
+    "additionalDirectories": [
+      "D:\\OSPanel\\OpenServer\\domains\\localhost\\mpu\\backend",
+      "D:\\OSPanel\\OpenServer\\domains\\localhost\\mpu\\migrations",
+      "D:\\OSPanel\\OpenServer\\domains\\localhost\\mpu"
     ]
   }
 }

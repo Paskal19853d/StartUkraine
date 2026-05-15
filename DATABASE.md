@@ -70,6 +70,7 @@ D:\OSPanel\modules\MySQL-8.4\bin\mysql.exe -h 127.0.0.1 -P 3306 -u root -proot z
 | `rank` | VARCHAR(100) | NO | `''` | Військове звання |
 | `position` | VARCHAR(100) | NO | `''` | Посада |
 | `unit` | VARCHAR(200) | NO | `''` | Військовий підрозділ (напр. "81 ОАеМБр") |
+| `slug` | VARCHAR(220) | YES | NULL | SEO-slug: `ivan-petrenko-42` (auto-generated) |
 
 ### Індекси
 
@@ -83,6 +84,7 @@ D:\OSPanel\modules\MySQL-8.4\bin\mysql.exe -h 127.0.0.1 -P 3306 -u root -proot z
 | `idx_grp` | BTREE | `grp(50)` | Фільтр за підрозділом |
 | `idx_approved_rating` | BTREE | `approved, rating DESC, likes DESC` | **Критичний** — `/api/people` пагінація |
 | `idx_fulltext_search` | **FULLTEXT** | `last, first, mid, grp, loc, descr` | Швидкий текстовий пошук `/api/search` |
+| `idx_slug` | BTREE UNIQUE | `slug` | SEO URL lookup `/memorial/{slug}` |
 
 ### Поточний стан даних
 ```
@@ -610,4 +612,56 @@ SELECT COUNT(*) FROM users WHERE last_seen > %s AND is_banned=0
 
 ---
 
-*Оновлено: 2026-05-08 · Додано таблицю awards_catalog, уточнено img_file в memorial_awards*
+## Таблиця `seo_index_log`
+
+Лог відправлених URL до Google Indexing API.
+
+| Колонка | Тип | Опис |
+|---------|-----|------|
+| `id` | INT AUTO_INCREMENT | PK |
+| `url` | VARCHAR(500) | Відправлений URL |
+| `notification_type` | VARCHAR(30) | `URL_UPDATED` або `URL_DELETED` |
+| `status` | VARCHAR(20) | `sent` або `error` |
+| `response` | TEXT | Відповідь API |
+| `created_at` | INT | Unix timestamp |
+
+---
+
+## Таблиця `seo_broken_links`
+
+Результати перевірки доступності фото URL. Заповнюється фоновим потоком через `POST /api/admin/seo/check-broken-links`.
+
+| Колонка | Тип | Опис |
+|---------|-----|------|
+| `id` | INT AUTO_INCREMENT | PK |
+| `memorial_id` | INT | FK → `memorials.id` |
+| `url` | VARCHAR(500) | URL що перевірявся |
+| `link_type` | VARCHAR(20) | `photo` |
+| `status_code` | INT | HTTP статус (0 = timeout/error) |
+| `last_checked` | INT | Unix timestamp перевірки |
+| `is_broken` | TINYINT | 1 = битий (code=0 або ≥400) |
+
+**Ключі:** `UNIQUE (memorial_id, link_type)`, `INDEX (is_broken, last_checked)`
+
+---
+
+## Таблиця `seo_score_history`
+
+Щоденні знімки розподілу SEO балів. Заповнюється через `POST /api/admin/seo/snapshot`.
+
+| Колонка | Тип | Опис |
+|---------|-----|------|
+| `id` | INT AUTO_INCREMENT | PK |
+| `snapshot_date` | DATE | Дата знімку (UNIQUE) |
+| `total_count` | INT | Кількість схвалених меморіалів |
+| `avg_score` | DECIMAL(5,2) | Середній SEO score |
+| `count_a` | INT | Оцінка A (85–100) |
+| `count_b` | INT | Оцінка B (70–84) |
+| `count_c` | INT | Оцінка C (50–69) |
+| `count_d` | INT | Оцінка D (<50) |
+
+**Ключі:** `UNIQUE (snapshot_date)`
+
+---
+
+*Оновлено: 2026-05-10 · SEO Phase 2: seo_broken_links, seo_score_history; відео теги в sitemap.xml*

@@ -31,9 +31,11 @@ except ImportError:
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Depends, UploadFile, File, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, StreamingResponse, RedirectResponse
+from fastapi.templating import Jinja2Templates
 import csv, io
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
+from seo_utils import make_slug, gen_seo_title, gen_seo_description, gen_seo_keywords, calc_seo_score
 
 load_dotenv()
 
@@ -555,8 +557,10 @@ def init_db():
         ("map_photo_blend",       "normal",   "Фото на карті — режим змішування (normal / screen / overlay / soft-light / luminosity)"),
         ("map_photo_feather",     "55",       "Фото на карті — розмитість країв % (20–80)"),
         ("map_photo_scale",       "100",      "Фото на карті — масштаб відображення % (10–100)"),
+        ("app_version",           "2.42 beta","Версія додатку — відображається на всіх сторінках"),
         ("admin_theme",           "dark",     "Тема адмін-панелі (dark / light)"),
-        ("admin_logo_url",        "",         "Логотип адмінки — URL зображення (порожньо = без логотипу)"),
+        ("admin_logo_url",        "",         "Логотип адмінки — URL для темної теми (порожньо = без логотипу)"),
+        ("admin_logo_url_light",  "",         "Логотип адмінки — URL для світлої теми (порожньо = як темна)"),
         ("admin_logo_height",     "60",       "Логотип адмінки — висота px (30–140)"),
         ("admin_logo_radius",     "8",        "Логотип адмінки — заокруглення px (0–70)"),
         ("sea_enabled",           "1",        "Море — показувати на карті (1=так, 0=ні)"),
@@ -606,6 +610,18 @@ def init_db():
         ("reg_require_phone_verify", "0",          "Реєстрація — підтвердження телефону SMS (1=так, 0=ні) [потребує SMS API]"),
         ("reg_min_pass_len",         "10",         "Реєстрація — мінімальна довжина пароля (8–20)"),
         ("reg_welcome_msg",          "Вітаємо на Зоряна Пам'ять!", "Реєстрація — повідомлення після успішної реєстрації"),
+        # ── Картка меморіалу (card.html) ─────────────────────────────────────
+        ("card_accent",        "#f0b54a",                       "Картка: колір акценту"),
+        ("card_bg",            "#050507",                       "Картка: колір фону"),
+        ("card_show_bio",      "1",                             "Картка: показ секції Про захисника (1/0)"),
+        ("card_show_timeline", "1",                             "Картка: показ хроніки (1/0)"),
+        ("card_show_video",    "1",                             "Картка: показ відео (1/0)"),
+        ("card_show_awards",   "1",                             "Картка: показ нагород (1/0)"),
+        ("card_show_ribbon",   "1",                             "Картка: показ траурної стрічки (1/0)"),
+        ("card_show_candle",   "1",                             "Картка: показ секції свічки (1/0)"),
+        ("card_no_photo_bg",     "/img/bgcard.webp",              "Картка: URL фото-заглушки"),
+        ("card_footer_text",     "Вічна памʼять Героям України",  "Картка: текст футера"),
+        ("card_likes_refresh",   "60",                            "Картка: інтервал оновлення лічильника вшанувань (секунди; 0 = вимкнено)"),
     ]
     with db.cursor() as c:
         for key, val, label in defaults:
@@ -976,6 +992,68 @@ def init_db():
                 VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
             """, seed)
 
+    # ── SEO: slug column + seo_index_log ───────────────────
+    with db.cursor() as c:
+        try:
+            c.execute("ALTER TABLE memorials ADD COLUMN slug VARCHAR(220) DEFAULT NULL")
+        except Exception:
+            pass
+        try:
+            c.execute("ALTER TABLE memorials ADD UNIQUE INDEX idx_slug (slug)")
+        except Exception:
+            pass
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS seo_index_log (
+                id                INT PRIMARY KEY AUTO_INCREMENT,
+                url               VARCHAR(500) NOT NULL,
+                notification_type VARCHAR(30)  NOT NULL DEFAULT 'URL_UPDATED',
+                status            VARCHAR(20)  NOT NULL DEFAULT 'sent',
+                response          TEXT,
+                created_at        INT          NOT NULL,
+                INDEX idx_sil_ts (created_at)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        """)
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS seo_broken_links (
+                id           INT PRIMARY KEY AUTO_INCREMENT,
+                memorial_id  INT NOT NULL,
+                url          VARCHAR(500) NOT NULL,
+                link_type    VARCHAR(20)  DEFAULT 'photo',
+                status_code  INT          DEFAULT NULL,
+                last_checked INT          NOT NULL,
+                is_broken    TINYINT      DEFAULT 0,
+                UNIQUE KEY uq_sbl_mid_type (memorial_id, link_type),
+                INDEX idx_sbl_broken (is_broken, last_checked)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        """)
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS seo_score_history (
+                id            INT PRIMARY KEY AUTO_INCREMENT,
+                snapshot_date DATE         NOT NULL,
+                total_count   INT          DEFAULT 0,
+                avg_score     DECIMAL(5,2) DEFAULT 0,
+                count_a       INT          DEFAULT 0,
+                count_b       INT          DEFAULT 0,
+                count_c       INT          DEFAULT 0,
+                count_d       INT          DEFAULT 0,
+                UNIQUE KEY uq_ssh_date (snapshot_date)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        """)
+
+    # ── Backfill slugs for existing records ─────────────────
+    from seo_utils import make_slug as _make_slug
+    with db.cursor() as c:
+        c.execute("SELECT id, first, last FROM memorials WHERE slug IS NULL OR slug=''")
+        rows_no_slug = c.fetchall()
+    if rows_no_slug:
+        with db.cursor() as c:
+            for r in rows_no_slug:
+                _sl = _make_slug(r['first'], r['last'], r['id'])
+                try:
+                    c.execute("UPDATE memorials SET slug=%s WHERE id=%s", (_sl, r['id']))
+                except Exception:
+                    pass
+
     db.commit()
     db.close()
 
@@ -1277,6 +1355,10 @@ app.mount("/fonts", StaticFiles(directory="fonts"), name="fonts")
 os.makedirs("img/audio", exist_ok=True)
 app.mount("/audio", StaticFiles(directory="img/audio"), name="audio")
 
+# Jinja2 templates (for SEO SSR pages)
+_TEMPLATES = Jinja2Templates(directory="templates")
+_SITE_BASE_URL = os.getenv("SITE_BASE_URL", "http://127.0.0.1:8000").rstrip("/")
+
 @app.on_event("startup")
 def startup():
     init_db()
@@ -1373,6 +1455,31 @@ def css_file(): return FileResponse("Style.css", media_type="text/css")
 
 @app.get("/ukraine-map.svg")
 def svg_map(): return FileResponse("ukraine-map.svg", media_type="image/svg+xml")
+
+@app.get("/card")
+def card_page(): return FileResponse("card.html")
+
+@app.get("/api/card/settings")
+def get_card_settings():
+    db = get_db()
+    with db.cursor() as c:
+        c.execute("SELECT `key`, value FROM colors WHERE `key` LIKE 'card_%' OR `key`='app_version'")
+        rows = c.fetchall()
+    db.close()
+    defaults = {
+        "card_accent": "#f0b54a", "card_bg": "#050507",
+        "card_show_bio": "1", "card_show_timeline": "1",
+        "card_show_video": "1", "card_show_awards": "1",
+        "card_show_ribbon": "1", "card_show_candle": "1",
+        "card_no_photo_bg": "/img/bgcard.webp",
+        "card_footer_text": "Вічна памʼять Героям України",
+        "card_likes_refresh": "60",
+        "app_version": "2.42 beta",
+    }
+    result = dict(defaults)
+    for r in rows:
+        result[r["key"]] = r["value"]
+    return result
 
 @app.get("/rules.html")
 def rules_page(): return FileResponse("rules.html")
@@ -1857,7 +1964,7 @@ def get_people(page: int = 1, limit: int = 50, request: Request = None):
         total = c.fetchone()["cnt"]
         c.execute(
             "SELECT id,last,first,mid,birth,death,bury,loc,photo,color,pos_x,pos_y,"
-            "grp,`rank`,`position`,unit,likes,rating,video_url,approved,added_by "
+            "grp,`rank`,`position`,unit,likes,rating,video_url,approved,added_by,slug "
             "FROM memorials WHERE approved=1 ORDER BY rating DESC, likes DESC "
             "LIMIT %s OFFSET %s",
             (limit, offset)
@@ -2755,9 +2862,18 @@ def approve(mid: int, request: Request):
     db = get_db()
     with db.cursor() as c:
         c.execute("UPDATE memorials SET approved=1 WHERE id=%s", (mid,))
+        c.execute("SELECT id, first, last, slug FROM memorials WHERE id=%s", (mid,))
+        row = c.fetchone()
+        if row and not row.get('slug'):
+            sl = make_slug(row['first'], row['last'], row['id'])
+            try:
+                c.execute("UPDATE memorials SET slug=%s WHERE id=%s", (sl, mid))
+            except Exception:
+                pass
     db.commit()
     db.close()
     cache_flush_memorials()
+    cache_delete("sitemap")
     return {"ok": True}
 
 @app.post("/api/admin/memorial")
@@ -2774,9 +2890,15 @@ def admin_add_person(p: PersonIn, request: Request):
               p.color or '#4fc3f7', p.rank or '', p.position or '', p.unit or '',
               p.pos_x, p.pos_y, p.grp or '', 'admin'))
         new_id = c.lastrowid
+        sl = make_slug(p.first.strip(), p.last.strip(), new_id)
+        try:
+            c.execute("UPDATE memorials SET slug=%s WHERE id=%s", (sl, new_id))
+        except Exception:
+            pass
     db.commit()
     db.close()
     cache_flush_memorials()
+    cache_delete("sitemap")
     return {"ok": True, "id": new_id}
 
 @app.delete("/api/admin/memorial/{mid}")
@@ -3106,11 +3228,30 @@ def update_memorial(mid: int, p: PersonUpdate, request: Request):
         db.close()
         return {"ok": False}
     vals.append(mid)
+    update_data = p.model_dump(exclude_none=True)
+    old_slug = None
     with db.cursor() as c:
+        c.execute("SELECT slug FROM memorials WHERE id=%s", (mid,))
+        old_row = c.fetchone()
+        if old_row:
+            old_slug = old_row.get('slug')
         c.execute("UPDATE memorials SET " + ",".join(fields) + " WHERE id=%s", vals)
+        if 'first' in update_data or 'last' in update_data:
+            c.execute("SELECT first, last FROM memorials WHERE id=%s", (mid,))
+            nr = c.fetchone()
+            if nr:
+                new_slug = make_slug(nr['first'], nr['last'], mid)
+                try:
+                    c.execute("UPDATE memorials SET slug=%s WHERE id=%s", (new_slug, mid))
+                    old_slug = old_slug  # will delete old slug cache below
+                except Exception:
+                    pass
     db.commit()
     db.close()
     cache_flush_memorials()
+    if old_slug:
+        cache_delete(f"seo:{old_slug}")
+    cache_delete("sitemap")
     return {"ok": True}
 
 @app.get("/api/memorial/{mid}/awards")
@@ -3509,6 +3650,22 @@ async def upload_silence_audio(request: Request, file: UploadFile = File(...)):
     return {"ok": True, "audio_file": fname}
 
 
+@app.post("/api/admin/upload/logo")
+async def upload_logo(request: Request, file: UploadFile = File(...)):
+    require_moder(request)
+    _ALLOWED = {".png", ".jpg", ".jpeg", ".webp", ".gif", ".svg"}
+    ext = os.path.splitext(file.filename or "")[1].lower()
+    if ext not in _ALLOWED:
+        raise HTTPException(400, f"Дозволені формати: {', '.join(_ALLOWED)}")
+    raw = await file.read()
+    if len(raw) > 2_000_000:
+        raise HTTPException(400, "Файл завеликий (макс 2 МБ)")
+    safe_name = f"logo_{int(time.time())}{ext}"
+    with open(os.path.join("img", safe_name), "wb") as fh:
+        fh.write(raw)
+    return {"url": f"/img/{safe_name}"}
+
+
 @app.post("/api/admin/minute-silence/test-start")
 def silence_test_start(request: Request):
     require_moder(request)
@@ -3695,4 +3852,728 @@ def seo_stats(request: Request):
         "daily_by_bot": [{"day": str(r["day"]), "bot": r["bot_name"], "cnt": r["cnt"]} for r in daily_by_bot],
         "top_pages":    [{"path": r["path"], "cnt": r["cnt"], "bots": r["bots"]} for r in top_pages],
         "recent":       [{"bot": r["bot_name"], "path": r["path"], "ts": r["created_at"]} for r in recent],
+    }
+
+
+# ── SEO ───────────────────────────────────────────────────
+
+def _google_index_notify(url: str, notification_type: str = "URL_UPDATED"):
+    """Send URL to Google Indexing API. No-op if not configured."""
+    key_file = os.getenv("GOOGLE_INDEXING_KEY_FILE")
+    if not key_file or not os.path.exists(key_file):
+        return {"ok": False, "reason": "not configured"}
+    try:
+        import google.auth
+        import google.auth.transport.requests
+        from google.oauth2 import service_account
+
+        creds = service_account.Credentials.from_service_account_file(
+            key_file,
+            scopes=["https://www.googleapis.com/auth/indexing"],
+        )
+        session = google.auth.transport.requests.Request()
+        creds.refresh(session)
+        body = json.dumps({"url": url, "type": notification_type}).encode()
+        req = urllib.request.Request(
+            "https://indexing.googleapis.com/v3/urlNotifications:publish",
+            data=body,
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {creds.token}",
+            },
+            method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            resp_body = resp.read().decode()
+        # log to DB
+        try:
+            db2 = get_db()
+            with db2.cursor() as c2:
+                c2.execute(
+                    "INSERT INTO seo_index_log (url,notification_type,status,response,created_at)"
+                    " VALUES (%s,%s,'sent',%s,%s)",
+                    (url, notification_type, resp_body[:2000], int(time.time()))
+                )
+            db2.commit(); db2.close()
+        except Exception:
+            pass
+        return {"ok": True}
+    except Exception as e:
+        return {"ok": False, "reason": str(e)}
+
+
+def _build_memorial_seo(row: dict) -> dict:
+    """Build full SEO context dict from a memorial row."""
+    full_name = ' '.join(filter(None, [row.get('last'), row.get('first'), row.get('mid')])).strip() or 'Захисник'
+    slug      = row.get('slug') or str(row['id'])
+    canonical_url = f"{_SITE_BASE_URL}/memorial/{slug}"
+
+    # ── Photo: real vs placeholder ────────────────────────
+    photo = (row.get('photo') or '').strip()
+    has_real_photo = bool(photo and len(photo) > 5 and '/foto_false' not in photo)
+    if has_real_photo:
+        photo_abs = photo if photo.startswith('http') else f"{_SITE_BASE_URL}{photo}"
+    else:
+        photo_abs = ''
+
+    title       = gen_seo_title(row)
+    description = gen_seo_description(row)
+    keywords    = gen_seo_keywords(row)
+
+    # ── ImageObject (only when real photo exists) ─────────
+    image_obj = None
+    if has_real_photo:
+        image_obj = {
+            "@type":       "ImageObject",
+            "url":         photo_abs,
+            "contentUrl":  photo_abs,
+            "description": f"{full_name} — фото захисника України",
+        }
+
+    # ── Person JSON-LD ────────────────────────────────────
+    person_ld: dict = {
+        "@context":    "https://schema.org",
+        "@type":       "Person",
+        "@id":         canonical_url + "#person",
+        "name":        full_name,
+        "url":         canonical_url,
+        "description": description,
+    }
+    if image_obj:
+        person_ld["image"] = image_obj
+    if row.get('first'):
+        person_ld["givenName"]  = row['first']
+    if row.get('last'):
+        person_ld["familyName"] = row['last']
+    if row.get('rank'):
+        person_ld["jobTitle"] = row['rank']
+    if row.get('grp'):
+        person_ld["alternateName"] = row['grp']
+    if row.get('birth'):
+        person_ld["birthDate"] = row['birth']
+    if row.get('death'):
+        person_ld["deathDate"] = row['death']
+    if row.get('loc'):
+        person_ld["deathPlace"] = {"@type": "Place", "name": row['loc']}
+    if row.get('unit'):
+        person_ld["memberOf"] = {"@type": "MilitaryOrganization", "name": row['unit']}
+    person_ld["nationality"] = {"@type": "Country", "name": "Україна"}
+
+    # ── Article JSON-LD ───────────────────────────────────
+    article_ld: dict = {
+        "@context":    "https://schema.org",
+        "@type":       "Article",
+        "headline":    title,
+        "description": description,
+        "url":         canonical_url,
+        "mainEntity":  {"@id": canonical_url + "#person"},
+        "about":       {"@id": canonical_url + "#person"},
+        "publisher": {
+            "@type": "Organization",
+            "name":  "Зоряна Пам'ять",
+            "url":   _SITE_BASE_URL,
+        },
+        "inLanguage": "uk",
+    }
+    if image_obj:
+        article_ld["image"] = image_obj
+    if row.get('death'):
+        _death_date = str(row['death'])[:10]
+        article_ld["datePublished"] = _death_date
+        article_ld["dateModified"]  = _death_date
+
+    # ── BreadcrumbList JSON-LD (2 рівні, без фейкового середнього) ────
+    breadcrumb_ld = {
+        "@context": "https://schema.org",
+        "@type":    "BreadcrumbList",
+        "itemListElement": [
+            {"@type": "ListItem", "position": 1, "name": "Головна", "item": _SITE_BASE_URL + "/"},
+            {"@type": "ListItem", "position": 2, "name": full_name,  "item": canonical_url},
+        ]
+    }
+
+    return {
+        "title":         title,
+        "description":   description,
+        "keywords":      keywords,
+        "full_name":     full_name,
+        "first_name":    row.get('first') or '',
+        "last_name":     row.get('last')  or '',
+        "slug":          slug,
+        "canonical_url": canonical_url,
+        "og_image":      photo_abs,
+        "photo_url":     (photo if has_real_photo else '/img/foto_false.png'),
+        "json_ld":       json.dumps(person_ld,   ensure_ascii=False),
+        "article_ld":    json.dumps(article_ld,  ensure_ascii=False),
+        "breadcrumb_ld": json.dumps(breadcrumb_ld, ensure_ascii=False),
+        "rank":          row.get('rank')     or '',
+        "unit":          row.get('unit')     or '',
+        "position":      row.get('position') or '',
+        "grp":           row.get('grp')      or '',
+        "birth":         row.get('birth')    or '',
+        "death":         row.get('death')    or '',
+        "loc":           row.get('loc')      or '',
+        "bury":          row.get('bury')     or '',
+        "descr":         row.get('descr')    or '',
+    }
+
+
+@app.get("/memorial/{slug}")
+def memorial_seo_page(slug: str, request: Request):
+    cache_key = f"seo:{slug}"
+    cached_html = cache_get(cache_key)
+    if cached_html:
+        return HTMLResponse(content=cached_html, headers={"Cache-Control": "public, max-age=300"})
+
+    db = get_db()
+    with db.cursor() as c:
+        c.execute(
+            "SELECT * FROM memorials WHERE slug=%s AND approved=1",
+            (slug,)
+        )
+        row = c.fetchone()
+    db.close()
+    if not row:
+        raise HTTPException(404, "Меморіал не знайдено")
+
+    ctx = _build_memorial_seo(row)
+    resp = _TEMPLATES.TemplateResponse(request=request, name="memorial.html", context=ctx)
+    try:
+        html_str = resp.body.decode()
+    except Exception:
+        html_str = ""
+    if html_str:
+        cache_set(cache_key, html_str, ttl=300)
+    resp.headers["Cache-Control"] = "public, max-age=300"
+    return resp
+
+
+@app.get("/api/memorial/by-slug/{slug}")
+def get_memorial_by_slug(slug: str):
+    db = get_db()
+    with db.cursor() as c:
+        c.execute(
+            "SELECT id,last,first,mid,birth,death,bury,loc,circ,descr,photo,color,pos_x,pos_y,"
+            "grp,`rank`,`position`,unit,likes,rating,video_url,slug "
+            "FROM memorials WHERE slug=%s AND approved=1",
+            (slug,)
+        )
+        row = c.fetchone()
+    db.close()
+    if not row:
+        raise HTTPException(404, "Не знайдено")
+    return row
+
+
+@app.get("/sitemap.xml")
+def sitemap():
+    cached = cache_get("sitemap")
+    if cached:
+        return StreamingResponse(io.StringIO(cached), media_type="application/xml")
+
+    db = get_db()
+    with db.cursor() as c:
+        c.execute(
+            "SELECT slug, last, first, death, photo, video_url, descr FROM memorials "
+            "WHERE approved=1 AND slug IS NOT NULL AND slug!='' ORDER BY id"
+        )
+        rows = c.fetchall()
+    db.close()
+
+    lines = [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"',
+        '        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"',
+        '        xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">',
+    ]
+    lines.append(
+        f'  <url><loc>{_SITE_BASE_URL}/</loc>'
+        f'<priority>1.0</priority><changefreq>daily</changefreq></url>'
+    )
+    for r in rows:
+        loc  = f"{_SITE_BASE_URL}/memorial/{r['slug']}"
+        name = f"{r.get('last','')} {r.get('first','')}".strip()
+        lastmod = ""
+        if r.get('death'):
+            try:
+                d = str(r['death'])[:10]
+                if len(d) == 10:
+                    lastmod = f"\n    <lastmod>{d}</lastmod>"
+            except Exception:
+                pass
+        # Image tag if photo exists
+        img_block = ""
+        photo = (r.get('photo') or '').strip()
+        if photo and len(photo) > 5:
+            photo_abs = photo if photo.startswith('http') else f"{_SITE_BASE_URL}{photo}"
+            img_block = (
+                f"\n    <image:image>"
+                f"<image:loc>{photo_abs}</image:loc>"
+                f"<image:title>{name} — фото захисника України</image:title>"
+                f"<image:caption>{name}, Захисник України</image:caption>"
+                f"</image:image>"
+            )
+        # Video tag if YouTube URL
+        vid_block = ""
+        video_url = (r.get('video_url') or '').strip()
+        if video_url:
+            import re as _re
+            _vm = _re.search(r'(?:v=|youtu\.be/)([A-Za-z0-9_-]{11})', video_url)
+            if _vm:
+                _vid_id = _vm.group(1)
+                _vdesc = (r.get('descr') or '')[:100].replace('&', '&amp;').replace('<', '').replace('>', '')
+                _vtitle = f"{name} — відео спогад"
+                vid_block = (
+                    f"\n    <video:video>"
+                    f"<video:thumbnail_loc>https://img.youtube.com/vi/{_vid_id}/hqdefault.jpg</video:thumbnail_loc>"
+                    f"<video:title>{_vtitle}</video:title>"
+                    f"<video:description>{_vdesc}</video:description>"
+                    f"<video:player_loc>https://www.youtube.com/embed/{_vid_id}</video:player_loc>"
+                    f"<video:family_friendly>yes</video:family_friendly>"
+                    f"</video:video>"
+                )
+        lines.append(
+            f"  <url>\n    <loc>{loc}</loc>{lastmod}"
+            f"\n    <priority>0.8</priority><changefreq>monthly</changefreq>"
+            f"{img_block}{vid_block}\n  </url>"
+        )
+    lines.append('</urlset>')
+    xml = "\n".join(lines)
+    cache_set("sitemap", xml, ttl=600)
+    return StreamingResponse(io.StringIO(xml), media_type="application/xml")
+
+
+@app.get("/robots.txt")
+def robots():
+    content = (
+        f"User-agent: *\n"
+        f"Allow: /\n"
+        f"Allow: /memorial/\n"
+        f"Allow: /sitemap.xml\n"
+        f"Disallow: /admin\n"
+        f"Disallow: /api/\n\n"
+        f"User-agent: Googlebot\n"
+        f"Allow: /\n"
+        f"Allow: /memorial/\n"
+        f"Crawl-delay: 1\n\n"
+        f"Sitemap: {_SITE_BASE_URL}/sitemap.xml\n"
+    )
+    return StreamingResponse(io.StringIO(content), media_type="text/plain")
+
+
+@app.get("/api/admin/seo-dashboard")
+def admin_seo_dashboard(request: Request):
+    require_moder(request)
+    db = get_db()
+    with db.cursor() as c:
+        c.execute("SELECT COUNT(*) AS cnt FROM memorials WHERE approved=1")
+        total = c.fetchone()["cnt"]
+        c.execute("SELECT COUNT(*) AS cnt FROM memorials WHERE approved=1 AND slug IS NOT NULL AND slug!=''")
+        with_slug = c.fetchone()["cnt"]
+        c.execute("SELECT COUNT(*) AS cnt FROM memorials WHERE approved=1 AND (slug IS NULL OR slug='')")
+        without_slug = c.fetchone()["cnt"]
+        c.execute("SELECT COUNT(*) AS cnt FROM memorials WHERE approved=1 AND video_url IS NOT NULL AND video_url!=''")
+        with_video = c.fetchone()["cnt"]
+        c.execute("SELECT id,last,first,slug FROM memorials WHERE approved=1 AND slug IS NOT NULL AND slug!='' ORDER BY id LIMIT 20")
+        sample_urls = c.fetchall()
+        c.execute("SELECT url,notification_type,status,created_at FROM seo_index_log ORDER BY id DESC LIMIT 20")
+        index_log = c.fetchall()
+        # Per-field fill rates
+        _t = total or 1
+        _field_conditions = {
+            'photo':      "photo IS NOT NULL AND photo!='' AND photo NOT LIKE '/img/foto_false%' AND LENGTH(photo)>5",
+            'descr_full': "descr IS NOT NULL AND LENGTH(TRIM(descr))>=150",
+            'descr_any':  "descr IS NOT NULL AND LENGTH(TRIM(descr))>0",
+            'unit':       "unit IS NOT NULL AND unit!=''",
+            'rank':       "`rank` IS NOT NULL AND `rank`!=''",
+            'position':   "`position` IS NOT NULL AND `position`!=''",
+            'death':      "death IS NOT NULL AND death!=''",
+            'birth':      "birth IS NOT NULL AND birth!=''",
+            'loc':        "loc IS NOT NULL AND loc!=''",
+            'grp':        "grp IS NOT NULL AND grp!=''",
+            'video':      "video_url IS NOT NULL AND video_url!=''",
+        }
+        field_stats = {}
+        for key, cond in _field_conditions.items():
+            c.execute(f"SELECT COUNT(*) AS n FROM memorials WHERE approved=1 AND {cond}")
+            cnt = (c.fetchone() or {}).get('n', 0)
+            field_stats[key] = {"count": cnt, "pct": round(cnt * 100 / _t)}
+        # Fetch all rows for score analysis
+        c.execute(
+            "SELECT id, photo, descr, unit, `rank`, `position`, death, birth, loc, grp, last, first, mid "
+            "FROM memorials WHERE approved=1"
+        )
+        all_rows = c.fetchall()
+    db.close()
+
+    # Score distribution + issue frequency aggregation
+    grade_dist = {"A": 0, "B": 0, "C": 0, "D": 0}
+    scores = []
+    worst_10 = []
+    issue_freq: dict = {}
+    for r in all_rows:
+        s = calc_seo_score(r)
+        grade_dist[s['grade']] = grade_dist.get(s['grade'], 0) + 1
+        scores.append(s['score'])
+        worst_10.append({
+            "id":     r['id'],
+            "name":   f"{r.get('last','')} {r.get('first','')}".strip(),
+            "score":  s['score'],
+            "grade":  s['grade'],
+            "issues": s['issues'][:2],
+        })
+        for issue in s['issues']:
+            issue_freq[issue] = issue_freq.get(issue, 0) + 1
+    worst_10.sort(key=lambda x: x['score'])
+    avg_score = round(sum(scores) / len(scores), 1) if scores else 0
+    top_issues = sorted(issue_freq.items(), key=lambda x: -x[1])[:6]
+
+    google_configured = bool(
+        os.getenv("GOOGLE_INDEXING_KEY_FILE") and
+        os.path.exists(os.getenv("GOOGLE_INDEXING_KEY_FILE", ""))
+    )
+    return {
+        "total":        total,
+        "with_slug":    with_slug,
+        "without_slug": without_slug,
+        "with_video":   with_video,
+        "sitemap_url":  f"{_SITE_BASE_URL}/sitemap.xml",
+        "sitemap_count": with_slug,
+        "avg_score":    avg_score,
+        "grade_dist":   grade_dist,
+        "worst_10":     worst_10[:10],
+        "field_stats":  field_stats,
+        "top_issues":   [{"text": t, "count": c} for t, c in top_issues],
+        "sample_urls": [
+            {"id": r["id"], "name": f"{r['last']} {r['first']}", "slug": r["slug"],
+             "url": f"{_SITE_BASE_URL}/memorial/{r['slug']}"}
+            for r in sample_urls
+        ],
+        "google_configured": google_configured,
+        "index_log": [
+            {"url": r["url"], "type": r["notification_type"], "status": r["status"], "ts": r["created_at"]}
+            for r in index_log
+        ],
+    }
+
+
+@app.post("/api/admin/seo/regenerate-slugs")
+def regenerate_slugs(request: Request):
+    require_moder(request)
+    db = get_db()
+    with db.cursor() as c:
+        c.execute("SELECT id, first, last FROM memorials WHERE slug IS NULL OR slug=''")
+        rows = c.fetchall()
+    updated = 0
+    with db.cursor() as c:
+        for r in rows:
+            sl = make_slug(r['first'], r['last'], r['id'])
+            try:
+                c.execute("UPDATE memorials SET slug=%s WHERE id=%s", (sl, r['id']))
+                updated += 1
+            except Exception:
+                pass
+    db.commit()
+    db.close()
+    cache_delete("sitemap")
+    return {"ok": True, "updated": updated}
+
+
+@app.post("/api/admin/seo/ping-google")
+def ping_google_indexing(request: Request):
+    require_moder(request)
+    key_file = os.getenv("GOOGLE_INDEXING_KEY_FILE")
+    if not key_file or not os.path.exists(key_file or ""):
+        return {"ok": False, "reason": "not configured"}
+    db = get_db()
+    with db.cursor() as c:
+        c.execute(
+            "SELECT slug FROM memorials WHERE approved=1 AND slug IS NOT NULL AND slug!='' ORDER BY id DESC LIMIT 10"
+        )
+        rows = c.fetchall()
+    db.close()
+    results = []
+    for r in rows:
+        url = f"{_SITE_BASE_URL}/memorial/{r['slug']}"
+        res = _google_index_notify(url)
+        results.append({"url": url, **res})
+    return {"ok": True, "results": results}
+
+
+@app.get("/api/admin/seo/analyze/{mid}")
+def seo_analyze_memorial(mid: int, request: Request):
+    """Return SEO score + recommendations for a single memorial."""
+    require_moder(request)
+    db = get_db()
+    with db.cursor() as c:
+        c.execute("SELECT * FROM memorials WHERE id=%s", (mid,))
+        row = c.fetchone()
+    db.close()
+    if not row:
+        raise HTTPException(404, "Не знайдено")
+    result = calc_seo_score(row)
+    result["id"]       = mid
+    result["name"]     = f"{row.get('last','')} {row.get('first','')}".strip()
+    result["slug"]     = row.get('slug') or ''
+    result["url"]      = f"{_SITE_BASE_URL}/memorial/{row['slug']}" if row.get('slug') else ''
+    result["title"]    = gen_seo_title(row)
+    result["descr_len"] = len((row.get('descr') or ''))
+    return result
+
+
+@app.get("/api/admin/seo/scores")
+def seo_scores_all(request: Request, limit: int = 50, grade: str = ""):
+    """Return memorials sorted by SEO score ascending (worst first)."""
+    require_moder(request)
+    db = get_db()
+    with db.cursor() as c:
+        c.execute(
+            "SELECT id, last, first, mid, photo, descr, unit, `rank`, death, birth, loc, grp, slug "
+            "FROM memorials WHERE approved=1 ORDER BY id"
+        )
+        rows = c.fetchall()
+    db.close()
+
+    scored = []
+    for r in rows:
+        s = calc_seo_score(r)
+        if grade and s['grade'] != grade.upper():
+            continue
+        scored.append({
+            "id":    r['id'],
+            "name":  f"{r.get('last','')} {r.get('first','')}".strip(),
+            "slug":  r.get('slug') or '',
+            "score": s['score'],
+            "grade": s['grade'],
+            "issues": s['issues'],
+            "tips":   s['tips'],
+        })
+
+    scored.sort(key=lambda x: x['score'])
+    total = len(scored)
+    grade_dist = {"A": 0, "B": 0, "C": 0, "D": 0}
+    all_scored = []
+    for r in rows:
+        s = calc_seo_score(r)
+        grade_dist[s['grade']] = grade_dist.get(s['grade'], 0) + 1
+        all_scored.append(s['score'])
+    avg = round(sum(all_scored) / len(all_scored), 1) if all_scored else 0
+
+    return {
+        "total":      total,
+        "avg_score":  avg,
+        "grade_dist": grade_dist,
+        "items":      scored[:limit],
+    }
+
+
+# ── Broken Links Checker ─────────────────────────────────────────────────────
+
+def _check_links_bg():
+    import urllib.request as _urlreq
+    import time as _time
+    db2 = get_db()
+    with db2.cursor() as c2:
+        c2.execute(
+            "SELECT id, photo FROM memorials "
+            "WHERE approved=1 AND photo IS NOT NULL AND photo!='' AND photo NOT LIKE '/%%'"
+        )
+        photo_rows = c2.fetchall()
+    db2.close()
+    for row in photo_rows:
+        url = (row.get('photo') or '').strip()
+        if not url or url.startswith('/'):
+            continue
+        try:
+            req = _urlreq.Request(url, method='HEAD')
+            req.add_header('User-Agent', 'ZoryanaPamyat-SEO/1.0')
+            resp = _urlreq.urlopen(req, timeout=5)
+            code = resp.status
+        except Exception:
+            code = 0
+        is_broken = 1 if (code == 0 or code >= 400) else 0
+        ts = int(_time.time())
+        try:
+            db3 = get_db()
+            with db3.cursor() as c3:
+                c3.execute(
+                    "INSERT INTO seo_broken_links "
+                    "(memorial_id, url, link_type, status_code, last_checked, is_broken) "
+                    "VALUES (%s, %s, 'photo', %s, %s, %s) "
+                    "ON DUPLICATE KEY UPDATE status_code=%s, last_checked=%s, is_broken=%s",
+                    (row['id'], url, code, ts, is_broken, code, ts, is_broken)
+                )
+            db3.commit()
+            db3.close()
+        except Exception:
+            pass
+
+
+@app.post("/api/admin/seo/check-broken-links")
+def check_broken_links(request: Request):
+    require_moder(request)
+    db = get_db()
+    with db.cursor() as c:
+        c.execute(
+            "SELECT COUNT(*) as n FROM memorials "
+            "WHERE approved=1 AND photo IS NOT NULL AND photo!='' AND photo NOT LIKE '/%%'"
+        )
+        total = (c.fetchone() or {}).get('n', 0)
+    db.close()
+    import threading as _thr
+    t = _thr.Thread(target=_check_links_bg, daemon=True)
+    t.start()
+    return {"started": True, "total": total}
+
+
+@app.get("/api/admin/seo/broken-links")
+def get_broken_links(request: Request):
+    require_moder(request)
+    db = get_db()
+    with db.cursor() as c:
+        c.execute(
+            "SELECT bl.id, bl.memorial_id, bl.url, bl.status_code, bl.last_checked, bl.is_broken, "
+            "       m.last, m.first, m.slug "
+            "FROM seo_broken_links bl "
+            "LEFT JOIN memorials m ON m.id = bl.memorial_id "
+            "WHERE bl.is_broken = 1 "
+            "ORDER BY bl.last_checked DESC LIMIT 200"
+        )
+        broken = c.fetchall()
+        c.execute("SELECT COUNT(*) as n FROM seo_broken_links WHERE is_broken=1")
+        total = (c.fetchone() or {}).get('n', 0)
+        c.execute("SELECT MAX(last_checked) as ts FROM seo_broken_links")
+        last_ts = (c.fetchone() or {}).get('ts') or 0
+    db.close()
+    return {
+        "total": total,
+        "last_checked": last_ts,
+        "broken": [
+            {
+                "id":          r['memorial_id'],
+                "slug":        r.get('slug') or '',
+                "name":        f"{r.get('last','')} {r.get('first','')}".strip(),
+                "url":         r['url'],
+                "status_code": r.get('status_code'),
+                "last_checked": r.get('last_checked'),
+            }
+            for r in broken
+        ],
+    }
+
+
+# ── Duplicate Detection ───────────────────────────────────────────────────────
+
+@app.get("/api/admin/seo/duplicates")
+def seo_duplicates(request: Request):
+    require_moder(request)
+    db = get_db()
+    with db.cursor() as c:
+        c.execute(
+            "SELECT last, first, COUNT(*) as cnt, "
+            "GROUP_CONCAT(id ORDER BY id SEPARATOR ',') as ids, "
+            "GROUP_CONCAT(IFNULL(death,'') ORDER BY id SEPARATOR '|') as deaths "
+            "FROM memorials "
+            "WHERE approved=1 "
+            "GROUP BY LOWER(TRIM(last)), LOWER(TRIM(first)) "
+            "HAVING cnt > 1 "
+            "ORDER BY cnt DESC "
+            "LIMIT 100"
+        )
+        rows = c.fetchall()
+    db.close()
+    groups = []
+    for r in rows:
+        ids = [int(x) for x in (r['ids'] or '').split(',') if x.strip().isdigit()]
+        deaths = (r['deaths'] or '').split('|')
+        groups.append({
+            "last":   r.get('last') or '',
+            "first":  r.get('first') or '',
+            "cnt":    r['cnt'],
+            "ids":    ids,
+            "deaths": deaths,
+        })
+    return {"total_groups": len(groups), "groups": groups}
+
+
+# ── SEO Score History ─────────────────────────────────────────────────────────
+
+@app.post("/api/admin/seo/snapshot")
+def seo_snapshot(request: Request):
+    require_moder(request)
+    import datetime as _dt
+    db = get_db()
+    with db.cursor() as c:
+        c.execute(
+            "SELECT id, last, first, mid, photo, descr, unit, `rank`, death, birth, loc, grp "
+            "FROM memorials WHERE approved=1"
+        )
+        all_rows = c.fetchall()
+    if not all_rows:
+        db.close()
+        return {"ok": False, "reason": "no approved memorials"}
+
+    grade_dist = {"A": 0, "B": 0, "C": 0, "D": 0}
+    scores = []
+    for r in all_rows:
+        s = calc_seo_score(r)
+        grade_dist[s['grade']] = grade_dist.get(s['grade'], 0) + 1
+        scores.append(s['score'])
+    avg = round(sum(scores) / len(scores), 2) if scores else 0
+    today = _dt.date.today().isoformat()
+
+    with db.cursor() as c:
+        c.execute(
+            "INSERT INTO seo_score_history "
+            "(snapshot_date, total_count, avg_score, count_a, count_b, count_c, count_d) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s) "
+            "ON DUPLICATE KEY UPDATE "
+            "total_count=%s, avg_score=%s, count_a=%s, count_b=%s, count_c=%s, count_d=%s",
+            (today, len(scores), avg,
+             grade_dist['A'], grade_dist['B'], grade_dist['C'], grade_dist['D'],
+             len(scores), avg,
+             grade_dist['A'], grade_dist['B'], grade_dist['C'], grade_dist['D'])
+        )
+    db.commit()
+    db.close()
+    return {
+        "ok":          True,
+        "date":        today,
+        "total":       len(scores),
+        "avg_score":   avg,
+        "count_a":     grade_dist['A'],
+        "count_b":     grade_dist['B'],
+        "count_c":     grade_dist['C'],
+        "count_d":     grade_dist['D'],
+    }
+
+
+@app.get("/api/admin/seo/score-history")
+def seo_score_history(request: Request, days: int = 30):
+    require_moder(request)
+    days = min(max(days, 1), 365)
+    db = get_db()
+    with db.cursor() as c:
+        c.execute(
+            "SELECT snapshot_date, total_count, avg_score, count_a, count_b, count_c, count_d "
+            "FROM seo_score_history "
+            "ORDER BY snapshot_date DESC LIMIT %s",
+            (days,)
+        )
+        rows = c.fetchall()
+    db.close()
+    return {
+        "days": days,
+        "history": [
+            {
+                "date":        str(r['snapshot_date']),
+                "total":       r['total_count'],
+                "avg_score":   float(r['avg_score']),
+                "count_a":     r['count_a'],
+                "count_b":     r['count_b'],
+                "count_c":     r['count_c'],
+                "count_d":     r['count_d'],
+            }
+            for r in rows
+        ],
     }
