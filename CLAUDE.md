@@ -37,7 +37,10 @@
 
 ```
 treetex/
-├── Paskal.py            # Весь backend (FastAPI, ~5500+ рядків)
+├── Paskal.py            # Весь backend (FastAPI, ~5900+ рядків)
+├── seo_utils.py         # Транслітерація KMU 2010, make_slug(), gen_seo_*()
+├── templates/
+│   └── memorial.html    # Jinja2 шаблон SSR-сторінки для Googlebot
 ├── index.html           # Головна публічна сторінка (~1MB)
 ├── admin.html           # Адмін-панель (~1.3MB)
 ├── Style.css            # Глобальні стилі (36KB)
@@ -98,9 +101,10 @@ grp VARCHAR(100)                  -- позивний/підрозділ
 added_by, video_url VARCHAR
 rank, position VARCHAR(100)       -- звання, посада
 unit VARCHAR(200)                 -- підрозділ
+slug VARCHAR(220) UNIQUE          -- SEO slug: ivan-petrenko-42 (auto-generated)
 ```
 
-**Індекси**: `FULLTEXT (last,first,mid,grp,loc,descr)`, `idx_approved_rating`, `idx_rating_likes`
+**Індекси**: `FULLTEXT (last,first,mid,grp,loc,descr)`, `idx_approved_rating`, `idx_rating_likes`, `idx_slug (UNIQUE)`
 
 #### `users` — акаунти
 ```sql
@@ -213,6 +217,28 @@ id, query, results_count, created_at
 | Метод | Endpoint | Опис |
 |-------|----------|------|
 | GET | `/api/awards/catalog` | Список нагород з `awards_catalog` (name, img_file, category, description, sort_order) |
+
+### SEO (публічні + адмін)
+| Метод | Endpoint | Опис |
+|-------|----------|------|
+| GET | `/memorial/{slug}` | SSR-сторінка меморіалу (для Googlebot + шеринг). Jinja2 render, Redis TTL 300s |
+| GET | `/api/memorial/by-slug/{slug}` | JSON картки за slug (для SPA) |
+| GET | `/sitemap.xml` | XML sitemap всіх схвалених меморіалів. Redis TTL 600s |
+| GET | `/robots.txt` | Allow /memorial/, Disallow /admin /api/ |
+| GET | `/api/admin/seo-dashboard` | Статистика slug, лог Google Indexing API |
+| POST | `/api/admin/seo/regenerate-slugs` | Перегенерувати порожні slug |
+| POST | `/api/admin/seo/ping-google` | Відправити URL до Google Indexing API |
+| GET | `/api/admin/seo/analyze/{mid}` | SEO score + рекомендації для однієї картки |
+| GET | `/api/admin/seo/scores` | Всі картки відсортовані за SEO score (worst first) |
+| POST | `/api/admin/seo/check-broken-links` | Запустити перевірку битих фото URL (background thread) |
+| GET | `/api/admin/seo/broken-links` | Список битих фото посилань з `seo_broken_links` |
+| GET | `/api/admin/seo/duplicates` | Групи меморіалів з однаковим ПІБ |
+| POST | `/api/admin/seo/snapshot` | Зберегти знімок SEO score розподілу в `seo_score_history` |
+| GET | `/api/admin/seo/score-history` | Історія знімків SEO балів (для Chart.js) |
+
+**Slug формат:** `{first}-{last}-{id}` — транслітерація KMU 2010, суфікс id гарантує унікальність.  
+**Google Indexing API:** активується через `.env`: `GOOGLE_INDEXING_KEY_FILE=google-service-account.json`, `SITE_BASE_URL=https://yoursite.ua`  
+**Sitemap:** включає `xmlns:image` (фото) та `xmlns:video` (YouTube відео) блоки.
 
 ---
 
@@ -392,6 +418,10 @@ SECRET_KEY=...
 
 ### Frontend
 - SVG іконки в admin.html — inline sprite (`#ico-*`), не fonticons
+- **ОБОВ'ЯЗКОВО**: у nav-item і sec-title ЗАБОРОНЕНО емодзі. Тільки `<svg class="adm-ico"><use href="#ico-NAME"/></svg>`. Приклад: `<span class="nav-ico"><svg class="adm-ico"><use href="#ico-search"/></svg></span>` та `<div class="sec-title"><svg class="adm-ico"><use href="#ico-search"/></svg> Заголовок</div>`
+- **ОБОВ'ЯЗКОВО**: у кнопках (`.btn`) ЗАБОРОНЕНО емодзі. Тільки SVG спрайт: `<button class="btn"><svg class="adm-ico"><use href="#ico-NAME"/></svg> Текст</button>`
+- Наявні іконки спрайту: `#ico-stats`, `#ico-doc`, `#ico-hourglass`, `#ico-users`, `#ico-auth`, `#ico-email`, `#ico-palette`, `#ico-share`, `#ico-smoke`, `#ico-waves`, `#ico-star`, `#ico-photo`, `#ico-city`, `#ico-candle`, `#ico-search`, `#ico-check`, `#ico-cross`, `#ico-edit`, `#ico-trash`, `#ico-plus`, `#ico-map`
+- **Кнопки CSS**: базовий `.btn` — чорний фон `#111318`. `.btn-p` — чорний фон з синьою рамкою (`border-color:rgba(0,136,187,.6);color:#a8e0f8`). `.btn-r/g/b` — чорний фон зі своїм кольором рамки/тексту
 - CSS через `var(--variable)` для підтримки тем
 - `applySocialLinks()` викликати після `loadColors()` в index.html
 - `BroadcastChannel('zoryana_colors')` для синхронізації між вкладками
