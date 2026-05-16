@@ -38,7 +38,9 @@
       "Bash(curl -sI \"https://build.protomaps.com/20241201.pmtiles\")",
       "Bash(curl -sI \"https://build.protomaps.com/20241101.pmtiles\")",
       "Bash(curl -sI \"https://build.protomaps.com/20241001.pmtiles\")",
-      "PowerShell(docker run --rm alpine sh -c \"wget -q --spider https://download.geofabrik.de/ 2>&1; echo exit:$?\")"
+      "PowerShell(docker run --rm alpine sh -c \"wget -q --spider https://download.geofabrik.de/ 2>&1; echo exit:$?\")",
+      "Bash(Get-ChildItem -Path \"d:\\\\OSPanel\\\\OpenServer\\\\domains\\\\localhost\\\\treetex\" -Recurse -Name)",
+      "Bash(Select-Object -First 50)"
     ],
     "additionalDirectories": [
       "D:\\OSPanel\\OpenServer\\domains\\localhost\\mpu\\backend",
