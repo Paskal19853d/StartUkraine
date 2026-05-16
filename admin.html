@@ -63,6 +63,18 @@ html,body{height:100%;font-family:"Segoe UI",sans-serif;background:var(--bg);col
 .nav-item:hover .nav-drag{opacity:.5}
 .nav-item.nav-dragging{opacity:.35;background:rgba(0,170,221,.05)}
 .nav-item.nav-over{border-top:2px solid var(--accent);margin-top:-2px}
+.nav-group-hdr{display:flex;align-items:center;gap:9px;padding:10px 16px;cursor:pointer;color:var(--text2);border-left:2px solid transparent;transition:all .12s;font-size:12px;user-select:none}
+.nav-group-hdr:hover{background:rgba(255,255,255,.03);color:var(--text)}
+.nav-group-arrow{margin-left:auto;font-size:10px;opacity:.4;transition:transform .2s ease;flex-shrink:0}
+.nav-group.collapsed .nav-group-arrow{transform:rotate(-90deg)}
+.nav-group-hdr:hover .nav-drag{opacity:.5}
+.nav-group-body{overflow:hidden;position:relative}
+.nav-group-body::before{content:'';position:absolute;left:27px;top:0;bottom:10px;border-left:1px dashed rgba(79,195,247,.2)}
+.nav-group.collapsed .nav-group-body{display:none}
+.nav-group-body .nav-item{padding-left:44px;position:relative}
+.nav-group-body .nav-item::before{content:'';position:absolute;left:27px;top:50%;width:11px;border-top:1px dashed rgba(79,195,247,.2)}
+.nav-group.nav-dragging{opacity:.35;background:rgba(0,170,221,.05)}
+.nav-group.nav-over{border-top:2px solid var(--accent);margin-top:-2px}
 .sb-bottom{margin-top:auto;padding:12px 16px;border-top:1px solid var(--border)}
 .sb-bottom p{font-size:10px;color:var(--muted);margin-bottom:4px}
 .sb-bottom strong{color:var(--text2)}
@@ -459,7 +471,18 @@ tr:hover td{background:rgba(255,255,255,.02)}
     <div class="nav-item"        draggable="true" onclick="showSec('silence')"   data-s="silence">   <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-candle"/></svg></span>Хв. Мовчання</div>
     <div class="nav-item"        draggable="true" onclick="showSec('seo')"     data-s="seo">     <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-search"/></svg></span>SEO</div>
     <div class="nav-item"        draggable="true" onclick="showSec('card')"    data-s="card">    <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-star"/></svg></span>Картка</div>
-    <div class="nav-item"        draggable="true" onclick="showSec('version')" data-s="version"> <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-doc"/></svg></span>Версія</div>
+    <div class="nav-group" id="navg-admin" draggable="true">
+      <div class="nav-group-hdr" onclick="_toggleNavGroup('navg-admin')">
+        <span class="nav-drag">⠿</span>
+        <span class="nav-ico"><svg class="adm-ico"><use href="#ico-edit"/></svg></span>
+        Адміністрування
+        <span class="nav-group-arrow">›</span>
+      </div>
+      <div class="nav-group-body">
+        <div class="nav-item" onclick="showSec('version')" data-s="version"><span class="nav-ico"><svg class="adm-ico"><use href="#ico-doc"/></svg></span>Версія</div>
+      </div>
+    </div>
+    <div class="nav-item"        draggable="true" onclick="showSec('google')"  data-s="google">  <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-auth"/></svg></span>Google</div>
     </div>
     <div class="sb-bottom">
       <p>Адмін: <strong id="adm-name">—</strong> <span id="adm-role-badge" style="font-size:9px;margin-left:4px"></span></p>
@@ -3867,6 +3890,120 @@ tr:hover td{background:rgba(255,255,255,.02)}
         </div>
       </div><!-- /sec-version -->
 
+      <!-- ═══════════════ GOOGLE MODULE ═══════════════ -->
+      <div id="sec-google" class="section">
+        <div class="sec-title"><svg class="adm-ico"><use href="#ico-auth"/></svg> Google</div>
+
+        <!-- ① Google OAuth -->
+        <div class="rg-group">
+          <div class="rg-group-title">Google OAuth — авторизація користувачів</div>
+          <div class="rg-row">
+            <div class="rg-row-info">
+              <div class="rg-row-label">Статус підключення</div>
+              <div class="rg-row-desc">Client ID та Client Secret зчитуються з файлу <code>.env</code> при старті сервера</div>
+            </div>
+            <div id="g-oauth-status" style="font-size:13px;color:var(--muted)">— перевірка…</div>
+          </div>
+          <div class="rg-row" style="border-bottom:none">
+            <div class="rg-row-info">
+              <div class="rg-row-label">Увімкнути вхід через Google</div>
+              <div class="rg-row-desc">Показувати кнопку «Увійти через Google» на сторінці авторизації</div>
+            </div>
+            <label class="rg-toggle">
+              <input type="checkbox" id="g-allow-google" onchange="_saveGoogleToggle('reg_allow_google', this.checked)">
+              <span class="rg-slider"></span>
+            </label>
+          </div>
+        </div>
+        <div style="background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:18px;max-width:720px;font-size:12px;color:var(--muted);line-height:1.8">
+          <b style="color:var(--text)"><i class="fi-rr-info"></i> Як налаштувати Google OAuth:</b><br>
+          1. Відкрити <a href="https://console.cloud.google.com/apis/credentials" target="_blank" style="color:var(--accent)">Google Cloud Console → Credentials</a><br>
+          2. Створити OAuth 2.0 Client ID (тип: <b>Web application</b>)<br>
+          3. Додати Authorized redirect URI:<br>
+          <code id="g-redirect-uri" style="display:inline-block;margin:4px 0;padding:4px 8px;background:var(--bg);border-radius:4px;color:var(--text)">http://127.0.0.1:8000/api/auth/google/callback</code><br>
+          4. Додати до файлу <code>.env</code> на сервері:<br>
+          <code style="display:block;margin-top:6px;padding:8px 12px;background:var(--bg);border-radius:4px;color:var(--text)">GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com<br>GOOGLE_CLIENT_SECRET=your-secret</code><br>
+          5. Перезапустити сервер
+        </div>
+
+        <!-- ② Google Search Console -->
+        <div class="rg-group">
+          <div class="rg-group-title">Google Search Console — верифікація сайту</div>
+          <div class="rg-row" style="border-bottom:none">
+            <div class="rg-row-info">
+              <div class="rg-row-label">Код верифікації</div>
+              <div class="rg-row-desc">Значення атрибуту <code>content</code> з мета-тегу: <code>&lt;meta name="google-site-verification" content="<b>ВАШ КОД</b>"&gt;</code></div>
+            </div>
+            <input type="text" id="g-site-verification" placeholder="abc123XYZ..."
+              style="flex:1;min-width:220px;background:var(--panel);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:6px 10px;font-size:13px;outline:none">
+          </div>
+        </div>
+        <div style="background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:18px;max-width:720px;font-size:12px;color:var(--muted);line-height:1.8">
+          <b style="color:var(--text)"><i class="fi-rr-info"></i> Як верифікувати сайт:</b><br>
+          1. Відкрити <a href="https://search.google.com/search-console" target="_blank" style="color:var(--accent)">Google Search Console</a> → Add Property → URL prefix<br>
+          2. Вибрати метод: <b>HTML tag</b><br>
+          3. Скопіювати значення <code>content="..."</code> і вставити у поле вище<br>
+          4. Натиснути «Зберегти» → Verify в Search Console
+        </div>
+
+        <!-- ③ Google Analytics 4 -->
+        <div class="rg-group">
+          <div class="rg-group-title">Google Analytics 4</div>
+          <div class="rg-row">
+            <div class="rg-row-info">
+              <div class="rg-row-label">Увімкнути Analytics</div>
+              <div class="rg-row-desc">Підключити відстеження відвідувань сайту через GA4</div>
+            </div>
+            <label class="rg-toggle">
+              <input type="checkbox" id="g-analytics-enabled">
+              <span class="rg-slider"></span>
+            </label>
+          </div>
+          <div class="rg-row" style="border-bottom:none">
+            <div class="rg-row-info">
+              <div class="rg-row-label">Measurement ID</div>
+              <div class="rg-row-desc">Формат: <code>G-XXXXXXXXXX</code> — GA4: Admin → Data Streams → Web → Measurement ID</div>
+            </div>
+            <input type="text" id="g-analytics-id" placeholder="G-XXXXXXXXXX" maxlength="30"
+              style="flex:1;min-width:180px;background:var(--panel);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:6px 10px;font-size:13px;outline:none">
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:6px">
+          <button class="btn btn-p" onclick="_saveGoogleBatch()">
+            <svg class="adm-ico"><use href="#ico-check"/></svg> Зберегти Search Console + Analytics
+          </button>
+        </div>
+        <div id="g-batch-status" style="font-size:12px;min-height:14px;margin-bottom:18px"></div>
+
+        <!-- ④ Google Indexing API -->
+        <div class="rg-group">
+          <div class="rg-group-title">Google Indexing API — швидка індексація меморіалів</div>
+          <div class="rg-row">
+            <div class="rg-row-info">
+              <div class="rg-row-label">Статус Service Account</div>
+              <div class="rg-row-desc">JSON-ключ сервісного акаунту. Шлях у <code>.env</code>: <code>GOOGLE_INDEXING_KEY_FILE</code></div>
+            </div>
+            <div id="g-indexing-status" style="font-size:13px;color:var(--muted)">— перевірка…</div>
+          </div>
+          <div class="rg-row" style="border-bottom:none">
+            <button class="btn btn-p" onclick="seoPingGoogle()">
+              <svg class="adm-ico"><use href="#ico-search"/></svg> Надіслати 10 останніх URL до Google
+            </button>
+          </div>
+        </div>
+        <div id="g-ping-result" style="font-size:12px;color:var(--muted);margin-bottom:10px;max-height:120px;overflow-y:auto;max-width:720px"></div>
+        <div style="background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:18px;max-width:720px;font-size:12px;color:var(--muted);line-height:1.8">
+          <b style="color:var(--text)"><i class="fi-rr-info"></i> Як налаштувати Indexing API:</b><br>
+          1. <a href="https://console.cloud.google.com/apis/library/indexing.googleapis.com" target="_blank" style="color:var(--accent)">Увімкнути Google Indexing API</a> у Cloud Console<br>
+          2. IAM → Service Accounts → Create → надати доступ до Indexing API<br>
+          3. Завантажити JSON ключ → покласти на сервер (напр. <code>/var/www/google-key.json</code>)<br>
+          4. Додати до <code>.env</code>:<br>
+          <code style="display:block;margin-top:6px;padding:8px 12px;background:var(--bg);border-radius:4px;color:var(--text)">GOOGLE_INDEXING_KEY_FILE=/var/www/google-key.json<br>SITE_BASE_URL=https://yoursite.ua</code><br>
+          5. Перезапустити сервер
+        </div>
+
+      </div><!-- /sec-google -->
+
     </div><!-- /content-area -->
   </div><!-- /main -->
 </div><!-- /layout -->
@@ -4161,6 +4298,10 @@ function _renderRoleBadge() {
 }
 
 /* ══════════ NAV ══════════ */
+function _toggleNavGroup(id) {
+  document.getElementById(id).classList.toggle('collapsed');
+}
+
 function showSec(id) {
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
@@ -4184,6 +4325,7 @@ function showSec(id) {
   if(id==='seo')     loadSeoAdminDash();
   if(id==='card')    cardSettingsLoad();
   if(id==='version') versionLoad();
+  if(id==='google')  _loadGoogleSettings();
 }
 
 /* ══════════ ХВИЛИНА МОВЧАННЯ ══════════ */
@@ -4331,12 +4473,23 @@ function _silenceSetAudioPreview(fname) {
   if (!list) return;
   let dragEl = null;
 
+  // Знаходить прямого дочірнього елемента list (nav-item або nav-group)
+  function _topEl(el) {
+    while (el && el !== list) {
+      if (el.parentElement === list &&
+         (el.classList.contains('nav-item') || el.classList.contains('nav-group')))
+        return el;
+      el = el.parentElement;
+    }
+    return null;
+  }
+
   list.addEventListener('dragstart', e => {
-    dragEl = e.target.closest('.nav-item');
+    dragEl = _topEl(e.target);
     if (!dragEl) return;
     dragEl.classList.add('nav-dragging');
     e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', dragEl.dataset.s);
+    e.dataTransfer.setData('text/plain', dragEl.dataset.s || dragEl.id);
   });
 
   list.addEventListener('dragend', () => {
@@ -4348,7 +4501,7 @@ function _silenceSetAudioPreview(fname) {
   list.addEventListener('dragover', e => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
-    const target = e.target.closest('.nav-item');
+    const target = _topEl(e.target);
     if (!target || target === dragEl) return;
     list.querySelectorAll('.nav-over').forEach(el => el.classList.remove('nav-over'));
     target.classList.add('nav-over');
@@ -4361,9 +4514,8 @@ function _silenceSetAudioPreview(fname) {
 
   list.addEventListener('drop', e => {
     e.preventDefault();
-    const target = e.target.closest('.nav-item');
+    const target = _topEl(e.target);
     if (!target || target === dragEl || !dragEl) return;
-    // Вставляємо перед або після залежно від позиції курсора
     const rect = target.getBoundingClientRect();
     const after = e.clientY > rect.top + rect.height / 2;
     if (after) target.after(dragEl);
@@ -4374,8 +4526,8 @@ function _silenceSetAudioPreview(fname) {
 })();
 
 async function saveNavOrder() {
-  const items = document.querySelectorAll('#nav-list .nav-item');
-  const order = [...items].map(el => el.dataset.s).join(',');
+  const els = [...document.querySelectorAll('#nav-list > .nav-item, #nav-list > .nav-group')];
+  const order = els.map(el => el.dataset.s || el.id).join(',');
   try {
     await fetch(`${API}/api/admin/colors/batch`, {
       method: 'PUT',
@@ -4391,8 +4543,9 @@ function applyNavOrder(orderStr) {
   if (!list) return;
   const keys = orderStr.split(',').map(s => s.trim()).filter(Boolean);
   keys.forEach(key => {
-    const el = list.querySelector(`[data-s="${key}"]`);
-    if (el) list.appendChild(el); // move to end in order
+    const el = list.querySelector(`:scope > [data-s="${key}"]`) ||
+               list.querySelector(`:scope > #${CSS.escape(key)}`);
+    if (el) list.appendChild(el);
   });
 }
 
@@ -7959,6 +8112,80 @@ function adminToggleCookies(){
 }
 
 // ── ВЕРСІЯ ДОДАТКУ ──
+/* ══════════ GOOGLE MODULE ══════════ */
+async function _loadGoogleSettings() {
+  try {
+    const r = await fetch(`${API}/api/admin/google/status`, {headers: authH()});
+    if (!r.ok) return;
+    const d = await r.json();
+
+    const stEl = document.getElementById('g-oauth-status');
+    if (stEl) stEl.innerHTML = d.oauth_configured
+      ? '<span style="color:#4caf50"><i class="fi-rr-check"></i> Налаштовано</span>'
+      : '<span style="color:#f44336"><i class="fi-rr-cross"></i> Не налаштовано — додайте GOOGLE_CLIENT_ID і GOOGLE_CLIENT_SECRET у .env</span>';
+
+    const tog = document.getElementById('g-allow-google');
+    if (tog) tog.checked = d.oauth_enabled;
+
+    const ru = document.getElementById('g-redirect-uri');
+    if (ru) ru.textContent = d.redirect_uri;
+
+    const sc = document.getElementById('g-site-verification');
+    if (sc) sc.value = d.site_verification || '';
+
+    const ga = document.getElementById('g-analytics-id');
+    if (ga) ga.value = d.analytics_id || '';
+    const gaT = document.getElementById('g-analytics-enabled');
+    if (gaT) gaT.checked = d.analytics_enabled;
+
+    const idxEl = document.getElementById('g-indexing-status');
+    if (idxEl) idxEl.innerHTML = d.indexing_configured
+      ? '<span style="color:#4caf50"><i class="fi-rr-check"></i> Налаштовано</span>'
+      : '<span style="color:#f44336"><i class="fi-rr-cross"></i> Не налаштовано</span>';
+
+  } catch(e) { console.error('_loadGoogleSettings', e); }
+}
+
+async function _saveGoogleToggle(key, val) {
+  try {
+    const r = await fetch(`${API}/api/admin/color`, {
+      method: 'PUT',
+      headers: Object.assign(authH(), {'Content-Type': 'application/json'}),
+      body: JSON.stringify({ key, value: val ? '1' : '0' })
+    });
+    if (!r.ok) throw new Error(r.status);
+    showN('Збережено');
+  } catch(e) { showN('Помилка: ' + e.message, true); }
+}
+
+async function _saveGoogleBatch() {
+  const g   = id => document.getElementById(id);
+  const val = id => g(id)?.value.trim() || '';
+  const chk = id => g(id)?.checked ? '1' : '0';
+  const st  = g('g-batch-status');
+  const payload = [
+    { key: 'google_site_verification', value: val('g-site-verification') },
+    { key: 'google_analytics_id',      value: val('g-analytics-id') },
+    { key: 'google_analytics_enabled', value: chk('g-analytics-enabled') },
+  ];
+  if (st) { st.style.color = 'var(--muted)'; st.textContent = 'Збереження…'; }
+  try {
+    const r = await fetch(`${API}/api/admin/colors/batch`, {
+      method: 'PUT',
+      headers: authH({'Content-Type': 'application/json'}),
+      body: JSON.stringify(payload)
+    });
+    if (!r.ok) throw new Error(r.status);
+    payload.forEach(({key, value}) => {
+      if (COLORS[key]) COLORS[key].value = value; else COLORS[key] = {value, label:''};
+    });
+    if (st) { st.style.color = '#4caf50'; st.textContent = '✓ Збережено'; }
+    setTimeout(() => { if (st) st.textContent = ''; }, 3000);
+  } catch(e) {
+    if (st) { st.style.color = '#f44336'; st.textContent = '✗ Помилка: ' + e.message; }
+  }
+}
+
 function versionLoad() {
   const v = pendColors['app_version'] ?? COLORS['app_version']?.value ?? '2.42 beta';
   const inp = document.getElementById('ver-input');
@@ -9505,21 +9732,31 @@ async function seoRegenerateSlugs() {
 
 async function seoPingGoogle() {
   const el = document.getElementById('seo-ping-result');
+  const el2 = document.getElementById('g-ping-result');
   if (el) el.textContent = ' (надсилаємо...)';
+  if (el2) el2.textContent = 'Надсилаємо URL до Google…';
   try {
     const r = await fetch('/api/admin/seo/ping-google', {method:'POST'});
     const d = await r.json();
     if (!d.ok && d.reason) {
       if (el) el.textContent = ' — ' + d.reason;
+      if (el2) el2.innerHTML = `<span style="color:#f44336">Помилка: ${d.reason}</span>`;
       alert('Google Indexing: ' + d.reason);
     } else {
       const ok = (d.results||[]).filter(x=>x.ok).length;
       const total = (d.results||[]).length;
       if (el) el.textContent = ` — відправлено ${ok}/${total}`;
+      if (el2) {
+        const lines = (d.results||[]).map(x=>
+          `<div style="color:${x.ok?'#4caf50':'#f44336'}">${x.ok?'✓':'✗'} ${x.url||''}</div>`
+        ).join('');
+        el2.innerHTML = `<b style="color:var(--text)">Відправлено ${ok}/${total}:</b>${lines}`;
+      }
       loadSeoAdminDash();
     }
   } catch(e) {
     if (el) el.textContent = ' — помилка';
+    if (el2) el2.innerHTML = `<span style="color:#f44336">Помилка: ${e.message}</span>`;
     alert('Помилка: ' + e.message);
   }
 }
