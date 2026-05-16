@@ -621,7 +621,10 @@ def init_db():
         ("card_show_candle",   "1",                             "Картка: показ секції свічки (1/0)"),
         ("card_no_photo_bg",     "/img/bgcard.webp",              "Картка: URL фото-заглушки"),
         ("card_footer_text",     "Вічна памʼять Героям України",  "Картка: текст футера"),
-        ("card_likes_refresh",   "60",                            "Картка: інтервал оновлення лічильника вшанувань (секунди; 0 = вимкнено)"),
+        ("card_likes_refresh",       "60",  "Картка: інтервал оновлення лічильника вшанувань (секунди; 0 = вимкнено)"),
+        ("google_site_verification", "",   "Google Search Console: код верифікації сайту (html meta-tag content)"),
+        ("google_analytics_id",      "",   "Google Analytics 4: Measurement ID (G-XXXXXXXXXX)"),
+        ("google_analytics_enabled", "0",  "Google Analytics 4: вмикач (1=так, 0=ні)"),
     ]
     with db.cursor() as c:
         for key, val, label in defaults:
@@ -1480,6 +1483,20 @@ def get_card_settings():
     for r in rows:
         result[r["key"]] = r["value"]
     return result
+
+@app.get("/api/admin/google/status")
+def google_status(request: Request):
+    require_moder(request)
+    _key_file = os.getenv("GOOGLE_INDEXING_KEY_FILE", "")
+    return {
+        "oauth_configured":    bool(GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET),
+        "oauth_enabled":       _get_color_val("reg_allow_google", "1") == "1",
+        "indexing_configured": bool(_key_file and os.path.exists(_key_file)),
+        "site_verification":   _get_color_val("google_site_verification", ""),
+        "analytics_id":        _get_color_val("google_analytics_id", ""),
+        "analytics_enabled":   _get_color_val("google_analytics_enabled", "0") == "1",
+        "redirect_uri":        f"{OAUTH_REDIRECT_BASE}/api/auth/google/callback",
+    }
 
 @app.get("/rules.html")
 def rules_page(): return FileResponse("rules.html")
