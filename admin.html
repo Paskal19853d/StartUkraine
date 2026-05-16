@@ -75,6 +75,107 @@ html,body{height:100%;font-family:"Segoe UI",sans-serif;background:var(--bg);col
 .nav-group-body .nav-item::before{content:'';position:absolute;left:27px;top:50%;width:11px;border-top:1px dashed rgba(79,195,247,.2)}
 .nav-group.nav-dragging{opacity:.35;background:rgba(0,170,221,.05)}
 .nav-group.nav-over{border-top:2px solid var(--accent);margin-top:-2px}
+/* ── Density % ── */
+.den-block{padding:0 18px 18px;max-width:720px}
+.den-weight-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
+.den-weight-row:last-child{border-bottom:none}
+.den-wlabel{font-size:12px;color:var(--text);min-width:115px;flex-shrink:0}
+.den-badge{font-size:9px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:2px 7px;border-radius:10px;flex-shrink:0;min-width:72px;text-align:center}
+.den-badge.den-active{background:rgba(76,175,80,.15);color:#4caf50}
+.den-badge.den-future{background:rgba(255,255,255,.05);color:var(--muted)}
+.den-slider{flex:1;-webkit-appearance:none;appearance:none;height:3px;border-radius:2px;background:var(--border);outline:none;cursor:pointer;min-width:80px}
+.den-slider::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--accent);cursor:pointer}
+.den-slider:disabled{opacity:.3;cursor:default}
+.den-slider:disabled::-webkit-slider-thumb{cursor:default;background:var(--muted)}
+.den-num{width:58px;background:var(--panel);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:4px 8px;font-size:12px;text-align:center;outline:none;flex-shrink:0}
+.den-num:disabled{opacity:.35;cursor:default}
+.den-formula{background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:16px 20px;margin-bottom:18px;font-size:13px;color:var(--text2);line-height:2.1;font-family:'Courier New',monospace}
+.den-formula b{color:var(--accent);font-weight:700}
+.den-formula .den-fn{font-size:11px;color:var(--muted);display:block;margin-top:4px}
+.den-sandbox-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.den-sb-field{display:flex;flex-direction:column;gap:4px}
+.den-sb-field label{font-size:11px;color:var(--muted)}
+.den-sb-field input{background:var(--panel);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:6px 10px;font-size:13px;outline:none;width:100%;box-sizing:border-box}
+.den-sb-field input:disabled{opacity:.35}
+.den-result-box{display:flex;align-items:center;gap:16px;padding:14px 18px;background:rgba(0,136,187,.06);border:1px solid rgba(0,136,187,.2);border-radius:8px}
+.den-result-score{font-size:32px;font-weight:700;color:var(--accent);font-family:'Courier New',monospace;letter-spacing:-.02em}
+.den-result-label{font-size:11px;color:var(--muted);line-height:1.6}
+.den-zoom-hdr{display:grid;grid-template-columns:90px 1fr 1fr 80px;gap:8px;padding:6px 0 8px;font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border)}
+.den-zoom-row{display:grid;grid-template-columns:90px 1fr 1fr 80px;gap:8px;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)}
+.den-zoom-row:last-child{border-bottom:none}
+.den-zoom-row input{background:var(--panel);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:12px;outline:none;width:100%;box-sizing:border-box;text-align:center}
+.den-zoom-row input:focus{border-color:var(--accent)}
+.den-zoom-acts{display:flex;gap:4px;justify-content:flex-end}
+.den-zoom-btn{background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:5px;width:24px;height:24px;cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center;transition:all .12s;padding:0}
+.den-zoom-btn:hover{border-color:var(--accent);color:var(--accent)}
+.den-zoom-btn.den-zoom-del:hover{border-color:#f44336;color:#f44336}
+.den-zoom-num{display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--muted);font-weight:600}
+.den-algo-row{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--border)}
+.den-algo-row:last-child{border-bottom:none}
+.den-algo-lbl{flex:1;font-size:12px;color:var(--text)}
+.den-algo-desc{font-size:11px;color:var(--muted);margin-top:1px}
+.den-decay-visual{background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:12px 16px;margin-top:10px;font-size:12px;color:var(--muted);line-height:1.8;font-family:'Courier New',monospace}
+.den-decay-visual b{color:var(--accent)}
+.den-boost-search{display:flex;gap:8px;margin-bottom:12px}
+.den-boost-search input{flex:1;background:var(--panel);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:7px 12px;font-size:13px;outline:none}
+.den-boost-search input:focus{border-color:var(--accent)}
+.den-boost-results{background:var(--panel2);border:1px solid var(--border);border-radius:8px;max-height:180px;overflow-y:auto;margin-bottom:12px;display:none}
+.den-boost-result-item{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid var(--border);font-size:12px;cursor:default}
+.den-boost-result-item:last-child{border-bottom:none}
+.den-boost-result-item:hover{background:rgba(255,255,255,.03)}
+.den-boost-result-name{color:var(--text)}
+.den-boost-btns{display:flex;gap:4px;flex-shrink:0}
+.den-boost-tag{font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;cursor:pointer;border:1px solid;transition:all .12s;background:transparent}
+.den-boost-tag[data-m="2"]{color:#4fc3f7;border-color:rgba(79,195,247,.4)}
+.den-boost-tag[data-m="5"]{color:#ab47bc;border-color:rgba(171,71,188,.4)}
+.den-boost-tag[data-m="10"]{color:#f0b54a;border-color:rgba(240,181,74,.4)}
+.den-boost-tag[data-m="pin"]{color:#4caf50;border-color:rgba(76,175,80,.4)}
+.den-boost-tag:hover{opacity:.75}
+.den-boosts-table{width:100%;border-collapse:collapse;font-size:12px}
+.den-boosts-table th{font-size:9px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);padding:6px 8px;border-bottom:1px solid var(--border);text-align:left}
+.den-boosts-table td{padding:7px 8px;border-bottom:1px solid var(--border);color:var(--text2);vertical-align:middle}
+.den-boosts-table tr:last-child td{border-bottom:none}
+.den-boosts-table tr:hover td{background:rgba(255,255,255,.02)}
+.den-boost-chip{font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px}
+.den-boost-chip.m2{background:rgba(79,195,247,.1);color:#4fc3f7}
+.den-boost-chip.m5{background:rgba(171,71,188,.1);color:#ab47bc}
+.den-boost-chip.m10{background:rgba(240,181,74,.1);color:#f0b54a}
+.den-boost-chip.mpin{background:rgba(76,175,80,.1);color:#4caf50}
+.den-empty-note{text-align:center;color:var(--muted);font-size:12px;padding:20px}
+.den-stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:16px}
+.den-stat-card{background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;text-align:center}
+.den-stat-val{font-size:24px;font-weight:700;color:var(--accent);line-height:1.1;font-family:'Unbounded',sans-serif}
+.den-stat-lbl{font-size:10px;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:.05em}
+.den-zoom-dist{width:100%;border-collapse:collapse;font-size:12px;margin-top:4px}
+.den-zoom-dist th{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);padding:5px 8px;border-bottom:1px solid var(--border);text-align:left}
+.den-zoom-dist td{padding:6px 8px;border-bottom:1px solid var(--border);color:var(--text2)}
+.den-zoom-dist tr:last-child td{border-bottom:none}
+.den-zoom-dist .dz-bar-wrap{background:var(--panel);border-radius:4px;height:6px;min-width:60px;overflow:hidden}
+.den-zoom-dist .dz-bar{height:100%;background:var(--accent);border-radius:4px;transition:width .4s ease}
+.den-top5-tbl{width:100%;border-collapse:collapse;font-size:12px}
+.den-top5-tbl th{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);padding:5px 8px;border-bottom:1px solid var(--border);text-align:left}
+.den-top5-tbl td{padding:6px 8px;border-bottom:1px solid var(--border);color:var(--text2)}
+.den-top5-tbl tr:last-child td{border-bottom:none}
+.den-top5-tbl tr:hover td{background:rgba(255,255,255,.02)}
+.den-ab-tabs{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+.den-ab-tab{background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:10px 16px;cursor:pointer;font-size:12px;color:var(--text2);transition:all .15s;flex:1;min-width:180px;position:relative}
+.den-ab-tab:hover{border-color:var(--accent);color:var(--text)}
+.den-ab-tab.den-ab-active{border-color:var(--accent);background:rgba(79,195,247,.07);color:var(--text)}
+.den-ab-tab .den-ab-name{font-weight:700;font-size:13px;margin-bottom:4px}
+.den-ab-tab .den-ab-desc{font-size:10px;color:var(--muted);line-height:1.5}
+.den-ab-tab .den-ab-badge{position:absolute;top:8px;right:10px;font-size:9px;padding:2px 8px;border-radius:10px;font-weight:700}
+.den-ab-badge.den-ab-curr{background:rgba(76,175,80,.15);color:#4caf50}
+.den-ab-activate{margin-top:12px;display:flex;gap:8px;align-items:center}
+.den-ac-group{background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:12px}
+.den-ac-row{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px}
+.den-ac-row:last-child{border-bottom:none}
+.den-ac-lbl{color:var(--text);flex:1}
+.den-ac-desc{font-size:10px;color:var(--muted);margin-top:1px}
+.den-ac-input{background:var(--panel);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 9px;font-size:12px;outline:none;width:80px;text-align:center}
+.den-ac-input:focus{border-color:var(--accent)}
+.den-ac-select{background:var(--panel);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 9px;font-size:12px;outline:none;cursor:pointer}
+.den-ac-select:focus{border-color:var(--accent)}
+.den-heatmap-placeholder{background:var(--panel2);border:1px dashed var(--border);border-radius:8px;padding:32px 20px;text-align:center;color:var(--muted);font-size:12px;line-height:1.8}
 .sb-bottom{margin-top:auto;padding:12px 16px;border-top:1px solid var(--border)}
 .sb-bottom p{font-size:10px;color:var(--muted);margin-bottom:4px}
 .sb-bottom strong{color:var(--text2)}
@@ -479,7 +580,8 @@ tr:hover td{background:rgba(255,255,255,.02)}
         <span class="nav-group-arrow">›</span>
       </div>
       <div class="nav-group-body">
-        <div class="nav-item" onclick="showSec('version')" data-s="version"><span class="nav-ico"><svg class="adm-ico"><use href="#ico-doc"/></svg></span>Версія</div>
+        <div class="nav-item" onclick="showSec('version')"  data-s="version"><span class="nav-ico"><svg class="adm-ico"><use href="#ico-doc"/></svg></span>Версія</div>
+        <div class="nav-item" onclick="showSec('density')"  data-s="density"><span class="nav-ico"><svg class="adm-ico"><use href="#ico-stats"/></svg></span>Щільність %</div>
       </div>
     </div>
     <div class="nav-item"        draggable="true" onclick="showSec('google')"  data-s="google">  <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-auth"/></svg></span>Google</div>
@@ -4004,6 +4106,300 @@ tr:hover td{background:rgba(255,255,255,.02)}
 
       </div><!-- /sec-google -->
 
+      <!-- ═══════════════ ЩІЛЬНІСТЬ % (Етап 1) ═══════════════ -->
+      <div id="sec-density" class="section">
+        <div class="sec-title"><svg class="adm-ico"><use href="#ico-stats"/></svg> Щільність % — Алгоритм відображення зірок</div>
+
+        <!-- ① Ваги формули -->
+        <div class="rg-group">
+          <div class="rg-group-title">Ваги формули популярності</div>
+          <div class="den-block">
+            <div class="den-weight-row">
+              <span class="den-wlabel">Лайки</span>
+              <span class="den-badge den-active">Активний</span>
+              <input type="range" class="den-slider" id="den-sl-likes" min="0" max="1" step="0.01" value="0.45" oninput="_densitySliderChange('likes')">
+              <input type="number" class="den-num" id="den-nm-likes" min="0" max="1" step="0.01" value="0.45" onchange="_densityNumChange('likes')">
+            </div>
+            <div class="den-weight-row">
+              <span class="den-wlabel">Рейтинг</span>
+              <span class="den-badge den-active">Активний</span>
+              <input type="range" class="den-slider" id="den-sl-rating" min="0" max="1" step="0.01" value="0.35" oninput="_densitySliderChange('rating')">
+              <input type="number" class="den-num" id="den-nm-rating" min="0" max="1" step="0.01" value="0.35" onchange="_densityNumChange('rating')">
+            </div>
+            <div class="den-weight-row">
+              <span class="den-wlabel">Перегляди</span>
+              <span class="den-badge den-future">Планується</span>
+              <input type="range" class="den-slider" id="den-sl-views" min="0" max="1" step="0.01" value="0.15" disabled oninput="_densitySliderChange('views')">
+              <input type="number" class="den-num" id="den-nm-views" min="0" max="1" step="0.01" value="0.15" disabled onchange="_densityNumChange('views')">
+            </div>
+            <div class="den-weight-row">
+              <span class="den-wlabel">Активність</span>
+              <span class="den-badge den-future">Планується</span>
+              <input type="range" class="den-slider" id="den-sl-activity" min="0" max="1" step="0.01" value="0.05" disabled oninput="_densitySliderChange('activity')">
+              <input type="number" class="den-num" id="den-nm-activity" min="0" max="1" step="0.01" value="0.05" disabled onchange="_densityNumChange('activity')">
+            </div>
+          </div>
+          <div class="rg-row" style="border-bottom:none;gap:10px;flex-wrap:wrap">
+            <button class="btn btn-p" onclick="_densitySave()"><svg class="adm-ico"><use href="#ico-check"/></svg> Зберегти ваги</button>
+            <button class="btn" onclick="_densityReset()"><svg class="adm-ico"><use href="#ico-cross"/></svg> Скинути</button>
+            <span id="den-save-status" style="font-size:12px;min-height:14px;align-self:center"></span>
+          </div>
+        </div>
+
+        <!-- ② Live preview формули -->
+        <div class="den-formula" id="den-formula-display">
+          visibilityScore =<br>&nbsp;&nbsp;likes × <b>0.45</b><br>&nbsp;&nbsp;+ rating × <b>0.35</b><br>&nbsp;&nbsp;+ views × <b>0.15</b><br>&nbsp;&nbsp;+ activity × <b>0.05</b>
+          <span class="den-fn">* значення оновлюються автоматично при зміні повзунків</span>
+        </div>
+
+        <!-- ③ Sandbox -->
+        <div class="rg-group">
+          <div class="rg-group-title">Sandbox — тест формули</div>
+          <div class="den-block">
+            <div class="den-sandbox-grid">
+              <div class="den-sb-field">
+                <label>Лайки</label>
+                <input type="number" id="den-test-likes" value="400" min="0" oninput="_densityCalcSandbox()">
+              </div>
+              <div class="den-sb-field">
+                <label>Рейтинг</label>
+                <input type="number" id="den-test-rating" value="4.8" min="0" step="0.1" oninput="_densityCalcSandbox()">
+              </div>
+              <div class="den-sb-field">
+                <label>Перегляди <span style="color:var(--muted);font-size:10px">(планується)</span></label>
+                <input type="number" id="den-test-views" value="1500" min="0" disabled>
+              </div>
+              <div class="den-sb-field">
+                <label>Активність <span style="color:var(--muted);font-size:10px">(планується)</span></label>
+                <input type="number" id="den-test-activity" value="22" min="0" disabled>
+              </div>
+            </div>
+            <div class="den-result-box">
+              <div class="den-result-score" id="den-sandbox-score">—</div>
+              <div class="den-result-label">visibilityScore<br><span style="color:var(--text2);font-size:10px">= лайки × w<sub>l</sub> + рейтинг × w<sub>r</sub> + ...</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ④ Експорт / Імпорт -->
+        <div style="display:flex;gap:10px;flex-wrap:wrap;padding:0 18px 18px">
+          <button class="btn" onclick="_densityExport()"><svg class="adm-ico"><use href="#ico-share"/></svg> Експорт JSON</button>
+          <button class="btn" onclick="_densityImport()"><svg class="adm-ico"><use href="#ico-plus"/></svg> Імпорт JSON</button>
+        </div>
+
+        <!-- ⑤ Zoom-рівні -->
+        <div class="rg-group">
+          <div class="rg-group-title">Рівні Zoom — мінімальний score для відображення</div>
+          <div class="den-block">
+            <div class="den-zoom-hdr">
+              <span>Zoom ≥</span><span style="text-align:center">Мін. score</span><span></span><span></span>
+            </div>
+            <div id="den-zoom-table"></div>
+            <div style="margin-top:10px">
+              <button class="btn" onclick="_densityAddZoom()"><svg class="adm-ico"><use href="#ico-plus"/></svg> Додати рівень</button>
+            </div>
+          </div>
+          <div class="rg-row" style="border-bottom:none;gap:10px;flex-wrap:wrap">
+            <button class="btn btn-p" onclick="_densitySaveZoom()"><svg class="adm-ico"><use href="#ico-check"/></svg> Зберегти Zoom</button>
+            <span id="den-zoom-status" style="font-size:12px;align-self:center"></span>
+          </div>
+        </div>
+
+        <!-- ⑥ Перемикачі алгоритму -->
+        <div class="rg-group">
+          <div class="rg-group-title">Алгоритм рекомендацій — що враховувати</div>
+          <div class="den-block">
+            <div class="den-algo-row">
+              <div class="den-algo-lbl">Враховувати лайки<div class="den-algo-desc">Активний фактор — поле <code>likes</code> в БД</div></div>
+              <label class="rg-toggle"><input type="checkbox" id="den-algo-likes" checked onchange="_densitySaveAlgorithm()"><span class="rg-slider"></span></label>
+            </div>
+            <div class="den-algo-row">
+              <div class="den-algo-lbl">Враховувати рейтинг<div class="den-algo-desc">Активний фактор — поле <code>rating</code> в БД</div></div>
+              <label class="rg-toggle"><input type="checkbox" id="den-algo-rating" checked onchange="_densitySaveAlgorithm()"><span class="rg-slider"></span></label>
+            </div>
+            <div class="den-algo-row" style="opacity:.45">
+              <div class="den-algo-lbl">Враховувати перегляди<div class="den-algo-desc">Планується — поле <code>views</code> ще не в БД</div></div>
+              <label class="rg-toggle"><input type="checkbox" id="den-algo-views" disabled><span class="rg-slider"></span></label>
+            </div>
+            <div class="den-algo-row" style="opacity:.45">
+              <div class="den-algo-lbl">Враховувати активність<div class="den-algo-desc">Планується — поле <code>activity</code> ще не в БД</div></div>
+              <label class="rg-toggle"><input type="checkbox" id="den-algo-activity" disabled><span class="rg-slider"></span></label>
+            </div>
+            <div class="den-algo-row" style="opacity:.45;border-bottom:none">
+              <div class="den-algo-lbl">Враховувати час перегляду<div class="den-algo-desc">Планується — потребує аналітики сесій</div></div>
+              <label class="rg-toggle"><input type="checkbox" id="den-algo-time" disabled><span class="rg-slider"></span></label>
+            </div>
+          </div>
+        </div>
+
+        <!-- ⑧ Decay-система -->
+        <div class="rg-group">
+          <div class="rg-group-title">Decay — згасання популярності</div>
+          <div class="rg-row">
+            <div class="rg-row-info">
+              <div class="rg-row-label">Увімкнути decay</div>
+              <div class="rg-row-desc">Score точки поступово знижується якщо вона давно не переглядалась</div>
+            </div>
+            <label class="rg-toggle"><input type="checkbox" id="den-decay-enabled" onchange="_densityDecayToggle()"><span class="rg-slider"></span></label>
+          </div>
+          <div class="rg-row">
+            <div class="rg-row-info">
+              <div class="rg-row-label">Decay rate</div>
+              <div class="rg-row-desc">Коефіцієнт множення score за кожен період (0.95 = -5% за цикл)</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <input type="range" class="den-slider" id="den-decay-rate-sl" min="0.5" max="0.999" step="0.001" value="0.95" oninput="_densityDecayRateSync(this.value)" style="width:120px">
+              <input type="number" class="den-num" id="den-decay-rate-nm" min="0.5" max="0.999" step="0.001" value="0.95" onchange="_densityDecayRateSync(this.value,true)" style="width:68px">
+            </div>
+          </div>
+          <div class="rg-row" style="border-bottom:none">
+            <div class="rg-row-info">
+              <div class="rg-row-label">Decay every (год.)</div>
+              <div class="rg-row-desc">Як часто застосовується decay (в годинах)</div>
+            </div>
+            <input type="number" class="den-num" id="den-decay-hours" min="1" max="720" value="24" onchange="_densitySaveDecay()" style="width:80px">
+          </div>
+          <div class="den-block">
+            <div class="den-decay-visual" id="den-decay-preview">
+              score(t) = score₀ × <b>0.95</b><sup>t/24</sup><br>
+              <span style="font-size:11px;color:var(--muted);font-family:inherit">після 7 днів без перегляду: score × 0.69 (−31%)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ⑨ Boost система -->
+        <div class="rg-group">
+          <div class="rg-group-title">Boost — ручне підвищення видимості</div>
+          <div class="den-block">
+            <div class="den-boost-search">
+              <input type="text" id="den-boost-q" placeholder="Пошук по імені або позивному…" onkeydown="if(event.key==='Enter')_densitySearchBoost()">
+              <button class="btn btn-p" onclick="_densitySearchBoost()"><svg class="adm-ico"><use href="#ico-search"/></svg> Знайти</button>
+            </div>
+            <div id="den-boost-results" class="den-boost-results"></div>
+
+            <div style="font-size:11px;color:var(--muted);margin-bottom:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+              Рівні буст:
+              <span class="den-boost-chip m2">× 2</span> звичайний &nbsp;
+              <span class="den-boost-chip m5">× 5</span> сильний &nbsp;
+              <span class="den-boost-chip m10">VIP × 10</span> максимальний &nbsp;
+              <span class="den-boost-chip mpin">⬡ Pinned</span> завжди видима
+            </div>
+
+            <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px">Активні буст:</div>
+            <div id="den-boosts-wrap">
+              <div class="den-empty-note">Немає активних буст</div>
+            </div>
+          </div>
+          <div class="rg-row" style="border-bottom:none;gap:10px">
+            <button class="btn btn-p" onclick="_densitySaveBoosts()"><svg class="adm-ico"><use href="#ico-check"/></svg> Зберегти буст</button>
+            <span id="den-boost-status" style="font-size:12px;align-self:center"></span>
+          </div>
+        </div>
+
+        <!-- ⑪ Статистика алгоритму -->
+        <div class="rg-section">
+          <div class="rg-group-title">Статистика алгоритму</div>
+          <div style="padding:0 18px 4px">
+            <div id="den-stat-grid" class="den-stat-grid">
+              <div class="den-stat-card"><div class="den-stat-val" id="den-s-total">—</div><div class="den-stat-lbl">Всього зірок</div></div>
+              <div class="den-stat-card"><div class="den-stat-val" id="den-s-avg">—</div><div class="den-stat-lbl">Серед. score</div></div>
+              <div class="den-stat-card"><div class="den-stat-val" id="den-s-z5">—</div><div class="den-stat-lbl">Видимо z≥5</div></div>
+              <div class="den-stat-card"><div class="den-stat-val" id="den-s-z9">—</div><div class="den-stat-lbl">Видимо z≥9</div></div>
+            </div>
+            <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:8px">Розподіл по zoom рівнях:</div>
+            <table class="den-zoom-dist" id="den-zoom-dist-tbl">
+              <thead><tr><th>Zoom</th><th>Мін. score</th><th>Видимо</th><th style="width:120px">Частка</th></tr></thead>
+              <tbody id="den-zoom-dist-body"><tr><td colspan="4" class="den-empty-note">Завантаження…</td></tr></tbody>
+            </table>
+          </div>
+          <div style="font-size:11px;font-weight:600;color:var(--text2);margin:14px 18px 8px">Топ-5 за score:</div>
+          <div style="padding:0 18px">
+            <table class="den-top5-tbl" id="den-top5-tbl">
+              <thead><tr><th>#</th><th>Ім'я</th><th>Score</th><th>Лайки</th><th>Рейтинг</th></tr></thead>
+              <tbody id="den-top5-body"><tr><td colspan="5" class="den-empty-note">Завантаження…</td></tr></tbody>
+            </table>
+          </div>
+          <div style="padding:12px 18px">
+            <button class="btn btn-p" onclick="_densityLoadStats()"><svg class="adm-ico"><use href="#ico-stats"/></svg> Оновити статистику</button>
+          </div>
+        </div>
+
+        <!-- ⑫ A/B тестування -->
+        <div class="rg-section">
+          <div class="rg-group-title">A/B тестування алгоритму</div>
+          <div style="padding:0 18px 4px;font-size:12px;color:var(--muted);margin-bottom:12px">Виберіть пресет ваг і натисніть «Активувати» — ваги застосуються як поточна конфігурація Етапу 1.</div>
+          <div style="padding:0 18px 14px">
+            <div class="den-ab-tabs" id="den-ab-tabs">
+              <div class="den-ab-tab" id="den-ab-a" onclick="_densitySelectVariant('a')">
+                <span class="den-ab-badge den-ab-curr" id="den-ab-a-badge" style="display:none">Активний</span>
+                <div class="den-ab-name">Алгоритм A</div>
+                <div class="den-ab-desc">Лайки × 0.45 + Рейтинг × 0.35<br>Views × 0.15 + Activity × 0.05</div>
+              </div>
+              <div class="den-ab-tab" id="den-ab-b" onclick="_densitySelectVariant('b')">
+                <span class="den-ab-badge den-ab-curr" id="den-ab-b-badge" style="display:none">Активний</span>
+                <div class="den-ab-name">Алгоритм B</div>
+                <div class="den-ab-desc">Лайки × 0.70 + Рейтинг × 0.20<br>Views × 0.08 + Activity × 0.02</div>
+              </div>
+              <div class="den-ab-tab" id="den-ab-c" onclick="_densitySelectVariant('c')">
+                <span class="den-ab-badge den-ab-curr" id="den-ab-c-badge" style="display:none">Активний</span>
+                <div class="den-ab-name">Алгоритм C</div>
+                <div class="den-ab-desc">Лайки × 0.20 + Рейтинг × 0.70<br>Views × 0.07 + Activity × 0.03</div>
+              </div>
+            </div>
+            <div class="den-ab-activate">
+              <button class="btn btn-p" id="den-ab-apply-btn" onclick="_densityActivateVariant()" disabled><svg class="adm-ico"><use href="#ico-check"/></svg> Активувати вибраний</button>
+              <span id="den-ab-status" style="font-size:12px;margin-left:8px"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ⑬ Антинакрутка -->
+        <div class="rg-section">
+          <div class="rg-group-title">Антинакрутка</div>
+          <div class="den-ac-group" style="margin:0 18px 14px">
+            <div class="den-ac-row">
+              <div class="den-ac-lbl">Макс. лайків з одного IP<div class="den-ac-desc">За всі часи для одного меморіалу</div></div>
+              <input type="number" class="den-ac-input" id="den-ac-maxlikes" min="1" max="1000" value="10">
+            </div>
+            <div class="den-ac-row">
+              <div class="den-ac-lbl">Cooldown між лайками<div class="den-ac-desc">Секунди між повторним лайком з того ж IP</div></div>
+              <div style="display:flex;align-items:center;gap:6px"><input type="number" class="den-ac-input" id="den-ac-cooldown" min="0" max="3600" value="30"><span style="font-size:11px;color:var(--muted)">сек</span></div>
+            </div>
+            <div class="den-ac-row">
+              <div class="den-ac-lbl">Чутливість до ботів<div class="den-ac-desc">Порогова частота запитів для автоблоку</div></div>
+              <select class="den-ac-select" id="den-ac-sensitivity">
+                <option value="low">Низька</option>
+                <option value="medium" selected>Середня</option>
+                <option value="high">Висока</option>
+              </select>
+            </div>
+          </div>
+          <div style="padding:0 18px 14px;display:flex;gap:10px;align-items:center">
+            <button class="btn btn-p" onclick="_densitySaveAnticheat()"><svg class="adm-ico"><use href="#ico-check"/></svg> Зберегти антинакрутку</button>
+            <span id="den-ac-status" style="font-size:12px"></span>
+          </div>
+        </div>
+
+        <!-- ⑭ Heatmap -->
+        <div class="rg-section">
+          <div class="rg-group-title">Теплова карта активності</div>
+          <div style="padding:0 18px 18px">
+            <div id="den-heatmap-wrap" class="den-heatmap-placeholder">
+              <svg class="adm-ico" style="width:32px;height:32px;opacity:.25;margin-bottom:10px"><use href="#ico-map"/></svg><br>
+              Heatmap — відображає зони найвищої активності на карті.<br>
+              <span style="font-size:11px">Натисніть для попереднього перегляду (на основі pos_x/pos_y + score).</span><br><br>
+              <button class="btn" onclick="_densityBuildHeatmap()"><svg class="adm-ico"><use href="#ico-stats"/></svg> Побудувати Heatmap</button>
+            </div>
+            <canvas id="den-heatmap-canvas" width="640" height="400" style="display:none;max-width:100%;border-radius:8px;border:1px solid var(--border);margin-top:12px"></canvas>
+            <div id="den-heatmap-actions" style="display:none;margin-top:10px;gap:8px">
+              <button class="btn" onclick="_densityResetHeatmap()"><svg class="adm-ico"><use href="#ico-cross"/></svg> Скинути</button>
+              <button class="btn btn-p" onclick="_densityBuildHeatmap()"><svg class="adm-ico"><use href="#ico-stats"/></svg> Оновити</button>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /sec-density -->
+
     </div><!-- /content-area -->
   </div><!-- /main -->
 </div><!-- /layout -->
@@ -4326,6 +4722,7 @@ function showSec(id) {
   if(id==='card')    cardSettingsLoad();
   if(id==='version') versionLoad();
   if(id==='google')  _loadGoogleSettings();
+  if(id==='density') _densityLoad();
 }
 
 /* ══════════ ХВИЛИНА МОВЧАННЯ ══════════ */
@@ -8113,6 +8510,604 @@ function adminToggleCookies(){
 
 // ── ВЕРСІЯ ДОДАТКУ ──
 /* ══════════ GOOGLE MODULE ══════════ */
+/* ══════════ ЩІЛЬНІСТЬ % ══════════ */
+let _densityConfig = null;
+const _DENSITY_DEFAULTS = {
+  weights: {likes:0.45, rating:0.35, views:0.15, activity:0.05},
+  zoomLevels: [{zoom:5,minScore:500},{zoom:7,minScore:250},{zoom:9,minScore:100},{zoom:11,minScore:30},{zoom:13,minScore:0}],
+  decay: {enabled:false, rate:0.95, hours:24}
+};
+
+async function _densityLoad() {
+  try {
+    const r = await fetch(`${API}/api/admin/density-settings`, {headers: authH()});
+    if (!r.ok) return;
+    _densityConfig = await r.json();
+    _densityApplyUI();
+  } catch(e) { console.error('_densityLoad', e); }
+}
+
+function _densityApplyUI() {
+  if (!_densityConfig) return;
+  const w = _densityConfig.weights || {};
+  ['likes','rating','views','activity'].forEach(key => {
+    const val = w[key] ?? _DENSITY_DEFAULTS.weights[key] ?? 0;
+    const sl = document.getElementById(`den-sl-${key}`);
+    const nm = document.getElementById(`den-nm-${key}`);
+    if (sl) sl.value = val;
+    if (nm) nm.value = val;
+  });
+  _densityUpdatePreview();
+  _densityCalcSandbox();
+  _densityRenderZoom();
+  _densityApplyAlgorithm();
+  _densityApplyDecay();
+  _densityRenderBoosts();
+  _densityApplyAnticheat();
+  _densityHighlightABVariant();
+  _densityLoadStats();
+}
+
+function _densitySliderChange(key) {
+  const sl = document.getElementById(`den-sl-${key}`);
+  const nm = document.getElementById(`den-nm-${key}`);
+  if (sl && nm) nm.value = sl.value;
+  _densityUpdatePreview();
+  _densityCalcSandbox();
+}
+
+function _densityNumChange(key) {
+  const sl = document.getElementById(`den-sl-${key}`);
+  const nm = document.getElementById(`den-nm-${key}`);
+  if (!nm) return;
+  let v = Math.min(1, Math.max(0, parseFloat(nm.value) || 0));
+  nm.value = v;
+  if (sl) sl.value = v;
+  _densityUpdatePreview();
+  _densityCalcSandbox();
+}
+
+function _densityGetWeights() {
+  const w = {};
+  ['likes','rating','views','activity'].forEach(key => {
+    const nm = document.getElementById(`den-nm-${key}`);
+    w[key] = nm ? (parseFloat(nm.value) || 0) : 0;
+  });
+  return w;
+}
+
+function _densityUpdatePreview() {
+  const w = _densityGetWeights();
+  const el = document.getElementById('den-formula-display');
+  if (!el) return;
+  el.innerHTML =
+    `visibilityScore =<br>&nbsp;&nbsp;likes &times; <b>${w.likes.toFixed(2)}</b>` +
+    `<br>&nbsp;&nbsp;+ rating &times; <b>${w.rating.toFixed(2)}</b>` +
+    `<br>&nbsp;&nbsp;+ views &times; <b>${w.views.toFixed(2)}</b>` +
+    `<br>&nbsp;&nbsp;+ activity &times; <b>${w.activity.toFixed(2)}</b>` +
+    `<span class="den-fn">* значення оновлюються автоматично при зміні повзунків</span>`;
+}
+
+function _densityCalcSandbox() {
+  const w = _densityGetWeights();
+  const likes    = parseFloat(document.getElementById('den-test-likes')?.value)    || 0;
+  const rating   = parseFloat(document.getElementById('den-test-rating')?.value)   || 0;
+  const views    = parseFloat(document.getElementById('den-test-views')?.value)    || 0;
+  const activity = parseFloat(document.getElementById('den-test-activity')?.value) || 0;
+  const score = (likes * w.likes) + (rating * w.rating) + (views * w.views) + (activity * w.activity);
+  const el = document.getElementById('den-sandbox-score');
+  if (el) el.textContent = score.toFixed(2);
+}
+
+async function _densitySave() {
+  const st = document.getElementById('den-save-status');
+  if (!_densityConfig) _densityConfig = JSON.parse(JSON.stringify(_DENSITY_DEFAULTS));
+  _densityConfig.weights = _densityGetWeights();
+  if (st) { st.style.color = 'var(--muted)'; st.textContent = 'Збереження…'; }
+  try {
+    const r = await fetch(`${API}/api/admin/density-settings`, {
+      method: 'POST',
+      headers: authH({'Content-Type':'application/json'}),
+      body: JSON.stringify(_densityConfig)
+    });
+    if (!r.ok) throw new Error(r.status);
+    if (st) { st.style.color = '#4caf50'; st.textContent = '✓ Збережено'; }
+    setTimeout(() => { if (st) st.textContent = ''; }, 3000);
+  } catch(e) {
+    if (st) { st.style.color = '#f44336'; st.textContent = '✗ Помилка: ' + e.message; }
+  }
+}
+
+function _densityReset() {
+  if (!confirm('Скинути всі ваги до значень за замовчуванням?')) return;
+  _densityConfig = JSON.parse(JSON.stringify(_DENSITY_DEFAULTS));
+  _densityApplyUI();
+  showN('Скинуто до замовчувань');
+}
+
+function _densityExport() {
+  if (!_densityConfig) return;
+  const blob = new Blob([JSON.stringify(_densityConfig, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'density-config.json';
+  a.click();
+}
+
+/* ── Decay ── */
+function _densityApplyDecay() {
+  if (!_densityConfig) return;
+  const d = _densityConfig.decay || {};
+  const enEl = document.getElementById('den-decay-enabled');
+  const rSl  = document.getElementById('den-decay-rate-sl');
+  const rNm  = document.getElementById('den-decay-rate-nm');
+  const hEl  = document.getElementById('den-decay-hours');
+  if (enEl) enEl.checked = !!d.enabled;
+  if (rSl)  rSl.value   = d.rate  ?? 0.95;
+  if (rNm)  rNm.value   = d.rate  ?? 0.95;
+  if (hEl)  hEl.value   = d.hours ?? 24;
+  _densityDecayPreview();
+}
+
+function _densityDecayRateSync(val, fromNum) {
+  const v = Math.min(0.999, Math.max(0.5, parseFloat(val) || 0.95));
+  const sl = document.getElementById('den-decay-rate-sl');
+  const nm = document.getElementById('den-decay-rate-nm');
+  if (sl) sl.value = v;
+  if (nm) nm.value = v;
+  _densityDecayPreview();
+  _densitySaveDecay();
+}
+
+function _densityDecayToggle() {
+  _densitySaveDecay();
+}
+
+function _densityDecayPreview() {
+  const rate  = parseFloat(document.getElementById('den-decay-rate-nm')?.value) || 0.95;
+  const hours = parseFloat(document.getElementById('den-decay-hours')?.value)   || 24;
+  const after7 = Math.pow(rate, (7 * 24) / hours);
+  const after30 = Math.pow(rate, (30 * 24) / hours);
+  const el = document.getElementById('den-decay-preview');
+  if (!el) return;
+  el.innerHTML =
+    `score(t) = score₀ × <b>${rate.toFixed(3)}</b><sup>t/${hours}</sup><br>` +
+    `<span style="font-size:11px;color:var(--muted);font-family:inherit">` +
+    `7 днів без перегляду: score × ${after7.toFixed(2)} (${((after7-1)*100).toFixed(0)}%)<br>` +
+    `30 днів без перегляду: score × ${after30.toFixed(2)} (${((after30-1)*100).toFixed(0)}%)</span>`;
+}
+
+async function _densitySaveDecay() {
+  if (!_densityConfig) return;
+  _densityConfig.decay = {
+    enabled: !!document.getElementById('den-decay-enabled')?.checked,
+    rate:    parseFloat(document.getElementById('den-decay-rate-nm')?.value)  || 0.95,
+    hours:   parseFloat(document.getElementById('den-decay-hours')?.value)    || 24,
+  };
+  _densityDecayPreview();
+  try {
+    await fetch(`${API}/api/admin/density-settings`, {
+      method:'POST', headers:authH({'Content-Type':'application/json'}),
+      body: JSON.stringify(_densityConfig)
+    });
+    showN('Decay збережено');
+  } catch(e) { showN('Помилка: '+e.message, true); }
+}
+
+/* ── Boost ── */
+const _BOOST_LABELS = {2:'× 2',5:'× 5',10:'VIP × 10',pin:'⬡ Pinned'};
+const _BOOST_CLASS  = {2:'m2', 5:'m5', 10:'m10', pin:'mpin'};
+
+function _densityRenderBoosts() {
+  const wrap = document.getElementById('den-boosts-wrap');
+  if (!wrap || !_densityConfig) return;
+  const boosts = _densityConfig.boosts || [];
+  if (!boosts.length) { wrap.innerHTML = '<div class="den-empty-note">Немає активних буст</div>'; return; }
+  wrap.innerHTML = `<table class="den-boosts-table">
+    <thead><tr><th>#</th><th>Ім\'я</th><th>Буст</th><th>Термін</th><th></th></tr></thead>
+    <tbody>${boosts.map((b,i)=>`
+      <tr>
+        <td style="color:var(--muted)">${i+1}</td>
+        <td>${b.name||'—'} <span style="color:var(--muted);font-size:10px">#${b.id}</span></td>
+        <td><span class="den-boost-chip ${_BOOST_CLASS[b.m]||'m2'}">${_BOOST_LABELS[b.m]||'× '+b.m}</span></td>
+        <td style="color:var(--muted)">${b.expires||'безстроково'}</td>
+        <td><button class="den-zoom-btn den-zoom-del" onclick="_densityRemoveBoost(${b.id})" title="Зняти буст">✕</button></td>
+      </tr>`).join('')}
+    </tbody></table>`;
+}
+
+async function _densitySearchBoost() {
+  const q = document.getElementById('den-boost-q')?.value.trim();
+  if (!q) return;
+  const res = document.getElementById('den-boost-results');
+  if (!res) return;
+  res.innerHTML = '<div style="padding:10px 12px;font-size:12px;color:var(--muted)">Пошук…</div>';
+  res.style.display = 'block';
+  try {
+    const r = await fetch(`${API}/api/search?q=${encodeURIComponent(q)}`);
+    const items = await r.json();
+    if (!items.length) { res.innerHTML='<div class="den-empty-note">Нічого не знайдено</div>'; return; }
+    res.innerHTML = items.slice(0,15).map(p=>{
+      const name = [p.last,p.first,p.mid].filter(Boolean).join(' ')||p.grp||'—';
+      return `<div class="den-boost-result-item">
+        <span class="den-boost-result-name">${name} <span style="color:var(--muted);font-size:10px">#${p.id}</span></span>
+        <div class="den-boost-btns">
+          <span class="den-boost-tag" data-m="2"   onclick="_densityAddBoost(${p.id},'${name.replace(/'/g,"\\'")}',2)">× 2</span>
+          <span class="den-boost-tag" data-m="5"   onclick="_densityAddBoost(${p.id},'${name.replace(/'/g,"\\'")}',5)">× 5</span>
+          <span class="den-boost-tag" data-m="10"  onclick="_densityAddBoost(${p.id},'${name.replace(/'/g,"\\'")}',10)">VIP</span>
+          <span class="den-boost-tag" data-m="pin" onclick="_densityAddBoost(${p.id},'${name.replace(/'/g,"\\'")}','pin')">Pin</span>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) { res.innerHTML=`<div class="den-empty-note">Помилка: ${e.message}</div>`; }
+}
+
+function _densityAddBoost(id, name, multiplier) {
+  if (!_densityConfig) return;
+  _densityConfig.boosts = _densityConfig.boosts || [];
+  _densityConfig.boosts = _densityConfig.boosts.filter(b => b.id !== id);
+  _densityConfig.boosts.push({id, name, m: multiplier, expires: null});
+  _densityRenderBoosts();
+  document.getElementById('den-boost-results').style.display = 'none';
+  document.getElementById('den-boost-q').value = '';
+  showN(`Буст додано: ${name}`);
+}
+
+function _densityRemoveBoost(id) {
+  if (!_densityConfig?.boosts) return;
+  _densityConfig.boosts = _densityConfig.boosts.filter(b => b.id !== id);
+  _densityRenderBoosts();
+}
+
+async function _densitySaveBoosts() {
+  const st = document.getElementById('den-boost-status');
+  if (!_densityConfig) return;
+  if (st) { st.style.color='var(--muted)'; st.textContent='Збереження…'; }
+  try {
+    const r = await fetch(`${API}/api/admin/density-settings`, {
+      method:'POST', headers:authH({'Content-Type':'application/json'}),
+      body: JSON.stringify(_densityConfig)
+    });
+    if (!r.ok) throw new Error(r.status);
+    if (st) { st.style.color='#4caf50'; st.textContent='✓ Збережено'; }
+    setTimeout(()=>{ if(st) st.textContent=''; }, 3000);
+  } catch(e) {
+    if (st) { st.style.color='#f44336'; st.textContent='✗ '+e.message; }
+  }
+}
+
+/* ── Zoom table ── */
+function _densityRenderZoom() {
+  const tbl = document.getElementById('den-zoom-table');
+  if (!tbl || !_densityConfig) return;
+  const levels = _densityConfig.zoomLevels || [];
+  tbl.innerHTML = levels.map((lv, i) => `
+    <div class="den-zoom-row">
+      <div class="den-zoom-num">${i + 1}</div>
+      <input type="number" min="1" max="22" value="${lv.zoom}" oninput="_densityZoomEdit(${i},'zoom',this.value)">
+      <input type="number" min="0" value="${lv.minScore}" oninput="_densityZoomEdit(${i},'minScore',this.value)">
+      <div class="den-zoom-acts">
+        <button class="den-zoom-btn" onclick="_densityMoveZoom(${i},-1)" title="Вгору">↑</button>
+        <button class="den-zoom-btn" onclick="_densityMoveZoom(${i}, 1)" title="Вниз">↓</button>
+        <button class="den-zoom-btn den-zoom-del" onclick="_densityRemoveZoom(${i})" title="Видалити">✕</button>
+      </div>
+    </div>`).join('');
+}
+
+function _densityZoomEdit(idx, field, val) {
+  if (!_densityConfig?.zoomLevels?.[idx]) return;
+  _densityConfig.zoomLevels[idx][field] = parseFloat(val) || 0;
+}
+
+function _densityAddZoom() {
+  if (!_densityConfig) return;
+  _densityConfig.zoomLevels = _densityConfig.zoomLevels || [];
+  const last = _densityConfig.zoomLevels.at(-1);
+  _densityConfig.zoomLevels.push({zoom: (last?.zoom || 10) + 2, minScore: 0});
+  _densityRenderZoom();
+}
+
+function _densityRemoveZoom(idx) {
+  if (!_densityConfig?.zoomLevels) return;
+  _densityConfig.zoomLevels.splice(idx, 1);
+  _densityRenderZoom();
+}
+
+function _densityMoveZoom(idx, dir) {
+  const arr = _densityConfig?.zoomLevels;
+  if (!arr) return;
+  const to = idx + dir;
+  if (to < 0 || to >= arr.length) return;
+  [arr[idx], arr[to]] = [arr[to], arr[idx]];
+  _densityRenderZoom();
+}
+
+async function _densitySaveZoom() {
+  const st = document.getElementById('den-zoom-status');
+  if (!_densityConfig) return;
+  if (st) { st.style.color = 'var(--muted)'; st.textContent = 'Збереження…'; }
+  try {
+    const r = await fetch(`${API}/api/admin/density-settings`, {
+      method: 'POST',
+      headers: authH({'Content-Type':'application/json'}),
+      body: JSON.stringify(_densityConfig)
+    });
+    if (!r.ok) throw new Error(r.status);
+    if (st) { st.style.color = '#4caf50'; st.textContent = '✓ Збережено'; }
+    setTimeout(() => { if (st) st.textContent = ''; }, 3000);
+  } catch(e) {
+    if (st) { st.style.color = '#f44336'; st.textContent = '✗ Помилка: ' + e.message; }
+  }
+}
+
+/* ── Algorithm toggles ── */
+function _densityApplyAlgorithm() {
+  if (!_densityConfig) return;
+  const alg = _densityConfig.algorithm || {};
+  const map = {likes: true, rating: true, views: false, activity: false};
+  Object.entries(map).forEach(([key, def]) => {
+    const el = document.getElementById(`den-algo-${key}`);
+    if (el && !el.disabled) el.checked = alg[`use${key.charAt(0).toUpperCase()+key.slice(1)}`] ?? def;
+  });
+}
+
+async function _densitySaveAlgorithm() {
+  if (!_densityConfig) return;
+  _densityConfig.algorithm = _densityConfig.algorithm || {};
+  ['likes','rating'].forEach(key => {
+    const el = document.getElementById(`den-algo-${key}`);
+    if (el) _densityConfig.algorithm[`use${key.charAt(0).toUpperCase()+key.slice(1)}`] = el.checked;
+  });
+  try {
+    await fetch(`${API}/api/admin/density-settings`, {
+      method: 'POST',
+      headers: authH({'Content-Type':'application/json'}),
+      body: JSON.stringify(_densityConfig)
+    });
+    showN('Алгоритм збережено');
+  } catch(e) { showN('Помилка: ' + e.message, true); }
+}
+
+function _densityImport() {
+  const inp = document.createElement('input');
+  inp.type = 'file';
+  inp.accept = '.json';
+  inp.onchange = e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        _densityConfig = JSON.parse(ev.target.result);
+        _densityApplyUI();
+        showN('Конфіг імпортовано');
+      } catch { showN('Помилка: невірний JSON', true); }
+    };
+    reader.readAsText(file);
+  };
+  inp.click();
+}
+
+/* ── Stage 4: Statistics ── */
+async function _densityLoadStats() {
+  try {
+    const r = await fetch(`${API}/api/admin/density-stats`, {headers: authH()});
+    if (!r.ok) throw new Error(r.status);
+    const d = await r.json();
+    const _set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    _set('den-s-total', d.total ?? '—');
+    _set('den-s-avg', d.avg_score ?? '—');
+    const z5 = d.zoom_dist?.find(z => z.zoom === 5);
+    const z9 = d.zoom_dist?.find(z => z.zoom === 9);
+    _set('den-s-z5', z5 ? z5.visible : '—');
+    _set('den-s-z9', z9 ? z9.visible : '—');
+    const body = document.getElementById('den-zoom-dist-body');
+    if (body && d.zoom_dist?.length) {
+      const maxVisible = Math.max(...d.zoom_dist.map(z => z.visible), 1);
+      body.innerHTML = d.zoom_dist.map(z => {
+        const pct = d.total ? Math.round(z.visible / d.total * 100) : 0;
+        const barW = Math.round(z.visible / maxVisible * 100);
+        return `<tr>
+          <td>× ${z.zoom}</td>
+          <td>${z.minScore}</td>
+          <td>${z.visible} <span style="color:var(--muted);font-size:10px">(${pct}%)</span></td>
+          <td><div class="dz-bar-wrap"><div class="dz-bar" style="width:${barW}%"></div></div></td>
+        </tr>`;
+      }).join('');
+    }
+    const top5 = document.getElementById('den-top5-body');
+    if (top5 && d.top5?.length) {
+      top5.innerHTML = d.top5.map((p, i) => `<tr>
+        <td style="color:var(--muted)">${i + 1}</td>
+        <td>${p.name}</td>
+        <td style="color:var(--accent);font-weight:600">${p.score}</td>
+        <td>${p.likes}</td>
+        <td>${p.rating}</td>
+      </tr>`).join('');
+    } else if (top5) {
+      top5.innerHTML = '<tr><td colspan="5" class="den-empty-note">Немає даних</td></tr>';
+    }
+    _densityHighlightABVariant();
+  } catch(e) { console.error('_densityLoadStats', e); }
+}
+
+/* ── Stage 4: A/B Testing ── */
+const _DEN_AB_VARIANTS = {
+  a: {likes:0.45, rating:0.35, views:0.15, activity:0.05},
+  b: {likes:0.70, rating:0.20, views:0.08, activity:0.02},
+  c: {likes:0.20, rating:0.70, views:0.07, activity:0.03},
+};
+let _densitySelectedVariant = null;
+
+function _densityHighlightABVariant() {
+  if (!_densityConfig) return;
+  const w = _densityConfig.weights || {};
+  for (const [key, preset] of Object.entries(_DEN_AB_VARIANTS)) {
+    const match = Math.abs((w.likes||0)-(preset.likes))<.001 &&
+                  Math.abs((w.rating||0)-(preset.rating))<.001;
+    const badge = document.getElementById(`den-ab-${key}-badge`);
+    const tab   = document.getElementById(`den-ab-${key}`);
+    if (badge) badge.style.display = match ? '' : 'none';
+    if (tab) tab.classList.toggle('den-ab-active', key === _densitySelectedVariant);
+  }
+}
+
+function _densitySelectVariant(key) {
+  _densitySelectedVariant = key;
+  for (const k of ['a','b','c']) {
+    const tab = document.getElementById(`den-ab-${k}`);
+    if (tab) tab.classList.toggle('den-ab-active', k === key);
+  }
+  const btn = document.getElementById('den-ab-apply-btn');
+  if (btn) btn.disabled = false;
+}
+
+async function _densityActivateVariant() {
+  if (!_densitySelectedVariant || !_densityConfig) return;
+  const preset = _DEN_AB_VARIANTS[_densitySelectedVariant];
+  if (!preset) return;
+  _densityConfig.weights = {...preset};
+  _densityApplyUI();
+  const st = document.getElementById('den-ab-status');
+  if (st) { st.style.color='var(--muted)'; st.textContent='Збереження…'; }
+  try {
+    const r = await fetch(`${API}/api/admin/density-settings`, {
+      method:'POST', headers:authH({'Content-Type':'application/json'}),
+      body: JSON.stringify(_densityConfig)
+    });
+    if (!r.ok) throw new Error(r.status);
+    if (st) { st.style.color='#4caf50'; st.textContent='✓ Алгоритм активовано'; }
+    setTimeout(() => { if (st) st.textContent=''; }, 3000);
+    _densityHighlightABVariant();
+  } catch(e) {
+    if (st) { st.style.color='#f44336'; st.textContent='✗ '+e.message; }
+  }
+}
+
+/* ── Stage 4: Anti-cheat ── */
+async function _densitySaveAnticheat() {
+  if (!_densityConfig) return;
+  const st = document.getElementById('den-ac-status');
+  const maxlikes   = parseInt(document.getElementById('den-ac-maxlikes')?.value)   || 10;
+  const cooldown   = parseInt(document.getElementById('den-ac-cooldown')?.value)   || 30;
+  const sensitivity = document.getElementById('den-ac-sensitivity')?.value || 'medium';
+  _densityConfig.anticheat = {maxLikesPerIP: maxlikes, cooldownSec: cooldown, botSensitivity: sensitivity};
+  if (st) { st.style.color='var(--muted)'; st.textContent='Збереження…'; }
+  try {
+    const r = await fetch(`${API}/api/admin/density-settings`, {
+      method:'POST', headers:authH({'Content-Type':'application/json'}),
+      body: JSON.stringify(_densityConfig)
+    });
+    if (!r.ok) throw new Error(r.status);
+    if (st) { st.style.color='#4caf50'; st.textContent='✓ Збережено'; }
+    setTimeout(() => { if (st) st.textContent=''; }, 3000);
+  } catch(e) {
+    if (st) { st.style.color='#f44336'; st.textContent='✗ '+e.message; }
+  }
+}
+
+function _densityApplyAnticheat() {
+  if (!_densityConfig?.anticheat) return;
+  const ac = _densityConfig.anticheat;
+  const ml = document.getElementById('den-ac-maxlikes');
+  const cd = document.getElementById('den-ac-cooldown');
+  const sv = document.getElementById('den-ac-sensitivity');
+  if (ml) ml.value = ac.maxLikesPerIP ?? 10;
+  if (cd) cd.value = ac.cooldownSec   ?? 30;
+  if (sv) sv.value = ac.botSensitivity ?? 'medium';
+}
+
+/* ── Stage 4: Heatmap ── */
+async function _densityBuildHeatmap() {
+  const canvas  = document.getElementById('den-heatmap-canvas');
+  const wrap    = document.getElementById('den-heatmap-wrap');
+  const btn     = wrap?.querySelector('button');
+  if (!canvas) return;
+
+  if (btn) { btn.disabled = true; btn.textContent = 'Завантаження…'; }
+
+  try {
+    const r = await fetch(`${API}/api/admin/density-heatmap`, {headers: authH()});
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const points = await r.json();
+    if (!Array.isArray(points) || !points.length) throw new Error('Немає даних (немає записів з координатами)');
+
+    const W = canvas.width, H = canvas.height;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = '#03070e';
+    ctx.fillRect(0, 0, W, H);
+
+    const cfg = _densityConfig?.weights || {likes: 0.45, rating: 0.35};
+    const scores = points.map(p => p.likes * (cfg.likes ?? 0.45) + p.rating * (cfg.rating ?? 0.35));
+    const maxScore = Math.max(...scores, 1);
+
+    // Draw Ukraine SVG outline as faint background reference
+    ctx.globalAlpha = 0.07;
+    ctx.strokeStyle = '#4fc3f7';
+    ctx.lineWidth = 0.5;
+    ctx.strokeRect(W * 0.04, H * 0.06, W * 0.92, H * 0.88);
+    ctx.globalAlpha = 1;
+
+    // Render heatmap blobs — two passes: glow + bright core
+    for (let pass = 0; pass < 2; pass++) {
+      for (let i = 0; i < points.length; i++) {
+        const p = points[i];
+        const px = p.x * W, py = p.y * H;
+        if (!isFinite(px) || !isFinite(py)) continue;
+        const intensity = Math.min(1, scores[i] / maxScore);
+        if (pass === 0) {
+          // Glow layer
+          const glowR = 8 + intensity * 28;
+          const g = ctx.createRadialGradient(px, py, 0, px, py, glowR);
+          g.addColorStop(0, `rgba(79,195,247,${(0.08 + intensity * 0.18).toFixed(3)})`);
+          g.addColorStop(1, 'rgba(79,195,247,0)');
+          ctx.beginPath(); ctx.arc(px, py, glowR, 0, Math.PI * 2);
+          ctx.fillStyle = g; ctx.fill();
+        } else {
+          // Core dot
+          const coreR = 1.5 + intensity * 4;
+          ctx.globalAlpha = 0.4 + intensity * 0.6;
+          ctx.fillStyle = intensity > 0.6 ? '#f0b54a' : '#4fc3f7';
+          ctx.beginPath(); ctx.arc(px, py, coreR, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+    }
+    ctx.globalAlpha = 1;
+
+    // Legend
+    const grad = ctx.createLinearGradient(W - 90, H - 22, W - 10, H - 22);
+    grad.addColorStop(0, 'rgba(79,195,247,.6)');
+    grad.addColorStop(1, 'rgba(240,181,74,.9)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(W - 90, H - 18, 80, 6);
+    ctx.fillStyle = 'rgba(255,255,255,.4)';
+    ctx.font = '9px monospace';
+    ctx.fillText('низька', W - 90, H - 22);
+    ctx.fillText('висока', W - 36, H - 22);
+
+    if (wrap) wrap.style.display = 'none';
+    canvas.style.display = 'block';
+    const acts = document.getElementById('den-heatmap-actions');
+    if (acts) acts.style.display = 'flex';
+
+  } catch(e) {
+    console.error('heatmap', e);
+    if (btn) { btn.disabled = false; btn.innerHTML = '<svg class="adm-ico"><use href="#ico-stats"/></svg> Побудувати Heatmap'; }
+    showN('Помилка heatmap: ' + e.message, true);
+  }
+}
+
+function _densityResetHeatmap() {
+  const canvas = document.getElementById('den-heatmap-canvas');
+  const wrap   = document.getElementById('den-heatmap-wrap');
+  const acts   = document.getElementById('den-heatmap-actions');
+  if (canvas) { canvas.style.display = 'none'; const ctx = canvas.getContext('2d'); ctx.clearRect(0,0,canvas.width,canvas.height); }
+  if (wrap)   wrap.style.display = '';
+  if (acts)   acts.style.display = 'none';
+}
+
 async function _loadGoogleSettings() {
   try {
     const r = await fetch(`${API}/api/admin/google/status`, {headers: authH()});

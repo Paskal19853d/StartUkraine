@@ -2599,11 +2599,43 @@ let COLORS = {};
 let _dotPulseSpeed = 1.0, _dotPulseAmp = 0.35, _dotGlowInt = 0.40, _dotGlowR = 3.0;
 
 /* ── Завантаження кольорів з БД ── */
+// ── Density algorithm ──────────────────────────────────────
+let _DENSITY_CFG_CACHE = null;
+function _densityCfg() {
+  if (_DENSITY_CFG_CACHE) return _DENSITY_CFG_CACHE;
+  try { _DENSITY_CFG_CACHE = JSON.parse(getC('density_config','{}') || '{}'); }
+  catch { _DENSITY_CFG_CACHE = {}; }
+  return _DENSITY_CFG_CACHE;
+}
+function _densityScore(p) {
+  const cfg = _densityCfg();
+  const w = cfg.weights || {};
+  let score = (p.likes||0)*(w.likes??0.45) + (p.rating||0)*(w.rating??0.35);
+  const boost = (cfg.boosts||[]).find(b => b.id === p.id);
+  if (boost) {
+    if (boost.m === 'pin') return Infinity;
+    score *= (parseFloat(boost.m) || 1);
+  }
+  return score;
+}
+function _densityMinScore(scale) {
+  const cfg = _densityCfg();
+  const levels = (cfg.zoomLevels||[]).filter(l => l.minScore != null && l.zoom != null);
+  if (!levels.length) return 0;
+  const effectiveZoom = 9 + Math.log2(Math.max(0.05, scale));
+  const sorted = [...levels].sort((a,b) => a.zoom - b.zoom);
+  let minScore = 0;
+  for (const lv of sorted) { if (lv.zoom <= effectiveZoom) minScore = lv.minScore; }
+  return minScore;
+}
+// ─────────────────────────────────────────────────────────
+
 async function loadColors() {
   try {
     const r = await fetch(API+'/api/colors');
     COLORS = await r.json();
     window.COLORS = COLORS;
+    _DENSITY_CFG_CACHE = null; // reset density cache when colors reload
     applyColors();
     applySocialLinks();
     _applyRegSettings();
@@ -3316,8 +3348,10 @@ function _startCanvasLoop() {
     drawNeonThreads();
     // Pre-compute visible dots + індивідуальний pulse кожної зірки
     const _vis=[];
+    const _minS=_densityMinScore(tr.s);
     for(const p of people){
       if(!p||!isFinite(p.x)||!isFinite(p.y))continue;
+      if(_minS>0 && _densityScore(p)<_minS) continue; // density filter
       const pos=w2s(p.x,p.y);
       if(!isFinite(pos.x)||!isFinite(pos.y))continue;
       if(pos.x<-60||pos.x>W+60||pos.y<-60||pos.y>H+60)continue;

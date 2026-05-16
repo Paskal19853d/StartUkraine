@@ -625,6 +625,7 @@ def init_db():
         ("google_site_verification", "",   "Google Search Console: код верифікації сайту (html meta-tag content)"),
         ("google_analytics_id",      "",   "Google Analytics 4: Measurement ID (G-XXXXXXXXXX)"),
         ("google_analytics_enabled", "0",  "Google Analytics 4: вмикач (1=так, 0=ні)"),
+        ("density_config", '{"weights":{"likes":0.45,"rating":0.35,"views":0.15,"activity":0.05},"zoomLevels":[{"zoom":5,"minScore":500},{"zoom":7,"minScore":250},{"zoom":9,"minScore":100},{"zoom":11,"minScore":30},{"zoom":13,"minScore":0}],"decay":{"enabled":false,"rate":0.95,"hours":24}}', "Алгоритм щільності зірок на карті: ваги, zoom-рівні, decay"),
     ]
     with db.cursor() as c:
         for key, val, label in defaults:
@@ -1496,6 +1497,81 @@ def google_status(request: Request):
         "analytics_id":        _get_color_val("google_analytics_id", ""),
         "analytics_enabled":   _get_color_val("google_analytics_enabled", "0") == "1",
         "redirect_uri":        f"{OAUTH_REDIRECT_BASE}/api/auth/google/callback",
+    }
+
+@app.get("/api/admin/density-settings")
+def get_density_settings(request: Request):
+    require_moder(request)
+    raw = _get_color_val("density_config", "{}")
+    try:
+        return json.loads(raw)
+    except Exception:
+        return {}
+
+@app.post("/api/admin/density-settings")
+async def save_density_settings(request: Request):
+    require_moder(request)
+    body = await request.json()
+    value = json.dumps(body, ensure_ascii=False)
+    db = get_db()
+    with db.cursor() as cur:
+        cur.execute("UPDATE colors SET value=%s WHERE `key`='density_config'", (value,))
+    db.commit()
+    db.close()
+    return {"ok": True}
+
+@app.get("/api/admin/density-heatmap")
+def get_density_heatmap(request: Request):
+    require_moder(request)
+    db = get_db()
+    with db.cursor() as cur:
+        cur.execute(
+            "SELECT id, pos_x, pos_y, likes, rating FROM memorials "
+            "WHERE approved=1 AND pos_x IS NOT NULL AND pos_y IS NOT NULL"
+        )
+        rows = cur.fetchall()
+    db.close()
+    return [
+        {"id": r["id"], "x": float(r["pos_x"]), "y": float(r["pos_y"]),
+         "likes": r["likes"] or 0, "rating": float(r["rating"] or 0)}
+        for r in rows
+    ]
+
+@app.get("/api/admin/density-stats")
+def get_density_stats(request: Request):
+    require_moder(request)
+    raw = _get_color_val("density_config", "{}")
+    try:
+        cfg = json.loads(raw)
+    except Exception:
+        cfg = {}
+    weights = cfg.get("weights", {"likes": 0.45, "rating": 0.35, "views": 0.15, "activity": 0.05})
+    zoom_levels = sorted(cfg.get("zoomLevels", []), key=lambda x: x.get("zoom", 0))
+    db = get_db()
+    with db.cursor() as cur:
+        cur.execute("SELECT id, last, first, mid, likes, rating FROM memorials WHERE approved=1")
+        rows = cur.fetchall()
+    db.close()
+    scores = []
+    for r in rows:
+        score = (r["likes"] or 0) * weights.get("likes", 0.45) + \
+                (r["rating"] or 0) * weights.get("rating", 0.35)
+        name_parts = [r.get("last", "") or "", r.get("first", "") or "", r.get("mid", "") or ""]
+        name = " ".join(p for p in name_parts if p).strip() or "—"
+        scores.append({"id": r["id"], "name": name, "score": round(score, 2),
+                        "likes": r["likes"] or 0, "rating": float(r["rating"] or 0)})
+    scores.sort(key=lambda x: x["score"], reverse=True)
+    zoom_dist = [
+        {"zoom": lv["zoom"], "minScore": lv["minScore"],
+         "visible": sum(1 for s in scores if s["score"] >= lv["minScore"])}
+        for lv in zoom_levels
+    ]
+    avg = round(sum(s["score"] for s in scores) / len(scores), 2) if scores else 0
+    return {
+        "total": len(scores),
+        "avg_score": avg,
+        "top5": scores[:5],
+        "zoom_dist": zoom_dist,
     }
 
 @app.get("/rules.html")
