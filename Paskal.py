@@ -1370,6 +1370,33 @@ app.add_middleware(
     allow_headers=["Content-Type", "Authorization"],
 )
 
+def _is_browser(request: Request) -> bool:
+    return 'text/html' in request.headers.get('accept', '')
+
+@app.exception_handler(404)
+async def handler_404(request: Request, exc):
+    if _is_browser(request):
+        return FileResponse('404.html', status_code=404)
+    return JSONResponse({'detail': 'Not found'}, status_code=404)
+
+@app.exception_handler(403)
+async def handler_403(request: Request, exc):
+    if _is_browser(request):
+        return FileResponse('403.html', status_code=403)
+    return JSONResponse({'detail': str(getattr(exc, 'detail', 'Forbidden'))}, status_code=403)
+
+@app.exception_handler(429)
+async def handler_429(request: Request, exc):
+    if _is_browser(request):
+        return FileResponse('429.html', status_code=429)
+    return JSONResponse({'detail': str(getattr(exc, 'detail', 'Too many requests'))}, status_code=429)
+
+@app.exception_handler(500)
+async def handler_500(request: Request, exc):
+    if _is_browser(request):
+        return FileResponse('500.html', status_code=500)
+    return JSONResponse({'detail': 'Server error'}, status_code=500)
+
 @app.middleware("http")
 async def track_visits(request, call_next):
     global _request_count
