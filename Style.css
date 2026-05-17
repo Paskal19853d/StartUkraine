@@ -546,6 +546,29 @@ mark.shl {
   z-index: 50;
   animation: fadeIn .5s .3s var(--ease) both;
 }
+#zoom-scale {
+  width: 36px;
+  text-align: center;
+  font-size: 7.5px;
+  color: #888;
+  letter-spacing: .04em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  margin-top: -5px;
+  padding-bottom: 2px;
+  pointer-events: none;
+}
+#zoom-vis-count {
+  width: 36px;
+  text-align: center;
+  font-size: 8px;
+  color: #888;
+  letter-spacing: .03em;
+  opacity: .6;
+  line-height: 1;
+  margin-bottom: 2px;
+  pointer-events: none;
+}
 .zbtn {
   width: 36px; height: 36px;
   background: rgba(7,13,26,.9);

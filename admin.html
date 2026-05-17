@@ -8,7 +8,9 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"
         integrity="sha256-Mh46P6mNpKqpV9EL5Xy7UU3gmJ7tj51ya10FkCzQGQQ="
         crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"
+        integrity="sha256-yVBhl8r4CaB1tt7h2g02+xnacVj/6KiOewyWxdhiPJk="
+        crossorigin="anonymous"></script>
 <style>
 .adm-ico { width:15px;height:15px;display:inline-block;vertical-align:middle;flex-shrink:0;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round; }
 [class^="fi-rr-"],[class*=" fi-rr-"]{font-size:13px;vertical-align:middle;line-height:1;margin-right:3px}
@@ -100,16 +102,14 @@ html,body{height:100%;font-family:"Segoe UI",sans-serif;background:var(--bg);col
 .den-result-box{display:flex;align-items:center;gap:16px;padding:14px 18px;background:rgba(0,136,187,.06);border:1px solid rgba(0,136,187,.2);border-radius:8px}
 .den-result-score{font-size:32px;font-weight:700;color:var(--accent);font-family:'Courier New',monospace;letter-spacing:-.02em}
 .den-result-label{font-size:11px;color:var(--muted);line-height:1.6}
-.den-zoom-hdr{display:grid;grid-template-columns:90px 1fr 1fr 80px;gap:8px;padding:6px 0 8px;font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border)}
-.den-zoom-row{display:grid;grid-template-columns:90px 1fr 1fr 80px;gap:8px;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)}
+.den-zoom-hdr{display:grid;grid-template-columns:32px 72px 1fr 110px;gap:8px;padding:6px 0 8px;font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border)}
+.den-zoom-row{display:grid;grid-template-columns:32px 72px 1fr 110px;gap:8px;align-items:center;padding:5px 0;border-bottom:1px solid var(--border)}
 .den-zoom-row:last-child{border-bottom:none}
 .den-zoom-row input{background:var(--panel);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:12px;outline:none;width:100%;box-sizing:border-box;text-align:center}
 .den-zoom-row input:focus{border-color:var(--accent)}
-.den-zoom-acts{display:flex;gap:4px;justify-content:flex-end}
-.den-zoom-btn{background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:5px;width:24px;height:24px;cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center;transition:all .12s;padding:0}
-.den-zoom-btn:hover{border-color:var(--accent);color:var(--accent)}
-.den-zoom-btn.den-zoom-del:hover{border-color:#f44336;color:#f44336}
-.den-zoom-num{display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--muted);font-weight:600}
+.den-zoom-num{display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--muted);font-weight:600}
+.den-zoom-label{font-size:13px;font-weight:700;color:var(--accent);text-align:center;font-variant-numeric:tabular-nums;letter-spacing:.03em}
+.den-zoom-count{font-size:12px;text-align:center;white-space:nowrap;min-width:0}
 .den-algo-row{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--border)}
 .den-algo-row:last-child{border-bottom:none}
 .den-algo-lbl{flex:1;font-size:12px;color:var(--text)}
@@ -4191,13 +4191,13 @@ tr:hover td{background:rgba(255,255,255,.02)}
         <div class="rg-group">
           <div class="rg-group-title">Рівні Zoom — мінімальний score для відображення</div>
           <div class="den-block">
+            <div style="font-size:11px;color:var(--muted);margin-bottom:8px">
+              Порогові рівні масштабу: <b>×0.4</b> = вся Україна · <b>×1.0</b> = область · <b>×4.0</b> = місто · <b>×8.0</b> = максимум. При масштабі ≥ вказаного — показуються зірки з score ≥ мін. score.
+            </div>
             <div class="den-zoom-hdr">
-              <span>Zoom ≥</span><span style="text-align:center">Мін. score</span><span></span><span></span>
+              <span>№</span><span style="text-align:center">Zoom</span><span style="text-align:center">Мін. score</span><span style="text-align:center">Видно зірок</span>
             </div>
             <div id="den-zoom-table"></div>
-            <div style="margin-top:10px">
-              <button class="btn" onclick="_densityAddZoom()"><svg class="adm-ico"><use href="#ico-plus"/></svg> Додати рівень</button>
-            </div>
           </div>
           <div class="rg-row" style="border-bottom:none;gap:10px;flex-wrap:wrap">
             <button class="btn btn-p" onclick="_densitySaveZoom()"><svg class="adm-ico"><use href="#ico-check"/></svg> Зберегти Zoom</button>
@@ -4590,6 +4590,11 @@ function authH(extra = {}) {
   return Object.assign({'Authorization': 'Basic ' + creds}, extra);
 }
 let AE = '', AP = '';
+let _apClearTimer = null;
+function _scheduleApClear() {
+  clearTimeout(_apClearTimer);
+  _apClearTimer = setTimeout(() => { AP = ''; }, 15 * 60 * 1000);
+}
 let curAdminRole = 'user';
 let curAdminName = '';
 let COLORS = {}, pendColors = {};
@@ -4630,7 +4635,7 @@ async function adminLogin() {
     const d = await r.json();
     if (!d.ok || !['admin','moder'].includes(d.user.role)) throw new Error('not admin');
     _loginAttempts = 0;
-    AE=email; AP=pass;
+    AE=email; AP=pass; _scheduleApClear();
     curAdminRole = d.user.role || 'user';
     curAdminName = d.user.name || email;
     _admCookieSet(AUTH_COOKIE, JSON.stringify({e:email}), AUTH_DAYS);
@@ -4656,7 +4661,7 @@ async function adminLogout(){
 async function tryAutoLogin() {
   // Спробуємо відновити сесію через cookie (без введення пароля)
   try {
-    const r = await fetch(`${API}/api/admin/me`);
+    const r = await fetch(`${API}/api/admin/me`, {credentials:'include'});
     if (r.ok) {
       const u = await r.json();
       if (u && ['admin','moder'].includes(u.role)) {
@@ -4786,7 +4791,7 @@ async function silenceSave(){
   };
   const st=g('sl-status');
   try{
-    const r=await fetch(API+'/api/admin/minute-silence/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const r=await fetch(API+'/api/admin/minute-silence/settings',{method:'POST',headers:authH({'Content-Type':'application/json'}),body:JSON.stringify(body)});
     if(!r.ok)throw new Error(r.status);
     // Notify index.html via BroadcastChannel
     try{ new BroadcastChannel('zoryana_silence').postMessage({cmd:'settings',settings:body}); }catch(e){}
@@ -4804,7 +4809,7 @@ async function silenceTestStart(){
     // Reload settings to get latest audio_file
     const r=await fetch(API+'/api/minute-silence/settings');
     const s=r.ok?await r.json():{};
-    await fetch(API+'/api/admin/minute-silence/test-start',{method:'POST'});
+    await fetch(API+'/api/admin/minute-silence/test-start',{method:'POST',headers:authH()});
     try{ new BroadcastChannel('zoryana_silence').postMessage({cmd:'start',settings:s}); }catch(e){}
     if(st) st.textContent='Тест-режим увімкнено';
     setTimeout(()=>{ if(st) st.textContent=''; },4000);
@@ -4816,7 +4821,7 @@ async function silenceTestStart(){
 async function silenceTestStop(){
   const st=document.getElementById('sl-status');
   try{
-    await fetch(API+'/api/admin/minute-silence/test-stop',{method:'POST'});
+    await fetch(API+'/api/admin/minute-silence/test-stop',{method:'POST',headers:authH()});
     try{ new BroadcastChannel('zoryana_silence').postMessage({cmd:'stop'}); }catch(e){}
     if(st) st.textContent='Тест-режим зупинено';
     setTimeout(()=>{ if(st) st.textContent=''; },3000);
@@ -4833,7 +4838,7 @@ async function silenceUploadAudio(input) {
   try {
     const fd = new FormData();
     fd.append('file', file);
-    const r = await fetch(API + '/api/admin/minute-silence/audio', { method: 'POST', body: fd });
+    const r = await fetch(API + '/api/admin/minute-silence/audio', { method: 'POST', headers: authH(), body: fd });
     if (!r.ok) {
       const err = await r.text().catch(() => r.status);
       throw new Error(err || r.status);
@@ -5546,7 +5551,7 @@ let _memSearchQ = '';
 async function loadMem() {
   let allMem=[];let pg=1;
   while(true){
-    const r=await fetch(`${API}/api/admin/memorials?page=${pg}&limit=500`);
+    const r=await fetch(`${API}/api/admin/memorials?page=${pg}&limit=500`,{headers:authH()});
     if(!r.ok) break;
     const pd=await r.json();
     const items=Array.isArray(pd.items)?pd.items:(Array.isArray(pd)?pd:[]);
@@ -7237,18 +7242,6 @@ function saveAny(){
   else if(curTool==='cities') saveSelectedCity();
 }
 
-// Legacy alias
-function saveSelectedDot(){
-  if(!selDot)return;
-  const p=people.find(x=>x.id===selDot);if(!p)return;
-  try{
-    const r=fetch(`${API}/api/admin/memorial/${p.id}`,
-      {method:'PUT',headers:authH({'Content-Type':'application/json'}),
-       body:JSON.stringify({pos_x:p.pos_x,pos_y:p.pos_y,color:p.color})}).then(()=>{
-      _changedDots.delete(p.id);updateSaveButtonState();showN('Точку збережено');
-    }).catch(()=>showN('Помилка збереження точки',true));
-  }catch{showN('Помилка збереження точки',true);}
-}
 
 /* ══════════ CITIES MAP ══════════ */
 let _unplacedAll = [];
@@ -8512,9 +8505,16 @@ function adminToggleCookies(){
 /* ══════════ GOOGLE MODULE ══════════ */
 /* ══════════ ЩІЛЬНІСТЬ % ══════════ */
 let _densityConfig = null;
+
+// Змістовні рівні масштабу карти (вся Україна → місто)
+const _DENSITY_ZOOM_STEPS = [0.4, 0.7, 1.0, 1.5, 2.5, 4.0, 6.0, 8.0];
+
+// Спадний розподіл minScore: на ×0.4 — найбільше фільтрування, на ×8 — нуль
+const _DENSITY_DEFAULT_SCORES = [25, 18, 12, 8, 4, 2, 0, 0];
+
 const _DENSITY_DEFAULTS = {
   weights: {likes:0.45, rating:0.35, views:0.15, activity:0.05},
-  zoomLevels: [{zoom:5,minScore:500},{zoom:7,minScore:250},{zoom:9,minScore:100},{zoom:11,minScore:30},{zoom:13,minScore:0}],
+  zoomLevels: _DENSITY_ZOOM_STEPS.map((z, i) => ({zoom: z, minScore: _DENSITY_DEFAULT_SCORES[i] ?? 0})),
   decay: {enabled:false, rate:0.95, hours:24}
 };
 
@@ -8523,6 +8523,15 @@ async function _densityLoad() {
     const r = await fetch(`${API}/api/admin/density-settings`, {headers: authH()});
     if (!r.ok) return;
     _densityConfig = await r.json();
+    // Нормалізуємо zoomLevels до фіксованих кроків карти
+    const oldLevels = _densityConfig.zoomLevels || [];
+    const scoreMap = {};
+    oldLevels.forEach(lv => { scoreMap[+(+lv.zoom).toFixed(1)] = lv.minScore || 0; });
+    _densityConfig.zoomLevels = _DENSITY_ZOOM_STEPS.map((z, i) => ({zoom: z, minScore: scoreMap[z] ?? _DENSITY_DEFAULT_SCORES[i] ?? 0}));
+    // Якщо minScore зростає разом із zoom — напрям хибний, скидаємо до правильного розподілу
+    const ms = _densityConfig.zoomLevels.map(l => l.minScore);
+    const isWrongDir = ms.slice(1).some((v, i) => v > ms[i]);
+    if (isWrongDir) _densityConfig.zoomLevels = _DENSITY_ZOOM_STEPS.map((z, i) => ({zoom: z, minScore: _DENSITY_DEFAULT_SCORES[i] ?? 0}));
     _densityApplyUI();
   } catch(e) { console.error('_densityLoad', e); }
 }
@@ -8586,6 +8595,7 @@ function _densityUpdatePreview() {
     `<br>&nbsp;&nbsp;+ views &times; <b>${w.views.toFixed(2)}</b>` +
     `<br>&nbsp;&nbsp;+ activity &times; <b>${w.activity.toFixed(2)}</b>` +
     `<span class="den-fn">* значення оновлюються автоматично при зміні повзунків</span>`;
+  _densityZoomPreview();
 }
 
 function _densityCalcSandbox() {
@@ -8784,43 +8794,54 @@ function _densityRenderZoom() {
   tbl.innerHTML = levels.map((lv, i) => `
     <div class="den-zoom-row">
       <div class="den-zoom-num">${i + 1}</div>
-      <input type="number" min="1" max="22" value="${lv.zoom}" oninput="_densityZoomEdit(${i},'zoom',this.value)">
-      <input type="number" min="0" value="${lv.minScore}" oninput="_densityZoomEdit(${i},'minScore',this.value)">
-      <div class="den-zoom-acts">
-        <button class="den-zoom-btn" onclick="_densityMoveZoom(${i},-1)" title="Вгору">↑</button>
-        <button class="den-zoom-btn" onclick="_densityMoveZoom(${i}, 1)" title="Вниз">↓</button>
-        <button class="den-zoom-btn den-zoom-del" onclick="_densityRemoveZoom(${i})" title="Видалити">✕</button>
-      </div>
+      <div class="den-zoom-label">\xd7${(+lv.zoom).toFixed(1)}</div>
+      <input type="number" min="0" step="0.1" value="${lv.minScore}" oninput="_densityZoomEdit(${i},this.value)">
+      <div class="den-zoom-count" id="dzc-${i}">—</div>
     </div>`).join('');
+  _densityZoomPreview();
 }
 
-function _densityZoomEdit(idx, field, val) {
+function _densityZoomEdit(idx, val) {
   if (!_densityConfig?.zoomLevels?.[idx]) return;
-  _densityConfig.zoomLevels[idx][field] = parseFloat(val) || 0;
+  _densityConfig.zoomLevels[idx].minScore = parseFloat(val) || 0;
+  _densityZoomPreview();
 }
 
-function _densityAddZoom() {
-  if (!_densityConfig) return;
-  _densityConfig.zoomLevels = _densityConfig.zoomLevels || [];
-  const last = _densityConfig.zoomLevels.at(-1);
-  _densityConfig.zoomLevels.push({zoom: (last?.zoom || 10) + 2, minScore: 0});
-  _densityRenderZoom();
+/* ── Zoom preview — скільки зірок видно на кожному рівні ── */
+let _DEN_POINTS_CACHE = null;
+
+async function _densityFetchPoints() {
+  if (_DEN_POINTS_CACHE) return _DEN_POINTS_CACHE;
+  try {
+    const r = await fetch(`${API}/api/admin/density-heatmap`, {headers: authH()});
+    if (!r.ok) return [];
+    _DEN_POINTS_CACHE = await r.json();
+  } catch { _DEN_POINTS_CACHE = []; }
+  return _DEN_POINTS_CACHE;
 }
 
-function _densityRemoveZoom(idx) {
-  if (!_densityConfig?.zoomLevels) return;
-  _densityConfig.zoomLevels.splice(idx, 1);
-  _densityRenderZoom();
+function _densityPtScore(pt) {
+  const w = _densityGetWeights();
+  return (pt.likes || 0) * (w.likes || 0) + (pt.rating || 0) * (w.rating || 0);
 }
 
-function _densityMoveZoom(idx, dir) {
-  const arr = _densityConfig?.zoomLevels;
-  if (!arr) return;
-  const to = idx + dir;
-  if (to < 0 || to >= arr.length) return;
-  [arr[idx], arr[to]] = [arr[to], arr[idx]];
-  _densityRenderZoom();
+async function _densityZoomPreview() {
+  const pts = await _densityFetchPoints();
+  const total = pts.length;
+  const levels = _densityConfig?.zoomLevels || [];
+  levels.forEach((lv, i) => {
+    const el = document.getElementById(`dzc-${i}`);
+    if (!el) return;
+    if (!total) { el.innerHTML = '<span style="color:var(--muted)">—</span>'; return; }
+    const minS = lv.minScore || 0;
+    const visible = minS <= 0 ? total : pts.filter(pt => _densityPtScore(pt) >= minS).length;
+    const pct = Math.round(visible / total * 100);
+    const color = pct >= 70 ? '#4caf50' : pct >= 30 ? '#ff9800' : '#f44336';
+    el.innerHTML = `<b style="color:${color}">${visible}</b><span style="color:var(--muted);font-size:10px"> / ${total}</span>`;
+    el.title = `${pct}% зірок буде видно при minScore=${minS}`;
+  });
 }
+
 
 async function _densitySaveZoom() {
   const st = document.getElementById('den-zoom-status');
@@ -8835,6 +8856,11 @@ async function _densitySaveZoom() {
     if (!r.ok) throw new Error(r.status);
     if (st) { st.style.color = '#4caf50'; st.textContent = '✓ Збережено'; }
     setTimeout(() => { if (st) st.textContent = ''; }, 3000);
+    try {
+      const bc = new BroadcastChannel('zoryana_colors');
+      bc.postMessage({ type: 'colors_update', colors: { density_config: JSON.stringify(_densityConfig) } });
+      bc.close();
+    } catch(_) {}
   } catch(e) {
     if (st) { st.style.color = '#f44336'; st.textContent = '✗ Помилка: ' + e.message; }
   }
@@ -8968,6 +8994,7 @@ async function _densityActivateVariant() {
   if (!preset) return;
   _densityConfig.weights = {...preset};
   _densityApplyUI();
+  _densityZoomPreview();
   const st = document.getElementById('den-ab-status');
   if (st) { st.style.color='var(--muted)'; st.textContent='Збереження…'; }
   try {
@@ -9205,7 +9232,7 @@ async function versionSave() {
   try {
     const r = await fetch('/api/admin/colors/batch', {
       method: 'PUT',
-      headers: {'Content-Type':'application/json'},
+      headers: authH({'Content-Type':'application/json'}),
       body: JSON.stringify([{ key: 'app_version', value: v }])
     });
     if (!r.ok) throw new Error(await r.text());
@@ -9248,7 +9275,7 @@ async function uploadAdmLogo(input, urlFieldId, imgId, wrapId) {
   fd.append('file', file);
   showN('Завантаження…');
   try {
-    const r = await fetch('/api/admin/upload/logo', { method: 'POST', body: fd });
+    const r = await fetch('/api/admin/upload/logo', { method: 'POST', headers: authH(), body: fd });
     const d = await r.json();
     if (!r.ok) { showN(d.detail || 'Помилка завантаження', true); return; }
     const urlInput = document.getElementById(urlFieldId);
@@ -10332,10 +10359,12 @@ async function saveNewCity() {
 }
 
 /* ══════════ INIT ══════════ */
-let _statsTimer = null, _serverStatsTimer = null;
+let _statsTimer = null, _serverStatsTimer = null, _dashTimer = null, _seoTimer = null;
 function _stopPolling() {
   if(_statsTimer)       { clearInterval(_statsTimer);       _statsTimer = null; }
   if(_serverStatsTimer) { clearInterval(_serverStatsTimer); _serverStatsTimer = null; }
+  if(_dashTimer)        { clearInterval(_dashTimer);        _dashTimer = null; }
+  if(_seoTimer)         { clearInterval(_seoTimer);         _seoTimer = null; }
 }
 async function _handleAuthFail() {
   _stopPolling();
@@ -10355,8 +10384,8 @@ async function initAll(){
   dwInit();
   _statsTimer       = setInterval(loadStats, 10000);
   _serverStatsTimer = setInterval(loadServerStats, 15000);
-  setInterval(loadDashboard, 60000);
-  setInterval(loadSeoStats, 120000);
+  _dashTimer = setInterval(loadDashboard, 60000);
+  _seoTimer  = setInterval(loadSeoStats, 120000);
   connectWS();
   // Завантажуємо COLORS щоб відновити тему, логотип та порядок меню одразу після логіну
   try {
@@ -10472,7 +10501,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function loadSeoAdminDash() {
   try {
-    const r = await fetch('/api/admin/seo-dashboard');
+    const r = await fetch('/api/admin/seo-dashboard', {headers:authH()});
     if (!r.ok) return;
     const d = await r.json();
     const _t = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
@@ -10671,7 +10700,7 @@ async function loadSeoScores(grade = '') {
   if (activeBtn) activeBtn.style.background = 'var(--accent,#58a6ff)33';
   try {
     const url = '/api/admin/seo/scores?limit=300' + (grade ? `&grade=${grade}` : '');
-    const r = await fetch(url);
+    const r = await fetch(url, {headers:authH()});
     const d = await r.json();
     if (!d.items || !d.items.length) {
       tbl.innerHTML = '<span style="opacity:.5;font-size:12px">Немає записів з таким фільтром</span>';
@@ -10706,7 +10735,7 @@ async function loadSeoScores(grade = '') {
 
 async function seoAnalyzeCard(id) {
   try {
-    const r = await fetch(`/api/admin/seo/analyze/${id}`);
+    const r = await fetch(`/api/admin/seo/analyze/${id}`, {headers:authH()});
     const d = await r.json();
     const c = _SEO_GRADE_COLOR[d.grade] || '#aaa';
     const issues = d.issues?.length ? d.issues.map(x=>`<li style="color:#f44336">⚠ ${x}</li>`).join('') : '<li style="color:#4caf50">✓ Критичних проблем немає</li>';
@@ -10718,7 +10747,7 @@ async function seoAnalyzeCard(id) {
 async function seoRegenerateSlugs() {
   if (!confirm('Перегенерувати slug для всіх записів без slug?')) return;
   try {
-    const r = await fetch('/api/admin/seo/regenerate-slugs', {method:'POST'});
+    const r = await fetch('/api/admin/seo/regenerate-slugs', {method:'POST', headers:authH()});
     const d = await r.json();
     alert(`Оновлено: ${d.updated} записів`);
     loadSeoAdminDash();
@@ -10731,7 +10760,7 @@ async function seoPingGoogle() {
   if (el) el.textContent = ' (надсилаємо...)';
   if (el2) el2.textContent = 'Надсилаємо URL до Google…';
   try {
-    const r = await fetch('/api/admin/seo/ping-google', {method:'POST'});
+    const r = await fetch('/api/admin/seo/ping-google', {method:'POST', headers:authH()});
     const d = await r.json();
     if (!d.ok && d.reason) {
       if (el) el.textContent = ' — ' + d.reason;
@@ -10760,7 +10789,7 @@ async function seoCheckBrokenLinks() {
   const cnt = document.getElementById('seo-broken-count');
   if (cnt) cnt.textContent = '⏳ Перевірка запущена у фоні...';
   try {
-    const r = await fetch('/api/admin/seo/check-broken-links', {method:'POST'});
+    const r = await fetch('/api/admin/seo/check-broken-links', {method:'POST', headers:authH()});
     const d = await r.json();
     if (cnt) cnt.textContent = `Перевіряємо ${d.total} фото. Результати з\'являться через ~30с`;
     setTimeout(loadSeoBrokenLinks, 30000);
@@ -10774,7 +10803,7 @@ async function loadSeoBrokenLinks() {
   const tbl = document.getElementById('seo-broken-table');
   if (!tbl) return;
   try {
-    const r = await fetch('/api/admin/seo/broken-links');
+    const r = await fetch('/api/admin/seo/broken-links', {headers:authH()});
     const d = await r.json();
     if (!d.last_checked) {
       if (cnt) cnt.textContent = '';
@@ -10821,7 +10850,7 @@ async function loadSeoDuplicates() {
   if (!tbl) return;
   tbl.innerHTML = '<span style="opacity:.5">Завантаження...</span>';
   try {
-    const r = await fetch('/api/admin/seo/duplicates');
+    const r = await fetch('/api/admin/seo/duplicates', {headers:authH()});
     const d = await r.json();
     if (cnt) cnt.textContent = `${d.total_groups} груп дублікатів`;
     if (!d.groups || !d.groups.length) {
@@ -10842,7 +10871,7 @@ async function loadSeoDuplicates() {
 
 async function seoTakeSnapshot() {
   try {
-    const r = await fetch('/api/admin/seo/snapshot', {method:'POST'});
+    const r = await fetch('/api/admin/seo/snapshot', {method:'POST', headers: authH()});
     const d = await r.json();
     if (!d.ok) { alert('Помилка: ' + (d.reason||'невідома')); return; }
     loadSeoScoreHistory();
@@ -10855,7 +10884,7 @@ async function loadSeoScoreHistory() {
   const emptyEl = document.getElementById('seo-history-empty');
   if (!canvas) return;
   try {
-    const r = await fetch('/api/admin/seo/score-history?days=30');
+    const r = await fetch('/api/admin/seo/score-history?days=30', {headers: authH()});
     const d = await r.json();
     const hist = (d.history || []).reverse();
     if (!hist.length) {

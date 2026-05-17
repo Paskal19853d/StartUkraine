@@ -30,7 +30,7 @@ except ImportError:
 
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Depends, UploadFile, File, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, StreamingResponse, RedirectResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, StreamingResponse, RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
 import csv, io
 from fastapi.staticfiles import StaticFiles
@@ -443,6 +443,14 @@ def init_db():
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
         """)
 
+        # ── hourly_stats ──────────────────────────────────
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS hourly_stats (
+                hour_ts INT PRIMARY KEY,
+                views   INT NOT NULL DEFAULT 0
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        """)
+
         # ── minute_silence_settings ───────────────────────
         c.execute("""
             CREATE TABLE IF NOT EXISTS minute_silence_settings (
@@ -625,7 +633,7 @@ def init_db():
         ("google_site_verification", "",   "Google Search Console: код верифікації сайту (html meta-tag content)"),
         ("google_analytics_id",      "",   "Google Analytics 4: Measurement ID (G-XXXXXXXXXX)"),
         ("google_analytics_enabled", "0",  "Google Analytics 4: вмикач (1=так, 0=ні)"),
-        ("density_config", '{"weights":{"likes":0.45,"rating":0.35,"views":0.15,"activity":0.05},"zoomLevels":[{"zoom":5,"minScore":500},{"zoom":7,"minScore":250},{"zoom":9,"minScore":100},{"zoom":11,"minScore":30},{"zoom":13,"minScore":0}],"decay":{"enabled":false,"rate":0.95,"hours":24}}', "Алгоритм щільності зірок на карті: ваги, zoom-рівні, decay"),
+        ("density_config", '{"weights":{"likes":0.45,"rating":0.35,"views":0.15,"activity":0.05},"zoomLevels":[{"zoom":0.4,"minScore":200},{"zoom":1.0,"minScore":50},{"zoom":3.0,"minScore":10},{"zoom":8.0,"minScore":0}],"decay":{"enabled":false,"rate":0.95,"hours":24}}', "Алгоритм щільності зірок на карті: ваги, zoom-рівні, decay"),
     ]
     with db.cursor() as c:
         for key, val, label in defaults:
@@ -636,6 +644,24 @@ def init_db():
         # Мігруємо порожні social-ключі (старий формат URL) → '1' (показати)
         for _sk in ('social_facebook','social_twitter','social_instagram','social_youtube'):
             c.execute("UPDATE colors SET value='1' WHERE `key`=%s AND value=''", (_sk,))
+        # Мігруємо density_config: старі "conceptual zoom" (5,7,9,11,13) → реальний масштаб (0.4,1,3,8)
+        c.execute("SELECT value FROM colors WHERE `key`='density_config'")
+        _dc_row = c.fetchone()
+        if _dc_row:
+            try:
+                _dc = json.loads(_dc_row["value"] or "{}")
+                _lvs = _dc.get("zoomLevels", [])
+                if _lvs and all(lv.get("zoom", 0) >= 4 for lv in _lvs):
+                    _dc["zoomLevels"] = [
+                        {"zoom": 0.4, "minScore": 200},
+                        {"zoom": 1.0, "minScore": 50},
+                        {"zoom": 3.0, "minScore": 10},
+                        {"zoom": 8.0, "minScore": 0},
+                    ]
+                    c.execute("UPDATE colors SET value=%s WHERE `key`='density_config'",
+                              (json.dumps(_dc, ensure_ascii=False),))
+            except Exception:
+                pass
         # Синхронізуємо кольори областей із новою схемою (як в адмінці)
         c.execute("UPDATE colors SET value=%s WHERE `key`='oblast_fill'  AND value IN ('#03070e','#040f1e')", ("#0d2240",))
         c.execute("UPDATE colors SET value=%s WHERE `key`='oblast_stroke' AND value IN ('rgba(90,110,130,.3)','rgba(90,110,130,0.3)')", ("#1e4a7a",))
@@ -1143,6 +1169,45 @@ def _flush_daily_visits():
         pass
 
 
+def _flush_hourly_visits():
+    """Persist in-memory hourly visit counters to hourly_stats table."""
+    if not _visits_hourly:
+        return
+    try:
+        db = get_db()
+        with db.cursor() as c:
+            for hour_ts, cnt in list(_visits_hourly.items()):
+                c.execute(
+                    "INSERT INTO hourly_stats (hour_ts, views) VALUES (%s,%s)"
+                    " ON DUPLICATE KEY UPDATE views=%s",
+                    (hour_ts, cnt, cnt)
+                )
+            cutoff = int(time.time() // 3600) * 3600 - 49 * 3600
+            c.execute("DELETE FROM hourly_stats WHERE hour_ts < %s", (cutoff,))
+        db.commit()
+        db.close()
+    except Exception:
+        pass
+
+
+def _load_hourly_visits():
+    """Load last 48h hourly visit counts from hourly_stats into _visits_hourly on startup."""
+    try:
+        db = get_db()
+        with db.cursor() as c:
+            cutoff = int(time.time() // 3600) * 3600 - 48 * 3600
+            c.execute(
+                "SELECT hour_ts, views FROM hourly_stats WHERE hour_ts >= %s",
+                (cutoff,)
+            )
+            rows = c.fetchall()
+        db.close()
+        for r in rows:
+            _visits_hourly[r["hour_ts"]] = r["views"]
+    except Exception:
+        pass
+
+
 # ── Rate limiter ─────────────────────────────────────────
 class _RateLimiter:
     """Thread-safe sliding-window in-memory rate limiter with bounded key count."""
@@ -1288,6 +1353,7 @@ def _get_ip(request: Request) -> str:
 
 # ── APP ──────────────────────────────────────────────────
 _DEBUG = os.getenv("DEBUG", "0") == "1"
+_IS_PROD = os.getenv("ENVIRONMENT", "development") == "production"
 app = FastAPI(
     title="Зоряна Памʼять API",
     version="2.0",
@@ -1331,6 +1397,7 @@ async def track_visits(request, call_next):
         _rl.purge(3600)
         _sessions_purge()
         _flush_daily_visits()
+        _flush_hourly_visits()
         _flush_bot_queue()
     return await call_next(request)
 
@@ -1340,7 +1407,10 @@ async def security_headers(request, call_next):
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["X-XSS-Protection"] = "1; mode=block"
-    response.headers["Referrer-Policy"] = "no-referrer"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=(), payment=()"
+    if _IS_PROD:
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
         "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
@@ -1348,7 +1418,7 @@ async def security_headers(request, call_next):
         "font-src 'self' https://fonts.gstatic.com; "
         "img-src 'self' data: https: blob:; "
         "frame-src https://www.youtube.com https://www.youtube-nocookie.com; "
-        "connect-src 'self' ws://127.0.0.1:8000 wss://127.0.0.1:8000 http://127.0.0.1:8000 https://www.youtube.com;"
+        "connect-src 'self' ws: wss: https://www.youtube.com;"
     )
     return response
 
@@ -1368,6 +1438,12 @@ def startup():
     init_db()
     _init_pool()
     _init_redis()
+    _load_hourly_visits()
+
+@app.on_event("shutdown")
+def shutdown():
+    _flush_hourly_visits()
+    _flush_daily_visits()
 
 
 # ── Health & Metrics ──────────────────────────────────────
@@ -1402,9 +1478,16 @@ def health_check():
         status["memory_mb"] = round(_psutil.Process().memory_info().rss / 1024 / 1024, 1)
     return status
 
+_METRICS_TOKEN = os.getenv("METRICS_TOKEN", "")
+
 @app.get("/metrics")
-def metrics():
+def metrics(request: Request):
     """Prometheus-style метрики для моніторингу."""
+    if _METRICS_TOKEN:
+        auth = request.headers.get("Authorization", "")
+        if not auth.startswith("Bearer ") or auth[7:] != _METRICS_TOKEN:
+            return Response(content="Unauthorized", status_code=401,
+                            headers={"WWW-Authenticate": "Bearer realm=\"metrics\""})
     db = get_db()
     m = []
     # Загальна статистика
@@ -1463,6 +1546,44 @@ def svg_map(): return FileResponse("ukraine-map.svg", media_type="image/svg+xml"
 @app.get("/card")
 def card_page(): return FileResponse("card.html")
 
+@app.get("/user/{nickname}")
+def user_profile_page(nickname: str):
+    return FileResponse("profile.html")
+
+@app.get("/api/user/{nickname}")
+def get_user_profile(nickname: str):
+    db = get_db()
+    try:
+        with db.cursor() as c:
+            c.execute(
+                "SELECT id, name, first_name, last_name, nickname, role, created "
+                "FROM users WHERE nickname=%s AND is_banned=0",
+                (nickname,)
+            )
+            user = c.fetchone()
+            if not user:
+                raise HTTPException(404, "Користувача не знайдено")
+            c.execute(
+                "SELECT id, last, first, mid, slug, photo, likes, rating, color, death "
+                "FROM memorials WHERE added_by=%s AND approved=1 ORDER BY id DESC LIMIT 100",
+                (user["name"],)
+            )
+            mems = c.fetchall()
+    finally:
+        db.close()
+    for m in mems:
+        if m.get("death"):
+            m["death"] = str(m["death"])
+    full_name = " ".join(filter(None, [user.get("first_name") or "", user.get("last_name") or ""])) or user["name"]
+    return {
+        "nickname": user["nickname"],
+        "display_name": full_name,
+        "role": user["role"],
+        "created": user["created"],
+        "count": len(mems),
+        "memorials": mems,
+    }
+
 @app.get("/api/card/settings")
 def get_card_settings():
     db = get_db()
@@ -1518,6 +1639,7 @@ async def save_density_settings(request: Request):
         cur.execute("UPDATE colors SET value=%s WHERE `key`='density_config'", (value,))
     db.commit()
     db.close()
+    cache_delete("colors")
     return {"ok": True}
 
 @app.get("/api/admin/density-heatmap")
@@ -1631,13 +1753,56 @@ async def ws_online(ws: WebSocket):
         await broadcast({"online": len(connected), "users": _online_users_list()})
 
 
+# ── Magic bytes MIME validation (без зовнішніх залежностей) ─────
+_AUDIO_SIGNATURES: list[tuple[bytes, int]] = [
+    (b"ID3",       0),   # MP3 з ID3-тегом
+    (b"\xff\xfb",  0),   # MP3
+    (b"\xff\xf3",  0),   # MP3
+    (b"\xff\xf2",  0),   # MP3
+    (b"RIFF",      0),   # WAV (перевіряємо окремо)
+    (b"OggS",      0),   # OGG
+    (b"ftyp",      4),   # M4A/MP4 (4 байти offset)
+]
+_IMAGE_SIGNATURES: list[tuple[bytes, int]] = [
+    (b"\x89PNG",    0),  # PNG
+    (b"\xff\xd8\xff", 0),# JPEG
+    (b"GIF87a",     0),  # GIF
+    (b"GIF89a",     0),  # GIF
+    (b"RIFF",       0),  # WEBP (перевіряємо "WEBP" на offset 8)
+]
+
+def _check_audio_magic(data: bytes) -> bool:
+    for sig, off in _AUDIO_SIGNATURES:
+        if data[off:off+len(sig)] == sig:
+            if sig == b"RIFF":
+                return data[8:12] == b"WAVE"
+            return True
+    return False
+
+def _check_image_magic(data: bytes, ext: str) -> bool:
+    if ext == ".svg":
+        head = data[:200].lstrip()
+        return head.startswith(b"<svg") or head.startswith(b"<?xml") or b"<svg" in head[:500]
+    for sig, off in _IMAGE_SIGNATURES:
+        if data[off:off+len(sig)] == sig:
+            if sig == b"RIFF":
+                return data[8:12] == b"WEBP"
+            return True
+    return False
+
 # ── Validation helpers ────────────────────────────────────
 _PRIVATE_IP_RE = re.compile(
-    r'^(https?://)?(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)',
+    r'^(https?://)?(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|169\.254\.|0\.0\.0\.0|::1)',
     re.IGNORECASE,
 )
 _HEX_COLOR_RE  = re.compile(r'^#[0-9a-fA-F]{3}(?:[0-9a-fA-F]{3})?$')
 _RGBA_COLOR_RE = re.compile(r'^rgba?\(\s*\d+\s*,\s*\d+\s*,\s*\d+')
+
+_SSRF_BLOCKED_HOSTS = frozenset({
+    "metadata.google.internal", "169.254.169.254",
+    "instance-data", "instance-data.ec2.internal",
+    "169.254.170.2",  # AWS ECS metadata
+})
 
 def _validate_photo_url(url: str) -> str:
     if not url:
@@ -1645,6 +1810,20 @@ def _validate_photo_url(url: str) -> str:
     if not url.startswith(('http://', 'https://')):
         raise HTTPException(400, "URL фото має починатись з http:// або https://")
     if _PRIVATE_IP_RE.match(url):
+        raise HTTPException(400, "Недопустиме URL фото")
+    # Перевірка hostname: блокуємо userinfo-обхід та хмарні metadata endpoints
+    try:
+        from urllib.parse import urlparse
+        parsed = urlparse(url)
+        hostname = (parsed.hostname or '').lower()
+        if hostname in _SSRF_BLOCKED_HOSTS or hostname.endswith(".internal") or hostname.endswith(".local"):
+            raise HTTPException(400, "Недопустиме URL фото")
+        # Блокуємо userinfo (http://user@host — може приховувати адресу)
+        if parsed.username or parsed.password:
+            raise HTTPException(400, "Недопустиме URL фото")
+    except HTTPException:
+        raise
+    except Exception:
         raise HTTPException(400, "Недопустиме URL фото")
     return url[:500]
 
@@ -1668,6 +1847,8 @@ _NICK_RE = re.compile(r'^[Ѐ-ӿa-zA-Z0-9_.\-]{2,50}$')  # Cyrillic + Latin + dig
 _PHONE_RE = re.compile(r'^380[3-9]\d{8}$')
 
 def _email_verification_html(code: str, nickname: str) -> str:
+    nickname = _html.escape(nickname)
+    code     = _html.escape(code)
     return f"""<!DOCTYPE html>
 <html lang="uk"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -2052,18 +2233,20 @@ def get_people(page: int = 1, limit: int = 50, request: Request = None):
         return json.loads(cached)
     offset = (page - 1) * limit
     db = get_db()
-    with db.cursor() as c:
-        c.execute("SELECT COUNT(*) AS cnt FROM memorials WHERE approved=1")
-        total = c.fetchone()["cnt"]
-        c.execute(
-            "SELECT id,last,first,mid,birth,death,bury,loc,photo,color,pos_x,pos_y,"
-            "grp,`rank`,`position`,unit,likes,rating,video_url,approved,added_by,slug "
-            "FROM memorials WHERE approved=1 ORDER BY rating DESC, likes DESC "
-            "LIMIT %s OFFSET %s",
-            (limit, offset)
-        )
-        rows = c.fetchall()
-    db.close()
+    try:
+        with db.cursor() as c:
+            c.execute("SELECT COUNT(*) AS cnt FROM memorials WHERE approved=1")
+            total = c.fetchone()["cnt"]
+            c.execute(
+                "SELECT id,last,first,mid,birth,death,bury,loc,photo,color,pos_x,pos_y,"
+                "grp,`rank`,`position`,unit,likes,rating,video_url,approved,added_by,slug "
+                "FROM memorials WHERE approved=1 ORDER BY rating DESC, likes DESC "
+                "LIMIT %s OFFSET %s",
+                (limit, offset)
+            )
+            rows = c.fetchall()
+    finally:
+        db.close()
     result = {"items": rows, "total": total, "page": page, "limit": limit, "pages": (total + limit - 1) // limit}
     cache_set(cache_key, json.dumps(result, ensure_ascii=False), ttl=60)
     return result
@@ -2071,10 +2254,12 @@ def get_people(page: int = 1, limit: int = 50, request: Request = None):
 @app.get("/api/memorial/{mid}")
 def get_memorial(mid: int):
     db = get_db()
-    with db.cursor() as c:
-        c.execute("SELECT * FROM memorials WHERE id=%s AND approved=1", (mid,))
-        row = c.fetchone()
-    db.close()
+    try:
+        with db.cursor() as c:
+            c.execute("SELECT * FROM memorials WHERE id=%s AND approved=1", (mid,))
+            row = c.fetchone()
+    finally:
+        db.close()
     if not row:
         raise HTTPException(404, "Не знайдено")
     return row
@@ -2089,75 +2274,82 @@ def search(q: str = "", request: Request = None):
     if len(q) < 2:
         return []
     db = get_db()
-    with db.cursor() as c:
-        # FULLTEXT пошук через MATCH...AGAINST — набагато швидше ніж LIKE
-        try:
-            # Boolean mode підтримує короткі запити (min 3 символи за замовчуванням)
-            c.execute("""
-                SELECT * FROM memorials WHERE approved=1 AND MATCH(last,first,mid,grp,loc,descr)
-                AGAINST(%s IN BOOLEAN MODE)
-            """, (q,))
-            rows = c.fetchall()
-        except Exception:
-            # Fallback на LIKE якщо FULLTEXT ще не створено
-            like = f"%{q}%"
-            c.execute("""
-                SELECT * FROM memorials WHERE approved=1 AND (
-                    last LIKE %s OR first LIKE %s OR mid LIKE %s OR grp LIKE %s OR loc LIKE %s
-                    OR bury LIKE %s OR circ LIKE %s OR descr LIKE %s
-                )
-            """, (like, like, like, like, like, like, like, like))
-            rows = c.fetchall()
-
-    scored = []
-    for r in rows:
-        score = _score_person(r, q)
-        if score > 0.3:
-            scored.append((score, r))
-    scored.sort(key=lambda x: (-x[0], -(x[1].get("rating") or 0)))
-
-    results = []
-    for score, r in scored[:10]:
-        results.append({
-            "id":       r["id"],
-            "name":     f"{r['last']} {r['first']} {r.get('mid','') or ''}".strip(),
-            "last":     r["last"],
-            "first":    r["first"],
-            "mid":      r.get("mid", "") or "",
-            "callsign": r.get("grp", "") or "",
-            "location": r.get("loc", "") or "",
-            "bury":     r.get("bury", "") or "",
-            "color":    r.get("color", "#4fc3f7"),
-            "x":        r.get("pos_x", 0.5),
-            "y":        r.get("pos_y", 0.5),
-            "likes":    r.get("likes", 0),
-            "score":    round(score, 3),
-        })
-
-    # Логуємо запит (обмежуємо до 10000 записів)
     try:
         with db.cursor() as c:
-            c.execute(
-                "INSERT INTO search_logs (query, results_count, created_at) VALUES (%s,%s,%s)",
-                (q, len(results), int(time.time()))
-            )
-            # Видаляємо старі записи щоб не переповнювати
-            c.execute("""
-                DELETE FROM search_logs
-                WHERE id NOT IN (
-                    SELECT id FROM (
-                        SELECT id FROM search_logs ORDER BY id DESC LIMIT 10000
-                    ) AS t
+            # FULLTEXT пошук через MATCH...AGAINST — набагато швидше ніж LIKE
+            try:
+                # Boolean mode підтримує короткі запити (min 3 символи за замовчуванням)
+                c.execute("""
+                    SELECT * FROM memorials WHERE approved=1 AND MATCH(last,first,mid,grp,loc,descr)
+                    AGAINST(%s IN BOOLEAN MODE)
+                """, (q,))
+                rows = c.fetchall()
+            except Exception:
+                # Fallback на LIKE якщо FULLTEXT ще не створено
+                like = f"%{q}%"
+                c.execute("""
+                    SELECT * FROM memorials WHERE approved=1 AND (
+                        last LIKE %s OR first LIKE %s OR mid LIKE %s OR grp LIKE %s OR loc LIKE %s
+                        OR bury LIKE %s OR circ LIKE %s OR descr LIKE %s
+                    )
+                """, (like, like, like, like, like, like, like, like))
+                rows = c.fetchall()
+
+        scored = []
+        for r in rows:
+            score = _score_person(r, q)
+            if score > 0.3:
+                scored.append((score, r))
+        scored.sort(key=lambda x: (-x[0], -(x[1].get("rating") or 0)))
+
+        results = []
+        for score, r in scored[:10]:
+            results.append({
+                "id":       r["id"],
+                "name":     f"{r['last']} {r['first']} {r.get('mid','') or ''}".strip(),
+                "last":     r["last"],
+                "first":    r["first"],
+                "mid":      r.get("mid", "") or "",
+                "callsign": r.get("grp", "") or "",
+                "location": r.get("loc", "") or "",
+                "bury":     r.get("bury", "") or "",
+                "color":    r.get("color", "#4fc3f7"),
+                "x":        r.get("pos_x", 0.5),
+                "y":        r.get("pos_y", 0.5),
+                "likes":    r.get("likes", 0),
+                "score":    round(score, 3),
+            })
+
+        # Логуємо запит (обмежуємо до 10000 записів)
+        try:
+            with db.cursor() as c:
+                c.execute(
+                    "INSERT INTO search_logs (query, results_count, created_at) VALUES (%s,%s,%s)",
+                    (q, len(results), int(time.time()))
                 )
-            """)
-        db.commit()
-    except Exception:
-        pass
-    db.close()
+                # Видаляємо записи старше 30 днів та обмежуємо до 10000 записів
+                cutoff = int(time.time()) - 30 * 86400
+                c.execute("DELETE FROM search_logs WHERE created_at < %s", (cutoff,))
+                c.execute("""
+                    DELETE FROM search_logs
+                    WHERE id NOT IN (
+                        SELECT id FROM (
+                            SELECT id FROM search_logs ORDER BY id DESC LIMIT 10000
+                        ) AS t
+                    )
+                """)
+            db.commit()
+        except Exception:
+            pass
+    finally:
+        db.close()
     return results
 
 @app.post("/api/search/log")
-def search_log(data: dict):
+def search_log(data: dict, request: Request = None):
+    ip = _get_ip(request) if request else "unknown"
+    if not _rl.check(f"slog:{ip}", 20, 60):
+        return {"ok": True}  # тихо ігноруємо спам, не розкриваємо 429
     try:
         q   = str(data.get("query", ""))[:200]
         cnt = int(data.get("results_count", 0))
@@ -2381,23 +2573,24 @@ def like(mid: int, fp: Optional[str] = "anon", request: Request = None):
     now = int(time.time())
     fp  = (fp or "anon")[:64]
     db  = get_db()
-    with db.cursor() as c:
-        c.execute(
-            "SELECT COUNT(*) AS cnt FROM likes_log WHERE memorial_id=%s AND fingerprint=%s AND ts>%s",
-            (mid, fp, now - 2)
-        )
-        if c.fetchone()["cnt"]:
-            db.close()
-            return {"ok": False, "reason": "cooldown"}
-        c.execute(
-            "INSERT INTO likes_log (memorial_id,fingerprint,ts) VALUES (%s,%s,%s)",
-            (mid, fp, now)
-        )
-        c.execute("UPDATE memorials SET likes=likes+1 WHERE id=%s", (mid,))
-        db.commit()
-        c.execute("SELECT likes FROM memorials WHERE id=%s", (mid,))
-        row = c.fetchone()
-    db.close()
+    try:
+        with db.cursor() as c:
+            c.execute(
+                "SELECT COUNT(*) AS cnt FROM likes_log WHERE memorial_id=%s AND fingerprint=%s AND ts>%s",
+                (mid, fp, now - 2)
+            )
+            if c.fetchone()["cnt"]:
+                return {"ok": False, "reason": "cooldown"}
+            c.execute(
+                "INSERT INTO likes_log (memorial_id,fingerprint,ts) VALUES (%s,%s,%s)",
+                (mid, fp, now)
+            )
+            c.execute("UPDATE memorials SET likes=likes+1 WHERE id=%s", (mid,))
+            db.commit()
+            c.execute("SELECT likes FROM memorials WHERE id=%s", (mid,))
+            row = c.fetchone()
+    finally:
+        db.close()
     cache_delete("stats")  # likes changed
     return {"ok": True, "likes": row["likes"] if row else 0}
 
@@ -2495,7 +2688,7 @@ def send_code(u: SendCodeReq, request: Request):
         token = _session_create(row["id"])
         resp = JSONResponse({"ok": True, "registered": True, "user": row, "welcome": welcome})
         resp.set_cookie(key="admin_session", value=token, httponly=True,
-                        secure=False, samesite="lax", max_age=86400 * 7, path="/")
+                        secure=_IS_PROD, samesite="lax", max_age=86400 * 7, path="/")
         return resp
     code = "".join(secrets.choice("0123456789") for _ in range(6))
     pw_hash = hash_pass(u.password)  # хешуємо пароль одразу
@@ -2577,7 +2770,7 @@ def register(u: UserReg, request: Request):
     token = _session_create(row["id"])
     resp = JSONResponse({"ok": True, "user": row})
     resp.set_cookie(key="admin_session", value=token, httponly=True,
-                    secure=False, samesite="lax", max_age=86400 * 7, path="/")
+                    secure=_IS_PROD, samesite="lax", max_age=86400 * 7, path="/")
     return resp
 
 @app.post("/api/auth/login")
@@ -2639,7 +2832,7 @@ def login(u: UserLogin, request: Request):
         key="admin_session",
         value=token,
         httponly=True,
-        secure=False,       # True на production (HTTPS)
+        secure=_IS_PROD,
         samesite="lax",
         max_age=86400 * 7,
         path="/",
@@ -2783,7 +2976,7 @@ def _oauth_login_or_create(email: str, name: str) -> dict:
 def _oauth_set_session(resp: RedirectResponse, user_id: int) -> RedirectResponse:
     token = _session_create(user_id)
     resp.set_cookie(key="admin_session", value=token, httponly=True,
-                    secure=False, samesite="lax", max_age=86400 * 7, path="/")
+                    secure=_IS_PROD, samesite="lax", max_age=86400 * 7, path="/")
     return resp
 
 
@@ -2996,12 +3189,19 @@ def admin_add_person(p: PersonIn, request: Request):
 
 @app.delete("/api/admin/memorial/{mid}")
 def delete_memorial(mid: int, request: Request):
-    require_admin(request)
+    me = require_admin(request)
+    ip = _get_ip(request)
     db = get_db()
-    with db.cursor() as c:
-        c.execute("DELETE FROM memorials WHERE id=%s", (mid,))
-    db.commit()
-    db.close()
+    try:
+        with db.cursor() as c:
+            c.execute("SELECT last, first FROM memorials WHERE id=%s", (mid,))
+            m = c.fetchone()
+            c.execute("DELETE FROM memorials WHERE id=%s", (mid,))
+        db.commit()
+    finally:
+        db.close()
+    name = f"{m['last']} {m['first']}" if m else "?"
+    sec_log("DELETE_MEMORIAL", ip, f"id={mid} name={name} by={me.get('email','?')}")
     cache_flush_memorials()
     return {"ok": True}
 
@@ -3206,73 +3406,76 @@ async def import_csv_preview(request: Request, file: UploadFile = File(...)):
 
 @app.post("/api/admin/import/apply")
 async def import_csv_apply(request: Request):
-    require_moder(request)
+    me = require_moder(request)
+    ip = _get_ip(request)
     rows = await request.json()
     if not isinstance(rows, list):
         rows = rows.get('rows', [])
     inserted, skipped, errors = 0, 0, []
     db = get_db()
-    for i, row in enumerate(rows, 1):
-        last  = (row.get('last')  or '').strip()
-        first = (row.get('first') or '').strip()
-        if not last or not first:
-            skipped += 1; continue
-        try:
-            px = float(row.get('pos_x') or 0)
-            py = float(row.get('pos_y') or 0)
-        except (ValueError, TypeError):
-            px, py = 0.0, 0.0
-        try:
-            new_id = None
-            with db.cursor() as c:
-                c.execute("""
-                    INSERT INTO memorials
-                    (last,first,mid,birth,death,loc,bury,circ,descr,photo,color,
-                     pos_x,pos_y,grp,`rank`,`position`,`unit`,video_url,added_by,approved)
-                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,0)
-                """, (
-                    _sanitize_text(last, 100),
-                    _sanitize_text(first, 100),
-                    _sanitize_text((row.get('mid')       or '')[:100], 100),
-                    (row.get('birth') or None) or None,
-                    (row.get('death') or None) or None,
-                    _sanitize_text((row.get('loc')       or '')[:300], 300),
-                    _sanitize_text((row.get('bury')      or '')[:300], 300),
-                    _sanitize_text((row.get('circ')      or '')[:500], 500),
-                    (row.get('descr')     or '')[:5000],
-                    _validate_photo_url((row.get('photo') or '')[:500]),
-                    _validate_color(row.get('color') or ''),
-                    px, py,
-                    _sanitize_text((row.get('grp')       or '')[:100], 100),
-                    _sanitize_text((row.get('rank')      or '')[:100], 100),
-                    _sanitize_text((row.get('position')  or '')[:100], 100),
-                    _sanitize_text((row.get('unit')      or '')[:200], 200),
-                    _sanitize_text((row.get('video_url') or '')[:500], 500),
-                    _sanitize_text((row.get('added_by')  or 'csv-import')[:100], 100),
-                ))
-                new_id = c.lastrowid
-            db.commit()
-            inserted += 1
-            awards = row.get('_awards') or []
-            if awards and new_id:
-                try:
-                    with db.cursor() as c:
-                        for sort_idx, aw in enumerate(awards):
-                            c.execute(
-                                "INSERT INTO memorial_awards (memorial_id,name,img_file,sort_order) VALUES (%s,%s,%s,%s)",
-                                (new_id, (aw.get('name') or '')[:200], (aw.get('img_file') or '')[:300], sort_idx)
-                            )
-                    db.commit()
-                except Exception:
-                    pass
-        except HTTPException as ex:
-            skipped += 1
-            errors.append(f"Рядок {i} ({last} {first}): {ex.detail}")
-        except Exception as ex:
-            skipped += 1
-            errors.append(f"Рядок {i} ({last} {first}): {str(ex)[:120]}")
-    db.close()
+    try:
+        for i, row in enumerate(rows, 1):
+            last  = (row.get('last')  or '').strip()
+            first = (row.get('first') or '').strip()
+            if not last or not first:
+                skipped += 1; continue
+            try:
+                px = float(row.get('pos_x') or 0)
+                py = float(row.get('pos_y') or 0)
+            except (ValueError, TypeError):
+                px, py = 0.0, 0.0
+            try:
+                new_id = None
+                with db.cursor() as c:
+                    c.execute("""
+                        INSERT INTO memorials
+                        (last,first,mid,birth,death,loc,bury,circ,descr,photo,color,
+                         pos_x,pos_y,grp,`rank`,`position`,`unit`,video_url,added_by,approved)
+                        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,0)
+                    """, (
+                        _sanitize_text(last, 100),
+                        _sanitize_text(first, 100),
+                        _sanitize_text((row.get('mid')       or '')[:100], 100),
+                        (row.get('birth') or None) or None,
+                        (row.get('death') or None) or None,
+                        _sanitize_text((row.get('loc')       or '')[:300], 300),
+                        _sanitize_text((row.get('bury')      or '')[:300], 300),
+                        _sanitize_text((row.get('circ')      or '')[:500], 500),
+                        (row.get('descr')     or '')[:5000],
+                        _validate_photo_url((row.get('photo') or '')[:500]),
+                        _validate_color(row.get('color') or ''),
+                        px, py,
+                        _sanitize_text((row.get('grp')       or '')[:100], 100),
+                        _sanitize_text((row.get('rank')      or '')[:100], 100),
+                        _sanitize_text((row.get('position')  or '')[:100], 100),
+                        _sanitize_text((row.get('unit')      or '')[:200], 200),
+                        _sanitize_text((row.get('video_url') or '')[:500], 500),
+                        _sanitize_text((row.get('added_by')  or 'csv-import')[:100], 100),
+                    ))
+                    new_id = c.lastrowid
+                inserted += 1
+                awards = row.get('_awards') or []
+                if awards and new_id:
+                    try:
+                        with db.cursor() as c:
+                            for sort_idx, aw in enumerate(awards):
+                                c.execute(
+                                    "INSERT INTO memorial_awards (memorial_id,name,img_file,sort_order) VALUES (%s,%s,%s,%s)",
+                                    (new_id, (aw.get('name') or '')[:200], (aw.get('img_file') or '')[:300], sort_idx)
+                                )
+                    except Exception:
+                        pass
+            except HTTPException as ex:
+                skipped += 1
+                errors.append(f"Рядок {i} ({last} {first}): {ex.detail}")
+            except Exception as ex:
+                skipped += 1
+                errors.append(f"Рядок {i} ({last} {first}): {str(ex)[:120]}")
+        db.commit()
+    finally:
+        db.close()
     cache_flush_memorials()
+    sec_log("CSV_IMPORT", ip, f"inserted={inserted} skipped={skipped} by={me.get('email','?')}")
     return {"ok": True, "inserted": inserted, "skipped": skipped, "errors": errors[:50]}
 
 
@@ -3492,6 +3695,7 @@ class RoleUpdate(BaseModel):
 @app.put("/api/admin/users/{uid}/role")
 def set_user_role(uid: int, body: RoleUpdate, request: Request):
     me = require_admin(request)
+    ip = _get_ip(request)
     if uid == me["id"]:
         raise HTTPException(400, "Не можна змінити власну роль")
     role = body.role.strip()
@@ -3499,10 +3703,15 @@ def set_user_role(uid: int, body: RoleUpdate, request: Request):
         raise HTTPException(400, "Невірна роль")
     db = get_db()
     with db.cursor() as c:
+        c.execute("SELECT email, role FROM users WHERE id=%s", (uid,))
+        target = c.fetchone()
         c.execute("UPDATE users SET role=%s, is_admin=%s WHERE id=%s",
                   (role, 1 if role == "admin" else 0, uid))
     db.commit()
     db.close()
+    old_role = target['role'] if target else '?'
+    target_email = target['email'] if target else '?'
+    sec_log("ROLE_CHANGE", ip, f"uid={uid} email={target_email} {old_role}->{role} by={me.get('email','?')}")
     return {"ok": True}
 
 @app.put("/api/admin/color")
@@ -3522,7 +3731,8 @@ def update_color(c_body: ColorUpdate, request: Request):
 
 @app.put("/api/admin/colors/batch")
 def update_colors_batch(colors: List[ColorUpdate], request: Request):
-    require_admin(request)
+    me = require_admin(request)
+    ip = _get_ip(request)
     db = get_db()
     with db.cursor() as c:
         for col in colors:
@@ -3534,6 +3744,7 @@ def update_colors_batch(colors: List[ColorUpdate], request: Request):
     db.commit()
     db.close()
     cache_delete("colors")
+    sec_log("COLORS_BATCH", ip, f"keys={len(colors)} by={me.get('email','?')}")
     return {"ok": True}
 
 class SmtpTestReq(BaseModel):
@@ -3727,6 +3938,8 @@ async def upload_silence_audio(request: Request, file: UploadFile = File(...)):
     ext = os.path.splitext(file.filename or "")[1].lower()
     if ext not in (".mp3", ".wav", ".ogg", ".m4a"):
         raise HTTPException(400, "Дозволені формати: mp3, wav, ogg, m4a")
+    if not _check_audio_magic(raw):
+        raise HTTPException(400, "Невалідний формат аудіо файлу")
     fname = "silence_audio" + ext
     fpath = os.path.join("img", "audio", fname)
     with open(fpath, "wb") as fh:
@@ -3753,6 +3966,8 @@ async def upload_logo(request: Request, file: UploadFile = File(...)):
     raw = await file.read()
     if len(raw) > 2_000_000:
         raise HTTPException(400, "Файл завеликий (макс 2 МБ)")
+    if not _check_image_magic(raw, ext):
+        raise HTTPException(400, "Невалідний формат файлу")
     safe_name = f"logo_{int(time.time())}{ext}"
     with open(os.path.join("img", safe_name), "wb") as fh:
         fh.write(raw)
@@ -4415,7 +4630,7 @@ def seo_analyze_memorial(mid: int, request: Request):
 
 
 @app.get("/api/admin/seo/scores")
-def seo_scores_all(request: Request, limit: int = 50, grade: str = ""):
+def seo_scores_all(request: Request, limit: int = Query(default=50, le=500), grade: str = ""):
     """Return memorials sorted by SEO score ascending (worst first)."""
     require_moder(request)
     db = get_db()
@@ -4473,6 +4688,8 @@ def _check_links_bg():
         )
         photo_rows = c2.fetchall()
     db2.close()
+    results = []
+    ts = int(_time.time())
     for row in photo_rows:
         url = (row.get('photo') or '').strip()
         if not url or url.startswith('/'):
@@ -4485,21 +4702,23 @@ def _check_links_bg():
         except Exception:
             code = 0
         is_broken = 1 if (code == 0 or code >= 400) else 0
-        ts = int(_time.time())
-        try:
-            db3 = get_db()
-            with db3.cursor() as c3:
-                c3.execute(
-                    "INSERT INTO seo_broken_links "
-                    "(memorial_id, url, link_type, status_code, last_checked, is_broken) "
-                    "VALUES (%s, %s, 'photo', %s, %s, %s) "
-                    "ON DUPLICATE KEY UPDATE status_code=%s, last_checked=%s, is_broken=%s",
-                    (row['id'], url, code, ts, is_broken, code, ts, is_broken)
-                )
-            db3.commit()
-            db3.close()
-        except Exception:
-            pass
+        results.append((row['id'], url, code, ts, is_broken, code, ts, is_broken))
+    if not results:
+        return
+    try:
+        db3 = get_db()
+        with db3.cursor() as c3:
+            c3.executemany(
+                "INSERT INTO seo_broken_links "
+                "(memorial_id, url, link_type, status_code, last_checked, is_broken) "
+                "VALUES (%s, %s, 'photo', %s, %s, %s) "
+                "ON DUPLICATE KEY UPDATE status_code=%s, last_checked=%s, is_broken=%s",
+                results
+            )
+        db3.commit()
+        db3.close()
+    except Exception:
+        pass
 
 
 @app.post("/api/admin/seo/check-broken-links")

@@ -40,7 +40,21 @@
       "Bash(curl -sI \"https://build.protomaps.com/20241001.pmtiles\")",
       "PowerShell(docker run --rm alpine sh -c \"wget -q --spider https://download.geofabrik.de/ 2>&1; echo exit:$?\")",
       "Bash(Get-ChildItem -Path \"d:\\\\OSPanel\\\\OpenServer\\\\domains\\\\localhost\\\\treetex\" -Recurse -Name)",
-      "Bash(Select-Object -First 50)"
+      "Bash(Select-Object -First 50)",
+      "Bash(Get-ChildItem -Path \"d:\\\\OSPanel\\\\OpenServer\\\\domains\\\\localhost\\\\treetex\" -Filter \"*.html\")",
+      "Bash(Select-Object Name, FullName)",
+      "Bash(pip list *)",
+      "Bash(PowerShell -Command \"Select-String -Path 'd:\\\\OSPanel\\\\OpenServer\\\\domains\\\\localhost\\\\treetex\\\\admin.html' -Pattern '\\(initAll|document\\\\.getElementById\\\\\\(['\\\\''\\\\\"]\\(layout|main\\)['\\\\''\\\\\"]\\\\\\)\\\\.style\\\\.display\\\\s*=\\\\s*['\\\\''\\\\\"]\\(flex|block\\)['\\\\''\\\\\"]]' | Select-Object -First 5\")",
+      "Bash(curl -s \"https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js\")",
+      "Bash(openssl dgst *)",
+      "Bash(openssl base64 *)",
+      "Bash(Get-ChildItem -Filter \"*.html\")",
+      "Bash(Select-Object Name, Length)",
+      "Bash(Get-ChildItem -Path \"D:\\\\OSPanel\\\\OpenServer\\\\domains\\\\localhost\\\\treetex\" -Force)",
+      "Bash(Select-Object Name, Mode)",
+      "Bash(python -m pip list)",
+      "Bash(venv\\\\Scripts\\\\pip freeze *)",
+      "WebFetch(domain:speedhost.com.ua)"
     ],
     "additionalDirectories": [
       "D:\\OSPanel\\OpenServer\\domains\\localhost\\mpu\\backend",

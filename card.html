@@ -97,22 +97,6 @@
     pointer-events: none;
   }
 
-  /* Ribbon */
-  .ribbon { position: absolute; top: -10px; left: -10px; width: 220px; height: 220px; overflow: hidden; pointer-events: none; z-index: 4; }
-  .ribbon .band {
-    position: absolute; top: 56px; left: -60px; width: 320px; height: 38px;
-    background: linear-gradient(180deg, #1a1a1a 0%, #050505 45%, #1a1a1a 55%, #2a2a2a 100%);
-    transform: rotate(-45deg);
-    box-shadow: 0 8px 18px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.06), inset 0 -1px 0 rgba(0,0,0,0.6);
-    display: flex; align-items: center; justify-content: center;
-  }
-  .ribbon .band::before,.ribbon .band::after { content:""; position:absolute; width:14px; height:38px; background:linear-gradient(180deg,#050505,#1a1a1a); top:0; }
-  .ribbon .band::before { left:8px; }
-  .ribbon .band::after { right:8px; }
-  .ribbon .fold-tl,.ribbon .fold-br { position:absolute; width:0; height:0; z-index:-1; }
-  .ribbon .fold-tl { top:56px; left:6px; border-style:solid; border-width:0 0 18px 18px; border-color:transparent transparent #000 transparent; filter:brightness(.4); }
-  .ribbon .fold-br { top:130px; left:130px; border-style:solid; border-width:18px 0 0 18px; border-color:transparent transparent transparent #000; filter:brightness(.4); }
-
   .hero-top {
     position: absolute; top: 0; left: 0; right: 0;
     padding: 28px 40px;
@@ -282,11 +266,6 @@
 
 <!-- HERO -->
 <header class="hero" role="banner">
-  <div class="ribbon" id="hero-ribbon">
-    <div class="band"><span style="font-size:.6rem;letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.8);font-weight:600">Герой</span></div>
-    <div class="fold-tl"></div>
-    <div class="fold-br"></div>
-  </div>
   <div class="hero-photo no-photo" id="hero-photo"></div>
   <div class="hero-top">
     <a href="/" class="brand"><span class="star"></span> Зоряна Памʼять</a>
@@ -442,11 +421,6 @@ async function loadSettings(){
   const verEl = document.getElementById('card-app-version');
   if(verEl && _cfg.app_version) verEl.textContent = 'v' + _cfg.app_version;
 
-  /* ribbon visibility */
-  if(_cfg.card_show_ribbon === '0'){
-    const r = document.querySelector('.ribbon');
-    if(r) r.style.display = 'none';
-  }
 }
 
 function hexToRgba(hex, alpha){

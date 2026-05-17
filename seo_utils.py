@@ -17,10 +17,12 @@ def transliterate_uk(text: str) -> str:
 def make_slug(first: str, last: str, record_id: int) -> str:
     f = transliterate_uk((first or '').strip())
     l = transliterate_uk((last or '').strip())
-    raw = f'{f}-{l}-{record_id}'
+    raw = f'{f}-{l}'
     raw = re.sub(r'[^a-z0-9\-]', '', raw)
     raw = re.sub(r'-{2,}', '-', raw).strip('-')
-    return raw or f'memorial-{record_id}'
+    raw = raw[:200]  # cap name part before appending id suffix
+    raw = f'{raw}-{record_id}' if raw else f'memorial-{record_id}'
+    return raw
 
 def gen_seo_title(row: dict, site_name: str = "Зоряна Пам'ять") -> str:
     full = ' '.join(filter(None, [row.get('last'), row.get('first'), row.get('mid')])).strip()
