@@ -2214,6 +2214,8 @@ body{visibility:hidden}
     </div>
 
   <div id="zoom">
+    <div id="zoom-scale">×1.0</div>
+    <div id="zoom-vis-count"></div>
     <button class="zbtn" id="zin">+</button>
     <button class="zbtn" id="zout">&#8722;</button>
     <button class="zbtn" style="font-size:11px" id="zrst">&#8962;</button>
@@ -2451,6 +2453,10 @@ body{visibility:hidden}
     <div style="background:var(--surface);border-radius:10px;padding:12px 14px;margin-bottom:16px">
       <div style="font-size:12px;color:var(--text-secondary);margin-bottom:6px">ПІБ (незмінне)</div>
       <div id="pf-fio" style="font-weight:600;color:var(--text-primary)"></div>
+      <a id="pf-public-link" href="#" target="_blank" rel="noopener"
+         style="display:none;margin-top:6px;font-size:11px;color:var(--accent);opacity:.75;text-decoration:none">
+        ↗ Публічний профіль
+      </a>
     </div>
     <div class="fr full">
       <div class="fg">
@@ -2622,10 +2628,10 @@ function _densityMinScore(scale) {
   const cfg = _densityCfg();
   const levels = (cfg.zoomLevels||[]).filter(l => l.minScore != null && l.zoom != null);
   if (!levels.length) return 0;
-  const effectiveZoom = 9 + Math.log2(Math.max(0.05, scale));
+  // zoom значення = реальний tr.s масштаб карти (0.4 = найменший, 12 = максимальний)
   const sorted = [...levels].sort((a,b) => a.zoom - b.zoom);
   let minScore = 0;
-  for (const lv of sorted) { if (lv.zoom <= effectiveZoom) minScore = lv.minScore; }
+  for (const lv of sorted) { if (lv.zoom <= scale) minScore = lv.minScore; }
   return minScore;
 }
 // ─────────────────────────────────────────────────────────
@@ -2813,7 +2819,7 @@ function applyColors() {
   window.NEON_YELLOW  = c('neon_yellow') || '#d4a800';
   // Зберігаємо пороги зуму для використання в clampTr/applyTr
   window.ZOOM_MIN         = parseFloat(c('zoom_min')         || '0.4');
-  window.ZOOM_MAX         = parseFloat(c('zoom_max')         || '12');
+  window.ZOOM_MAX         = parseFloat(c('zoom_max')         || '8');
   window.CITY_BORDER_ZOOM = parseFloat(c('city_border_zoom') || '2.5');
   // Пульсація і свічення зірок
   _dotPulseSpeed = Math.max(0.1, parseFloat(c('dot_pulse_speed')    || '1.0'));
@@ -3021,6 +3027,8 @@ function updateMapSvgViewBox() {
 
 function applyTr() {
   _canvasDirty = true; // карта рухається → canvas має перемалюватись синхронно
+  const _zs = document.getElementById('zoom-scale');
+  if (_zs) _zs.textContent = '×' + tr.s.toFixed(1);
   updateMapSvgViewBox();
   const zc=tr.s>=(window.CITY_BORDER_ZOOM||2.5);
   sl.classList.toggle('zoom-city',zc);
@@ -3347,11 +3355,13 @@ function _startCanvasLoop() {
     animT+=.033;ctx.clearRect(0,0,W,H);
     drawNeonThreads();
     // Pre-compute visible dots + індивідуальний pulse кожної зірки
+    let _minS=0; try{_minS=_densityMinScore(tr.s);}catch(_){}
+    let _denCount=0;
     const _vis=[];
-    const _minS=_densityMinScore(tr.s);
     for(const p of people){
       if(!p||!isFinite(p.x)||!isFinite(p.y))continue;
-      if(_minS>0 && _densityScore(p)<_minS) continue; // density filter
+      if(_minS>0){try{if(_densityScore(p)<_minS)continue;}catch(_){}}
+      _denCount++;
       const pos=w2s(p.x,p.y);
       if(!isFinite(pos.x)||!isFinite(pos.y))continue;
       if(pos.x<-60||pos.x>W+60||pos.y<-60||pos.y>H+60)continue;
@@ -3363,6 +3373,9 @@ function _startCanvasLoop() {
       const pulse=(1-_dotPulseAmp)+_dotPulseAmp*((Math.sin(animT*sp+phase)+1)/2);
       _vis.push({p,pos,pulse});
     }
+    // Оновлюємо лічильник зірок під zoom-шкалою
+    const _zvc=document.getElementById('zoom-vis-count');
+    if(_zvc) _zvc.textContent=_denCount+'★';
     // Pass 1: свічення та кільця — ТІЛЬКИ коли карта стоїть (економія CPU)
     if(!_dirty){
       for(const {p,pos,pulse} of _vis)drawDotFX(p,pos,pulse);
@@ -4432,6 +4445,8 @@ function openProfile(){
   document.getElementById('pf-fio').textContent=
     [curUser.last_name,curUser.first_name,curUser.middle_name].filter(Boolean).join(' ')||curUser.name||'';
   document.getElementById('pf-nick').value=curUser.nickname||'';
+  const pfLink=document.getElementById('pf-public-link');
+  if(pfLink){if(curUser.nickname){pfLink.href='/user/'+curUser.nickname;pfLink.style.display='inline';}else{pfLink.style.display='none';}}
   document.getElementById('pf-email').value=curUser.email||'';
   document.getElementById('pf-email2').value='';
   document.getElementById('pf-phone').value=curUser.phone||'';
@@ -4614,6 +4629,7 @@ try {
       if (!COLORS[k]) COLORS[k] = { value: v, label: k };
       else COLORS[k].value = v;
     });
+    if ('density_config' in e.data.colors) _DENSITY_CFG_CACHE = null;
     applyColors();
   };
 } catch(_) {}

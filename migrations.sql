@@ -45,3 +45,18 @@ ANALYZE TABLE users;
 ANALYZE TABLE search_logs;
 ANALYZE TABLE cities;
 ANALYZE TABLE colors;
+
+-- ── Міграція 003: FK для likes_log → memorials (каскадне видалення) ──
+-- Створено: 2026-05-17
+-- Опис: Щоб orphan-записи не залишались після видалення меморіалу
+ALTER TABLE likes_log
+  ADD CONSTRAINT fk_likes_memorial
+  FOREIGN KEY IF NOT EXISTS (memorial_id) REFERENCES memorials(id) ON DELETE CASCADE;
+
+-- ── Міграція 004: Погодинна статистика ──
+-- Створено: 2026-05-16
+-- Опис: Таблиця для збереження погодинних відвідувань між рестартами сервера
+CREATE TABLE IF NOT EXISTS hourly_stats (
+    hour_ts INT PRIMARY KEY,
+    views   INT NOT NULL DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

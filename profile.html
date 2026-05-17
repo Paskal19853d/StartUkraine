@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#050507">
+<meta name="robots" content="noindex">
+<title>Профіль — Зоряна Памʼять</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #050507;
+    --bg-2: #0b0b10;
+    --text: #e8e6e1;
+    --muted: #8a8a93;
+    --dim: #5a5a63;
+    --card: #0f1015;
+    --line: rgba(255,255,255,0.07);
+    --accent: #f0b54a;
+    --accent-soft: rgba(240,181,74,0.12);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--bg); color: var(--text); }
+  body { font-family: 'Inter', system-ui, sans-serif; overflow-x: hidden; -webkit-font-smoothing: antialiased; line-height: 1.6; }
+  .serif { font-family: 'Cormorant Garamond', Georgia, serif; font-weight: 500; letter-spacing: -0.01em; }
+
+  /* Loading */
+  #loading-screen {
+    position: fixed; inset: 0; background: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 20px; z-index: 999;
+  }
+  .load-star {
+    width: 48px; height: 48px;
+    background: var(--accent);
+    clip-path: polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);
+    animation: pulse 1.4s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(.85)} }
+  .load-txt { color: var(--muted); font-size: .8rem; letter-spacing: .2em; text-transform: uppercase; }
+
+  /* Error screen */
+  #error-screen {
+    position: fixed; inset: 0; background: var(--bg);
+    display: none; align-items: center; justify-content: center;
+    flex-direction: column; gap: 16px; z-index: 999; text-align: center; padding: 24px;
+  }
+  #error-screen h2 { font-size: 1.4rem; color: var(--text); }
+  #error-screen p { color: var(--muted); font-size: .9rem; }
+  #error-screen a { color: var(--accent); text-decoration: none; }
+
+  /* Page content */
+  #page-content { display: none; }
+
+  /* HERO */
+  .profile-hero {
+    display: flex; flex-direction: column; align-items: center;
+    padding: 72px 20px 48px;
+    text-align: center;
+    border-bottom: 1px solid var(--line);
+    background: radial-gradient(ellipse at 50% 0%, rgba(240,181,74,.07) 0%, transparent 65%);
+  }
+  .avatar-circle {
+    width: 88px; height: 88px; border-radius: 50%;
+    background: var(--accent-soft);
+    border: 2px solid var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: 2rem; font-weight: 600;
+    color: var(--accent); letter-spacing: .05em;
+    margin-bottom: 20px;
+  }
+  .profile-name {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: 2rem; font-weight: 600;
+    color: var(--text); line-height: 1.2;
+    margin-bottom: 8px;
+  }
+  .profile-meta {
+    display: flex; align-items: center; justify-content: center;
+    flex-wrap: wrap; gap: 8px 16px;
+    color: var(--muted); font-size: .8rem;
+  }
+  .profile-nick { color: var(--dim); }
+  .role-badge {
+    padding: 2px 10px; border-radius: 20px;
+    font-size: .7rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
+    background: var(--accent-soft); color: var(--accent); border: 1px solid rgba(240,181,74,.3);
+  }
+  .role-badge.admin { background: rgba(239,68,68,.1); color: #f87171; border-color: rgba(239,68,68,.3); }
+  .role-badge.moder { background: rgba(99,102,241,.1); color: #a5b4fc; border-color: rgba(99,102,241,.3); }
+  .profile-since { color: var(--dim); font-size: .75rem; }
+  .profile-count {
+    margin-top: 20px;
+    font-size: .8rem; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--muted);
+  }
+  .profile-count strong { color: var(--accent); font-size: 1.1rem; font-weight: 600; }
+
+  /* Divider */
+  .divider {
+    display: flex; align-items: center; gap: 12px;
+    margin: 48px auto 32px; max-width: 900px; padding: 0 20px;
+  }
+  .divider-line { flex: 1; height: 1px; background: var(--line); }
+  .divider-star {
+    width: 14px; height: 14px;
+    background: var(--accent);
+    clip-path: polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);
+    opacity: .6;
+  }
+
+  /* Memorial grid */
+  .mem-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 16px;
+    max-width: 900px; margin: 0 auto; padding: 0 20px 80px;
+  }
+  .mem-card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    overflow: hidden;
+    text-decoration: none;
+    color: inherit;
+    display: flex; flex-direction: column;
+    transition: border-color .2s, transform .2s;
+  }
+  .mem-card:hover { border-color: rgba(240,181,74,.35); transform: translateY(-2px); }
+  .mem-photo {
+    width: 100%; height: 160px;
+    object-fit: cover; object-position: center top;
+    background: #0b0b10;
+    display: block;
+  }
+  .mem-photo-ph {
+    width: 100%; height: 160px;
+    background: #0c0c14;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .mem-photo-ph svg { width: 48px; height: 48px; opacity: .18; }
+  .mem-info { padding: 14px 16px 16px; flex: 1; display: flex; flex-direction: column; gap: 6px; }
+  .mem-name {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: 1.05rem; font-weight: 600; color: var(--text); line-height: 1.25;
+  }
+  .mem-foot {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: auto; padding-top: 8px;
+    border-top: 1px solid var(--line);
+  }
+  .mem-death { font-size: .75rem; color: var(--muted); }
+  .mem-likes { font-size: .75rem; color: var(--dim); }
+  .mem-likes svg { width: 12px; height: 12px; vertical-align: middle; margin-right: 3px; }
+
+  /* Empty state */
+  .empty-state {
+    text-align: center; padding: 64px 20px;
+    color: var(--muted); font-size: .9rem;
+  }
+  .empty-state .star-ico {
+    width: 40px; height: 40px;
+    background: var(--dim);
+    clip-path: polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);
+    margin: 0 auto 16px; opacity: .3;
+  }
+
+  /* Footer */
+  .profile-footer {
+    text-align: center; padding: 32px 20px 48px;
+    border-top: 1px solid var(--line);
+  }
+  .profile-footer a {
+    color: var(--muted); font-size: .8rem; text-decoration: none;
+    transition: color .2s;
+  }
+  .profile-footer a:hover { color: var(--accent); }
+
+  @media (max-width: 480px) {
+    .profile-name { font-size: 1.5rem; }
+    .avatar-circle { width: 72px; height: 72px; font-size: 1.6rem; }
+    .mem-grid { grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 12px 60px; }
+    .mem-photo, .mem-photo-ph { height: 120px; }
+  }
+  @media (max-width: 340px) {
+    .mem-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div id="loading-screen">
+  <div class="load-star"></div>
+  <div class="load-txt">Завантаження…</div>
+</div>
+
+<div id="error-screen">
+  <h2>Профіль не знайдено</h2>
+  <p id="error-msg">Такого користувача не існує або його заблоковано.</p>
+  <a href="/">← На головну</a>
+</div>
+
+<div id="page-content">
+  <div class="profile-hero">
+    <div class="avatar-circle" id="prof-avatar"></div>
+    <div class="profile-name serif" id="prof-name"></div>
+    <div class="profile-meta">
+      <span class="profile-nick" id="prof-nick"></span>
+      <span class="role-badge" id="prof-role"></span>
+      <span class="profile-since" id="prof-since"></span>
+    </div>
+    <div class="profile-count" id="prof-count"></div>
+  </div>
+
+  <div id="mem-section">
+    <div class="divider">
+      <div class="divider-line"></div>
+      <div class="divider-star"></div>
+      <div class="divider-line"></div>
+    </div>
+    <div class="mem-grid" id="mem-grid"></div>
+  </div>
+
+  <footer class="profile-footer">
+    <a href="/">← Зоряна Памʼять</a>
+  </footer>
+</div>
+
+<script>
+(function(){
+  const PATH = location.pathname;
+  const nick = PATH.split('/').filter(Boolean).pop() || '';
+  if (!nick) { showError('Нікнейм не вказано'); return; }
+
+  fetch('/api/user/' + encodeURIComponent(nick))
+    .then(r => {
+      if (r.status === 404) throw new Error('not_found');
+      if (!r.ok) throw new Error('server_error');
+      return r.json();
+    })
+    .then(data => fillProfile(data))
+    .catch(e => {
+      if (e.message === 'not_found')
+        showError('Такого користувача не існує або його заблоковано.');
+      else
+        showError('Помилка завантаження. Спробуйте пізніше.');
+    });
+
+  function fillProfile(d) {
+    document.title = (d.display_name || '@' + d.nickname) + ' — Зоряна Памʼять';
+
+    const initials = (d.display_name || d.nickname || '?')
+      .split(' ').slice(0, 2).map(w => w[0] || '').join('').toUpperCase() || '?';
+    document.getElementById('prof-avatar').textContent = initials;
+    document.getElementById('prof-name').textContent = d.display_name || d.nickname;
+    document.getElementById('prof-nick').textContent = '@' + d.nickname;
+
+    const roleEl = document.getElementById('prof-role');
+    const roleMap = { admin: 'Адмін', moder: 'Модератор', user: 'Учасник' };
+    roleEl.textContent = roleMap[d.role] || d.role;
+    if (d.role === 'admin') roleEl.classList.add('admin');
+    else if (d.role === 'moder') roleEl.classList.add('moder');
+
+    if (d.created) {
+      const dt = new Date(d.created * 1000);
+      const months = ['січня','лютого','березня','квітня','травня','червня',
+                      'липня','серпня','вересня','жовтня','листопада','грудня'];
+      document.getElementById('prof-since').textContent =
+        'з ' + dt.getDate() + ' ' + months[dt.getMonth()] + ' ' + dt.getFullYear();
+    }
+
+    const profCount = d.count || 0;
+    document.getElementById('prof-count').innerHTML =
+      '<strong>' + profCount + '</strong> ' + plural(profCount, 'меморіал', 'меморіали', 'меморіалів') + ' додано';
+
+    const grid = document.getElementById('mem-grid');
+    if (!d.memorials || !d.memorials.length) {
+      grid.innerHTML = '';
+      const ms = document.getElementById('mem-section');
+      ms.innerHTML = '<div class="empty-state"><div class="star-ico"></div><p>Меморіалів ще немає</p></div>';
+    } else {
+      grid.innerHTML = d.memorials.map(m => cardHTML(m)).join('');
+    }
+
+    document.getElementById('loading-screen').style.display = 'none';
+    document.getElementById('page-content').style.display = 'block';
+  }
+
+  function cardHTML(m) {
+    const name = [m.last, m.first, m.mid].filter(Boolean).join(' ') || '—';
+    const href = m.slug ? '/memorial/' + m.slug : '/card?id=' + m.id;
+    const photoBlock = m.photo
+      ? '<img class="mem-photo" src="' + escH(m.photo) + '" alt="' + escH(name) + '" loading="lazy" onerror="this.onerror=null;this.src=\'/img/foto_false.png\'">'
+      : '<div class="mem-photo-ph">' + starSVG() + '</div>';
+    const death = m.death ? '<span class="mem-death">' + escH(m.death) + '</span>' : '<span></span>';
+    const likes = m.likes ? '<span class="mem-likes">&#9733; ' + m.likes + '</span>' : '';
+    return '<a class="mem-card" href="' + href + '">' +
+      photoBlock +
+      '<div class="mem-info">' +
+        '<div class="mem-name">' + escH(name) + '</div>' +
+        '<div class="mem-foot">' + death + likes + '</div>' +
+      '</div>' +
+    '</a>';
+  }
+
+  function starSVG() {
+    return '<svg viewBox="0 0 24 24" fill="currentColor" style="color:var(--accent)">' +
+      '<path d="M12 2l2.7 7.5H22l-6.4 4.7 2.4 7.4L12 17.3l-6 4.3 2.4-7.4L2 9.5h7.3z"/>' +
+    '</svg>';
+  }
+
+  function showError(msg) {
+    document.getElementById('loading-screen').style.display = 'none';
+    const es = document.getElementById('error-screen');
+    es.style.display = 'flex';
+    document.getElementById('error-msg').textContent = msg;
+  }
+
+  function escH(s) {
+    return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function plural(n, one, few, many) {
+    const m = n % 100;
+    if (m >= 11 && m <= 14) return many;
+    const r = n % 10;
+    if (r === 1) return one;
+    if (r >= 2 && r <= 4) return few;
+    return many;
+  }
+})();
+</script>
+</body>
+</html>

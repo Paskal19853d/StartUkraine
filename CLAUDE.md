@@ -45,6 +45,8 @@ treetex/
 ├── admin.html           # Адмін-панель (~1.3MB)
 ├── Style.css            # Глобальні стилі (36KB)
 ├── script.js            # Frontend JS (53KB)
+├── card.html            # Публічна картка меморіалу (dark gold theme)
+├── profile.html         # Публічний профіль користувача /user/{nickname}
 ├── faq.html / rules.html / terms.html
 ├── ukraine-map.svg      # Інтерактивна SVG карта (883KB)
 ├── favicon.ico
@@ -193,6 +195,12 @@ id, query, results_count, created_at
 | PUT | `/api/auth/profile` | Оновити профіль (нік, email, телефон, пароль — не ФІО) |
 | GET | `/api/auth/google` | Google OAuth |
 | GET | `/api/auth/diia` | Дія OAuth |
+
+### Профіль користувача (публічний)
+| Метод | Endpoint | Опис |
+|-------|----------|------|
+| GET | `/user/{nickname}` | profile.html (публічна сторінка) |
+| GET | `/api/user/{nickname}` | JSON: display_name, role, created, count, memorials[] (тільки approved, is_banned=0) |
 
 ### Адмін (Basic Auth або cookie `admin_session`)
 | Метод | Endpoint | Опис |
