@@ -169,25 +169,28 @@ async function reloadFromServer() {
 }
 
 /* ── BROADCASTCHANNEL ──────────────────────────────────────────────────── */
+function _onSeaBC(data) {
+  if (!data) return;
+  if (data.type === 'sea_reload') { reloadFromServer(); return; }
+  if (data.type !== 'sea_update') return;
+  if (!window.COLORS) window.COLORS = {};
+  Object.entries(data.config).forEach(([k, v]) => {
+    if (v === '' || v === null || v === undefined) return;
+    if (!window.COLORS[k]) window.COLORS[k] = { value: v, label: k };
+    else window.COLORS[k].value = v;
+  });
+  if ('sea_enabled' in data.config) {
+    window.SEA_ENABLED = data.config['sea_enabled'] !== '0';
+  }
+  syncCfg();
+}
 try {
   const bc = new BroadcastChannel('zoryana_sea');
-  bc.onmessage = e => {
-    if (!e.data) return;
-    if (e.data.type === 'sea_reload') { reloadFromServer(); return; }
-    if (e.data.type !== 'sea_update') return;
-    if (!window.COLORS) window.COLORS = {};
-    Object.entries(e.data.config).forEach(([k, v]) => {
-      if (v === '' || v === null || v === undefined) return;
-      if (!window.COLORS[k]) window.COLORS[k] = { value: v, label: k };
-      else window.COLORS[k].value = v;
-    });
-    // Синхронізуємо SEA_ENABLED щоб live-toggle з адмінки працював
-    if ('sea_enabled' in e.data.config) {
-      window.SEA_ENABLED = e.data.config['sea_enabled'] !== '0';
-    }
-    syncCfg();
-  };
+  bc.onmessage = e => _onSeaBC(e.data);
 } catch (_) {}
+window.addEventListener('storage', function(e) {
+  if (e.key === '_bc_zoryana_sea') try { _onSeaBC(JSON.parse(e.newValue)); } catch {}
+});
 
 /* ── ЗАПУСК ────────────────────────────────────────────────────────────── */
 function init() {

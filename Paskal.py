@@ -1749,6 +1749,12 @@ def terms_page(): return FileResponse("terms.html")
 @app.get("/faq.html")
 def faq_page(): return FileResponse("faq.html")
 
+@app.get("/privacy-policy")
+def privacy_policy_page(): return FileResponse("privacy-policy.html")
+
+@app.get("/privacy-policy.html")
+def privacy_policy_html_page(): return FileResponse("privacy-policy.html")
+
 @app.get("/silence-module.js")
 def silence_js(): return FileResponse("silence-module.js", media_type="application/javascript")
 

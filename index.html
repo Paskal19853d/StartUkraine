@@ -1,9 +1,8 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="uk">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<meta http-equiv="Cache-Control" content="no-cache" />
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
 <title>Зоряна Памʼять</title>
 <meta name="description" content="Зоряна Пам'ять — інтерактивна карта пам'яті загиблих Захисників України. Вічна пам'ять Героям.">
 <meta property="og:type" content="website">
@@ -15,7 +14,10 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Зоряна Пам'ять — Карта пам'яті Захисників України">
 <meta name="twitter:description" content="Інтерактивна карта пам'яті загиблих Захисників України.">
-<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="dns-prefetch" href="https://img.youtube.com">
+<link rel="dns-prefetch" href="https://www.youtube-nocookie.com">
 <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700&family=Geologica:wght@300;400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="Style.css">
 <link rel="stylesheet" href="/fonts/uicons/uicons.css">
@@ -23,6 +25,16 @@
 <style id="dynamic-colors">
 /* Кольори завантажуються з БД */
 </style>
+
+<style id="pl-critical">
+body{visibility:hidden}
+#preloader{visibility:visible!important;position:fixed;inset:0;z-index:99999;background:#03070e;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px}
+#preloader-pct{font-family:'Unbounded',sans-serif;font-size:36px;font-weight:700;color:#fff;letter-spacing:-.02em;line-height:1}
+#preloader-bar-wrap{width:180px;height:2px;background:rgba(255,255,255,.1);border-radius:2px;overflow:hidden}
+#preloader-bar{height:100%;width:0%;background:#4fc3f7;border-radius:2px;transition:width .35s ease}
+</style>
+</head>
+<body>
 <!-------->
 <canvas id="fluid"></canvas>
 <script src="js/dat.gui.min.js"></script>
@@ -63,6 +75,7 @@
 		mix-blend-mode: screen;
 		background: transparent;
 		transition: opacity .4s ease;
+		touch-action: none;
 		}
 		
 		eoBackground {
@@ -90,15 +103,7 @@
       }
     </style>
 <!--------->
-<style id="pl-critical">
-body{visibility:hidden}
-#preloader{visibility:visible!important;position:fixed;inset:0;z-index:99999;background:#03070e;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px}
-#preloader-pct{font-family:'Unbounded',sans-serif;font-size:36px;font-weight:700;color:#fff;letter-spacing:-.02em;line-height:1}
-#preloader-bar-wrap{width:180px;height:2px;background:rgba(255,255,255,.1);border-radius:2px;overflow:hidden}
-#preloader-bar{height:100%;width:0%;background:#4fc3f7;border-radius:2px;transition:width .35s ease}
-</style>
-</head>
-<body>
+
 <div id="preloader">
   <div id="preloader-inner">
     <div id="preloader-spinner"></div>
@@ -2598,6 +2603,7 @@ let people = [], curUser = JSON.parse(localStorage.getItem('mu')||'null');
 let selColor = '#4fc3f7', isPick = false, pickCb = null, activePerson = null;
 let W = 0, H = 0, animT = 0, particles = [];
 const tr = {x:0, y:0, s:1};
+let _vZoom = 1.0; // virtual (unclamped) zoom — fixes min/max clamp asymmetry on wheel scroll
 let drag = false, dragS = {x:0,y:0}, trS = {x:0,y:0};
 let _lastVbKey = '';   // debounce: останній viewBox key для уникнення reflow
 let _lastWheel = 0;    // throttle: timestamp останнього wheel event
@@ -3052,11 +3058,22 @@ function clampTr() {
   tr.x=Math.max(W*(1-tr.s)-W*.3,Math.min(W*.3,tr.x));
   tr.y=Math.max(H*(1-tr.s)-H*.3,Math.min(H*.3,tr.y));
 }
-function resetView() { tr.x=0;tr.y=0;tr.s=1;applyTr(); }
+function resetView() { _vZoom=1;tr.x=0;tr.y=0;tr.s=1;applyTr(); }
 function zoomAt(cx,cy,f) {
   const zMin=window.ZOOM_MIN||0.4, zMax=window.ZOOM_MAX||12;
   const newS=Math.max(zMin,Math.min(zMax,tr.s*f));
-  const af=newS/tr.s;          // реальний фактор після ліміту
+  _vZoom=newS;                 // кнопки/дотик скидають борг _vZoom негайно
+  const af=newS/tr.s;
+  tr.x=cx-(cx-tr.x)*af;
+  tr.y=cy-(cy-tr.y)*af;
+  tr.s=newS;
+  clampTr();scheduleApplyTr();
+}
+function wheelZoom(cx,cy,f) {
+  const zMin=window.ZOOM_MIN||0.4, zMax=window.ZOOM_MAX||12;
+  _vZoom*=f;   // без floor — ідеальна симетрія: N↓ + N↑ = повернення до старту
+  const newS=Math.max(zMin,Math.min(zMax,_vZoom));
+  const af=newS/tr.s;
   tr.x=cx-(cx-tr.x)*af;
   tr.y=cy-(cy-tr.y)*af;
   tr.s=newS;
@@ -3090,6 +3107,7 @@ function flyTo(xr,yr,ts) {
     tr.x=sx+(tx-sx)*p; tr.y=sy+(ty-sy)*p; tr.s=ss+(ts-ss)*p;
     clampTr(); applyTr();
     if(p<1) requestAnimationFrame(a);
+    else _vZoom=tr.s; // sync virtual zoom after flyTo so wheel starts from correct base
   })(t0);
 }
 
@@ -3229,19 +3247,24 @@ window.addEventListener('mouseup',e=>{
 mw.addEventListener('wheel',e=>{
   e.preventDefault();
   const now=performance.now();
-  if(now - _lastWheel < 8) return;  // throttle до ~120Hz — менше SVG reflow при швидкому скролі
+  if(now - _lastWheel < 8) return;  // throttle до ~120Hz
+  // Пауза > 1.5с → скидаємо «борг» _vZoom: наступний скрол реагує з поточного зуму
+  if(now - _lastWheel > 1500) _vZoom=tr.s;
   _lastWheel = now;
   const r=mw.getBoundingClientRect();
-  // Нормалізуємо deltaY: рядки→пікселі, сторінки→пікселі
   let dy=e.deltaY;
   if(e.deltaMode===1) dy*=30;
   else if(e.deltaMode===2) dy*=300;
-  // Math.pow(0.999, dy): для миші (~±100px) ≈ 1.11/0.90, для трекпаду — плавно
+  // Мишачий клік (|dy|≥50) → нормалізуємо до фіксованого ±100 для точної симетрії;
+  // трекпад (|dy|<50) → пропорційно залишаємо
+  if(Math.abs(dy)>=50) dy=Math.sign(dy)*100;
+  // На мінімумі + прокрутка вниз → скок на x1
+  if(dy>0 && tr.s<=(window.ZOOM_MIN||0.4)+0.01){resetView();return;}
   const f=Math.pow(0.999,dy);
-  zoomAt(e.clientX-r.left,e.clientY-r.top,f);
+  wheelZoom(e.clientX-r.left,e.clientY-r.top,f);
 },{passive:false});
 document.getElementById('zin').onclick  =()=>zoomAt(W/2,H/2,1.28);
-document.getElementById('zout').onclick =()=>zoomAt(W/2,H/2,0.78);
+document.getElementById('zout').onclick =()=>{if(tr.s<=(window.ZOOM_MIN||0.4)+0.01){resetView();return;}zoomAt(W/2,H/2,0.78);};
 document.getElementById('zrst').onclick =resetView;
 
 function toggleFullscreen(){
@@ -3284,15 +3307,17 @@ function h2r(h,a){
   return`rgba(${r},${g},${b},${a})`;
 }
 
-function drawNeonThreads() {
+function drawNeonThreads(visIds) {
   if(!window._neonGroups||!window._neonGroups.length)return;
   ctx.save();
   ctx.globalAlpha = 1;
   for (const grp of window._neonGroups) {
-    for (let i = 0; i < grp.length; i++) {
-      for (let j = i+1; j < grp.length; j++) {
-        const a = w2s(grp[i].x, grp[i].y);
-        const b = w2s(grp[j].x, grp[j].y);
+    const vis=visIds?grp.filter(p=>visIds.has(p.id)):grp;
+    if(vis.length<2)continue;
+    for (let i = 0; i < vis.length; i++) {
+      for (let j = i+1; j < vis.length; j++) {
+        const a = w2s(vis[i].x, vis[i].y);
+        const b = w2s(vis[j].x, vis[j].y);
         const dist = Math.hypot(b.x-a.x, b.y-a.y);
         if (dist < 3) continue;
         const mx = (a.x+b.x)/2 + Math.sin(animT*1.5+i)*dist*0.08;
@@ -3354,7 +3379,6 @@ function _startCanvasLoop() {
     _svgBoundsCache = null;
     _cachedSqrtS = Math.min(Math.sqrt(tr.s), 2.5);
     animT+=.033;ctx.clearRect(0,0,W,H);
-    drawNeonThreads();
     // Pre-compute visible dots + індивідуальний pulse кожної зірки
     let _minS=0; try{_minS=_densityMinScore(tr.s);}catch(_){}
     let _denCount=0;
@@ -3374,6 +3398,8 @@ function _startCanvasLoop() {
       const pulse=(1-_dotPulseAmp)+_dotPulseAmp*((Math.sin(animT*sp+phase)+1)/2);
       _vis.push({p,pos,pulse});
     }
+    // Лінії зв'язку — тільки між зірками, що пройшли фільтр щільності
+    drawNeonThreads(new Set(_vis.map(v=>v.p.id)));
     // Оновлюємо лічильник зірок під zoom-шкалою
     const _zvc=document.getElementById('zoom-vis-count');
     if(_zvc) _zvc.textContent=_denCount+'★';
@@ -4569,7 +4595,9 @@ function _applySmokeState() {
 
   if (ctrl) ctrl.style.display = adminEnabled ? '' : 'none';
 
-  const actuallyOn = adminEnabled && _smokeOn;
+  // Якщо WebGL недоступний — smoke не показуємо щоб canvas не перекривав карту
+  const webglOk = fl && !!(fl.getContext('webgl2') || fl.getContext('webgl') || fl.getContext('experimental-webgl'));
+  const actuallyOn = adminEnabled && _smokeOn && webglOk;
   if (fl) {
     fl.style.opacity       = actuallyOn ? '0.85' : '0';
     fl.style.pointerEvents = 'none';
@@ -4622,18 +4650,22 @@ window.addEventListener('load', () => {
 });
 
 /* ── LIVE COLOR UPDATES FROM ADMIN ── */
+function _onColorsBC(data) {
+  if (!data || data.type !== 'colors_update') return;
+  Object.entries(data.colors).forEach(([k, v]) => {
+    if (!COLORS[k]) COLORS[k] = { value: v, label: k };
+    else COLORS[k].value = v;
+  });
+  if ('density_config' in data.colors) _DENSITY_CFG_CACHE = null;
+  applyColors();
+}
 try {
   const _colorBC = new BroadcastChannel('zoryana_colors');
-  _colorBC.onmessage = e => {
-    if (!e.data || e.data.type !== 'colors_update') return;
-    Object.entries(e.data.colors).forEach(([k, v]) => {
-      if (!COLORS[k]) COLORS[k] = { value: v, label: k };
-      else COLORS[k].value = v;
-    });
-    if ('density_config' in e.data.colors) _DENSITY_CFG_CACHE = null;
-    applyColors();
-  };
+  _colorBC.onmessage = e => _onColorsBC(e.data);
 } catch(_) {}
+window.addEventListener('storage', function(e) {
+  if (e.key === '_bc_zoryana_colors') try { _onColorsBC(JSON.parse(e.newValue)); } catch {}
+});
 
 /* ── OAuth callback handler ── */
 async function checkOAuthCallback(){
@@ -4935,6 +4967,9 @@ function closeInfo(id){document.getElementById('m-'+id).classList.remove('open')
       if (e.data && e.data.cmd === 'reload') load();
     };
   } catch(e) {}
+  window.addEventListener('storage', function(e) {
+    if (e.key === '_bc_zoryana_partners') try { var d = JSON.parse(e.newValue); if (d && d.cmd === 'reload') load(); } catch {}
+  });
 })();
 </script>
 </body>
