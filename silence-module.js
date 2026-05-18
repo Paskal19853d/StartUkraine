@@ -332,24 +332,29 @@ const SilenceModule = (function () {
   }
 
   /* ═══════════════ BROADCASTCHANNEL ══════════════════ */
+  function _handleSilenceMsg(data) {
+    if (!data) return;
+    if (data.cmd === 'start') {
+      _s = Object.assign(_s, data.settings || {});
+      _ensureAudio();
+      _start();
+    }
+    if (data.cmd === 'stop') _stop();
+    if (data.cmd === 'settings') {
+      _s = Object.assign(_s, data.settings || {});
+      _ensureAudio();
+      _updateClock();
+    }
+  }
+
   function _listenBroadcast() {
     try {
       _bc = new BroadcastChannel('zoryana_silence');
-      _bc.onmessage = function (e) {
-        if (!e.data) return;
-        if (e.data.cmd === 'start') {
-          _s = Object.assign(_s, e.data.settings || {});
-          _ensureAudio();
-          _start();
-        }
-        if (e.data.cmd === 'stop') _stop();
-        if (e.data.cmd === 'settings') {
-          _s = Object.assign(_s, e.data.settings || {});
-          _ensureAudio();
-          _updateClock();
-        }
-      };
+      _bc.onmessage = function (e) { _handleSilenceMsg(e.data); };
     } catch (e) {}
+    window.addEventListener('storage', function(e) {
+      if (e.key === '_bc_zoryana_silence') try { _handleSilenceMsg(JSON.parse(e.newValue)); } catch {}
+    });
   }
 
   function _esc(s) {

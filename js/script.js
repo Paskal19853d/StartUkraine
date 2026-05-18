@@ -1714,7 +1714,7 @@ canvas.addEventListener("touchstart", (e) => {
     let posY = scaleByPixelRatio(touches[i].pageY);
     updatePointerDownData(pointers[i + 1], touches[i].identifier, posX, posY);
   }
-});
+}, { passive: false });
 
 canvas.addEventListener(
   "touchmove",
@@ -1729,7 +1729,7 @@ canvas.addEventListener(
       updatePointerMoveData(pointer, posX, posY);
     }
   },
-  false
+  { passive: false }
 );
 
 window.addEventListener("touchend", (e) => {

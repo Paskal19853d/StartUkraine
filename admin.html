@@ -2,7 +2,7 @@
 <html lang="uk">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
 <title>Адмін — Зоряна Памʼять</title>
 <link rel="stylesheet" href="/fonts/uicons/uicons.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"
@@ -4823,6 +4823,7 @@ async function silenceSave(){
     if(!r.ok)throw new Error(r.status);
     // Notify index.html via BroadcastChannel
     try{ new BroadcastChannel('zoryana_silence').postMessage({cmd:'settings',settings:body}); }catch(e){}
+    _lsBC('zoryana_silence', {cmd:'settings',settings:body});
     if(st) st.textContent='Збережено';
     setTimeout(()=>{ if(st) st.textContent=''; },3000);
   }catch(e){
@@ -4839,6 +4840,7 @@ async function silenceTestStart(){
     const s=r.ok?await r.json():{};
     await fetch(API+'/api/admin/minute-silence/test-start',{method:'POST',headers:authH()});
     try{ new BroadcastChannel('zoryana_silence').postMessage({cmd:'start',settings:s}); }catch(e){}
+    _lsBC('zoryana_silence', {cmd:'start',settings:s});
     if(st) st.textContent='Тест-режим увімкнено';
     setTimeout(()=>{ if(st) st.textContent=''; },4000);
   }catch(e){
@@ -4851,6 +4853,7 @@ async function silenceTestStop(){
   try{
     await fetch(API+'/api/admin/minute-silence/test-stop',{method:'POST',headers:authH()});
     try{ new BroadcastChannel('zoryana_silence').postMessage({cmd:'stop'}); }catch(e){}
+    _lsBC('zoryana_silence', {cmd:'stop'});
     if(st) st.textContent='Тест-режим зупинено';
     setTimeout(()=>{ if(st) st.textContent=''; },3000);
   }catch(e){
@@ -8142,6 +8145,7 @@ async function uploadSeaSvg(input) {
     showN('SVG карту морів збережено');
     /* Сповіщаємо index.html перезавантажити COLORS */
     try { const bc=new BroadcastChannel('zoryana_sea'); bc.postMessage({type:'sea_reload'}); bc.close(); } catch(_){}
+    _lsBC('zoryana_sea', {type:'sea_reload'});
     /* Оновлюємо локальний кеш COLORS щоб hasSvg відображався без перезавантаження */
     if (!COLORS['sea_svg_content']) COLORS['sea_svg_content'] = { value: '1', label: '' };
     else COLORS['sea_svg_content'].value = '1';
@@ -8157,6 +8161,7 @@ async function deleteSeaSvg() {
     delete COLORS['sea_svg_content'];
     showN('SVG видалено — море не відображається');
     try { const bc=new BroadcastChannel('zoryana_sea'); bc.postMessage({type:'sea_reload'}); bc.close(); } catch(_){}
+    _lsBC('zoryana_sea', {type:'sea_reload'});
     renderSeaSection();
   } catch(err) { showN('' + err.message); }
 }
@@ -8311,11 +8316,9 @@ function renderIconsSection() {
       const key = el.dataset.key;
       const ico = el.dataset.ico;
       onClrChange(key, ico);
-      try {
-        const bc = new BroadcastChannel('zoryana_colors');
-        bc.postMessage({ type: 'colors_update', colors: { [key]: ico } });
-        bc.close();
-      } catch(_) {}
+      const _icoMsg = { type: 'colors_update', colors: { [key]: ico } };
+      try { const bc = new BroadcastChannel('zoryana_colors'); bc.postMessage(_icoMsg); bc.close(); } catch(_) {}
+      _lsBC('zoryana_colors', _icoMsg);
       renderIconsSection();
     });
   });
@@ -8327,11 +8330,9 @@ function applySmokeSettings() {
                  'smoke_splat_force','smoke_curl','smoke_opacity','smoke_color_from','smoke_color_to'];
   const colors = {};
   keys.forEach(k => { colors[k] = pendColors[k] ?? COLORS[k]?.value ?? ''; });
-  try {
-    const bc = new BroadcastChannel('zoryana_colors');
-    bc.postMessage({ type: 'colors_update', colors });
-    bc.close();
-  } catch(_) {}
+  const msg = { type: 'colors_update', colors };
+  try { const bc = new BroadcastChannel('zoryana_colors'); bc.postMessage(msg); bc.close(); } catch(_) {}
+  _lsBC('zoryana_colors', msg);
 }
 
 async function adminToggleSmoke() {
@@ -8380,11 +8381,9 @@ function applySeaSettings() {
   seaAllKeys.forEach(k => {
     config[k] = pendColors[k] ?? COLORS[k]?.value ?? '';
   });
-  try {
-    const bc = new BroadcastChannel('zoryana_sea');
-    bc.postMessage({ type: 'sea_update', config });
-    bc.close();
-  } catch(_) {}
+  const _seaMsg = { type: 'sea_update', config };
+  try { const bc = new BroadcastChannel('zoryana_sea'); bc.postMessage(_seaMsg); bc.close(); } catch(_) {}
+  _lsBC('zoryana_sea', _seaMsg);
 }
 
 async function adminToggleSea() {
@@ -8490,13 +8489,11 @@ async function _autoSaveToDb() {
 }
 
 function _broadcastColors(batch) {
-  try {
-    const changed = {};
-    batch.forEach(({key, value}) => { changed[key] = value; });
-    const bc = new BroadcastChannel('zoryana_colors');
-    bc.postMessage({ type: 'colors_update', colors: changed });
-    bc.close();
-  } catch(_) {}
+  const changed = {};
+  batch.forEach(({key, value}) => { changed[key] = value; });
+  const msg = { type: 'colors_update', colors: changed };
+  try { const bc = new BroadcastChannel('zoryana_colors'); bc.postMessage(msg); bc.close(); } catch(_) {}
+  _lsBC('zoryana_colors', msg);
 }
 function gc(k){return pendColors[k]||COLORS[k]?.value||'';}
 function updatePreview(){
@@ -8884,11 +8881,9 @@ async function _densitySaveZoom() {
     if (!r.ok) throw new Error(r.status);
     if (st) { st.style.color = '#4caf50'; st.textContent = '✓ Збережено'; }
     setTimeout(() => { if (st) st.textContent = ''; }, 3000);
-    try {
-      const bc = new BroadcastChannel('zoryana_colors');
-      bc.postMessage({ type: 'colors_update', colors: { density_config: JSON.stringify(_densityConfig) } });
-      bc.close();
-    } catch(_) {}
+    const _denMsg = { type: 'colors_update', colors: { density_config: JSON.stringify(_densityConfig) } };
+    try { const bc = new BroadcastChannel('zoryana_colors'); bc.postMessage(_denMsg); bc.close(); } catch(_) {}
+    _lsBC('zoryana_colors', _denMsg);
   } catch(e) {
     if (st) { st.style.color = '#f44336'; st.textContent = '✗ Помилка: ' + e.message; }
   }
@@ -9275,11 +9270,9 @@ async function versionSave() {
     _applyVersionDisplay(v);
 
     // Сповіщаємо інші вкладки (index.html тощо)
-    try {
-      const bc = new BroadcastChannel('zoryana_colors');
-      bc.postMessage({ type: 'colors_update', colors: { app_version: v } });
-      bc.close();
-    } catch(_) {}
+    const _verMsg = { type: 'colors_update', colors: { app_version: v } };
+    try { const bc = new BroadcastChannel('zoryana_colors'); bc.postMessage(_verMsg); bc.close(); } catch(_) {}
+    _lsBC('zoryana_colors', _verMsg);
 
     if (st) { st.textContent = '✓ Версію збережено: v' + v; st.style.color = '#5eba80'; }
     setTimeout(() => { if (st) st.textContent = ''; }, 3000);
@@ -10542,8 +10535,13 @@ async function deletePartner(id) {
   } catch { showN('Помилка видалення', true); }
 }
 
+function _lsBC(channel, data) {
+  try { localStorage.setItem('_bc_' + channel, JSON.stringify(Object.assign({}, data, {ts: Date.now()}))); } catch {}
+}
+
 function _broadcastPartners() {
   try { new BroadcastChannel('zoryana_partners').postMessage({cmd: 'reload'}); } catch {}
+  _lsBC('zoryana_partners', {cmd: 'reload'});
 }
 
 /* ══════════ INIT ══════════ */
