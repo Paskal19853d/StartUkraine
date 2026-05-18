@@ -325,6 +325,23 @@ def init_db():
             c.execute("ALTER TABLE cities ADD COLUMN color VARCHAR(20) NOT NULL DEFAULT '#a0d7ff'")
         except Exception:
             pass  # column already exists
+        # ── partners ──────────────────────────────────────────
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS partners (
+                id         INT PRIMARY KEY AUTO_INCREMENT,
+                name       VARCHAR(100) NOT NULL DEFAULT '',
+                image_url  VARCHAR(500) NOT NULL DEFAULT '',
+                link_url   VARCHAR(500) NOT NULL DEFAULT '',
+                caption    VARCHAR(200) NOT NULL DEFAULT '',
+                width      INT NOT NULL DEFAULT 120,
+                opacity    DECIMAL(3,2) NOT NULL DEFAULT 1.00,
+                pos_x      INT NOT NULL DEFAULT 20,
+                pos_y      INT NOT NULL DEFAULT 20,
+                is_visible TINYINT NOT NULL DEFAULT 1,
+                sort_order INT NOT NULL DEFAULT 0,
+                INDEX idx_vis (is_visible, sort_order)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        """)
         # Migration: add ban_until and notes to users
         try:
             c.execute("ALTER TABLE users ADD COLUMN ban_until INT NOT NULL DEFAULT 0")
@@ -2079,6 +2096,30 @@ class CityUpdate(BaseModel):
 class CityCreate(BaseModel):
     name: str
 
+class PartnerCreate(BaseModel):
+    name: str = ''
+    image_url: str
+    link_url: str = ''
+    caption: str = ''
+    width: int = 120
+    opacity: float = 1.0
+    pos_x: int = 20
+    pos_y: int = 20
+    is_visible: int = 1
+    sort_order: int = 0
+
+class PartnerUpdate(BaseModel):
+    name: Optional[str] = None
+    image_url: Optional[str] = None
+    link_url: Optional[str] = None
+    caption: Optional[str] = None
+    width: Optional[int] = None
+    opacity: Optional[float] = None
+    pos_x: Optional[int] = None
+    pos_y: Optional[int] = None
+    is_visible: Optional[int] = None
+    sort_order: Optional[int] = None
+
 class BanRequest(BaseModel):
     duration: int = 0   # seconds; 0 = permanent
     reason: str = ""
@@ -2546,6 +2587,92 @@ def admin_delete_city(cid: int, request: Request):
     db.commit(); db.close()
     cache_delete("cities")
     return {"ok": True}
+
+# ── Partners / Friends ────────────────────────────────────────────────────────
+
+@app.get("/api/partners")
+def get_partners():
+    db = get_db()
+    try:
+        with db.cursor() as c:
+            c.execute("SELECT * FROM partners WHERE is_visible=1 ORDER BY sort_order, id")
+            return c.fetchall()
+    finally:
+        db.close()
+
+@app.get("/api/admin/partners")
+def admin_get_partners(request: Request):
+    require_admin(request)
+    db = get_db()
+    try:
+        with db.cursor() as c:
+            c.execute("SELECT * FROM partners ORDER BY sort_order, id")
+            return c.fetchall()
+    finally:
+        db.close()
+
+@app.post("/api/admin/partner")
+def admin_create_partner(u: PartnerCreate, request: Request):
+    require_admin(request)
+    db = get_db()
+    try:
+        with db.cursor() as c:
+            c.execute(
+                "INSERT INTO partners (name,image_url,link_url,caption,width,opacity,pos_x,pos_y,is_visible,sort_order)"
+                " VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                (
+                    _sanitize_text(u.name)[:100],
+                    u.image_url[:500],
+                    u.link_url[:500],
+                    _sanitize_text(u.caption)[:200],
+                    max(20, min(800, u.width)),
+                    round(max(0.0, min(1.0, u.opacity)), 2),
+                    u.pos_x, u.pos_y, u.is_visible, u.sort_order,
+                )
+            )
+            new_id = c.lastrowid
+        db.commit()
+        return {"ok": True, "id": new_id}
+    finally:
+        db.close()
+
+@app.put("/api/admin/partner/{pid}")
+def admin_update_partner(pid: int, u: PartnerUpdate, request: Request):
+    require_admin(request)
+    fields, vals = [], []
+    if u.name is not None:       fields.append("name=%s");       vals.append(_sanitize_text(u.name)[:100])
+    if u.image_url is not None:  fields.append("image_url=%s");  vals.append(u.image_url[:500])
+    if u.link_url is not None:   fields.append("link_url=%s");   vals.append(u.link_url[:500])
+    if u.caption is not None:    fields.append("caption=%s");    vals.append(_sanitize_text(u.caption)[:200])
+    if u.width is not None:      fields.append("width=%s");      vals.append(max(20, min(800, u.width)))
+    if u.opacity is not None:    fields.append("opacity=%s");    vals.append(round(max(0.0, min(1.0, u.opacity)), 2))
+    if u.pos_x is not None:      fields.append("pos_x=%s");      vals.append(u.pos_x)
+    if u.pos_y is not None:      fields.append("pos_y=%s");      vals.append(u.pos_y)
+    if u.is_visible is not None: fields.append("is_visible=%s"); vals.append(u.is_visible)
+    if u.sort_order is not None: fields.append("sort_order=%s"); vals.append(u.sort_order)
+    if not fields:
+        raise HTTPException(400, "Нічого оновлювати")
+    vals.append(pid)
+    db = get_db()
+    try:
+        with db.cursor() as c:
+            c.execute(f"UPDATE partners SET {','.join(fields)} WHERE id=%s", vals)
+        db.commit()
+        return {"ok": True}
+    finally:
+        db.close()
+
+@app.delete("/api/admin/partner/{pid}")
+def admin_delete_partner(pid: int, request: Request):
+    require_admin(request)
+    db = get_db()
+    try:
+        with db.cursor() as c:
+            c.execute("DELETE FROM partners WHERE id=%s", (pid,))
+        db.commit()
+        return {"ok": True}
+    finally:
+        db.close()
 
 @app.post("/api/people")
 def add_person(p: PersonIn, request: Request):
