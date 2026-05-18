@@ -4874,5 +4874,68 @@ function closeInfo(id){document.getElementById('m-'+id).classList.remove('open')
 
 <script src="/silence-module.js"></script>
 <script>document.addEventListener('DOMContentLoaded',function(){SilenceModule.init();});</script>
+
+<div id="partners-layer"></div>
+<script>
+(function initPartners() {
+  function renderPartners(list) {
+    const layer = document.getElementById('partners-layer');
+    if (!layer) return;
+    layer.innerHTML = '';
+    list.forEach(function(p) {
+      const wrap = document.createElement('a');
+      wrap.href = p.link_url || '#';
+      if (p.link_url) { wrap.target = '_blank'; wrap.rel = 'noopener noreferrer'; }
+      var baseOpacity = p.opacity;
+      wrap.style.cssText =
+        'position:fixed;left:' + p.pos_x + 'px;top:' + p.pos_y + 'px;' +
+        'display:flex;flex-direction:column;align-items:center;gap:4px;' +
+        'opacity:' + baseOpacity + ';z-index:9990;text-decoration:none;' +
+        'transition:opacity 0.25s ease;' +
+        'cursor:' + (p.link_url ? 'pointer' : 'default') + ';';
+      wrap.addEventListener('mouseenter', function() { this.style.opacity = '1'; });
+      wrap.addEventListener('mouseleave', function() { this.style.opacity = baseOpacity; });
+      const img = document.createElement('img');
+      img.src = p.image_url;
+      img.alt = p.name || '';
+      img.style.cssText = 'width:' + p.width + 'px;height:auto;display:block;';
+      img.onerror = function() {
+        const fb = document.createElement('div');
+        fb.style.cssText =
+          'width:' + p.width + 'px;min-height:48px;' +
+          'background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);' +
+          'border-radius:8px;display:flex;align-items:center;justify-content:center;' +
+          'font-size:11px;color:#ccc;padding:8px;text-align:center;box-sizing:border-box';
+        fb.textContent = p.name || '?';
+        this.parentNode.replaceChild(fb, this);
+      };
+      wrap.appendChild(img);
+      if (p.caption) {
+        const cap = document.createElement('span');
+        cap.textContent = p.caption;
+        cap.style.cssText =
+          'font-size:11px;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.8);' +
+          'text-align:center;max-width:140px;line-height:1.3;pointer-events:none';
+        wrap.appendChild(cap);
+      }
+      layer.appendChild(wrap);
+    });
+  }
+
+  function load() {
+    fetch('/api/partners')
+      .then(function(r) { return r.ok ? r.json() : []; })
+      .then(renderPartners)
+      .catch(function() {});
+  }
+
+  load();
+  try {
+    new BroadcastChannel('zoryana_partners').onmessage = function(e) {
+      if (e.data && e.data.cmd === 'reload') load();
+    };
+  } catch(e) {}
+})();
+</script>
 </body>
 </html>

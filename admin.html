@@ -569,6 +569,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
     <div class="nav-item"        draggable="true" onclick="showSec('sea')"       data-s="sea">       <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-waves"/></svg></span>Хвилі морів</div>
     <div class="nav-item"        draggable="true" onclick="showSec('icons')"     data-s="icons">     <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-star"/></svg></span>Іконки</div>
     <div class="nav-item"        draggable="true" onclick="showSec('cities')"    data-s="cities">    <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-city"/></svg></span>Міста</div>
+    <div class="nav-item"        draggable="true" onclick="showSec('friends')"   data-s="friends">   <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-share"/></svg></span>Друзі</div>
     <div class="nav-item"        draggable="true" onclick="showSec('silence')"   data-s="silence">   <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-candle"/></svg></span>Хв. Мовчання</div>
     <div class="nav-item"        draggable="true" onclick="showSec('seo')"     data-s="seo">     <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-search"/></svg></span>SEO</div>
     <div class="nav-item"        draggable="true" onclick="showSec('card')"    data-s="card">    <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-star"/></svg></span>Картка</div>
@@ -3425,6 +3426,32 @@ tr:hover td{background:rgba(255,255,255,.02)}
         <div id="photo-grid"></div>
       </div>
 
+      <!-- FRIENDS / PARTNERS SECTION -->
+      <div id="sec-friends" class="section">
+        <div class="sec-title"><svg class="adm-ico"><use href="#ico-share"/></svg> Друзі та партнери</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px">
+          <button class="btn btn-p" onclick="openPartnerModal(null)">
+            <svg class="adm-ico"><use href="#ico-plus"/></svg> Додати
+          </button>
+          <input type="text" id="partners-search" placeholder="Пошук…" oninput="renderPartnersTable()"
+                 style="flex:1;min-width:140px;padding:7px 12px;background:var(--panel);border:1px solid var(--border);color:var(--text);border-radius:6px;font-size:12px;outline:none">
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr>
+              <th style="width:44px">ID</th>
+              <th>Назва</th>
+              <th style="width:80px">Ширина</th>
+              <th style="width:90px">Прозорість</th>
+              <th style="width:90px">Позиція</th>
+              <th style="width:70px">Видимо</th>
+              <th style="width:80px">Дії</th>
+            </tr></thead>
+            <tbody id="partners-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
       <!-- CITIES SECTION -->
       <div id="sec-cities" class="section">
         <div class="sec-title"><svg class="adm-ico"><use href="#ico-city"/></svg> Міста України</div>
@@ -4722,6 +4749,7 @@ function showSec(id) {
   if(id==='sea')     { if(Object.keys(COLORS).length>0) renderSeaSection();   else loadColors(); }
   if(id==='icons')   { if(Object.keys(COLORS).length>0) renderIconsSection(); else loadColors(); }
   if(id==='cities')  { document.getElementById('city-search').value=''; loadCitiesAdmin(); }
+  if(id==='friends') { document.getElementById('partners-search').value=''; loadPartnersAdmin(); }
   if(id==='silence') _loadSilenceSettings();
   if(id==='seo')     loadSeoAdminDash();
   if(id==='card')    cardSettingsLoad();
@@ -10356,6 +10384,166 @@ async function saveNewCity() {
     document.getElementById('add-city-modal')?.remove();
     await loadCitiesAdmin();
   } catch { showN('Помилка додавання', true); }
+}
+
+/* ══════════ FRIENDS / PARTNERS ══════════ */
+let _partnersData = [];
+
+async function loadPartnersAdmin() {
+  try {
+    const r = await fetch(`${API}/api/admin/partners`, {headers: authH()});
+    if (!r.ok) throw new Error(r.status);
+    _partnersData = await r.json();
+  } catch { showN('Помилка завантаження партнерів', true); return; }
+  renderPartnersTable();
+}
+
+function renderPartnersTable() {
+  const q = (document.getElementById('partners-search')?.value || '').trim().toLowerCase();
+  const list = q ? _partnersData.filter(p =>
+    p.name.toLowerCase().includes(q) || String(p.id).includes(q)) : _partnersData;
+  const tbody = document.getElementById('partners-tbody');
+  if (!tbody) return;
+  if (!list.length) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:20px">Порожньо</td></tr>';
+    return;
+  }
+  tbody.innerHTML = list.map(p => `<tr>
+    <td><span style="font-family:monospace;color:var(--muted);font-size:11px">${p.id}</span></td>
+    <td>${h(p.name || '—')}</td>
+    <td style="text-align:center">${p.width}px</td>
+    <td style="text-align:center">${Math.round(p.opacity * 100)}%</td>
+    <td style="text-align:center;font-size:11px;color:var(--muted)">${p.pos_x}, ${p.pos_y}</td>
+    <td><span class="badge ${p.is_visible ? 'bg' : 'by'}">${p.is_visible ? 'Так' : 'Ні'}</span></td>
+    <td style="display:flex;gap:4px">
+      <button class="btn btn-b" onclick="openPartnerModal(${p.id})" title="Редагувати"><svg class="adm-ico"><use href="#ico-edit"/></svg></button>
+      <button class="btn btn-r" onclick="deletePartner(${p.id})" title="Видалити"><svg class="adm-ico"><use href="#ico-trash"/></svg></button>
+    </td>
+  </tr>`).join('');
+}
+
+function openPartnerModal(id) {
+  const existing = document.getElementById('partner-modal');
+  if (existing) existing.remove();
+  const p = id != null ? _partnersData.find(x => x.id === id) : null;
+  const isEdit = !!p;
+  const m = document.createElement('div');
+  m.id = 'partner-modal';
+  m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9000;display:flex;align-items:center;justify-content:center;overflow-y:auto';
+  m.innerHTML = `
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;width:420px;max-width:94vw;margin:auto">
+      <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:18px">${isEdit ? 'Редагувати партнера' : '＋ Новий партнер'}</div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div>
+          <div style="font-size:10px;color:var(--muted);margin-bottom:4px">Назва (для адмінки)</div>
+          <input id="pm-name" type="text" value="${h(p?.name || '')}" placeholder="Назва партнера"
+                 style="width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:8px 10px;font-size:12px;box-sizing:border-box">
+        </div>
+        <div>
+          <div style="font-size:10px;color:var(--muted);margin-bottom:4px">URL зображення *</div>
+          <input id="pm-image" type="text" value="${h(p?.image_url || '')}" placeholder="https://…"
+                 style="width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:8px 10px;font-size:12px;box-sizing:border-box">
+        </div>
+        <div>
+          <div style="font-size:10px;color:var(--muted);margin-bottom:4px">Посилання (куди веде клік)</div>
+          <input id="pm-link" type="text" value="${h(p?.link_url || '')}" placeholder="https://…"
+                 style="width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:8px 10px;font-size:12px;box-sizing:border-box">
+        </div>
+        <div>
+          <div style="font-size:10px;color:var(--muted);margin-bottom:4px">Підпис під зображенням</div>
+          <input id="pm-caption" type="text" value="${h(p?.caption || '')}" placeholder="Необов'язково"
+                 style="width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:8px 10px;font-size:12px;box-sizing:border-box">
+        </div>
+        <div style="display:flex;gap:12px">
+          <div style="flex:1">
+            <div style="font-size:10px;color:var(--muted);margin-bottom:4px">Ширина (px)</div>
+            <input id="pm-width" type="number" value="${p?.width ?? 120}" min="20" max="800"
+                   style="width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:8px 10px;font-size:12px;box-sizing:border-box">
+          </div>
+          <div style="flex:1">
+            <div style="font-size:10px;color:var(--muted);margin-bottom:4px">Порядок</div>
+            <input id="pm-order" type="number" value="${p?.sort_order ?? 0}" min="0"
+                   style="width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:8px 10px;font-size:12px;box-sizing:border-box">
+          </div>
+        </div>
+        <div>
+          <div style="font-size:10px;color:var(--muted);margin-bottom:4px">Прозорість: <span id="pm-opacity-val">${+(p?.opacity ?? 1).toFixed(2)}</span></div>
+          <input id="pm-opacity" type="range" min="0" max="1" step="0.05" value="${+(p?.opacity ?? 1).toFixed(2)}"
+                 oninput="document.getElementById('pm-opacity-val').textContent=this.value"
+                 style="width:100%;accent-color:var(--accent)">
+        </div>
+        <div style="display:flex;gap:12px">
+          <div style="flex:1">
+            <div style="font-size:10px;color:var(--muted);margin-bottom:4px">Позиція X (px від лівого краю)</div>
+            <input id="pm-x" type="number" value="${p?.pos_x ?? 20}" min="0"
+                   style="width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:8px 10px;font-size:12px;box-sizing:border-box">
+          </div>
+          <div style="flex:1">
+            <div style="font-size:10px;color:var(--muted);margin-bottom:4px">Позиція Y (px від верхнього краю)</div>
+            <input id="pm-y" type="number" value="${p?.pos_y ?? 20}" min="0"
+                   style="width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:8px 10px;font-size:12px;box-sizing:border-box">
+          </div>
+        </div>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--text)">
+          <input id="pm-visible" type="checkbox" ${(p?.is_visible ?? 1) ? 'checked' : ''} style="accent-color:var(--accent)">
+          Видимо на головній сторінці
+        </label>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:20px">
+        <button class="btn btn-p" onclick="savePartner(${id ?? 'null'})">
+          <svg class="adm-ico"><use href="#ico-check"/></svg> Зберегти
+        </button>
+        <button class="btn" onclick="document.getElementById('partner-modal').remove()">Скасувати</button>
+      </div>
+    </div>`;
+  document.body.appendChild(m);
+  m.addEventListener('click', e => { if (e.target === m) m.remove(); });
+}
+
+async function savePartner(id) {
+  const image_url = document.getElementById('pm-image')?.value.trim();
+  if (!image_url) { showN('URL зображення обов\'язковий', true); return; }
+  const body = {
+    name:       document.getElementById('pm-name')?.value.trim() || '',
+    image_url,
+    link_url:   document.getElementById('pm-link')?.value.trim() || '',
+    caption:    document.getElementById('pm-caption')?.value.trim() || '',
+    width:      +(document.getElementById('pm-width')?.value || 120),
+    opacity:    +(document.getElementById('pm-opacity')?.value || 1),
+    pos_x:      +(document.getElementById('pm-x')?.value || 20),
+    pos_y:      +(document.getElementById('pm-y')?.value || 20),
+    is_visible: document.getElementById('pm-visible')?.checked ? 1 : 0,
+    sort_order: +(document.getElementById('pm-order')?.value || 0),
+  };
+  try {
+    const isEdit = id != null;
+    const r = await fetch(
+      isEdit ? `${API}/api/admin/partner/${id}` : `${API}/api/admin/partner`,
+      { method: isEdit ? 'PUT' : 'POST', headers: authH({'Content-Type':'application/json'}), body: JSON.stringify(body) }
+    );
+    if (!r.ok) throw new Error(r.status);
+    showN(isEdit ? 'Збережено' : 'Партнера додано');
+    document.getElementById('partner-modal')?.remove();
+    await loadPartnersAdmin();
+    _broadcastPartners();
+  } catch { showN('Помилка збереження', true); }
+}
+
+async function deletePartner(id) {
+  const p = _partnersData.find(x => x.id === id);
+  if (!confirm(`Видалити партнера «${p?.name || id}»?`)) return;
+  try {
+    const r = await fetch(`${API}/api/admin/partner/${id}`, {method: 'DELETE', headers: authH()});
+    if (!r.ok) throw new Error(r.status);
+    showN('Видалено');
+    _partnersData = _partnersData.filter(x => x.id !== id);
+    renderPartnersTable();
+    _broadcastPartners();
+  } catch { showN('Помилка видалення', true); }
+}
+
+function _broadcastPartners() {
+  try { new BroadcastChannel('zoryana_partners').postMessage({cmd: 'reload'}); } catch {}
 }
 
 /* ══════════ INIT ══════════ */

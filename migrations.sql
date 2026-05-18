@@ -60,3 +60,21 @@ CREATE TABLE IF NOT EXISTS hourly_stats (
     hour_ts INT PRIMARY KEY,
     views   INT NOT NULL DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ── Міграція 005: Партнери / Друзі ──
+-- Створено: 2026-05-17
+-- Опис: Блоки з лого партнерів на головній сторінці (керуються з адмінки)
+CREATE TABLE IF NOT EXISTS partners (
+    id         INT PRIMARY KEY AUTO_INCREMENT,
+    name       VARCHAR(100) NOT NULL DEFAULT '',
+    image_url  VARCHAR(500) NOT NULL DEFAULT '',
+    link_url   VARCHAR(500) NOT NULL DEFAULT '',
+    caption    VARCHAR(200) NOT NULL DEFAULT '',
+    width      INT NOT NULL DEFAULT 120,
+    opacity    DECIMAL(3,2) NOT NULL DEFAULT 1.00,
+    pos_x      INT NOT NULL DEFAULT 20,
+    pos_y      INT NOT NULL DEFAULT 20,
+    is_visible TINYINT NOT NULL DEFAULT 1,
+    sort_order INT NOT NULL DEFAULT 0,
+    INDEX idx_vis (is_visible, sort_order)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

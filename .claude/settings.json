@@ -54,7 +54,10 @@
       "Bash(Select-Object Name, Mode)",
       "Bash(python -m pip list)",
       "Bash(venv\\\\Scripts\\\\pip freeze *)",
-      "WebFetch(domain:speedhost.com.ua)"
+      "WebFetch(domain:speedhost.com.ua)",
+      "Bash(grep -E \"\\\\.html$\")",
+      "Bash(Get-ChildItem -Path \"d:\\\\OSPanel\\\\OpenServer\\\\domains\\\\localhost\\\\treetex\" -Recurse -Include \"*.css\", \"*.js\", \"*.html\")",
+      "Bash(Select-Object FullName)"
     ],
     "additionalDirectories": [
       "D:\\OSPanel\\OpenServer\\domains\\localhost\\mpu\\backend",
