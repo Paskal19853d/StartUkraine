@@ -20,7 +20,7 @@ timeout = 30
 graceful_timeout = 15
 
 # ── Binding ──
-bind = "127.0.0.1:8000"
+bind = os.getenv("GUNICORN_BIND", "127.0.0.1:8000")
 
 # ── Logging ──
 accesslog = "/var/log/zoryna/access.log"
