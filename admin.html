@@ -612,7 +612,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
         <span id="theme-ico"><i class="fi-rr-moon"></i></span><span id="theme-lbl">Темна</span>
       </button>
       <a class="link-btn" href="/" target="_blank" rel="noopener noreferrer"><i class="fi-rr-globe"></i>Відкрити сайт</a>
-    
+
     </div>
 
     <div id="content-area">
@@ -4049,7 +4049,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
           1. Відкрити <a href="https://console.cloud.google.com/apis/credentials" target="_blank" style="color:var(--accent)">Google Cloud Console → Credentials</a><br>
           2. Створити OAuth 2.0 Client ID (тип: <b>Web application</b>)<br>
           3. Додати Authorized redirect URI:<br>
-          <code id="g-redirect-uri" style="display:inline-block;margin:4px 0;padding:4px 8px;background:var(--bg);border-radius:4px;color:var(--text)">http://127.0.0.1:8000/api/auth/google/callback</code><br>
+          <code id="g-redirect-uri" style="display:inline-block;margin:4px 0;padding:4px 8px;background:var(--bg);border-radius:4px;color:var(--text)"></code><br>
           4. Додати до файлу <code>.env</code> на сервері:<br>
           <code style="display:block;margin-top:6px;padding:8px 12px;background:var(--bg);border-radius:4px;color:var(--text)">GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com<br>GOOGLE_CLIENT_SECRET=your-secret</code><br>
           5. Перезапустити сервер
@@ -9630,7 +9630,7 @@ function showN(msg,err=false){
 let _ws = null;
 function connectWS(){
   try{
-    const wsUrl=(window.API||'http://127.0.0.1:8000').replace(/^http/,'ws');
+    const wsUrl=(window.location.protocol==='https:'?'wss://':'ws://')+window.location.host;
     const ws=new WebSocket(`${wsUrl}/ws/online`);
     _ws=ws;
     ws.onopen=()=>_wsSendIdent();

@@ -524,17 +524,17 @@ def init_db():
 
     # ── Admin user ──────────────────────────────────────
     with db.cursor() as c:
-        c.execute("SELECT id, password FROM users WHERE email=%s", ("admin@admin.com",))
-        admin_row = c.fetchone()
-        if not admin_row:
+        # Якщо будь-який адмін вже існує (напр. створений інсталятором) — не дублюємо
+        c.execute("SELECT id FROM users WHERE is_admin=1 OR role='admin' LIMIT 1")
+        if not c.fetchone():
             _init_pass = os.getenv("ADMIN_INIT_PASS") or (
                 "".join(secrets.choice(string.ascii_letters + string.digits + "!@#$%") for _ in range(16))
             )
             c.execute(
-                "INSERT INTO users (name,email,password,is_admin) VALUES (%s,%s,%s,1)",
+                "INSERT INTO users (name,email,password,is_admin,role) VALUES (%s,%s,%s,1,'admin')",
                 ("Admin", "admin@admin.com", hash_pass(_init_pass))
             )
-            print(f"[INIT] Admin account created. Password: {_init_pass}", flush=True)
+            print(f"[INIT] Admin created: admin@admin.com / {_init_pass}", flush=True)
         # SHA256 → bcrypt migration happens lazily at login time (see _upgrade_to_bcrypt)
 
     # ── Default colors ──────────────────────────────────
@@ -3925,6 +3925,225 @@ def email_test(body: SmtpTestReq, request: Request):
     if not ok:
         raise HTTPException(503, err)
     return {"ok": True, "message": f"Тестовий лист надіслано на {to}"}
+
+# ── Installer endpoints ────────────────────────────────────────────────────────
+# Активні ТІЛЬКИ поки існує файл install.html.
+# Після успішної установки install.html видаляється — всі endpoints повертають 403.
+
+_INSTALL_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "install.html")
+
+def _install_guard():
+    if not os.path.isfile(_INSTALL_FILE):
+        raise HTTPException(403, "Інсталятор вже завершено або недоступний")
+
+@app.get("/install")
+def install_page():
+    if not os.path.isfile(_INSTALL_FILE):
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse("/", status_code=302)
+    return FileResponse(_INSTALL_FILE)
+
+class InstallDbParams(BaseModel):
+    host: str = "127.0.0.1"
+    port: int = 3306
+    user: str = "root"
+    password: str = ""
+    name: str = "zoryana_pamyat"
+
+class InstallSmtpParams(BaseModel):
+    host:    str = ""
+    port:    int = 587
+    user:    str = ""
+    password: str = ""
+    from_:   str = ""
+    secure:  str = "starttls"
+    enabled: bool = False
+
+class InstallSiteParams(BaseModel):
+    base_url:         str = "http://127.0.0.1:8000"
+    oauth_redirect:   str = ""
+    allowed_origins:  str = ""
+    environment:      str = "production"
+
+class InstallAdminParams(BaseModel):
+    name:     str
+    email:    str
+    password: str
+
+class InstallRunParams(BaseModel):
+    db:    InstallDbParams
+    site:  InstallSiteParams
+    admin: InstallAdminParams
+    smtp:  InstallSmtpParams = InstallSmtpParams()
+
+@app.post("/api/install/test-db")
+def install_test_db(body: InstallDbParams):
+    _install_guard()
+    try:
+        conn = pymysql.connect(
+            host=body.host, port=body.port,
+            user=body.user, password=body.password,
+            charset="utf8mb4", cursorclass=pymysql.cursors.DictCursor,
+            connect_timeout=5,
+        )
+        with conn.cursor() as c:
+            c.execute("SELECT VERSION() AS v")
+            ver = (c.fetchone() or {}).get("v", "")
+            c.execute(
+                "SELECT SCHEMA_NAME FROM information_schema.SCHEMATA WHERE SCHEMA_NAME=%s",
+                (body.name,)
+            )
+            db_exists = c.fetchone() is not None
+        conn.close()
+        return {"ok": True, "version": ver, "db_exists": db_exists}
+    except Exception as e:
+        raise HTTPException(400, f"Помилка підключення: {e}")
+
+@app.post("/api/install/run")
+def install_run(body: InstallRunParams):
+    _install_guard()
+
+    # Валідація
+    if not re.match(r'^[^@\s]+@[^@\s]+\.[^@\s]+$', body.admin.email):
+        raise HTTPException(400, "Невірний email адміністратора")
+    if len(body.admin.password) < 8:
+        raise HTTPException(400, "Пароль має бути не менше 8 символів")
+    if not body.site.base_url.startswith("http"):
+        raise HTTPException(400, "SITE_BASE_URL має починатись з http:// або https://")
+
+    progress = []
+    conn = None
+    try:
+        # 1. Підключення до MySQL
+        progress.append("Підключення до БД...")
+        conn = pymysql.connect(
+            host=body.db.host, port=body.db.port,
+            user=body.db.user, password=body.db.password,
+            charset="utf8mb4", cursorclass=pymysql.cursors.DictCursor,
+            connect_timeout=10,
+        )
+
+        # 2. Створення бази даних
+        progress.append("Створення бази даних...")
+        with conn.cursor() as c:
+            c.execute(
+                f"CREATE DATABASE IF NOT EXISTS `{body.db.name}` "
+                f"CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
+            )
+            c.execute(f"USE `{body.db.name}`")
+        conn.commit()
+
+        # 3. Створення таблиці users (мінімум для адміна)
+        progress.append("Створення таблиць...")
+        with conn.cursor() as c:
+            c.execute("""
+                CREATE TABLE IF NOT EXISTS users (
+                    id        INT PRIMARY KEY AUTO_INCREMENT,
+                    name      VARCHAR(100) NOT NULL DEFAULT '',
+                    email     VARCHAR(120) NOT NULL UNIQUE,
+                    password  VARCHAR(255) NOT NULL,
+                    is_admin  TINYINT DEFAULT 0,
+                    is_banned TINYINT DEFAULT 0,
+                    role      VARCHAR(20) NOT NULL DEFAULT 'user',
+                    last_seen INT DEFAULT 0,
+                    created   INT DEFAULT 0
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            """)
+        conn.commit()
+
+        # 4. Створення адміністратора
+        progress.append("Створення облікового запису адміністратора...")
+        admin_hash = hash_pass(body.admin.password)
+        with conn.cursor() as c:
+            c.execute("SELECT id FROM users WHERE email=%s", (body.admin.email,))
+            if c.fetchone():
+                c.execute(
+                    "UPDATE users SET password=%s, is_admin=1, role='admin', name=%s WHERE email=%s",
+                    (admin_hash, _sanitize_text(body.admin.name), body.admin.email)
+                )
+            else:
+                c.execute(
+                    "INSERT INTO users (name,email,password,is_admin,role,created) VALUES (%s,%s,%s,1,'admin',UNIX_TIMESTAMP())",
+                    (_sanitize_text(body.admin.name), body.admin.email, admin_hash)
+                )
+        conn.close()
+        conn = None
+
+        # 5. Запис .env файлу
+        progress.append("Запис файлу конфігурації .env...")
+        oauth_base = (body.site.oauth_redirect or body.site.base_url).rstrip("/")
+        base_url   = body.site.base_url.rstrip("/")
+        origins    = body.site.allowed_origins.strip() or base_url
+        secret_key = secrets.token_hex(32)
+        smtp_enabled = "1" if body.smtp.enabled else "0"
+
+        env_lines = [
+            "# Зоряна Пам'ять — auto-generated by installer",
+            f"# Дата: {__import__('datetime').date.today()}",
+            "",
+            "# ── База даних ──────────────────────────",
+            f"DB_HOST={body.db.host}",
+            f"DB_PORT={body.db.port}",
+            f"DB_USER={body.db.user}",
+            f"DB_PASS={body.db.password}",
+            f"DB_NAME={body.db.name}",
+            "",
+            "# ── Домен ───────────────────────────────",
+            f"SITE_BASE_URL={base_url}",
+            f"OAUTH_REDIRECT_BASE={oauth_base}",
+            f"ALLOWED_ORIGINS={origins}",
+            "",
+            "# ── Gunicorn ────────────────────────────",
+            "GUNICORN_BIND=127.0.0.1:8000",
+            "",
+            "# ── Безпека ─────────────────────────────",
+            f"ENVIRONMENT={body.site.environment}",
+            f"SECRET_KEY={secret_key}",
+            "",
+            "# ── Redis (опціонально) ─────────────────",
+            "# REDIS_URL=redis://127.0.0.1:6379/0",
+            "",
+            "# ── Google OAuth ────────────────────────",
+            "GOOGLE_CLIENT_ID=",
+            "GOOGLE_CLIENT_SECRET=",
+            "",
+            "# ── SMTP ────────────────────────────────",
+            f"SMTP_HOST={body.smtp.host}",
+            f"SMTP_PORT={body.smtp.port}",
+            f"SMTP_USER={body.smtp.user}",
+            f"SMTP_PASS={body.smtp.password}",
+            f"SMTP_FROM={body.smtp.from_}",
+            f"SMTP_ENABLED={smtp_enabled}",
+        ]
+        env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+        with open(env_path, "w", encoding="utf-8") as f:
+            f.write("\n".join(env_lines) + "\n")
+
+        # 6. Видалення інсталятора
+        progress.append("Видалення інсталятора...")
+        try:
+            os.remove(_INSTALL_FILE)
+        except Exception as e:
+            raise HTTPException(500, f"Не вдалось видалити install.html: {e}")
+
+        return {
+            "ok": True,
+            "progress": progress,
+            "message": (
+                "Встановлення успішне! "
+                f"Адмін: {body.admin.email}. "
+                "Перезапустіть сервер для застосування налаштувань."
+            ),
+            "restart_cmd": "sudo systemctl restart zoryna",
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        if conn:
+            try: conn.close()
+            except: pass
+        raise HTTPException(500, f"Помилка встановлення ({progress[-1] if progress else ''}): {e}")
 
 @app.post("/api/admin/sea-svg")
 async def upload_sea_svg(

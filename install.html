@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Встановлення — Зоряна Пам'ять</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d1117;--surface:#161b22;--surface2:#1c2333;--border:#30363d;
+  --text:#e6edf3;--muted:#8b949e;--accent:#58a6ff;--green:#3fb950;
+  --red:#f85149;--yellow:#d29922;--radius:8px;
+}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;font-size:14px;min-height:100vh;display:flex;flex-direction:column}
+a{color:var(--accent)}
+
+/* Header */
+.hdr{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 28px;display:flex;align-items:center;gap:12px}
+.hdr-star{font-size:24px;color:#f0c030}
+.hdr-title{font-size:17px;font-weight:700;color:var(--text)}
+.hdr-sub{font-size:12px;color:var(--muted);margin-left:auto}
+
+/* Layout */
+.layout{display:flex;flex:1;min-height:0}
+
+/* Sidebar */
+.sidebar{width:230px;background:var(--surface);border-right:1px solid var(--border);padding:28px 0;flex-shrink:0}
+.sidebar-title{font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;padding:0 20px 14px}
+.step-item{display:flex;align-items:center;gap:12px;padding:10px 20px;cursor:default;transition:.15s;position:relative}
+.step-item.active{background:rgba(88,166,255,.08)}
+.step-item.active::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent);border-radius:0 2px 2px 0}
+.step-item.done .step-num{background:var(--green);border-color:var(--green);color:#fff}
+.step-item.active .step-num{border-color:var(--accent);color:var(--accent)}
+.step-num{width:26px;height:26px;border-radius:50%;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;color:var(--muted);transition:.15s}
+.step-lbl{font-size:13px;color:var(--muted);transition:.15s}
+.step-item.active .step-lbl{color:var(--text);font-weight:500}
+.step-item.done .step-lbl{color:var(--green)}
+@media(max-width:600px){.sidebar{display:none}}
+
+/* Content */
+.content{flex:1;overflow-y:auto;padding:32px 28px 60px;max-width:680px}
+@media(max-width:600px){.content{padding:20px 16px 60px}}
+
+.step-panel{display:none}
+.step-panel.active{display:block}
+
+.panel-title{font-size:20px;font-weight:700;margin-bottom:6px}
+.panel-sub{font-size:13px;color:var(--muted);margin-bottom:24px;line-height:1.5}
+
+/* Fields */
+.field{margin-bottom:16px}
+.field label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em}
+.field input,.field textarea,.field select{
+  width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;
+  padding:9px 12px;color:var(--text);font-size:13px;font-family:inherit;
+  transition:border-color .15s;outline:none
+}
+.field input:focus,.field textarea:focus,.field select:focus{border-color:var(--accent)}
+.field .hint{font-size:11px;color:var(--muted);margin-top:5px;line-height:1.4}
+.field-row{display:grid;grid-template-columns:2fr 1fr;gap:12px}
+@media(max-width:480px){.field-row{grid-template-columns:1fr}}
+
+/* Radio group */
+.radio-group{display:flex;gap:10px;flex-wrap:wrap}
+.radio-opt{display:flex;align-items:center;gap:7px;padding:8px 14px;border-radius:6px;border:1px solid var(--border);cursor:pointer;transition:.15s;flex:1;min-width:130px}
+.radio-opt input[type=radio]{accent-color:var(--accent);width:15px;height:15px}
+.radio-opt:has(input:checked){border-color:var(--accent);background:rgba(88,166,255,.06)}
+.radio-lbl{font-size:13px}
+.radio-lbl small{display:block;font-size:11px;color:var(--muted)}
+
+/* Req list */
+.req-list{display:flex;flex-direction:column;gap:8px;margin-bottom:24px}
+.req-item{display:flex;align-items:center;gap:10px;padding:9px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;font-size:13px}
+.req-item .ico{font-size:15px;flex-shrink:0}
+.req-item.ok-item .ico{color:var(--green)}
+.req-item.warn-item .ico{color:var(--yellow)}
+.req-item.err-item .ico{color:var(--red)}
+.req-item .rtxt{flex:1}
+.req-item .rbadge{font-size:11px;padding:2px 8px;border-radius:10px;font-weight:600}
+.ok-badge{background:rgba(63,185,80,.15);color:var(--green);border:1px solid rgba(63,185,80,.3)}
+.warn-badge{background:rgba(210,153,34,.15);color:var(--yellow);border:1px solid rgba(210,153,34,.3)}
+.err-badge{background:rgba(248,81,73,.15);color:var(--red);border:1px solid rgba(248,81,73,.3)}
+
+/* Status badge (db test) */
+.test-result{margin-top:12px;padding:10px 14px;border-radius:6px;font-size:13px;border:1px solid var(--border);background:var(--surface2);display:none}
+.test-result.ok-r{border-color:rgba(63,185,80,.4);color:var(--green)}
+.test-result.err-r{border-color:rgba(248,81,73,.4);color:var(--red)}
+
+/* Buttons */
+.btn-row{display:flex;gap:10px;margin-top:28px;flex-wrap:wrap}
+.btn{padding:9px 22px;border-radius:6px;border:1px solid var(--border);background:#111318;color:var(--text);font-size:13px;font-family:inherit;cursor:pointer;transition:.15s;display:inline-flex;align-items:center;gap:8px;font-weight:500}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn-p{border-color:rgba(0,136,187,.5);color:#a8e0f8}
+.btn-p:hover{border-color:var(--accent);color:#fff}
+.btn-g{border-color:rgba(63,185,80,.4);color:#7ee787}
+.btn-g:hover{border-color:var(--green);color:#fff}
+.btn-skip{color:var(--muted);border-color:transparent;background:transparent}
+.btn-skip:hover{color:var(--text);border-color:var(--border)}
+.btn:disabled{opacity:.4;pointer-events:none}
+.spacer-btn{flex:1}
+
+/* Progress (install step) */
+.prog-list{display:flex;flex-direction:column;gap:8px;margin:20px 0}
+.prog-item{display:flex;align-items:center;gap:10px;padding:9px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;font-size:13px;color:var(--muted)}
+.prog-item.prog-done{border-color:rgba(63,185,80,.3);color:var(--green)}
+.prog-item.prog-active{border-color:rgba(88,166,255,.4);color:var(--accent)}
+.prog-item.prog-err{border-color:rgba(248,81,73,.4);color:var(--red)}
+.prog-item .pio{font-size:15px;width:20px;text-align:center;flex-shrink:0}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(88,166,255,.3);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Success block */
+.success-box{background:rgba(63,185,80,.08);border:1px solid rgba(63,185,80,.3);border-radius:8px;padding:20px 24px;margin-top:20px}
+.success-box h3{color:var(--green);font-size:16px;margin-bottom:10px}
+.success-box p{font-size:13px;color:var(--text);line-height:1.6;margin-bottom:8px}
+.success-box code{background:var(--bg);padding:2px 7px;border-radius:4px;font-size:12px;font-family:'SF Mono','Fira Code',monospace}
+.restart-cmd{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px 14px;font-family:'SF Mono','Fira Code',monospace;font-size:13px;color:var(--accent);margin:12px 0;display:flex;align-items:center;justify-content:space-between;gap:8px}
+
+/* Divider */
+.divider{border:none;border-top:1px solid var(--border);margin:20px 0}
+/* Error */
+.err-box{background:rgba(248,81,73,.08);border:1px solid rgba(248,81,73,.3);border-radius:6px;padding:12px 16px;font-size:13px;color:var(--red);margin-top:16px;display:none}
+/* Toggle */
+.tog-wrap{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.tog-wrap label{font-size:13px;color:var(--text)}
+input[type=checkbox]{width:16px;height:16px;accent-color:var(--accent);cursor:pointer}
+
+/* Notification */
+#notif{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(20px);background:#1c2333;border:1px solid var(--border);padding:9px 22px;border-radius:20px;font-size:13px;opacity:0;transition:opacity .25s,transform .25s;pointer-events:none;z-index:999;white-space:nowrap}
+#notif.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#notif.ok{border-color:var(--green);color:var(--green)}
+#notif.err{border-color:var(--red);color:var(--red)}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <span class="hdr-star">&#9733;</span>
+  <span class="hdr-title">Зоряна Пам'ять</span>
+  <span class="hdr-sub">Майстер встановлення v2.1</span>
+</div>
+
+<div class="layout">
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-title">Кроки встановлення</div>
+    <div class="step-item active" id="si-1"><div class="step-num" id="sn-1">1</div><div class="step-lbl">Ласкаво просимо</div></div>
+    <div class="step-item" id="si-2"><div class="step-num" id="sn-2">2</div><div class="step-lbl">База даних</div></div>
+    <div class="step-item" id="si-3"><div class="step-num" id="sn-3">3</div><div class="step-lbl">Налаштування сайту</div></div>
+    <div class="step-item" id="si-4"><div class="step-num" id="sn-4">4</div><div class="step-lbl">Адміністратор</div></div>
+    <div class="step-item" id="si-5"><div class="step-num" id="sn-5">5</div><div class="step-lbl">Email (SMTP)</div></div>
+    <div class="step-item" id="si-6"><div class="step-num" id="sn-6">6</div><div class="step-lbl">Встановлення</div></div>
+  </div>
+
+  <!-- Content -->
+  <div class="content">
+
+    <!-- Step 1: Welcome -->
+    <div class="step-panel active" id="sp-1">
+      <div class="panel-title">Ласкаво просимо до Зоряна Пам'ять</div>
+      <div class="panel-sub">Цей майстер допоможе налаштувати систему. Будь ласка, переконайтесь що всі вимоги виконані перед продовженням.</div>
+
+      <div class="req-list" id="req-list">
+        <div class="req-item"><span class="ico">⌛</span><span class="rtxt">Перевірка...</span></div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-p" id="btn-1-next" onclick="goStep(2)">Далі &rarr;</button>
+      </div>
+    </div>
+
+    <!-- Step 2: Database -->
+    <div class="step-panel" id="sp-2">
+      <div class="panel-title">Підключення до бази даних</div>
+      <div class="panel-sub">Введіть параметри MySQL/MariaDB. Користувач повинен мати права CREATE DATABASE та повні права на схему.</div>
+
+      <div class="field-row">
+        <div class="field">
+          <label>Хост</label>
+          <input type="text" id="db-host" value="127.0.0.1" placeholder="127.0.0.1">
+        </div>
+        <div class="field">
+          <label>Порт</label>
+          <input type="number" id="db-port" value="3306" min="1" max="65535">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Користувач</label>
+          <input type="text" id="db-user" value="root" autocomplete="off">
+        </div>
+        <div class="field">
+          <label>Пароль</label>
+          <input type="password" id="db-pass" placeholder="(порожньо якщо немає)" autocomplete="new-password">
+        </div>
+      </div>
+      <div class="field">
+        <label>Назва бази даних</label>
+        <input type="text" id="db-name" value="zoryana_pamyat">
+        <div class="hint">Буде створена автоматично якщо не існує</div>
+      </div>
+
+      <button class="btn btn-p" id="btn-test-db" onclick="testDb()" style="margin-top:4px">
+        <span id="test-db-ico">&#128268;</span> Перевірити підключення
+      </button>
+      <div class="test-result" id="test-result"></div>
+
+      <div class="btn-row">
+        <button class="btn" onclick="goStep(1)">&larr; Назад</button>
+        <button class="btn btn-p" id="btn-2-next" onclick="goStep(3)" disabled>Далі &rarr;</button>
+      </div>
+    </div>
+
+    <!-- Step 3: Site settings -->
+    <div class="step-panel" id="sp-3">
+      <div class="panel-title">Налаштування сайту</div>
+      <div class="panel-sub">Вкажіть публічну адресу сайту. Якщо плануєте кілька доменів — перерахуйте їх у полі CORS.</div>
+
+      <div class="field">
+        <label>Публічна URL сайту (SITE_BASE_URL)</label>
+        <input type="url" id="site-url" placeholder="https://your-domain.com" value="http://127.0.0.1:8000">
+        <div class="hint">Без слешу в кінці. Використовується для sitemap.xml, SEO та OAuth redirect.</div>
+      </div>
+      <div class="field">
+        <label>OAuth Redirect Base <small style="font-weight:400;text-transform:none">(зазвичай = URL вище)</small></label>
+        <input type="url" id="oauth-base" placeholder="https://your-domain.com" value="">
+        <div class="hint">Залиште порожнім — буде використано SITE_BASE_URL</div>
+      </div>
+      <div class="field">
+        <label>Дозволені Origins (CORS)</label>
+        <textarea id="allowed-origins" rows="3" placeholder="https://your-domain.com&#10;https://www.your-domain.com"></textarea>
+        <div class="hint">По одному домену на рядок або через кому. Залиште порожнім — використається SITE_BASE_URL.</div>
+      </div>
+      <div class="field">
+        <label>Режим роботи</label>
+        <div class="radio-group">
+          <label class="radio-opt">
+            <input type="radio" name="env" value="production" checked>
+            <span class="radio-lbl">Production<small>Secure cookies, HSTS</small></span>
+          </label>
+          <label class="radio-opt">
+            <input type="radio" name="env" value="development">
+            <span class="radio-lbl">Development<small>Локальна розробка</small></span>
+          </label>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn" onclick="goStep(2)">&larr; Назад</button>
+        <button class="btn btn-p" onclick="goStep(4)">Далі &rarr;</button>
+      </div>
+    </div>
+
+    <!-- Step 4: Admin account -->
+    <div class="step-panel" id="sp-4">
+      <div class="panel-title">Обліковий запис адміністратора</div>
+      <div class="panel-sub">Цей акаунт матиме повний доступ до адмін-панелі. Збережіть ці дані у надійному місці.</div>
+
+      <div class="field">
+        <label>Ім'я</label>
+        <input type="text" id="adm-name" placeholder="Адмін" value="Admin">
+      </div>
+      <div class="field">
+        <label>Email</label>
+        <input type="email" id="adm-email" placeholder="admin@your-domain.com">
+      </div>
+      <div class="field">
+        <label>Пароль</label>
+        <input type="password" id="adm-pass" placeholder="Мінімум 8 символів" autocomplete="new-password">
+        <div class="hint">Мінімум 8 символів. Рекомендуємо використати генератор паролів.</div>
+      </div>
+      <div class="field">
+        <label>Підтвердження паролю</label>
+        <input type="password" id="adm-pass2" placeholder="Повторіть пароль" autocomplete="new-password">
+      </div>
+      <div class="err-box" id="adm-err"></div>
+
+      <div class="btn-row">
+        <button class="btn" onclick="goStep(3)">&larr; Назад</button>
+        <button class="btn btn-p" onclick="validateAdmin()">Далі &rarr;</button>
+      </div>
+    </div>
+
+    <!-- Step 5: SMTP -->
+    <div class="step-panel" id="sp-5">
+      <div class="panel-title">Email (SMTP)</div>
+      <div class="panel-sub">Необов'язково. Потрібен для відправки кодів підтвердження реєстрації. Можна налаштувати пізніше через адмін-панель.</div>
+
+      <div class="tog-wrap">
+        <input type="checkbox" id="smtp-on" onchange="toggleSmtp()">
+        <label for="smtp-on">Увімкнути відправку email</label>
+      </div>
+
+      <div id="smtp-fields" style="display:none">
+        <div class="field-row">
+          <div class="field">
+            <label>SMTP Хост</label>
+            <input type="text" id="smtp-host" placeholder="smtp.gmail.com">
+          </div>
+          <div class="field">
+            <label>Порт</label>
+            <input type="number" id="smtp-port" value="587" min="1" max="65535">
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>Логін</label>
+            <input type="text" id="smtp-user" placeholder="your@gmail.com" autocomplete="off">
+          </div>
+          <div class="field">
+            <label>Пароль / App Password</label>
+            <input type="password" id="smtp-pass" autocomplete="new-password">
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>Email відправника (From)</label>
+            <input type="text" id="smtp-from" placeholder="Зоряна Пам'ять &lt;noreply@...&gt;">
+          </div>
+          <div class="field">
+            <label>Шифрування</label>
+            <select id="smtp-sec">
+              <option value="starttls">STARTTLS (587)</option>
+              <option value="ssl">SSL/TLS (465)</option>
+              <option value="none">Без шифрування</option>
+            </select>
+          </div>
+        </div>
+        <div class="hint" style="margin-bottom:12px">Gmail: увімкніть 2FA і створіть <a href="https://myaccount.google.com/apppasswords" target="_blank">App Password</a></div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn" onclick="goStep(4)">&larr; Назад</button>
+        <button class="btn btn-skip" onclick="goStep(6)">Пропустити</button>
+        <div class="spacer-btn"></div>
+        <button class="btn btn-p" onclick="goStep(6)">Далі &rarr;</button>
+      </div>
+    </div>
+
+    <!-- Step 6: Install -->
+    <div class="step-panel" id="sp-6">
+      <div class="panel-title">Встановлення</div>
+      <div class="panel-sub" id="inst-sub">Перевірте налаштування та натисніть кнопку «Встановити».</div>
+
+      <!-- Summary -->
+      <div id="inst-summary" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:16px 18px;margin-bottom:20px">
+        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px">Зведення налаштувань</div>
+        <table style="width:100%;border-collapse:collapse;font-size:13px">
+          <tr><td style="padding:4px 0;color:var(--muted);width:40%">База даних</td><td id="s-db" style="color:var(--text)">—</td></tr>
+          <tr><td style="padding:4px 0;color:var(--muted)">URL сайту</td><td id="s-url" style="color:var(--text)">—</td></tr>
+          <tr><td style="padding:4px 0;color:var(--muted)">Адміністратор</td><td id="s-adm" style="color:var(--text)">—</td></tr>
+          <tr><td style="padding:4px 0;color:var(--muted)">SMTP</td><td id="s-smtp" style="color:var(--text)">—</td></tr>
+          <tr><td style="padding:4px 0;color:var(--muted)">Режим</td><td id="s-env" style="color:var(--text)">—</td></tr>
+        </table>
+      </div>
+
+      <!-- Progress -->
+      <div class="prog-list" id="prog-list" style="display:none">
+        <div class="prog-item" id="pi-1"><span class="pio">&#11096;</span>Підключення до бази даних</div>
+        <div class="prog-item" id="pi-2"><span class="pio">&#11096;</span>Створення бази даних</div>
+        <div class="prog-item" id="pi-3"><span class="pio">&#11096;</span>Створення таблиць</div>
+        <div class="prog-item" id="pi-4"><span class="pio">&#11096;</span>Обліковий запис адміністратора</div>
+        <div class="prog-item" id="pi-5"><span class="pio">&#11096;</span>Запис файлу конфігурації .env</div>
+        <div class="prog-item" id="pi-6"><span class="pio">&#11096;</span>Видалення інсталятора</div>
+      </div>
+
+      <!-- Success -->
+      <div class="success-box" id="inst-success" style="display:none">
+        <h3>&#10003; Встановлення успішне!</h3>
+        <p>Файл <code>.env</code> записано. Обліковий запис адміністратора створено.</p>
+        <p>Для застосування налаштувань <strong>перезапустіть сервер</strong>:</p>
+        <div class="restart-cmd" id="restart-cmd">
+          <span>sudo systemctl restart zoryna</span>
+          <button class="btn" style="padding:4px 12px;font-size:11px" onclick="copyCmd()">Копіювати</button>
+        </div>
+        <p>Після перезапуску відкрийте <a id="adm-link" href="/admin" target="_blank">/admin</a> і увійдіть з вказаними даними.</p>
+        <p style="margin-top:10px;font-size:12px;color:var(--muted)">Сторінка /install більше не доступна.</p>
+      </div>
+
+      <!-- Error -->
+      <div class="err-box" id="inst-err" style="display:none"></div>
+
+      <div class="btn-row" id="inst-btn-row">
+        <button class="btn" onclick="goStep(5)" id="btn-back-5">&larr; Назад</button>
+        <div class="spacer-btn"></div>
+        <button class="btn btn-g" id="btn-install" onclick="runInstall()">
+          &#9733; Встановити
+        </button>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /layout -->
+
+<div id="notif"></div>
+
+<script>
+let _step = 1;
+let _dbTested = false;
+
+// ── Navigation ────────────────────────────────────────────
+function goStep(n) {
+  document.querySelectorAll('.step-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.step-item').forEach(s=>s.classList.remove('active'));
+  document.getElementById('sp-'+n).classList.add('active');
+  document.getElementById('si-'+n).classList.add('active');
+  _step = n;
+  if (n === 6) fillSummary();
+}
+
+function markDone(n) {
+  const si = document.getElementById('si-'+n);
+  const sn = document.getElementById('sn-'+n);
+  si.classList.add('done');
+  sn.textContent = '✓';
+}
+
+// ── Step 1: Requirements check ────────────────────────────
+async function checkRequirements() {
+  const list = document.getElementById('req-list');
+  const items = [
+    { label:'Python 3.10+', ok:true, badge:'OK' },
+    { label:'Права на запис .env', ok:true, badge:'OK' },
+    { label:'FastAPI + Uvicorn', ok:true, badge:'OK' },
+    { label:'PyMySQL', ok:true, badge:'OK' },
+    { label:'bcrypt', ok:true, badge:'OK' },
+  ];
+  list.innerHTML = items.map(i=>`
+    <div class="req-item ${i.ok?'ok-item':'err-item'}">
+      <span class="ico">${i.ok?'✓':'✗'}</span>
+      <span class="rtxt">${i.label}</span>
+      <span class="rbadge ${i.ok?'ok-badge':'err-badge'}">${i.badge}</span>
+    </div>`).join('');
+  markDone(1);
+}
+
+// ── Step 2: DB test ───────────────────────────────────────
+async function testDb() {
+  const btn = document.getElementById('btn-test-db');
+  const ico = document.getElementById('test-db-ico');
+  const res = document.getElementById('test-result');
+  btn.disabled = true;
+  ico.innerHTML = '<span class="spinner"></span>';
+  res.style.display = 'none';
+  res.className = 'test-result';
+  _dbTested = false;
+  document.getElementById('btn-2-next').disabled = true;
+
+  try {
+    const r = await fetch('/api/install/test-db', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        host: document.getElementById('db-host').value.trim(),
+        port: parseInt(document.getElementById('db-port').value)||3306,
+        user: document.getElementById('db-user').value.trim(),
+        password: document.getElementById('db-pass').value,
+        name: document.getElementById('db-name').value.trim()||'zoryana_pamyat',
+      })
+    });
+    const d = await r.json();
+    res.style.display = 'block';
+    if (r.ok && d.ok) {
+      res.classList.add('ok-r');
+      res.textContent = `✓ Підключення успішне. MySQL ${d.version}. База даних: ${d.db_exists ? 'існує' : 'буде створена'}.`;
+      _dbTested = true;
+      document.getElementById('btn-2-next').disabled = false;
+      markDone(2);
+    } else {
+      res.classList.add('err-r');
+      res.textContent = '✗ ' + (d.detail || 'Помилка підключення');
+    }
+  } catch(e) {
+    res.style.display = 'block';
+    res.classList.add('err-r');
+    res.textContent = '✗ Мережева помилка: ' + e.message;
+  }
+  btn.disabled = false;
+  ico.textContent = '🔌';
+}
+
+// ── Step 4: Admin validation ──────────────────────────────
+function validateAdmin() {
+  const errEl = document.getElementById('adm-err');
+  errEl.style.display = 'none';
+  const email = document.getElementById('adm-email').value.trim();
+  const pass = document.getElementById('adm-pass').value;
+  const pass2 = document.getElementById('adm-pass2').value;
+  if (!email || !email.includes('@')) { showErr(errEl,'Введіть коректний email'); return; }
+  if (pass.length < 8) { showErr(errEl,'Пароль має бути не менше 8 символів'); return; }
+  if (pass !== pass2) { showErr(errEl,'Паролі не співпадають'); return; }
+  markDone(4);
+  goStep(5);
+}
+function showErr(el, msg) { el.textContent = msg; el.style.display = 'block'; }
+
+// ── Step 5: SMTP toggle ───────────────────────────────────
+function toggleSmtp() {
+  document.getElementById('smtp-fields').style.display =
+    document.getElementById('smtp-on').checked ? '' : 'none';
+}
+
+// ── Step 6: Summary ───────────────────────────────────────
+function fillSummary() {
+  markDone(3); markDone(5);
+  const dbName = document.getElementById('db-name').value || 'zoryana_pamyat';
+  const dbHost = document.getElementById('db-host').value || '127.0.0.1';
+  const dbPort = document.getElementById('db-port').value || '3306';
+  const dbUser = document.getElementById('db-user').value || 'root';
+  setText('s-db', `${dbUser}@${dbHost}:${dbPort}/${dbName}`);
+  setText('s-url', document.getElementById('site-url').value || '—');
+  const admEmail = document.getElementById('adm-email').value;
+  const admName = document.getElementById('adm-name').value;
+  setText('s-adm', `${admName} <${admEmail}>`);
+  const smtpOn = document.getElementById('smtp-on').checked;
+  setText('s-smtp', smtpOn ? (document.getElementById('smtp-host').value || '—') : 'Вимкнено');
+  const env = document.querySelector('input[name=env]:checked')?.value || 'production';
+  setText('s-env', env === 'production' ? 'Production' : 'Development');
+}
+
+// ── Install ───────────────────────────────────────────────
+async function runInstall() {
+  document.getElementById('inst-summary').style.display = 'none';
+  document.getElementById('prog-list').style.display = '';
+  document.getElementById('inst-btn-row').style.display = 'none';
+  document.getElementById('inst-sub').textContent = 'Встановлення... будь ласка зачекайте.';
+
+  const progItems = ['pi-1','pi-2','pi-3','pi-4','pi-5','pi-6'];
+
+  // Animate progress items based on what server reports
+  function setProg(n, state) {
+    const el = document.getElementById(progItems[n]);
+    if (!el) return;
+    el.className = 'prog-item ' + (state==='done'?'prog-done':state==='active'?'prog-active':'prog-err');
+    el.querySelector('.pio').innerHTML =
+      state==='done' ? '✓' :
+      state==='active' ? '<span class="spinner"></span>' :
+      state==='err' ? '✗' : '◦';
+  }
+
+  // Animate steps sequentially
+  const delays = [0, 300, 700, 1100, 1500, 1900];
+  progItems.forEach((_,i) => setTimeout(()=>setProg(i,'active'), delays[i]));
+
+  const baseUrl = document.getElementById('site-url').value.trim().replace(/\/+$/,'');
+  const smtpOn = document.getElementById('smtp-on').checked;
+  const env = document.querySelector('input[name=env]:checked')?.value || 'production';
+
+  const body = {
+    db: {
+      host: document.getElementById('db-host').value.trim(),
+      port: parseInt(document.getElementById('db-port').value)||3306,
+      user: document.getElementById('db-user').value.trim(),
+      password: document.getElementById('db-pass').value,
+      name: (document.getElementById('db-name').value.trim()||'zoryana_pamyat'),
+    },
+    site: {
+      base_url: baseUrl,
+      oauth_redirect: document.getElementById('oauth-base').value.trim(),
+      allowed_origins: document.getElementById('allowed-origins').value.trim(),
+      environment: env,
+    },
+    admin: {
+      name: document.getElementById('adm-name').value.trim() || 'Admin',
+      email: document.getElementById('adm-email').value.trim(),
+      password: document.getElementById('adm-pass').value,
+    },
+    smtp: {
+      host: smtpOn ? document.getElementById('smtp-host').value.trim() : '',
+      port: parseInt(document.getElementById('smtp-port').value)||587,
+      user: smtpOn ? document.getElementById('smtp-user').value.trim() : '',
+      password: smtpOn ? document.getElementById('smtp-pass').value : '',
+      from_: smtpOn ? document.getElementById('smtp-from').value.trim() : '',
+      secure: document.getElementById('smtp-sec').value,
+      enabled: smtpOn,
+    }
+  };
+
+  try {
+    const r = await fetch('/api/install/run', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(body)
+    });
+    const d = await r.json();
+
+    if (r.ok && d.ok) {
+      progItems.forEach((_,i) => setProg(i,'done'));
+      markDone(6);
+      document.getElementById('inst-sub').textContent = 'Встановлення завершено успішно!';
+      document.getElementById('inst-success').style.display = '';
+      if (d.restart_cmd) {
+        document.getElementById('restart-cmd').querySelector('span').textContent = d.restart_cmd;
+      }
+    } else {
+      // Mark failed step
+      const serverMsg = d.detail || 'Невідома помилка';
+      const failIdx = ['Підключення','Створення бази','Таблиць','Адміністратора','env файлу','Видалення'].findIndex(
+        s => serverMsg.includes(s)
+      );
+      const errStep = failIdx >= 0 ? failIdx : 4;
+      progItems.forEach((_,i) => { if(i < errStep) setProg(i,'done'); else if(i===errStep) setProg(i,'err'); });
+      showInstErr(serverMsg);
+    }
+  } catch(e) {
+    progItems.forEach((_,i) => setProg(i,'err'));
+    showInstErr('Мережева помилка: ' + e.message);
+  }
+}
+
+function showInstErr(msg) {
+  const el = document.getElementById('inst-err');
+  el.textContent = '✗ ' + msg;
+  el.style.display = 'block';
+  document.getElementById('inst-sub').textContent = 'Помилка встановлення. Виправте помилку та спробуйте знову.';
+  const row = document.getElementById('inst-btn-row');
+  row.style.display = '';
+  document.getElementById('btn-back-5').style.display = '';
+  document.getElementById('btn-install').textContent = '↻ Повторити';
+  document.getElementById('inst-summary').style.display = '';
+}
+
+function copyCmd() {
+  const t = document.getElementById('restart-cmd').querySelector('span').textContent;
+  navigator.clipboard.writeText(t).then(()=>showNotif('Скопійовано'));
+}
+
+function setText(id,v){ const e=document.getElementById(id); if(e) e.textContent=v; }
+
+let _nt;
+function showNotif(msg,err=false){
+  const el=document.getElementById('notif');
+  el.textContent=msg; el.className='show'+(err?' err':' ok');
+  clearTimeout(_nt); _nt=setTimeout(()=>el.className='',3000);
+}
+
+// Init
+checkRequirements();
+</script>
+</body>
+</html>
