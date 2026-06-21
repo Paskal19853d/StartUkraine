@@ -14,3 +14,4 @@ node_modules/
 *.p12
 proxy.php
 logs/
+www/google-service-account.json
