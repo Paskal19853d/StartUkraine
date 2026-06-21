@@ -1,0 +1,147 @@
+{
+  "dashboard": {
+    "title": "Зоряна Пам'ять — Моніторинг",
+    "timezone": "Europe/Kiev",
+    "refresh": "10s",
+    "time": { "from": "now-1h", "to": "now" },
+    "panels": [
+      {
+        "id": 1,
+        "title": "Статус сервісу",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "up{job=\"zoryna\"}",
+            "legendFormat": "Status"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "mappings": [
+              { "options": { "0": { "text": "DOWN" }, "1": { "text": "UP" } }, "type": "value" }
+            ],
+            "thresholds": {
+              "steps": [
+                { "color": "red", "value": null },
+                { "color": "green", "value": 1 }
+              ]
+            }
+          }
+        },
+        "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 }
+      },
+      {
+        "id": 2,
+        "title": "Uptime",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "zoryna_uptime_seconds",
+            "legendFormat": "Uptime"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "s",
+            "thresholds": {
+              "steps": [
+                { "color": "blue", "value": null }
+              ]
+            }
+          }
+        },
+        "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 }
+      },
+      {
+        "id": 3,
+        "title": "Кількість меморіалів",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "zoryna_memorials_total",
+            "legendFormat": "Approved"
+          },
+          {
+            "expr": "zoryna_memorials_pending",
+            "legendFormat": "Pending"
+          }
+        ],
+        "gridPos": { "h": 4, "w": 12, "x": 0, "y": 4 }
+      },
+      {
+        "id": 4,
+        "title": "CPU Usage",
+        "type": "gauge",
+        "targets": [
+          {
+            "expr": "zoryna_cpu_percent",
+            "legendFormat": "CPU %"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "min": 0,
+            "max": 100,
+            "thresholds": {
+              "steps": [
+                { "color": "green", "value": null },
+                { "color": "yellow", "value": 60 },
+                { "color": "red", "value": 80 }
+              ]
+            }
+          }
+        },
+        "gridPos": { "h": 6, "w": 6, "x": 0, "y": 8 }
+      },
+      {
+        "id": 5,
+        "title": "Memory Usage",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "zoryna_memory_bytes / 1024 / 1024",
+            "legendFormat": "RAM (MB)"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "decmbytes"
+          }
+        },
+        "gridPos": { "h": 6, "w": 18, "x": 6, "y": 8 }
+      },
+      {
+        "id": 6,
+        "title": "Redis Status",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "zoryna_redis_enabled",
+            "legendFormat": "Redis"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "mappings": [
+              { "options": { "0": { "text": "OFF" }, "1": { "text": "ON" } }, "type": "value" }
+            ],
+            "thresholds": {
+              "steps": [
+                { "color": "red", "value": 0 },
+                { "color": "green", "value": 1 }
+              ]
+            }
+          }
+        },
+        "gridPos": { "h": 4, "w": 6, "x": 0, "y": 14 }
+      }
+    ],
+    "templating": {
+      "list": []
+    },
+    "annotations": {
+      "list": []
+    }
+  }
+}

@@ -36,6 +36,7 @@ D:\OSPanel\modules\MySQL-8.4\bin\mysql.exe -h 127.0.0.1 -P 3306 -u root -proot z
 | `memorial_awards` | Нагороди/відзнаки до конкретних меморіалів |
 | `likes_log` | Журнал лайків (дедублікація) |
 | `search_logs` | Аналітика пошукових запитів |
+| `portfolio_thanks` | Блок подяк сторінки Автора `/portfolio/` — керується з адмінки |
 
 ---
 

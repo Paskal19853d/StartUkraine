@@ -97,10 +97,17 @@ html, body {
 
 /* Search */
 #sw {
-  flex: 1;
-  max-width: 320px;
-  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin-left: auto;
+  flex-shrink: 0;
+}
+#sw-input {
+  flex: 1;
+  min-width: 180px;
+  max-width: 280px;
+  position: relative;
 }
 #search {
   width: 100%;
@@ -191,6 +198,38 @@ mark.shl {
   border-radius: 2px;
   padding: 0 1px;
   font-style: normal;
+}
+
+/* Заголовок секції: «Населені пункти» / «Меморіали» */
+.sdi-section-hdr {
+  padding: 5px 14px 2px;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: .09em;
+  color: var(--text-secondary, #8a9cb0);
+  text-transform: uppercase;
+  cursor: default;
+  user-select: none;
+  opacity: .7;
+}
+
+/* Іконка міста (порожнє коло) */
+.sdi-city-ico {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid #a0d7ff;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+/* Рівень населеного пункту */
+.sdi-tier {
+  font-size: 9px;
+  color: var(--text-secondary, #8a9cb0);
+  margin-left: 5px;
+  opacity: .85;
+  font-weight: 400;
 }
 
 /* Позивний у результаті */
@@ -298,23 +337,20 @@ mark.shl {
 #btn-auth:active { transform: scale(.96); }
 
 #btn-add {
-  background: linear-gradient(135deg, #0e2860, #0088bb);
-  border: none;
+  background: rgba(255,255,255,.05);
+  border: 1px solid var(--border);
   border-radius: 8px;
-  color: #a8e0f8;
-  font-family: 'Unbounded', sans-serif;
-  font-size: 9px;
-  font-weight: 700;
-  padding: 8px 14px;
+  color: var(--text2);
+  font-size: 11px;
+  padding: 6px 12px;
   cursor: pointer;
   white-space: nowrap;
-  letter-spacing: .04em;
-  transition: opacity .2s, transform .1s, box-shadow .2s;
-  box-shadow: 0 0 0 rgba(0,200,255,0);
+  transition: background .2s, color .2s, border-color .2s, transform .1s;
 }
 #btn-add:hover {
-  opacity: .9;
-  box-shadow: 0 0 16px rgba(0,136,187,.4);
+  background: rgba(255,255,255,.09);
+  color: var(--text);
+  border-color: var(--border2);
 }
 #btn-add:active { transform: scale(.96); }
 
@@ -367,6 +403,30 @@ mark.shl {
 }
 #smoke-ctrl:hover .smoke-toggle { opacity: .85; }
 
+/* ── View switcher button ── */
+#view-switcher {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  background: rgba(255,255,255,.05);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text2);
+  font-size: 11px;
+  font-family: inherit;
+  padding: 6px 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background .2s, color .2s, border-color .2s, transform .1s;
+}
+#view-switcher:hover {
+  background: rgba(255,255,255,.09);
+  color: var(--text);
+  border-color: var(--border2);
+}
+#view-switcher:active { transform: scale(.96); }
+
 /* Coffee button — патріотичний жовтий */
 #btn-coffee {
   display: inline-flex;
@@ -376,9 +436,8 @@ mark.shl {
   border: none;
   border-radius: 8px;
   color: #1a0d00;
-  font-family: 'Unbounded', sans-serif;
-  font-size: 9px;
-  font-weight: 700;
+  font-size: 11px;
+  font-weight: 400;
   padding: 8px 14px;
   cursor: pointer;
   white-space: nowrap;
@@ -397,28 +456,29 @@ mark.shl {
 
 /* Планшет/телефон ≤768px: тільки символи, компактний топбар */
 @media (max-width: 768px) {
-  #topbar { gap: 8px; padding: 0 10px; }
+  #topbar { gap: 8px; padding: 0 8px; }
 
-  /* Ховаємо текст — залишаємо іконки */
-  .cf-txt  { display: none; }
-  .add-txt { display: none; }
+  /* Ховаємо лейбл диму — залишаємо тільки тогл */
+  #smoke-lbl { display: none; }
 
-  /* + ДОДАТИ → тільки "+" */
-  #btn-add {
-    padding: 7px 11px;
-    font-size: 16px;
-    font-weight: 700;
-    letter-spacing: 0;
-  }
-
-  /* ☕ — квадратна іконка */
-  #btn-coffee { padding: 7px 9px; font-size: 16px; gap: 0; }
-
-  /* Увійти / Вийти — менший падінг */
+  /* Кнопки — однаковий розмір тексту */
+  #btn-add    { padding: 5px 10px; font-size: 10px; font-weight: normal; letter-spacing: 0; }
+  #btn-coffee { padding: 5px 9px;  font-size: 10px; gap: 4px; }
   #btn-auth, #btn-logout { padding: 5px 8px; font-size: 10px; }
 
   /* Пошук не розтягується занадто */
-  #sw { max-width: 140px; }
+  #sw { max-width: 160px; }
+
+  #logo-text { display: none; }
+
+  /* iOS: запобігає auto-zoom при фокусі на input */
+  input, select, textarea { font-size: 16px; }
+
+  /* Oblast labels — менший розмір */
+  #oblast-labels text { font-size: 60px; }
+
+  /* Form grid — одна колонка */
+  .fr { grid-template-columns: 1fr; }
 }
 
 /* ── MAP ───────────────────────────────────────────── */
@@ -515,7 +575,7 @@ mark.shl {
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   white-space: nowrap;
-  z-index: 60;
+  z-index: 650;
   transition: transform .3s var(--ease), opacity .3s;
   opacity: 0;
 }
@@ -532,7 +592,7 @@ mark.shl {
   position: absolute;
   bottom: 22px;
   right: calc(22px + 36px + 4px);
-  z-index: 50;
+  z-index: 650;
   animation: fadeIn .5s .3s var(--ease) both;
 }
 
@@ -543,7 +603,7 @@ mark.shl {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  z-index: 50;
+  z-index: 650;
   animation: fadeIn .5s .3s var(--ease) both;
 }
 #zoom-scale {
@@ -592,9 +652,10 @@ mark.shl {
 /* ── Нижні блоки карти ──────────────────────────────── */
 #bottom-blocks {
   position: absolute;
-  bottom: clamp(12px, 2.2vw, 22px);
-  left:   clamp(12px, 2.2vw, 22px);
-  z-index: 50;
+  bottom: clamp(12px, 2.2vw, 4px);
+  left:   clamp(12px, 2.2vw, 2px);
+  width:  248px;
+  z-index: 650;
   display: -webkit-flex;
   display: flex;
   -webkit-align-items: stretch;
@@ -602,6 +663,8 @@ mark.shl {
   gap: clamp(6px, 1vw, 10px);
   animation: fadeIn .5s .4s var(--ease) both;
 }
+
+#count, #site-rules { flex: 1; }
 
 #count,
 #site-rules {
@@ -678,7 +741,16 @@ mark.shl {
   #count strong  { font-size: 14px; }
   #count span,
   .sr-link       { font-size: 8px; }
-  .sr-title      { font-size: 6px; }
+  .sr-title      { font-size: 9px; }
+
+  /* Oblast labels ще менше */
+  #oblast-labels text { font-size: 40px; }
+
+  /* Search dropdown — повна ширина */
+  #sdrop { max-height: 50vh; width: calc(100vw - 24px); left: 12px; }
+
+  /* Search box — займає весь вільний простір */
+  #sw { flex: 1; max-width: calc(100vw - 120px); }
 }
 
 
@@ -735,6 +807,30 @@ mark.shl {
 .soc-link.linkedin:hover  img { filter: invert(29%) sepia(90%) saturate(700%) hue-rotate(180deg) brightness(95%) contrast(95%); }
 .soc-link.viber:hover     img { filter: invert(40%) sepia(60%) saturate(800%) hue-rotate(240deg) brightness(95%) contrast(90%); }
 
+/* Leaflet world-map tooltip */
+.leaflet-tooltip.lf-tip {
+  background: rgba(7,13,26,.97) !important;
+  border: 1px solid rgba(255,255,255,.15) !important;
+  border-radius: 8px !important;
+  padding: 9px 13px !important;
+  font-size: 11px !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,.5) !important;
+  color: #e0e0e0 !important;
+  max-width: 220px;
+  white-space: normal;
+}
+.leaflet-tooltip.lf-tip::before,
+.leaflet-tooltip.lf-tip::after { display: none !important; }
+.leaflet-tooltip.lf-tip .tn { font-weight: 600; font-size: 12px; margin-bottom: 3px; color: #fff; }
+.leaflet-tooltip.lf-tip .tl { color: #aaa; }
+.leaflet-tooltip.lf-tip .ts { color: #f0b54a; margin-top: 3px; }
+
+/* Пульсація зірок на карті Світу */
+@keyframes wstar-pulse {
+  0%   { opacity: 0.65; transform: scale(0.88); }
+  100% { opacity: 1;    transform: scale(1.12); }
+}
+
 /* Tooltip */
 #tip {
   position: absolute;
@@ -769,12 +865,13 @@ mark.shl {
   backdrop-filter: blur(16px);
   z-index: 800;
   transform: translateX(100%);
-  transition: transform .38s var(--ease);
+  visibility: hidden;
+  transition: transform .38s var(--ease), visibility 0s .38s;
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
-#card.open { transform: translateX(0); }
+#card.open { transform: translateX(0); visibility: visible; transition: transform .38s var(--ease), visibility 0s 0s; }
 
 #cclose {
   position: absolute;
@@ -1231,11 +1328,15 @@ input.f-err { border-color:#e53935 !important; }
 }
 .oauth-google:hover { box-shadow: 0 2px 12px rgba(0,0,0,.18); }
 .oauth-diia {
-  background: linear-gradient(135deg, #1d3f8a, #0057b7);
+  background: #000;
   color: #fff;
-  border-color: rgba(255,255,255,.12);
+  border-color: rgba(255,255,255,.15);
+  flex-direction: column;
+  gap: 2px;
 }
-.oauth-diia:hover { box-shadow: 0 2px 14px rgba(0,87,183,.4); }
+.oauth-diia:hover { box-shadow: 0 2px 14px rgba(0,0,0,.5); }
+.oauth-diia .diia-row { display:flex; align-items:center; gap:10px; }
+.oauth-diia .diia-unavail { font-size:10px; color:rgba(255,255,255,.45); letter-spacing:.02em; }
 .oauth-sep {
   display: flex; align-items: center; gap: 12px;
   margin-bottom: 16px;
@@ -1266,13 +1367,64 @@ input.f-err { border-color:#e53935 !important; }
 #notif.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 #notif.err  { background: #1c0c0c; border-color: #6a2a2a; color: #b87070; }
 
-/* ── RESPONSIVE ────────────────────────────────────── */
-@media (max-width: 640px) {
-  .tstat  { display: none; }
-  #card   { width: 100%; }
-  .fr     { grid-template-columns: 1fr; }
-  .mo     { padding: 18px 14px; }
-  #logo   { font-size: 10px; }
+/* ── Row break (invisible on desktop, full-width on mobile) ── */
+.tb-break { display: none; }
+
+/* ── Touch пристрої (планшети + телефони): компактні кнопки ── */
+@media (pointer: coarse) {
+  #smoke-lbl  { display: none; }
+  #app-version { display: none; }
+  #btn-add    { padding: 6px 10px; font-size: 11px; }
+  #btn-coffee { padding: 6px 8px;  font-size: 11px; gap: 4px; }
+  #un { max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .auth-ico, .add-ico { font-size: 13px; margin-right: 4px; }
+}
+
+/* ── RESPONSIVE — телефони у landscape (висота ≤480px) ── */
+@media (orientation: landscape) and (max-height: 480px) {
+  :root { --bar: 48px; }
+
+  #topbar {
+    height: var(--bar);
+    flex-wrap: nowrap;
+    padding: 0 8px;
+    gap: 6px;
+    align-items: center;
+  }
+
+  #logo { font-size: 11px; white-space: nowrap; }
+  #app-version { display: none; }
+  .tstat { font-size: 10px; white-space: nowrap; }
+  #smoke-lbl { display: none; }
+
+  #sw { flex: 0 1 140px; min-width: 80px; }
+  #sdrop { left: 0; right: 0; border-radius: 0 0 8px 8px; }
+
+  #un { max-width: 60px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #btn-auth, #btn-logout { padding: 4px 7px; font-size: 10px; white-space: nowrap; }
+  #btn-add    { padding: 4px 8px; font-size: 10px; }
+  #btn-coffee { padding: 4px 7px; font-size: 10px; gap: 3px; }
+
+  /* 1: Однакова висота всіх кнопок */
+  #btn-auth, #btn-logout, #btn-add, #btn-coffee {
+    height: 30px;
+    padding-top: 0;
+    padding-bottom: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* 3: Кнопки зуму однакового розміру */
+  .zbtn { width: 44px; height: 44px; font-size: 18px; }
+  #zrst { font-size: 18px !important; }
+
+
+  #card { width: 100%; }
+  .fr   { grid-template-columns: 1fr; }
+  .mo   { padding: 18px 14px; }
+  #btn-fs { width: 44px; height: 44px; bottom: clamp(12px, 2.2vw, 22px); right: 60px; }
+  #zoom   { width: 44px; height: auto; bottom: clamp(12px, 2.2vw, 22px); right: 12px; }
 }
 
 /* ── UTILITY ANIMATIONS ────────────────────────────── */
@@ -1335,4 +1487,227 @@ input.f-err { border-color:#e53935 !important; }
   will-change: contents;
   z-index: 5;
 }
- 
+
+/* ── Планшети iPad ≤1024px ──────────────────────────── */
+@media (max-width: 1024px) {
+  :root { --panel: 320px; }
+  #topbar { gap: 10px; }
+}
+
+/* ── Дуже малі телефони у landscape (iPhone SE, висота ≤400px) ── */
+@media (orientation: landscape) and (max-height: 400px) {
+  :root { --bar: 44px; }
+  #card   { width: 100%; left: 0; right: 0; border-radius: 0; }
+  #topbar { gap: 4px; padding: 0 6px; }
+  #sdrop  { left: 0; right: 0; border-radius: 0; }
+  #btn-fs { display: none; }
+  #zoom   { width: 44px; height: auto; bottom: clamp(12px, 2.2vw, 22px); right: 12px; }
+  #btn-add    { padding: 5px 8px; font-size: 13px; }
+  #btn-coffee { padding: 5px 7px; font-size: 13px; }
+  #btn-auth, #btn-logout { padding: 3px 5px; font-size: 9px; }
+}
+
+/* ── Rotate overlay (тільки телефон у portrait) ──────── */
+#rotate-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: #03070e;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+}
+#rotate-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+#rotate-icon {
+  font-size: 72px;
+  color: #ffffff;
+  line-height: 1;
+  margin-bottom: 24px;
+  animation: rotateHint 2.2s ease-in-out infinite;
+  display: inline-block;
+  text-align: center;
+}
+#rotate-msg {
+  font-size: 16px;
+  color: rgba(255,255,255,.75);
+  text-align: center;
+  line-height: 1.7;
+  letter-spacing: .02em;
+}
+@keyframes rotateHint {
+  0%   { transform: rotate(0deg); }
+  30%  { transform: rotate(90deg); }
+  70%  { transform: rotate(90deg); }
+  100% { transform: rotate(0deg); }
+}
+@media (orientation: portrait) and (max-width: 768px) {
+  #rotate-overlay { display: flex; }
+}
+
+/* ── Overlay: пристрій занадто малий (< 610×300px) ── */
+#too-small-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+  background: #03070e;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+}
+#too-small-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 24px;
+}
+#too-small-icon {
+  margin-bottom: 20px;
+  opacity: .9;
+}
+#too-small-title {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 20px;
+  color: #ffffff;
+  margin-bottom: 12px;
+  font-weight: 700;
+}
+#too-small-msg {
+  font-size: 13px;
+  color: rgba(255,255,255,.7);
+  line-height: 1.8;
+}
+/* Тільки якщо екран СПРАВДІ малий навіть у landscape */
+@media (orientation: landscape) and (max-width: 609px),
+       (orientation: landscape) and (max-height: 299px) {
+  #too-small-overlay { display: flex; }
+}
+
+/* ── Copyright — по центру знизу на мобільних та планшетах ── */
+@media (pointer: coarse) {
+  #copyright-bar {
+    right: auto !important;
+    left: 50% !important;
+    transform: translateX(-50%);
+    text-align: center !important;
+    bottom: 6px !important;
+    white-space: nowrap;
+  }
+}
+
+/* ── Соцмережі — праворуч від блоку Інформація (left встановлює JS) ── */
+@media (orientation: landscape) and (max-height: 480px) {
+  #social-bar {
+    translate: 0 0;
+    left: auto;
+    bottom: clamp(12px, 2.2vw, 22px);
+    flex-direction: row;
+    opacity: 0.85;
+    gap: 4px;
+    padding: 4px 6px;
+  }
+  #social-bar .soc-link { width: 20px; height: 20px; }
+  #social-bar .soc-row  { gap: 4px; }
+}
+
+/* ── Карта світу: перемикач режимів (точна копія #view-switcher) ── */
+#map-mode-bar {
+  align-items: center;
+  flex-shrink: 0;
+}
+#map-mode-toggle {
+  display: inline-flex;
+  align-items: center;
+  position: relative;
+  background: rgba(255,255,255,.05);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 3px;
+  cursor: pointer;
+  user-select: none;
+  transition: border-color .2s, box-shadow .2s;
+  height: 28px;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+#map-mode-toggle:hover {
+  border-color: var(--border2);
+  box-shadow: 0 0 0 1px rgba(0,136,187,.15);
+}
+#map-mode-toggle:active { transform: scale(.97); }
+#mmt-track {
+  position: absolute;
+  inset: 3px;
+  pointer-events: none;
+}
+#mmt-thumb {
+  position: absolute;
+  top: 0; bottom: 0;
+  width: 50%;
+  background: rgba(0,136,187,.22);
+  border: 1px solid rgba(0,136,187,.5);
+  border-radius: 16px;
+  transition: left .22s cubic-bezier(.4,0,.2,1);
+  left: 0;
+}
+#map-mode-toggle.mode-world #mmt-thumb {
+  left: 50%;
+}
+#mmt-labels {
+  display: flex;
+  align-items: center;
+  position: relative;
+  z-index: 1;
+}
+#mmt-ua, #mmt-world {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 10px;
+  font-size: 11px;
+  font-family: inherit;
+  color: var(--text2);
+  transition: color .2s;
+  white-space: nowrap;
+}
+#mmt-sep {
+  color: var(--border2);
+  font-size: 11px;
+  opacity: .4;
+  flex-shrink: 0;
+}
+#map-mode-toggle:not(.mode-world) #mmt-ua {
+  color: var(--text);
+  font-weight: 600;
+}
+#map-mode-toggle.mode-world #mmt-world {
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* ── Leaflet dark theme overrides ───────────────────── */
+.leaflet-container { background: #03070e !important; }
+.leaflet-control-zoom a {
+  background: rgba(7,13,26,.92) !important;
+  color: #a0b4c8 !important;
+  border-color: rgba(255,255,255,.12) !important;
+}
+.leaflet-control-zoom a:hover {
+  background: rgba(0,200,255,.1) !important;
+  color: #00c8ff !important;
+}
+.leaflet-control-attribution {
+  background: rgba(7,13,26,.72) !important;
+  color: rgba(255,255,255,.35) !important;
+  font-size: 10px !important;
+}
+.leaflet-control-attribution a { color: rgba(0,200,255,.5) !important; }
+.leaflet-bar { border-color: rgba(255,255,255,.12) !important; }
+.leaflet-bar a { border-bottom-color: rgba(255,255,255,.08) !important; }
+/* ── /Карта світу ──────────────────────────────────── */

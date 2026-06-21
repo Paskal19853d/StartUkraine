@@ -98,6 +98,12 @@ def _init_pool():
 
 def get_db():
     """Повертає з'єднання з пулу."""
+    _h = int(time.time() // 3600) * 3600
+    _db_queries_hourly[_h] = _db_queries_hourly.get(_h, 0) + 1
+    if len(_db_queries_hourly) > 15:
+        _cutoff = _h - 13 * 3600
+        for _k in [k for k in list(_db_queries_hourly) if k < _cutoff]:
+            del _db_queries_hourly[_k]
     if _POOL is None:
         # fallback до прямого з'єднання якщо пул ще не готовий (init_db)
         cfg = {**_DB_CFG, "database": _DB_NAME}
@@ -635,6 +641,19 @@ def init_db():
         ("reg_require_phone_verify", "0",          "Реєстрація — підтвердження телефону SMS (1=так, 0=ні) [потребує SMS API]"),
         ("reg_min_pass_len",         "10",         "Реєстрація — мінімальна довжина пароля (8–20)"),
         ("reg_welcome_msg",          "Вітаємо на Зоряна Пам'ять!", "Реєстрація — повідомлення після успішної реєстрації"),
+        # ── Керування доступом за пристроєм ──────────────────────────────────
+        ("device_desktop_enabled", "1", "Доступ — ПК/ноутбук (1=так, 0=ні)"),
+        ("device_tablet_enabled",  "1", "Доступ — Планшет (1=так, 0=ні)"),
+        ("device_mobile_enabled",  "1", "Доступ — Смартфон (1=так, 0=ні)"),
+        ("device_block_msg",       "Версія сайту для вашого пристрою тимчасово недоступна.", "Повідомлення при блокуванні пристрою"),
+        ("show_coffee",            "1", "Кнопка «Кава адміну» на головній (1=показати, 0=сховати)"),
+        ("worldmap_enabled",       "1", "Карта світу активна (1=так, 0=ні)"),
+        ("worldmap_default",       "0", "Карта за замовчуванням (0=Україна, 1=Світ)"),
+        ("worldmap_tile_url",      "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", "URL тайлів карти світу"),
+        # ── Мікро-чат ────────────────────────────────────────────────────────
+        ("chat_enabled",       "1",    "Мікро-чат активний (1=так, 0=ні)"),
+        ("chat_history_count", "50",   "Кількість повідомлень в чаті"),
+        ("chat_poll_interval", "4000", "Інтервал оновлення чату (мс)"),
         # ── Картка меморіалу (card.html) ─────────────────────────────────────
         ("card_accent",        "#f0b54a",                       "Картка: колір акценту"),
         ("card_bg",            "#050507",                       "Картка: колір фону"),
@@ -1101,6 +1120,90 @@ def init_db():
                 except Exception:
                     pass
 
+    # ── Мікро-чат ────────────────────────────────────────
+    with db.cursor() as c:
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS chat_messages (
+                id         INT AUTO_INCREMENT PRIMARY KEY,
+                user_id    INT NULL,
+                message    TEXT NOT NULL,
+                created_at BIGINT NOT NULL,
+                is_deleted TINYINT DEFAULT 0,
+                guest_fp   VARCHAR(64) NULL,
+                guest_ip   VARCHAR(45) NULL,
+                is_guest   TINYINT DEFAULT 0,
+                INDEX idx_chat_created (created_at),
+                INDEX idx_chat_user (user_id),
+                INDEX idx_chat_guest_fp (guest_fp)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        """)
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS chat_reports (
+                id          INT AUTO_INCREMENT PRIMARY KEY,
+                msg_id      INT NOT NULL,
+                reporter_id INT NOT NULL,
+                reason      VARCHAR(200),
+                created_at  BIGINT NOT NULL,
+                UNIQUE KEY uq_report (msg_id, reporter_id)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        """)
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS chat_banned_words (
+                id       INT AUTO_INCREMENT PRIMARY KEY,
+                word     VARCHAR(200) NOT NULL,
+                category VARCHAR(50) DEFAULT 'profanity',
+                UNIQUE KEY uq_word (word)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        """)
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS chat_bot_phrases (
+                id        INT AUTO_INCREMENT PRIMARY KEY,
+                phrase    TEXT NOT NULL,
+                category  VARCHAR(50) DEFAULT 'general',
+                is_active TINYINT DEFAULT 1
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        """)
+        # Додати колонки ботів якщо ще не існують
+        try:
+            c.execute("ALTER TABLE chat_messages ADD COLUMN is_bot TINYINT DEFAULT 0")
+        except Exception:
+            pass
+        try:
+            c.execute("ALTER TABLE chat_messages ADD COLUMN bot_name VARCHAR(100) NULL")
+        except Exception:
+            pass
+        # Заповнити початкові фрази якщо таблиця порожня
+        c.execute("SELECT COUNT(*) as cnt FROM chat_bot_phrases")
+        if c.fetchone()['cnt'] == 0:
+            _BOT_INITIAL_PHRASES = [
+                ("Дуже важливий проєкт, дякую що зберігаєте пам'ять про героїв 🙏", "positive"),
+                ("Нещодавно знайшла тут запис про свого дядька. Дякую вам.", "personal"),
+                ("Чи можна додати фільтр за областю?", "suggestion"),
+                ("Зіркова карта виглядає дуже красиво ✨", "positive"),
+                ("Показав друзям — всі були вражені. Чудова робота!", "positive"),
+                ("Я б додав можливість завантажити фото з телефону простіше.", "suggestion"),
+                ("Дякую за цей проєкт. Моя родина шукала інформацію тут.", "personal"),
+                ("Чи планується мобільний додаток?", "suggestion"),
+                ("Яскраві зірки на карті — дуже символічно 💫", "positive"),
+                ("Знайшов тут свого однокласника. Вічна пам'ять.", "personal"),
+                ("Сайт дуже швидкий, приємно користуватись.", "positive"),
+                ("Може додати можливість поділитись записом у Telegram?", "suggestion"),
+                ("Ромашки б гарно виглядали як символ на карті 🌼", "suggestion"),
+                ("Дуже зворушливий проєкт. Слава Україні!", "positive"),
+                ("Чи є спосіб повідомити якщо знайшов помилку в записі?", "suggestion"),
+                ("Карта завантажується миттєво, молодці розробники!", "positive"),
+                ("Додав свого брата. Дякую що є такий сайт.", "personal"),
+                ("Пам'ять про героїв живе завдяки таким проєктам ❤️", "positive"),
+                ("Чи можна переглянути записи за роком загибелі?", "suggestion"),
+                ("Нехай кожна зірка світить вічно 🌟", "positive"),
+            ]
+            c.executemany(
+                "INSERT INTO chat_bot_phrases (phrase, category) VALUES (%s, %s)",
+                _BOT_INITIAL_PHRASES
+            )
+        # Додати ключ chat_bots_enabled якщо відсутній
+        c.execute("INSERT IGNORE INTO colors (`key`, value, label) VALUES ('chat_bots_enabled', '1', 'Чат-боти увімкнені')")
+
     db.commit()
     db.close()
 
@@ -1110,6 +1213,9 @@ _visits_hourly: dict = {}   # {hour_ts: count}
 _visits_daily:  dict = {}   # {date_str 'YYYY-MM-DD': count}  — flushed to daily_stats
 _request_count: int  = 0
 _server_start: float = time.time()
+_db_queries_hourly: dict = {}   # {hour_ts: count} — кількість звернень до БД
+_cpu_ram_snapshots: list = []   # [{ts, cpu, ram}] — знімки щохвилини
+_pageviews_hourly:  dict = {}   # {hour_ts: count} — лише HTML-сторінки (не API/статика)
 
 # ── Bot detection ─────────────────────────────────────────
 _BOT_PATTERNS: list = [
@@ -1182,6 +1288,22 @@ def _flush_daily_visits():
             )
         db.commit()
         db.close()
+    except Exception:
+        pass
+
+
+def _snapshot_cpu_ram():
+    """Знімок CPU/RAM кожну хвилину для діаграми реалтайм."""
+    if not _HAS_PSUTIL:
+        return
+    try:
+        cpu = _psutil.cpu_percent(interval=0)
+        ram = _psutil.virtual_memory().percent
+        now = int(time.time())
+        _cpu_ram_snapshots.append({"ts": now, "cpu": round(cpu, 1), "ram": round(ram, 1)})
+        cutoff = now - 13 * 3600
+        while _cpu_ram_snapshots and _cpu_ram_snapshots[0]["ts"] < cutoff:
+            _cpu_ram_snapshots.pop(0)
     except Exception:
         pass
 
@@ -1414,6 +1536,40 @@ async def handler_500(request: Request, exc):
         return FileResponse('500.html', status_code=500)
     return JSONResponse({'detail': 'Server error'}, status_code=500)
 
+# ── Maintenance mode ──────────────────────────────────────
+_maintenance_mode: bool = False
+
+_MAINTENANCE_ALLOW = (
+    "/admin", "/api/admin/", "/api/auth/",
+    "/api/install/", "/install",
+    "/api/maintenance-message",
+    "/img/", "/js/", "/fonts/", "/audio/",
+    "/health", "/metrics",
+)
+
+def _session_is_admin(token: str) -> bool:
+    sess = _session_get(token)
+    if not sess:
+        return False
+    u = _get_user_by_id(sess["user_id"])
+    return bool(u and (u.get("role") == "admin" or u.get("is_admin")) and not u.get("is_banned"))
+
+def _maintenance_response():
+    from fastapi.responses import FileResponse as _FR
+    resp = _FR("offline.html", status_code=503)
+    resp.headers["Retry-After"] = "3600"
+    return resp
+
+@app.middleware("http")
+async def maintenance_middleware(request: Request, call_next):
+    if _maintenance_mode:
+        path = request.url.path
+        if not any(path == p.rstrip("/") or path.startswith(p) for p in _MAINTENANCE_ALLOW):
+            token = request.cookies.get("admin_session", "")
+            if not token or not _session_is_admin(token):
+                return _maintenance_response()
+    return await call_next(request)
+
 @app.middleware("http")
 async def track_visits(request, call_next):
     global _request_count
@@ -1425,6 +1581,17 @@ async def track_visits(request, call_next):
     cutoff = hour - 48 * 3600
     for k in [k for k in _visits_hourly if k < cutoff]:
         del _visits_hourly[k]
+    # Pageviews — тільки реальні HTML-сторінки (без API і статики)
+    _path = request.url.path
+    if (
+        _path in ('/', '/admin') or
+        _path.startswith('/memorial/') or
+        _path.startswith('/user/') or
+        _path.endswith('.html')
+    ):
+        _pageviews_hourly[hour] = _pageviews_hourly.get(hour, 0) + 1
+        for k in [k for k in _pageviews_hourly if k < cutoff]:
+            del _pageviews_hourly[k]
     # Daily counter (persisted to DB every 1000 req)
     today = time.strftime("%Y-%m-%d")
     _visits_daily[today] = _visits_daily.get(today, 0) + 1
@@ -1472,17 +1639,99 @@ app.mount("/js",    StaticFiles(directory="js"),    name="js")
 app.mount("/fonts", StaticFiles(directory="fonts"), name="fonts")
 os.makedirs("img/audio", exist_ok=True)
 app.mount("/audio", StaticFiles(directory="img/audio"), name="audio")
+os.makedirs("promo",     exist_ok=True)
+os.makedirs("portfolio", exist_ok=True)
+app.mount("/promo",     StaticFiles(directory="promo",     html=True), name="promo")
+app.mount("/portfolio", StaticFiles(directory="portfolio", html=True), name="portfolio")
 
 # Jinja2 templates (for SEO SSR pages)
 _TEMPLATES = Jinja2Templates(directory="templates")
 _SITE_BASE_URL = os.getenv("SITE_BASE_URL", "http://127.0.0.1:8000").rstrip("/")
 
+# ── Чат-боти ─────────────────────────────────────────────────
+_bot_online_count: int = 0
+_bots_enabled: bool = True
+_bot_lock = threading.Lock()
+_BOT_NAMES = ["Оксана В.", "Михайло К.", "Тетяна Л.", "Андрій П.", "Наталія С."]
+
+def _bot_loop():
+    """Фонова задача: боти пишуть повідомлення кожні 2-4 хвилини."""
+    import random as _rnd
+    global _bot_online_count, _bots_enabled
+    # Початкова затримка щоб сервер встиг запуститись
+    time.sleep(30)
+    _last_online_update = 0.0
+    while True:
+        try:
+            # Оновлювати кількість ботів онлайн кожні 60 секунд
+            now = time.time()
+            if now - _last_online_update >= 60:
+                with _bot_lock:
+                    _bot_online_count = _rnd.randint(3, 8)
+                _last_online_update = now
+
+            delay = _rnd.uniform(120, 240)
+            time.sleep(delay)
+
+            if not _bots_enabled:
+                continue
+
+            # Вибираємо фразу і ім'я бота
+            try:
+                db = get_db()
+                with db.cursor() as c:
+                    c.execute("SELECT id, phrase FROM chat_bot_phrases WHERE is_active=1 ORDER BY RAND() LIMIT 1")
+                    row = c.fetchone()
+                db.close()
+            except Exception:
+                continue
+            if not row:
+                continue
+
+            bot_name = _rnd.choice(_BOT_NAMES)
+            phrase = row['phrase']
+            now_ms = int(time.time() * 1000)
+            try:
+                db = get_db()
+                with db.cursor() as c:
+                    c.execute(
+                        "INSERT INTO chat_messages (user_id, message, created_at, is_guest, is_bot, bot_name)"
+                        " VALUES (NULL, %s, %s, 0, 1, %s)",
+                        (phrase, now_ms, bot_name)
+                    )
+                db.commit()
+                db.close()
+            except Exception:
+                pass
+        except Exception:
+            time.sleep(60)
+
+
 @app.on_event("startup")
 def startup():
+    global _maintenance_mode, _bots_enabled
     init_db()
     _init_pool()
     _init_redis()
     _load_hourly_visits()
+    try:
+        _maintenance_mode = _get_color_val("maintenance_mode", "0") == "1"
+    except Exception:
+        pass
+    try:
+        _bots_enabled = _get_color_val("chat_bots_enabled", "1") == "1"
+    except Exception:
+        pass
+    # Початковий випадковий лічильник ботів онлайн
+    import random as _rnd
+    with _bot_lock:
+        _bot_online_count = _rnd.randint(3, 8)
+    def _cpu_ram_loop():
+        while True:
+            _snapshot_cpu_ram()
+            time.sleep(60)
+    threading.Thread(target=_cpu_ram_loop, daemon=True).start()
+    threading.Thread(target=_bot_loop, daemon=True).start()
 
 @app.on_event("shutdown")
 def shutdown():
@@ -1522,6 +1771,47 @@ def health_check():
         status["memory_mb"] = round(_psutil.Process().memory_info().rss / 1024 / 1024, 1)
     return status
 
+# ── Maintenance endpoints ──────────────────────────────────
+
+@app.get("/api/maintenance-message")
+def maintenance_message_public():
+    """Публічний endpoint — повертає повідомлення заглушки (для offline.html)."""
+    return {"message": _get_color_val("maintenance_msg", "Сайт тимчасово недоступний. Проводяться технічні роботи.")}
+
+@app.get("/api/admin/maintenance")
+def get_maintenance(request: Request):
+    require_admin(request)
+    return {
+        "enabled": _maintenance_mode,
+        "message": _get_color_val("maintenance_msg", ""),
+    }
+
+class MaintenanceUpdate(BaseModel):
+    enabled: bool
+    message: str = ""
+
+@app.put("/api/admin/maintenance")
+def set_maintenance(body: MaintenanceUpdate, request: Request):
+    global _maintenance_mode
+    require_admin(request)
+    db = get_db()
+    with db.cursor() as c:
+        c.execute(
+            "INSERT INTO colors (`key`,value,label) VALUES ('maintenance_mode',%s,'Режим обслуговування') "
+            "ON DUPLICATE KEY UPDATE value=%s",
+            (("1" if body.enabled else "0"),) * 2
+        )
+        c.execute(
+            "INSERT INTO colors (`key`,value,label) VALUES ('maintenance_msg',%s,'Повідомлення заглушки') "
+            "ON DUPLICATE KEY UPDATE value=%s",
+            (_sanitize_text(body.message),) * 2
+        )
+    db.commit()
+    db.close()
+    _maintenance_mode = body.enabled
+    cache_delete("colors")
+    return {"ok": True, "enabled": _maintenance_mode}
+
 _METRICS_TOKEN = os.getenv("METRICS_TOKEN", "")
 
 @app.get("/metrics")
@@ -1556,10 +1846,79 @@ def metrics(request: Request):
 
 
 # ── Static routes ─────────────────────────────────────────
-@app.get("/")
-def index():
+_TABLET_UA = re.compile(r'(iPad|Tablet)', re.IGNORECASE)
+_MOB_UA    = re.compile(r'(Mobile|Android|iPhone|iPod|BlackBerry|IEMobile|Opera Mini|webOS)', re.IGNORECASE)
+
+def _detect_device(ua: str) -> str:
+    if _TABLET_UA.search(ua):
+        return "tablet"
+    if _MOB_UA.search(ua):
+        return "mobile"
+    return "desktop"
+
+def _is_mobile(request: Request) -> bool:
+    ua = request.headers.get("user-agent", "")
+    return _detect_device(ua) in ("mobile", "tablet")
+
+def _get_device_settings(db) -> dict:
+    with db.cursor() as c:
+        c.execute(
+            "SELECT `key`, value FROM colors WHERE `key` IN "
+            "('device_desktop_enabled','device_tablet_enabled','device_mobile_enabled','device_block_msg')"
+        )
+        rows = {r["key"]: r["value"] for r in c.fetchall()}
+    return {
+        "desktop": rows.get("device_desktop_enabled", "1") != "0",
+        "tablet":  rows.get("device_tablet_enabled",  "1") != "0",
+        "mobile":  rows.get("device_mobile_enabled",  "1") != "0",
+        "block_msg": rows.get("device_block_msg", "Версія сайту для вашого пристрою тимчасово недоступна."),
+    }
+
+def _device_block_html(msg: str) -> str:
+    return f"""<!DOCTYPE html><html lang="uk"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Зоряна Пам'ять</title>
+<style>
+*{{margin:0;padding:0;box-sizing:border-box}}
+body{{background:#03070e;color:#d0dce8;font-family:sans-serif;
+  display:flex;align-items:center;justify-content:center;min-height:100vh;text-align:center;padding:24px}}
+.wrap{{max-width:480px}}
+.star{{font-size:52px;margin-bottom:20px;opacity:.7}}
+h1{{font-size:18px;font-weight:600;margin-bottom:12px;color:#f0c030}}
+p{{font-size:14px;color:#8a9cb0;line-height:1.6}}
+</style></head><body>
+<div class="wrap">
+  <div class="star">&#9733;</div>
+  <h1>Зоряна Памʼять</h1>
+  <p>{msg}</p>
+</div>
+</body></html>"""
+
+@app.get("/api/device-status")
+def device_status():
     db = get_db()
     try:
+        settings = _get_device_settings(db)
+    finally:
+        db.close()
+    return JSONResponse(settings)
+
+@app.get("/index")
+@app.get("/index.html")
+def index_redirect(): return RedirectResponse(url="/", status_code=301)
+
+@app.get("/")
+def index(request: Request):
+    preferred = request.cookies.get("preferred_view", "")
+    if preferred == "mobile":
+        return RedirectResponse(url="/mobile", status_code=302)
+    if preferred != "desktop" and _is_mobile(request):
+        return RedirectResponse(url="/mobile", status_code=302)
+    db = get_db()
+    try:
+        _ds = _get_device_settings(db)
+        if not _ds.get("desktop", True):
+            return HTMLResponse(content=_device_block_html(_ds["block_msg"]), status_code=200)
         with db.cursor() as c:
             c.execute("SELECT value FROM colors WHERE `key`='sea_enabled'")
             row = c.fetchone()
@@ -1571,6 +1930,22 @@ def index():
     script = f'<script>window.SEA_ENABLED={str(sea_on).lower()};</script>'
     html = html.replace("</head>", f"{script}\n</head>", 1)
     return HTMLResponse(content=html, headers={"Cache-Control": "no-store"})
+
+@app.get("/mobile")
+def mobile_page(request: Request):
+    if request.cookies.get("preferred_view") == "desktop":
+        return RedirectResponse(url="/", status_code=302)
+    db = get_db()
+    try:
+        _ds = _get_device_settings(db)
+    finally:
+        db.close()
+    _dev = _detect_device(request.headers.get("user-agent", ""))
+    if _dev == "tablet" and not _ds.get("tablet", True):
+        return HTMLResponse(content=_device_block_html(_ds["block_msg"]), status_code=200)
+    if _dev == "mobile" and not _ds.get("mobile", True):
+        return HTMLResponse(content=_device_block_html(_ds["block_msg"]), status_code=200)
+    return FileResponse("mobile.html", headers={"Cache-Control": "no-store"})
 
 @app.get("/admin")
 def admin_page(): return FileResponse("admin.html")
@@ -1752,6 +2127,9 @@ def faq_page(): return FileResponse("faq.html")
 @app.get("/privacy-policy")
 def privacy_policy_page(): return FileResponse("privacy-policy.html")
 
+@app.get("/google{code}.html")
+def google_verify(code: str): return FileResponse(f"google{code}.html")
+
 @app.get("/privacy-policy.html")
 def privacy_policy_html_page(): return FileResponse("privacy-policy.html")
 
@@ -1765,6 +2143,7 @@ def silence_css(): return FileResponse("silence-module.css", media_type="text/cs
 # ── WebSocket онлайн ─────────────────────────────────────
 connected: set = set()
 online_users: dict = {}  # {id(ws): {"name": str, "role": str}}
+_online_pings: dict = {}  # IP -> timestamp (HTTP polling fallback)
 
 def _online_users_list():
     return [{"name": v["name"], "role": v["role"]}
@@ -1783,7 +2162,13 @@ async def broadcast(data: dict):
 async def ws_online(ws: WebSocket):
     await ws.accept()
     connected.add(ws)
-    await broadcast({"online": len(connected), "users": _online_users_list()})
+    # Видаляємо HTTP-ping записи для цього IP — клієнт тепер через WS
+    ip = ws.client.host if ws.client else None
+    if ip:
+        for k in list(_online_pings.keys()):
+            if k == ip or k.startswith(ip + "|"):
+                del _online_pings[k]
+    await broadcast({"event": "join", "online": len(connected), "users": _online_users_list()})
     try:
         while True:
             msg = await asyncio.wait_for(ws.receive_text(), timeout=60)
@@ -1794,13 +2179,39 @@ async def ws_online(ws: WebSocket):
                 if role not in ("admin", "moder"):
                     role = "user"
                 online_users[id(ws)] = {"name": name, "role": role}
-                await broadcast({"online": len(connected), "users": _online_users_list()})
+                await broadcast({"event": "update", "online": len(connected), "users": _online_users_list()})
     except Exception:
         pass
     finally:
         connected.discard(ws)
         online_users.pop(id(ws), None)
-        await broadcast({"online": len(connected), "users": _online_users_list()})
+        await broadcast({"event": "leave", "online": len(connected), "users": _online_users_list()})
+
+@app.post("/api/online/ping")
+async def online_ping(request: Request):
+    # Ключ = IP + tab_id з тіла або заголовка — один IP може мати N вкладок
+    body = {}
+    try:
+        body = await request.json()
+    except Exception:
+        pass
+    tab_id = str(body.get("tab_id", ""))[:64]
+    ip = request.client.host
+    key = f"{ip}|{tab_id}" if tab_id else ip
+    now = time.time()
+    _online_pings[key] = now
+    stale = [k for k, v in _online_pings.items() if now - v > 180]
+    for k in stale:
+        del _online_pings[k]
+    # HTTP ping рахуємо окремо; WS клієнти самі отримують total через broadcast
+    # Total = WS (кожна вкладка = окремий WS) + HTTP-only (ті що без WS)
+    return {"online": len(connected) + len(_online_pings)}
+
+@app.get("/api/online/count")
+async def online_count_http():
+    now = time.time()
+    active = sum(1 for v in _online_pings.values() if now - v <= 180)
+    return {"online": len(connected) + active}
 
 
 # ── Magic bytes MIME validation (без зовнішніх залежностей) ─────
@@ -1881,6 +2292,16 @@ def _sanitize_text(s: str, maxlen: int = 200) -> str:
     if not s:
         return ''
     return _html.escape(str(s).strip())[:maxlen]
+
+# Межі України для конвертації lat/lng → SVG 0..1
+_UA_LAT_MIN, _UA_LAT_MAX = 43.95, 52.37
+_UA_LNG_MIN, _UA_LNG_MAX = 22.15, 41.03
+
+def _latLngToSvg(lat: float, lng: float):
+    """Конвертує географічні координати в нормалізовані 0..1 для SVG-карти України."""
+    x = round((lng - _UA_LNG_MIN) / (_UA_LNG_MAX - _UA_LNG_MIN), 4)
+    y = round(1.0 - (lat - _UA_LAT_MIN) / (_UA_LAT_MAX - _UA_LAT_MIN), 4)
+    return x, y
 
 _DATE_RE = re.compile(r'^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$')
 
@@ -2026,6 +2447,11 @@ def _validate_yt_url(url: str) -> str:
     return url
 
 # ── Schemas ───────────────────────────────────────────────
+class AwardSimple(BaseModel):
+    name:     str = Field(..., max_length=200)
+    img_file: str = Field("", max_length=300)
+    category: str = Field("", max_length=30)
+
 class PersonIn(BaseModel):
     last:  str = Field(..., min_length=1, max_length=100)
     first: str = Field(..., min_length=1, max_length=100)
@@ -2042,10 +2468,13 @@ class PersonIn(BaseModel):
     rank:     Optional[str] = Field("", max_length=100)
     position: Optional[str] = Field("", max_length=100)
     unit:     Optional[str] = Field("", max_length=200)
-    pos_x: float = Field(0.0, ge=0.0, le=1.0)
-    pos_y: float = Field(0.0, ge=0.0, le=1.0)
+    pos_x: float = Field(0.0)
+    pos_y: float = Field(0.0)
+    world_lat: Optional[float] = None
+    world_lng: Optional[float] = None
     grp:      Optional[str] = Field("", max_length=100)
     added_by: Optional[str] = Field("", max_length=100)
+    awards:   List[AwardSimple] = []
 
 class PersonUpdate(BaseModel):
     last: Optional[str] = None; first: Optional[str] = None
@@ -2057,7 +2486,8 @@ class PersonUpdate(BaseModel):
     pos_y: Optional[float] = None; approved: Optional[int] = None
     grp: Optional[str] = None; video_url: Optional[str] = None
     rank: Optional[str] = None; position: Optional[str] = None
-    unit: Optional[str] = None
+    unit: Optional[str] = None; world_lat: Optional[float] = None
+    world_lng: Optional[float] = None
 
 class SendCodeReq(BaseModel):
     last_name: str
@@ -2313,7 +2743,8 @@ def get_people(page: int = 1, limit: int = 50, request: Request = None):
             total = c.fetchone()["cnt"]
             c.execute(
                 "SELECT id,last,first,mid,birth,death,bury,loc,photo,color,pos_x,pos_y,"
-                "grp,`rank`,`position`,unit,likes,rating,video_url,approved,added_by,slug "
+                "grp,`rank`,`position`,unit,likes,rating,video_url,approved,added_by,slug,"
+                "world_lat,world_lng "
                 "FROM memorials WHERE approved=1 ORDER BY rating DESC, likes DESC "
                 "LIMIT %s OFFSET %s",
                 (limit, offset)
@@ -2709,17 +3140,32 @@ def add_person(p: PersonIn, request: Request):
     pos   = _sanitize_text(p.position or '', 100)
     unit  = _sanitize_text(p.unit or '', 200)
     descr = (p.descr or '')[:5000]
+    # Якщо передано world_lat/lng — автообчислити pos_x/pos_y
+    pos_x, pos_y = p.pos_x, p.pos_y
+    world_lat = p.world_lat
+    world_lng = p.world_lng
+    if world_lat is not None and world_lng is not None:
+        pos_x, pos_y = _latLngToSvg(world_lat, world_lng)
     db = get_db()
     with db.cursor() as c:
         c.execute("""
             INSERT INTO memorials
-            (last,first,mid,birth,death,loc,bury,circ,descr,photo,color,video_url,`rank`,`position`,`unit`,pos_x,pos_y,grp,added_by,approved)
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,0)
+            (last,first,mid,birth,death,loc,bury,circ,descr,photo,color,video_url,`rank`,`position`,`unit`,pos_x,pos_y,world_lat,world_lng,grp,added_by,approved)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,0)
         """, (last, first, mid, birth, death, loc, bury,
               circ, descr, photo, color, video_url,
               rank, pos, unit,
-              p.pos_x, p.pos_y, grp, p.added_by))
+              pos_x, pos_y, world_lat, world_lng, grp, p.added_by))
         new_id = c.lastrowid
+        for aw in p.awards[:10]:
+            aw_name = _sanitize_text(aw.name, 200)
+            aw_file = (aw.img_file or '')[:300]
+            aw_cat  = (aw.category or '')[:30]
+            if aw_name:
+                c.execute(
+                    "INSERT INTO memorial_awards (memorial_id,name,img_file,category,sort_order) VALUES (%s,%s,%s,%s,0)",
+                    (new_id, aw_name, aw_file, aw_cat)
+                )
     db.commit()
     db.close()
     return {"ok": True, "id": new_id, "message": "Надіслано на модерацію. Дякуємо!"}
@@ -3196,7 +3642,8 @@ def auth_google_callback(code: str = None, error: str = None):
         return RedirectResponse("/?oauth_error=google_no_email", status_code=302)
     name = info.get("name") or email.split("@")[0]
     user = _oauth_login_or_create(email, name)
-    resp = RedirectResponse("/?oauth=success", status_code=302)
+    target = "/admin" if user.get("role") in ("admin", "moder") else "/"
+    resp = RedirectResponse(f"{target}?oauth=success", status_code=302)
     return _oauth_set_session(resp, user["id"])
 
 
@@ -3253,7 +3700,8 @@ def auth_diia_callback(code: str = None, error: str = None):
         return RedirectResponse("/?oauth_error=diia_no_email", status_code=302)
     name = info.get("name") or info.get("rnokpp") or email.split("@")[0]
     user = _oauth_login_or_create(email, name)
-    resp = RedirectResponse("/?oauth=success", status_code=302)
+    target = "/admin" if user.get("role") in ("admin", "moder") else "/"
+    resp = RedirectResponse(f"{target}?oauth=success", status_code=302)
     return _oauth_set_session(resp, user["id"])
 
 
@@ -3261,6 +3709,525 @@ def auth_diia_callback(code: str = None, error: str = None):
 def admin_me(request: Request):
     u = require_moder(request)
     return u
+
+
+# ── МІКРО-ЧАТ ────────────────────────────────────────────
+
+_banned_words_cache: list = []
+_banned_words_ts: float = 0.0
+_CHAT_URL_RE = re.compile(r'https?://|www\.|\.(com|ua|org|net|io|ru)\b', re.I)
+_CHAT_HTML_RE = re.compile(r'<[^>]{1,100}>')
+
+def _get_banned_words_cached() -> list:
+    global _banned_words_cache, _banned_words_ts
+    if time.time() - _banned_words_ts > 60:
+        try:
+            db = get_db()
+            with db.cursor() as c:
+                c.execute("SELECT word FROM chat_banned_words")
+                _banned_words_cache = [r['word'].lower() for r in c.fetchall()]
+            db.close()
+        except Exception:
+            pass
+        _banned_words_ts = time.time()
+    return _banned_words_cache
+
+def _chat_filter(text: str):
+    """Повертає (ok: bool, cleaned_text | reason: str)."""
+    text = _sanitize_text(text, 100)
+    if not text:
+        return False, "Порожнє повідомлення"
+    if len(text) > 100:
+        return False, "Повідомлення не може перевищувати 100 символів"
+    if _CHAT_URL_RE.search(text):
+        return False, "Посилання заборонені в чаті"
+    if _CHAT_HTML_RE.search(text):
+        return False, "HTML заборонено в чаті"
+    lower = text.lower()
+    for w in _get_banned_words_cached():
+        if w and w in lower:
+            return False, "Повідомлення містить заборонені слова"
+    if re.search(r'\b(здох|умри|вбий|щоб\s+ти\s+здох|смерть\s+тоб[іи]|kill\s+you|die)\b', lower):
+        return False, "Погрози заборонені в чаті"
+    return True, text
+
+class ChatSendBody(BaseModel):
+    message: str
+    fp: Optional[str] = None
+
+def _chat_get_user(request: Request):
+    """Повертає dict з user або None."""
+    token = request.cookies.get("admin_session")
+    if not token:
+        return None
+    sess = _session_get(token)
+    if not sess:
+        return None
+    try:
+        db = get_db()
+        with db.cursor() as c:
+            c.execute("SELECT id, name, email, nickname, role, is_banned, ban_until FROM users WHERE id=%s", (sess["user_id"],))
+            row = c.fetchone()
+        db.close()
+        return row
+    except Exception:
+        return None
+
+@app.get("/api/chat/messages")
+def chat_messages(since: int = 0, request: Request = None):
+    ip = (request.client.host if request else "0")
+    if not _rl.check(f"{ip}|chat_read", 60, 60):
+        raise HTTPException(429, "Занадто багато запитів")
+    # Адміни бачать всі повідомлення включно з гостьовими старіше 2 хв
+    caller = _chat_get_user(request) if request else None
+    is_admin = caller and caller.get('role') in ('admin', 'moder')
+    now_ms = int(time.time() * 1000)
+    guest_cutoff_ms = now_ms - 120_000  # 2 хвилини
+    try:
+        db = get_db()
+        with db.cursor() as c:
+            c.execute("SELECT value FROM colors WHERE `key`='chat_enabled'")
+            row = c.fetchone()
+            if row and row.get('value', '1') == '0':
+                db.close()
+                return {"ok": True, "messages": [], "disabled": True}
+            c.execute("SELECT value FROM colors WHERE `key`='chat_history_count'")
+            row2 = c.fetchone()
+            limit = int(row2['value']) if row2 else 50
+            # Для не-адмінів фільтруємо гостьові старіше 2 хвилин
+            guest_filter = "" if is_admin else f" AND NOT (m.is_guest=1 AND m.created_at<%s)"
+            if since == 0:
+                if is_admin:
+                    c.execute(
+                        "SELECT * FROM ("
+                        " SELECT m.id, m.user_id, m.message, m.created_at, m.is_guest, m.is_bot, m.bot_name,"
+                        " u.nickname, u.name, u.email, u.role"
+                        " FROM chat_messages m"
+                        " LEFT JOIN users u ON m.user_id=u.id"
+                        " WHERE m.is_deleted=0"
+                        " ORDER BY m.created_at DESC LIMIT %s"
+                        ") sub ORDER BY created_at ASC",
+                        (limit,)
+                    )
+                else:
+                    c.execute(
+                        "SELECT * FROM ("
+                        " SELECT m.id, m.user_id, m.message, m.created_at, m.is_guest, m.is_bot, m.bot_name,"
+                        " u.nickname, u.name, u.email, u.role"
+                        " FROM chat_messages m"
+                        " LEFT JOIN users u ON m.user_id=u.id"
+                        " WHERE m.is_deleted=0"
+                        " AND NOT (m.is_guest=1 AND m.created_at<%s)"
+                        " ORDER BY m.created_at DESC LIMIT %s"
+                        ") sub ORDER BY created_at ASC",
+                        (guest_cutoff_ms, limit)
+                    )
+            else:
+                if is_admin:
+                    c.execute(
+                        "SELECT m.id, m.user_id, m.message, m.created_at, m.is_guest, m.is_bot, m.bot_name,"
+                        " u.nickname, u.name, u.email, u.role"
+                        " FROM chat_messages m"
+                        " LEFT JOIN users u ON m.user_id=u.id"
+                        " WHERE m.is_deleted=0 AND m.created_at>%s"
+                        " ORDER BY m.created_at ASC LIMIT %s",
+                        (since, limit)
+                    )
+                else:
+                    c.execute(
+                        "SELECT m.id, m.user_id, m.message, m.created_at, m.is_guest, m.is_bot, m.bot_name,"
+                        " u.nickname, u.name, u.email, u.role"
+                        " FROM chat_messages m"
+                        " LEFT JOIN users u ON m.user_id=u.id"
+                        " WHERE m.is_deleted=0 AND m.created_at>%s"
+                        " AND NOT (m.is_guest=1 AND m.created_at<%s)"
+                        " ORDER BY m.created_at ASC LIMIT %s",
+                        (since, guest_cutoff_ms, limit)
+                    )
+            raw = c.fetchall()
+        db.close()
+        # Підставляємо дані для гостей і ботів
+        msgs = []
+        for m in raw:
+            m = dict(m)
+            if m.get('is_bot'):
+                m['nickname'] = None
+                m['name'] = m.get('bot_name') or 'Гість'
+                m['email'] = None
+                m['role'] = 'user'
+            elif m.get('is_guest'):
+                m['nickname'] = None
+                m['name'] = 'Гість'
+                m['email'] = None
+                m['role'] = 'guest'
+            msgs.append(m)
+        return {"ok": True, "messages": msgs}
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+@app.post("/api/chat/send")
+async def chat_send(body: ChatSendBody, request: Request):
+    user = _chat_get_user(request)
+    ip = _get_ip(request)
+
+    if not user:
+        # ── Анонімний режим: 1 повідомлення / 10 хв ──
+        fp = re.sub(r'[^a-z0-9]', '', (body.fp or "").strip().lower())[:64]
+        if len(fp) < 4:
+            raise HTTPException(400, "Для гостей потрібен fingerprint")
+        # IP rate limit
+        if not _rl.check(f"{ip}|anon_chat", 1, 600):
+            raise HTTPException(429, "Гості можуть писати 1 раз на 10 хвилин")
+        ok, result = _chat_filter(body.message)
+        if not ok:
+            raise HTTPException(400, result)
+        ts = int(time.time() * 1000)
+        cutoff_ms = ts - 600_000
+        try:
+            db = get_db()
+            with db.cursor() as c:
+                # Fingerprint cooldown: перевіряємо в БД
+                c.execute(
+                    "SELECT id FROM chat_messages WHERE guest_fp=%s AND created_at>%s LIMIT 1",
+                    (fp, cutoff_ms)
+                )
+                if c.fetchone():
+                    db.close()
+                    raise HTTPException(429, "Ви вже писали нещодавно. Зачекайте 10 хвилин")
+                c.execute(
+                    "INSERT INTO chat_messages (user_id, message, created_at, guest_fp, guest_ip, is_guest)"
+                    " VALUES (NULL,%s,%s,%s,%s,1)",
+                    (result, ts, fp, ip[:45])
+                )
+                msg_id = c.lastrowid
+            db.commit()
+            db.close()
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(500, str(e))
+        msg_data = {
+            "id": msg_id, "user_id": None, "is_guest": 1,
+            "message": result, "created_at": ts,
+            "nickname": None, "name": "Гість", "email": None, "role": "guest"
+        }
+        await broadcast({"event": "chat_msg", "msg": msg_data})
+        return {"ok": True, "msg": msg_data}
+
+    # ── Авторизований режим ──
+    if user.get('is_banned'):
+        ban_until = user.get('ban_until')
+        if ban_until is None or (isinstance(ban_until, str) and ban_until > time.strftime('%Y-%m-%d %H:%M:%S')):
+            raise HTTPException(403, "Ваш акаунт заблоковано")
+    if not _rl.check(f"{user['id']}|chat_send", 5, 60):
+        raise HTTPException(429, "Ви надсилаєте повідомлення занадто часто")
+    ok, result = _chat_filter(body.message)
+    if not ok:
+        raise HTTPException(400, result)
+    ts = int(time.time() * 1000)
+    try:
+        db = get_db()
+        with db.cursor() as c:
+            c.execute(
+                "INSERT INTO chat_messages (user_id, message, created_at) VALUES (%s,%s,%s)",
+                (user['id'], result, ts)
+            )
+            msg_id = c.lastrowid
+        db.commit()
+        db.close()
+        msg_data = {
+            "id": msg_id, "user_id": user['id'], "is_guest": 0,
+            "message": result, "created_at": ts,
+            "nickname": user.get('nickname'), "name": user.get('name'),
+            "email": user.get('email'), "role": user.get('role', 'user')
+        }
+        await broadcast({"event": "chat_msg", "msg": msg_data})
+        return {"ok": True, "msg": msg_data}
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+@app.post("/api/chat/report/{msg_id}")
+def chat_report(msg_id: int, request: Request):
+    user = _chat_get_user(request)
+    if not user:
+        raise HTTPException(401, "Потрібна авторизація")
+    ts = int(time.time() * 1000)
+    try:
+        db = get_db()
+        with db.cursor() as c:
+            c.execute(
+                "INSERT IGNORE INTO chat_reports (msg_id, reporter_id, reason, created_at)"
+                " VALUES (%s,%s,%s,%s)",
+                (msg_id, user['id'], "user_report", ts)
+            )
+            c.execute("SELECT COUNT(*) as cnt FROM chat_reports WHERE msg_id=%s", (msg_id,))
+            cnt = (c.fetchone() or {}).get('cnt', 0)
+            if cnt >= 3:
+                c.execute("UPDATE chat_messages SET is_deleted=1 WHERE id=%s", (msg_id,))
+        db.commit()
+        db.close()
+        return {"ok": True}
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+# Адмінські ендпоінти чату
+@app.get("/api/admin/chat/messages")
+def adm_chat_messages(request: Request, page: int = 1, limit: int = 100, deleted: int = 0):
+    require_moder(request)
+    offset = (page - 1) * limit
+    try:
+        db = get_db()
+        with db.cursor() as c:
+            c.execute(
+                "SELECT m.id, m.user_id, m.message, m.created_at, m.is_deleted, m.is_guest, m.is_bot, m.bot_name,"
+                " u.nickname, u.name, u.role,"
+                " (SELECT COUNT(*) FROM chat_reports r WHERE r.msg_id=m.id) as reports"
+                " FROM chat_messages m LEFT JOIN users u ON m.user_id=u.id"
+                " WHERE m.is_deleted=%s"
+                " ORDER BY m.created_at DESC LIMIT %s OFFSET %s",
+                (deleted, limit, offset)
+            )
+            raw = c.fetchall()
+            msgs = []
+            for row in raw:
+                row = dict(row)
+                if row.get('is_bot'):
+                    row['name'] = row.get('bot_name') or 'Бот'
+                    row['nickname'] = None
+                    row['role'] = 'user'
+                elif row.get('is_guest'):
+                    row['name'] = 'Гість'
+                    row['nickname'] = None
+                    row['role'] = 'guest'
+                msgs.append(row)
+            c.execute("SELECT COUNT(*) as cnt FROM chat_messages WHERE is_deleted=%s", (deleted,))
+            total = (c.fetchone() or {}).get('cnt', 0)
+        db.close()
+        return {"ok": True, "messages": msgs, "total": total}
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+@app.delete("/api/admin/chat/{msg_id}")
+async def adm_chat_delete(msg_id: int, request: Request):
+    require_moder(request)
+    try:
+        db = get_db()
+        with db.cursor() as c:
+            c.execute("UPDATE chat_messages SET is_deleted=1 WHERE id=%s", (msg_id,))
+        db.commit()
+        db.close()
+        await broadcast({"event": "chat_delete", "id": msg_id})
+        return {"ok": True}
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+@app.get("/api/admin/chat/reports")
+def adm_chat_reports(request: Request):
+    require_moder(request)
+    try:
+        db = get_db()
+        with db.cursor() as c:
+            c.execute(
+                "SELECT r.id, r.msg_id, r.reason, r.created_at,"
+                " m.message, m.is_deleted,"
+                " u.nickname as reporter_nick, u.name as reporter_name,"
+                " mu.nickname as author_nick, mu.name as author_name"
+                " FROM chat_reports r"
+                " JOIN chat_messages m ON r.msg_id=m.id"
+                " JOIN users u ON r.reporter_id=u.id"
+                " JOIN users mu ON m.user_id=mu.id"
+                " ORDER BY r.created_at DESC LIMIT 200"
+            )
+            rows = c.fetchall()
+        db.close()
+        return {"ok": True, "reports": rows}
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+@app.get("/api/admin/chat/banned-words")
+def adm_banned_words_get(request: Request):
+    require_moder(request)
+    try:
+        db = get_db()
+        with db.cursor() as c:
+            c.execute("SELECT id, word, category FROM chat_banned_words ORDER BY category, word")
+            rows = c.fetchall()
+        db.close()
+        return {"ok": True, "words": rows}
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+class BannedWordBody(BaseModel):
+    word: str
+    category: str = "profanity"
+
+@app.post("/api/admin/chat/banned-words")
+def adm_banned_words_add(body: BannedWordBody, request: Request):
+    require_moder(request)
+    word = _sanitize_text(body.word, 200).lower().strip()
+    if not word:
+        raise HTTPException(400, "Слово не може бути порожнім")
+    cat = body.category if body.category in ("profanity", "threat", "spam") else "profanity"
+    try:
+        db = get_db()
+        with db.cursor() as c:
+            c.execute(
+                "INSERT IGNORE INTO chat_banned_words (word, category) VALUES (%s,%s)",
+                (word, cat)
+            )
+        db.commit()
+        db.close()
+        global _banned_words_ts
+        _banned_words_ts = 0  # інвалідуємо кеш
+        return {"ok": True}
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+class BannedWordsImportBody(BaseModel):
+    text: str
+    category: str = "profanity"
+
+@app.post("/api/admin/chat/banned-words/import")
+def adm_banned_words_import(body: BannedWordsImportBody, request: Request):
+    require_moder(request)
+    cat = body.category if body.category in ("profanity", "threat", "spam") else "profanity"
+    # Розбиваємо по комах і переносах рядків, чистимо кожне слово
+    raw = body.text.replace("\n", ",").replace(";", ",")
+    words = [_sanitize_text(w, 200).lower().strip() for w in raw.split(",")]
+    words = [w for w in words if w and len(w) >= 2]
+    if not words:
+        raise HTTPException(400, "Не знайдено жодного слова")
+    if len(words) > 1000:
+        raise HTTPException(400, "Максимум 1000 слів за один імпорт")
+    try:
+        db = get_db()
+        added = 0
+        with db.cursor() as c:
+            for w in words:
+                res = c.execute(
+                    "INSERT IGNORE INTO chat_banned_words (word, category) VALUES (%s,%s)",
+                    (w, cat)
+                )
+                added += res
+        db.commit()
+        db.close()
+        global _banned_words_ts
+        _banned_words_ts = 0
+        return {"ok": True, "added": added, "total": len(words)}
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+@app.delete("/api/admin/chat/banned-words/{word_id}")
+def adm_banned_words_del(word_id: int, request: Request):
+    require_moder(request)
+    try:
+        db = get_db()
+        with db.cursor() as c:
+            c.execute("DELETE FROM chat_banned_words WHERE id=%s", (word_id,))
+        db.commit()
+        db.close()
+        global _banned_words_ts
+        _banned_words_ts = 0
+        return {"ok": True}
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+
+# ── Чат-боти: адмін endpoints ────────────────────────────
+
+class BotPhraseBody(BaseModel):
+    phrase: str
+    category: str = "general"
+
+class BotConfigBody(BaseModel):
+    enabled: bool
+
+@app.get("/api/admin/chat/bots")
+def adm_bots_get(request: Request):
+    require_moder(request)
+    try:
+        db = get_db()
+        with db.cursor() as c:
+            c.execute("SELECT id, phrase, category, is_active FROM chat_bot_phrases ORDER BY id")
+            phrases = c.fetchall()
+        db.close()
+        with _bot_lock:
+            cnt = _bot_online_count
+        return {
+            "ok": True,
+            "enabled": _bots_enabled,
+            "bot_online_count": cnt,
+            "bot_names": _BOT_NAMES,
+            "phrases": [dict(p) for p in phrases],
+        }
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+@app.put("/api/admin/chat/bots/config")
+def adm_bots_config(body: BotConfigBody, request: Request):
+    require_admin(request)
+    global _bots_enabled
+    try:
+        db = get_db()
+        with db.cursor() as c:
+            val = '1' if body.enabled else '0'
+            c.execute(
+                "INSERT INTO colors (`key`, value, label) VALUES ('chat_bots_enabled', %s, 'Чат-боти увімкнені')"
+                " ON DUPLICATE KEY UPDATE value=%s",
+                (val, val)
+            )
+        db.commit()
+        db.close()
+        _bots_enabled = body.enabled
+        return {"ok": True, "enabled": _bots_enabled}
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+@app.post("/api/admin/chat/bots/phrase")
+def adm_bots_phrase_add(body: BotPhraseBody, request: Request):
+    require_admin(request)
+    phrase = _sanitize_text(body.phrase.strip())[:500]
+    if not phrase:
+        raise HTTPException(400, "Фраза порожня")
+    try:
+        db = get_db()
+        with db.cursor() as c:
+            c.execute(
+                "INSERT INTO chat_bot_phrases (phrase, category) VALUES (%s, %s)",
+                (phrase, body.category[:50])
+            )
+            new_id = c.lastrowid
+        db.commit()
+        db.close()
+        return {"ok": True, "id": new_id}
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+@app.delete("/api/admin/chat/bots/phrase/{phrase_id}")
+def adm_bots_phrase_del(phrase_id: int, request: Request):
+    require_admin(request)
+    try:
+        db = get_db()
+        with db.cursor() as c:
+            c.execute("DELETE FROM chat_bot_phrases WHERE id=%s", (phrase_id,))
+        db.commit()
+        db.close()
+        return {"ok": True}
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+@app.put("/api/admin/chat/bots/phrase/{phrase_id}/toggle")
+def adm_bots_phrase_toggle(phrase_id: int, request: Request):
+    require_admin(request)
+    try:
+        db = get_db()
+        with db.cursor() as c:
+            c.execute("UPDATE chat_bot_phrases SET is_active = 1 - is_active WHERE id=%s", (phrase_id,))
+        db.commit()
+        db.close()
+        return {"ok": True}
+    except Exception as e:
+        raise HTTPException(500, str(e))
 
 
 # ── ADMIN API ─────────────────────────────────────────────
@@ -3325,16 +4292,20 @@ def approve(mid: int, request: Request):
 @app.post("/api/admin/memorial")
 def admin_add_person(p: PersonIn, request: Request):
     require_moder(request)
+    # Якщо передано world_lat/lng — автообчислити pos_x/pos_y
+    pos_x, pos_y = p.pos_x, p.pos_y
+    if p.world_lat is not None and p.world_lng is not None:
+        pos_x, pos_y = _latLngToSvg(p.world_lat, p.world_lng)
     db = get_db()
     with db.cursor() as c:
         c.execute("""
             INSERT INTO memorials
-            (last,first,mid,birth,death,loc,bury,circ,descr,photo,color,`rank`,`position`,`unit`,pos_x,pos_y,grp,added_by,approved)
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,1)
+            (last,first,mid,birth,death,loc,bury,circ,descr,photo,color,`rank`,`position`,`unit`,pos_x,pos_y,world_lat,world_lng,grp,added_by,approved)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,1)
         """, (p.last.strip(), p.first.strip(), p.mid or '', p.birth or None, p.death or None,
               p.loc or '', p.bury or '', p.circ or '', p.descr or '', p.photo or '',
               p.color or '#4fc3f7', p.rank or '', p.position or '', p.unit or '',
-              p.pos_x, p.pos_y, p.grp or '', 'admin'))
+              pos_x, pos_y, p.world_lat, p.world_lng, p.grp or '', 'admin'))
         new_id = c.lastrowid
         sl = make_slug(p.first.strip(), p.last.strip(), new_id)
         try:
@@ -3370,6 +4341,84 @@ def delete_memorial(mid: int, request: Request):
 _CSV_COLS = ['id','last','first','mid','birth','death','loc','bury','circ',
              'descr','photo','color','pos_x','pos_y','grp','rank','position','unit',
              'video_url','added_by','approved','likes','rating']
+
+# ── Portfolio: Thanks block ────────────────────────────────
+class ThanksItem(BaseModel):
+    name: str
+    sort_order: Optional[int] = 0
+    is_visible: Optional[int] = 1
+
+@app.get("/api/portfolio/thanks")
+def portfolio_thanks_get():
+    db = get_db()
+    try:
+        with db.cursor() as c:
+            c.execute("CREATE TABLE IF NOT EXISTS portfolio_thanks ("
+                      "id INT PRIMARY KEY AUTO_INCREMENT, "
+                      "name VARCHAR(200) NOT NULL, "
+                      "sort_order INT NOT NULL DEFAULT 0, "
+                      "is_visible TINYINT NOT NULL DEFAULT 1"
+                      ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4")
+            db.commit()
+            c.execute("SELECT id, name, sort_order, is_visible FROM portfolio_thanks ORDER BY sort_order, id")
+            rows = c.fetchall()
+    finally:
+        db.close()
+    return [dict(r) for r in rows]
+
+@app.post("/api/admin/portfolio/thanks")
+def portfolio_thanks_add(item: ThanksItem, request: Request):
+    require_admin(request)
+    db = get_db()
+    try:
+        with db.cursor() as c:
+            c.execute("INSERT INTO portfolio_thanks (name, sort_order, is_visible) VALUES (%s,%s,%s)",
+                      (_sanitize_text(item.name), item.sort_order, item.is_visible))
+            new_id = c.lastrowid
+        db.commit()
+    finally:
+        db.close()
+    return {"id": new_id}
+
+# reorder МУСИТЬ бути перед /{item_id} — інакше FastAPI намагається парсити "reorder" як int
+@app.put("/api/admin/portfolio/thanks/reorder")
+def portfolio_thanks_reorder(items: List[dict], request: Request):
+    require_admin(request)
+    db = get_db()
+    try:
+        with db.cursor() as c:
+            for it in items:
+                c.execute("UPDATE portfolio_thanks SET sort_order=%s WHERE id=%s",
+                          (it.get("sort_order", 0), it["id"]))
+        db.commit()
+    finally:
+        db.close()
+    return {"ok": True}
+
+@app.put("/api/admin/portfolio/thanks/{item_id}")
+def portfolio_thanks_update(item_id: int, item: ThanksItem, request: Request):
+    require_admin(request)
+    db = get_db()
+    try:
+        with db.cursor() as c:
+            c.execute("UPDATE portfolio_thanks SET name=%s, sort_order=%s, is_visible=%s WHERE id=%s",
+                      (_sanitize_text(item.name), item.sort_order, item.is_visible, item_id))
+        db.commit()
+    finally:
+        db.close()
+    return {"ok": True}
+
+@app.delete("/api/admin/portfolio/thanks/{item_id}")
+def portfolio_thanks_delete(item_id: int, request: Request):
+    require_admin(request)
+    db = get_db()
+    try:
+        with db.cursor() as c:
+            c.execute("DELETE FROM portfolio_thanks WHERE id=%s", (item_id,))
+        db.commit()
+    finally:
+        db.close()
+    return {"ok": True}
 
 @app.get("/api/admin/export/csv")
 def export_csv(request: Request):
@@ -3649,6 +4698,8 @@ _MEMORIAL_COL_MAP = {
     'rank':      '`rank`=%s',
     'position':  '`position`=%s',
     'unit':      '`unit`=%s',
+    'world_lat': '`world_lat`=%s',
+    'world_lng': '`world_lng`=%s',
 }
 _MEMORIAL_ALLOWED_FIELDS = set(_MEMORIAL_COL_MAP)
 
@@ -3677,14 +4728,23 @@ def update_memorial(mid: int, p: PersonUpdate, request: Request):
         elif f in ('birth', 'death'):
             v = _validate_date(v)
         elif f in ('pos_x', 'pos_y') and v is not None:
-            v = max(0.0, min(1.0, float(v)))
+            v = float(v)
+        elif f in ('world_lat', 'world_lng') and v is not None:
+            v = float(v)
         fields.append(_MEMORIAL_COL_MAP[f])
         vals.append(v)
     if not fields:
         db.close()
         return {"ok": False}
-    vals.append(mid)
+    # Якщо передано world_lat/lng — автообчислити pos_x/pos_y
     update_data = p.model_dump(exclude_none=True)
+    if p.world_lat is not None and p.world_lng is not None:
+        svx, svy = _latLngToSvg(p.world_lat, p.world_lng)
+        for fname, fval in [('pos_x', svx), ('pos_y', svy)]:
+            if fname not in update_data:
+                fields.append(_MEMORIAL_COL_MAP[fname])
+                vals.append(fval)
+    vals.append(mid)
     old_slug = None
     with db.cursor() as c:
         c.execute("SELECT slug FROM memorials WHERE id=%s", (mid,))
@@ -3715,7 +4775,7 @@ def get_awards(mid: int):
     db = get_db()
     with db.cursor() as c:
         c.execute(
-            "SELECT id,name,img_file,award_date,descr,sort_order FROM memorial_awards "
+            "SELECT id,name,img_file,category,award_date,descr,sort_order FROM memorial_awards "
             "WHERE memorial_id=%s ORDER BY sort_order,id",
             (mid,)
         )
@@ -3729,6 +4789,7 @@ def get_awards(mid: int):
 class AwardIn(BaseModel):
     name:       str
     img_file:   Optional[str] = ""
+    category:   Optional[str] = ""
     award_date: Optional[str] = None
     descr:      Optional[str] = ""
     sort_order: Optional[int] = 0
@@ -3739,9 +4800,9 @@ def add_award(mid: int, a: AwardIn, request: Request):
     db = get_db()
     with db.cursor() as c:
         c.execute(
-            "INSERT INTO memorial_awards (memorial_id,name,img_file,award_date,descr,sort_order) "
-            "VALUES (%s,%s,%s,%s,%s,%s)",
-            (mid, a.name.strip(), a.img_file or '', a.award_date or None, a.descr or '', a.sort_order or 0)
+            "INSERT INTO memorial_awards (memorial_id,name,img_file,category,award_date,descr,sort_order) "
+            "VALUES (%s,%s,%s,%s,%s,%s,%s)",
+            (mid, a.name.strip(), a.img_file or '', a.category or '', a.award_date or None, a.descr or '', a.sort_order or 0)
         )
         db.commit()
         new_id = c.lastrowid
@@ -3937,6 +4998,7 @@ def _install_guard():
         raise HTTPException(403, "Інсталятор вже завершено або недоступний")
 
 @app.get("/install")
+@app.get("/install.html")
 def install_page():
     if not os.path.isfile(_INSTALL_FILE):
         from fastapi.responses import RedirectResponse
@@ -4224,9 +5286,16 @@ def admin_stats(request: Request):
         )
         users = c.fetchone()["cnt"]
     db.close()
+    online_real = len(connected) + len(_online_pings)
+    with _bot_lock:
+        online_bots = _bot_online_count
     return {
         "total": total, "approved": approved, "pending": pend,
-        "users": users, "likes": likes, "online": len(connected),
+        "users": users, "likes": likes,
+        "online": online_real + online_bots,
+        "online_real": online_real,
+        "online_bots": online_bots,
+        "online_users": _online_users_list(),
     }
 
 
@@ -4265,6 +5334,60 @@ def server_stats(request: Request):
         "uptime":       uptime_str,
         "total_requests": _request_count,
         "visits_24h":   visits_24h,
+    }
+
+
+@app.get("/api/admin/realtime-12h")
+def realtime_12h(request: Request):
+    require_moder(request)
+    now_h = int(time.time() // 3600) * 3600
+    hours = [now_h - i * 3600 for i in range(11, -1, -1)]
+
+    visits = [_pageviews_hourly.get(h, 0) for h in hours]
+    db_queries = [_db_queries_hourly.get(h, 0) for h in hours]
+
+    # Боти з bot_visits за останні 12 годин
+    cutoff = hours[0]
+    bots_total = [0] * 12
+    bots_by_name: dict = {}
+    try:
+        db = get_db()
+        with db.cursor() as c:
+            c.execute(
+                "SELECT FLOOR(created_at/3600)*3600 AS h, bot_name, COUNT(*) AS cnt"
+                " FROM bot_visits WHERE created_at >= %s GROUP BY h, bot_name",
+                (cutoff,)
+            )
+            rows = c.fetchall()
+        db.close()
+        bots_map: dict = {}
+        for row in rows:
+            h_val = int(row["h"])
+            name  = row["bot_name"]
+            cnt   = int(row["cnt"])
+            bots_map.setdefault(h_val, {})
+            bots_map[h_val][name] = cnt
+            bots_by_name[name] = bots_by_name.get(name, 0) + cnt
+        bots_total = [sum(bots_map.get(h, {}).values()) for h in hours]
+    except Exception:
+        pass
+
+    # CPU/RAM — середнє за кожну годину
+    cpu_avg, ram_avg = [], []
+    for h in hours:
+        snaps = [s for s in _cpu_ram_snapshots if h <= s["ts"] < h + 3600]
+        cpu_avg.append(round(sum(s["cpu"] for s in snaps) / len(snaps), 1) if snaps else None)
+        ram_avg.append(round(sum(s["ram"] for s in snaps) / len(snaps), 1) if snaps else None)
+
+    labels = [time.strftime("%H:00", time.localtime(h)) for h in hours]
+    return {
+        "labels":      labels,
+        "visits":      visits,
+        "bots_total":  bots_total,
+        "bots_by_name": sorted(bots_by_name.items(), key=lambda x: -x[1])[:5],
+        "db_queries":  db_queries,
+        "cpu":         cpu_avg,
+        "ram":         ram_avg,
     }
 
 
@@ -4550,29 +5673,51 @@ def _google_index_notify(url: str, notification_type: str = "URL_UPDATED"):
     if not key_file or not os.path.exists(key_file):
         return {"ok": False, "reason": "not configured"}
     try:
-        import google.auth
-        import google.auth.transport.requests
-        from google.oauth2 import service_account
+        import google.auth.crypt
+        import google.auth.jwt
 
-        creds = service_account.Credentials.from_service_account_file(
-            key_file,
-            scopes=["https://www.googleapis.com/auth/indexing"],
+        with open(key_file) as _f:
+            _sa = json.load(_f)
+
+        _now = int(time.time())
+        _payload = {
+            "iss": _sa["client_email"],
+            "sub": _sa["client_email"],
+            "aud": "https://oauth2.googleapis.com/token",
+            "iat": _now,
+            "exp": _now + 3600,
+            "scope": "https://www.googleapis.com/auth/indexing",
+        }
+        _signer = google.auth.crypt.RSASigner.from_service_account_info(_sa)
+        _jwt = google.auth.jwt.encode(_signer, _payload)
+        if isinstance(_jwt, bytes):
+            _jwt = _jwt.decode()
+
+        _token_body = urllib.parse.urlencode({
+            "grant_type": "urn:ietf:params:oauth:grant-type:jwt-bearer",
+            "assertion": _jwt,
+        }).encode()
+        _token_req = urllib.request.Request(
+            "https://oauth2.googleapis.com/token",
+            data=_token_body,
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+            method="POST",
         )
-        session = google.auth.transport.requests.Request()
-        creds.refresh(session)
+        with urllib.request.urlopen(_token_req, timeout=10) as _r:
+            _access_token = json.loads(_r.read())["access_token"]
+
         body = json.dumps({"url": url, "type": notification_type}).encode()
         req = urllib.request.Request(
             "https://indexing.googleapis.com/v3/urlNotifications:publish",
             data=body,
             headers={
                 "Content-Type": "application/json",
-                "Authorization": f"Bearer {creds.token}",
+                "Authorization": f"Bearer {_access_token}",
             },
             method="POST",
         )
         with urllib.request.urlopen(req, timeout=10) as resp:
             resp_body = resp.read().decode()
-        # log to DB
         try:
             db2 = get_db()
             with db2.cursor() as c2:
@@ -4724,15 +5869,13 @@ def memorial_seo_page(slug: str, request: Request):
         raise HTTPException(404, "Меморіал не знайдено")
 
     ctx = _build_memorial_seo(row)
-    resp = _TEMPLATES.TemplateResponse(request=request, name="memorial.html", context=ctx)
     try:
-        html_str = resp.body.decode()
-    except Exception:
-        html_str = ""
-    if html_str:
-        cache_set(cache_key, html_str, ttl=300)
-    resp.headers["Cache-Control"] = "public, max-age=300"
-    return resp
+        tmpl = _TEMPLATES.env.get_template("memorial.html")
+        html_str = tmpl.render(**ctx)
+    except Exception as e:
+        raise HTTPException(500, f"Template error: {e}")
+    cache_set(cache_key, html_str, ttl=300)
+    return HTMLResponse(content=html_str, headers={"Cache-Control": "public, max-age=300"})
 
 
 @app.get("/api/memorial/by-slug/{slug}")

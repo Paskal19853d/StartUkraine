@@ -112,7 +112,7 @@ slug VARCHAR(220) UNIQUE          -- SEO slug: ivan-petrenko-42 (auto-generated)
 ```sql
 id, name, email UNIQUE, password (bcrypt)
 first_name, last_name, middle_name VARCHAR(100)  -- ПІБ (незмінні після реєстрації)
-nickname VARCHAR(100) UNIQUE                     -- нік (змінюваний, лише латиниця)
+nickname VARCHAR(100) UNIQUE                     -- нік (змінюваний, укр/лат/цифри/_ .-; авто-генерується якщо NULL)
 phone VARCHAR(20)                                -- +380XXXXXXXXX
 role VARCHAR(20)  -- 'admin' | 'moder' | 'user'
 is_banned, ban_until, last_seen, notes
@@ -182,6 +182,7 @@ id, query, results_count, created_at
 | GET | `/api/labels` | Підписи карти |
 | GET | `/api/cities` | Міста |
 | POST | `/api/like/{id}` | Лайк (fingerprint dedup) |
+| GET | `/api/device-status` | Доступ за пристроєм: `{desktop, tablet, mobile, block_msg}` |
 | GET | `/health` | Health check |
 | GET | `/metrics` | Prometheus метрики |
 
@@ -191,6 +192,7 @@ id, query, results_count, created_at
 | POST | `/api/auth/register` | Реєстрація |
 | POST | `/api/auth/login` | Вхід (cookie) |
 | POST | `/api/auth/logout` | Вихід |
+| GET | `/api/auth/check-availability?type=nick\|email&value=X[&exclude_uid=Y]` | Real-time перевірка доступності ніку/email. Rate limit 30/хв/IP. Повертає `{available: bool, reason?: str}` |
 | GET | `/api/auth/me` | Поточний користувач (повертає розширені поля) |
 | PUT | `/api/auth/profile` | Оновити профіль (нік, email, телефон, пароль — не ФІО) |
 | GET | `/api/auth/google` | Google OAuth |
@@ -399,6 +401,7 @@ SECRET_KEY=...
 - **Соцмережі**: `social_facebook`, `social_facebook_url`, `social_order`
 - **Admin**: `admin_theme`, `admin_nav_order`, `admin_logo_url`
 - **Фото на карті**: `map_photo_url`, `map_photo_opacity`, `map_photo_blend`
+- **Пристрої**: `device_desktop_enabled`, `device_tablet_enabled`, `device_mobile_enabled` (1=так, 0=ні), `device_block_msg` (текст заглушки)
 
 ---
 
@@ -409,8 +412,12 @@ SECRET_KEY=...
 2. Під час роботи **оновлювати MD файли** при зміні архітектури, нових ендпоінтів, таблиць, файлів
 3. Перевірити актуальність через читання `Paskal.py` / HTML файлів перед правками
 
+### Після кожного блоку змін — ОБОВ'ЯЗКОВО
+4. **Писати список змінених файлів** в кінці відповіді (назва файлу + короткий опис що змінено)
+5. **Вимоги користувача додавати в MD файли** — кожне нове правило / вимогу / обмеження фіксувати в `CLAUDE.md` (секція 11) та у feedback memory (`memory/feedback_code_rules.md`)
+
 ### Що НЕ змінювати без явного запиту
-- Структуру БД (таблиці, колонки) — тільки через `migrations.sql`
+- Структуру БД (таблиці, колонки) — **НЕ через migrations.sql** (він не виконується автоматично). Зміни в БД робити напряму: через PhpMyAdmin або Python-скрипт з pymysql (root:root на 127.0.0.1:3306)
 - `.env` файл — містить секрети
 - `memorial.db` — старий SQLite, **не використовувати**
 - Налаштування Gunicorn/Nginx без узгодження

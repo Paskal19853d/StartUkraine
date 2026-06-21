@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-4V8B14HDN1"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-4V8B14HDN1');</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Технічні роботи — Зоряна Пам'ять</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;background:#0a0c12;color:#c8d6e5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;overflow:hidden}
+body{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px}
+canvas{position:fixed;inset:0;z-index:0;pointer-events:none}
+.wrap{position:relative;z-index:1;max-width:480px;width:100%}
+.star-ico{font-size:72px;line-height:1;display:block;margin-bottom:24px;filter:drop-shadow(0 0 18px #5577ff88);animation:pulse 3s ease-in-out infinite}
+@keyframes pulse{0%,100%{transform:scale(1);filter:drop-shadow(0 0 18px #5577ff88)}50%{transform:scale(1.07);filter:drop-shadow(0 0 32px #7799ffcc)}}
+h1{font-size:clamp(22px,5vw,32px);font-weight:700;color:#e8f0fe;margin-bottom:12px;letter-spacing:.02em}
+.sub{font-size:15px;color:#8899aa;line-height:1.6;margin-bottom:32px;min-height:24px}
+.divider{width:60px;height:2px;background:linear-gradient(90deg,transparent,#334466,transparent);margin:0 auto 32px}
+.info{font-size:12px;color:#445566;letter-spacing:.04em;text-transform:uppercase}
+.author{margin-top:28px;font-size:12px;color:#6e8fa8;letter-spacing:.04em}
+.author b{color:#9ab8d0;font-weight:600}
+.dots{display:inline-flex;gap:6px;margin-top:20px}
+.dots span{width:7px;height:7px;border-radius:50%;background:#334466;animation:blink 1.4s ease-in-out infinite}
+.dots span:nth-child(2){animation-delay:.2s}
+.dots span:nth-child(3){animation-delay:.4s}
+@keyframes blink{0%,80%,100%{opacity:.3}40%{opacity:1;background:#5577aa}}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="wrap">
+  <span class="star-ico">★</span>
+  <h1>Технічні роботи</h1>
+  <p class="sub" id="msg">Сайт тимчасово недоступний. Проводяться технічні роботи.</p>
+  <div class="divider"></div>
+  <p class="info">Зоряна Пам'ять</p>
+  <div class="dots"><span></span><span></span><span></span></div>
+  <p class="author">Автор: <b>Денис КОШЕЛЕНКО</b></p>
+  <p class="author">[Paskal]</p>
+</div>
+<script>
+(async()=>{
+  try{
+    const r=await fetch('/api/maintenance-message');
+    if(r.ok){const d=await r.json();if(d.message)document.getElementById('msg').textContent=d.message;}
+  }catch{}
+})();
+
+/* particle stars background */
+const cv=document.getElementById('c'),cx=cv.getContext('2d');
+let W,H,pts=[];
+function resize(){W=cv.width=innerWidth;H=cv.height=innerHeight;pts=Array.from({length:80},()=>({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.4+.4,a:Math.random(),s:Math.random()*.004+.001,d:Math.random()<.5?1:-1}))}
+resize();window.addEventListener('resize',resize);
+function frame(){
+  cx.clearRect(0,0,W,H);
+  for(const p of pts){
+    p.a+=p.s*p.d;
+    if(p.a<=0||p.a>=1)p.d*=-1;
+    cx.globalAlpha=p.a*.6;
+    cx.fillStyle='#aabbff';
+    cx.beginPath();cx.arc(p.x,p.y,p.r,0,Math.PI*2);cx.fill();
+  }
+  cx.globalAlpha=1;
+  requestAnimationFrame(frame);
+}
+frame();
+</script>
+</body>
+</html>

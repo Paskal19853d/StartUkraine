@@ -1,0 +1,216 @@
+/* ── Мікро-чат (публічний) ── */
+
+#micro-chat {
+  position: fixed;
+  left: 12px;
+  bottom: 122px;
+  width: 248px;
+  max-height: min(320px, calc(100vh - 280px));
+  background: rgba(36, 38, 42, 0.95);
+  border: 1px solid rgba(120, 120, 130, 0.35);
+  border-radius: 12px;
+  z-index: 1500;
+  display: flex;
+  flex-direction: column;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 4px 24px rgba(0,0,0,.5), 0 0 0 1px rgba(120,120,130,.08);
+  transition: max-height .28s ease, opacity .2s;
+  user-select: none;
+}
+
+#micro-chat.mc-hidden { display: none !important; }
+
+#micro-chat.mc-collapsed {
+  max-height: 36px;
+  overflow: hidden;
+}
+
+/* Заголовок */
+#mc-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 10px;
+  cursor: pointer;
+  border-bottom: 1px solid rgba(120, 120, 130, 0.25);
+  flex-shrink: 0;
+}
+
+#mc-title {
+  font-family: 'Geologica', sans-serif;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #4fc3f7;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#mc-badge {
+  font-size: 10px;
+  color: #3a6a80;
+  background: rgba(79,195,247,.1);
+  border-radius: 10px;
+  padding: 1px 6px;
+  font-family: 'Geologica', sans-serif;
+}
+
+#mc-toggle {
+  background: none;
+  border: none;
+  color: #3a6a80;
+  cursor: pointer;
+  font-size: 17px;
+  line-height: 1;
+  padding: 0 2px;
+  transition: color .2s;
+  flex-shrink: 0;
+}
+#mc-toggle:hover { color: #4fc3f7; }
+
+/* Тіло чату */
+#mc-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+#mc-messages {
+  flex: 1;
+  overflow-y: scroll;
+  padding: 6px 8px;
+  min-height: 0;
+  scroll-behavior: smooth;
+  overscroll-behavior: contain;
+}
+
+#mc-messages::-webkit-scrollbar { width: 4px; }
+#mc-messages::-webkit-scrollbar-track { background: rgba(255,255,255,.03); border-radius: 2px; }
+#mc-messages::-webkit-scrollbar-thumb { background: rgba(79,195,247,.25); border-radius: 2px; }
+#mc-messages::-webkit-scrollbar-thumb:hover { background: rgba(79,195,247,.45); }
+
+/* Повідомлення */
+.mc-msg {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 3px;
+  font-size: 11.5px;
+  line-height: 1.5;
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  position: relative;
+  user-select: text;
+}
+.mc-msg:last-child { border-bottom: none; }
+
+.mc-msg-nick {
+  color: #4fc3f7;
+  font-weight: 600;
+  font-family: 'Geologica', sans-serif;
+  font-size: 10.5px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.mc-msg-nick.is-admin { color: #ffd700; }
+.mc-msg-nick.is-moder { color: #a78bfa; }
+
+.mc-msg-text {
+  color: #b8cce0;
+  font-family: 'Geologica', sans-serif;
+  font-size: 11px;
+  word-break: break-word;
+  flex: 1;
+  min-width: 0;
+}
+
+.mc-msg-time {
+  font-size: 9px;
+  color: #2a4a5a;
+  flex-shrink: 0;
+  margin-left: auto;
+  padding-left: 4px;
+}
+
+.mc-msg-report {
+  font-size: 10px;
+  color: transparent;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: color .2s;
+  line-height: 1;
+  padding: 0 2px;
+  margin-left: 2px;
+}
+.mc-msg:hover .mc-msg-report { color: #2a4a5a; }
+.mc-msg-report:hover { color: #e05070 !important; }
+
+/* Рядок введення */
+#mc-input-row {
+  display: flex;
+  gap: 5px;
+  padding: 5px 8px 7px;
+  flex-shrink: 0;
+}
+
+#mc-input {
+  flex: 1;
+  background: rgba(255,255,255,.07);
+  border: 1px solid rgba(160,160,170,.22);
+  border-radius: 7px;
+  color: #d0d4d8;
+  font-family: 'Geologica', sans-serif;
+  font-size: 11px;
+  padding: 4px 8px;
+  outline: none;
+  transition: border-color .2s;
+  min-width: 0;
+}
+#mc-input::placeholder { color: #6a6e74; }
+#mc-input:focus { border-color: rgba(180,180,190,.45); }
+
+#mc-send {
+  background: rgba(160,160,170,.18);
+  border: 1px solid rgba(160,160,170,.35);
+  border-radius: 7px;
+  color: #b8bcc2;
+  cursor: pointer;
+  padding: 4px 10px;
+  font-size: 16px;
+  line-height: 1;
+  transition: background .2s;
+  flex-shrink: 0;
+}
+#mc-send:hover { background: rgba(160,160,170,.32); }
+#mc-send:disabled { opacity: .4; cursor: default; }
+
+/* Підказка для незалогінених */
+#mc-auth-hint {
+  font-family: 'Geologica', sans-serif;
+  font-size: 11px;
+  color: #3a5a6a;
+  padding: 5px 8px 7px;
+  text-align: center;
+  flex-shrink: 0;
+}
+#mc-auth-hint a {
+  color: #4fc3f7;
+  text-decoration: none;
+}
+#mc-auth-hint a:hover { text-decoration: underline; }
+
+/* Системне повідомлення */
+.mc-msg-system {
+  font-size: 10px;
+  color: #2a4a5a;
+  text-align: center;
+  padding: 4px 0;
+  font-style: italic;
+  font-family: 'Geologica', sans-serif;
+}
+
+/* Видимість керується класом .mc-hidden — не ховаємо за розміром екрану */

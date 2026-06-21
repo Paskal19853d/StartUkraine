@@ -25,6 +25,8 @@
 <style id="dynamic-colors">
 /* Кольори завантажуються з БД */
 </style>
+<link rel="stylesheet" href="/js/leaflet.css">
+<link rel="stylesheet" href="/css/chat.css">
 
 <style id="pl-critical">
 body{visibility:hidden}
@@ -38,6 +40,7 @@ body{visibility:hidden}
 <!-------->
 <canvas id="fluid"></canvas>
 <script src="js/dat.gui.min.js"></script>
+<script src="/js/chat.js"></script>
     <style>
       * {
         user-select: none;
@@ -102,6 +105,48 @@ body{visibility:hidden}
 		transition: left 0.05s linear, top 1.05s linear; /* плавное движение */
       }
     </style>
+
+<style id="zp-tour-css">
+/* ── Onboarding Tour ── */
+#zp-tour-overlay{position:fixed;inset:0;z-index:19000;pointer-events:none;transition:opacity .3s}
+#zp-tour-overlay.active{pointer-events:auto}
+.zp-tour-hl{position:relative;z-index:19100!important;box-shadow:0 0 0 4px rgba(255,215,0,.55),0 0 0 9999px rgba(3,7,14,.72)!important;border-radius:8px;transition:box-shadow .3s}
+#zp-tour-bubble{
+  display:none;position:fixed;z-index:19200;
+  background:#0b1627;border:1px solid rgba(255,215,0,.38);
+  border-radius:14px;padding:18px 20px 14px;max-width:270px;
+  color:#d8e8f8;font-family:'Geologica',sans-serif;font-size:13px;line-height:1.6;
+  box-shadow:0 8px 32px rgba(0,0,0,.6),0 0 0 1px rgba(255,215,0,.08);
+  animation:zpTourFade .25s ease;
+  pointer-events:auto;
+}
+#zp-tour-bubble.visible{display:block}
+@keyframes zpTourFade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+#zp-tour-title{font-family:'Unbounded',sans-serif;font-size:11px;font-weight:700;color:#ffd700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px}
+#zp-tour-text{color:#a8c0d8;font-size:12.5px;line-height:1.65;margin-bottom:14px}
+#zp-tour-btns{display:flex;gap:8px;justify-content:flex-end;align-items:center}
+#zp-tour-skip{background:none;border:none;color:#5a6a7a;font-size:11px;cursor:pointer;padding:4px 2px;font-family:inherit;text-decoration:underline;transition:color .2s}
+#zp-tour-skip:hover{color:#8a9ab0}
+#zp-tour-next{background:rgba(255,215,0,.15);border:1px solid rgba(255,215,0,.4);border-radius:7px;color:#ffd700;font-size:12px;font-weight:600;padding:7px 16px;cursor:pointer;font-family:inherit;transition:background .2s}
+#zp-tour-next:hover{background:rgba(255,215,0,.28)}
+#zp-tour-dots{display:flex;gap:5px;justify-content:center;margin-top:10px}
+.zp-tour-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,215,0,.2);transition:background .25s}
+.zp-tour-dot.on{background:#ffd700}
+/* Стрілки — подвійний трикутник: ::before=рамка, ::after=заливка */
+#zp-tour-bubble::before,#zp-tour-bubble::after{content:'';position:absolute;width:0;height:0;border-style:solid}
+/* arr-top: bubble знизу, стрілка виходить З ВЕРХУ bubble вгору до елемента */
+#zp-tour-bubble.arr-top::before{border-width:0 9px 9px 9px;border-color:transparent transparent rgba(255,215,0,.5) transparent;bottom:100%;left:20px;top:auto}
+#zp-tour-bubble.arr-top::after{border-width:0 8px 8px 8px;border-color:transparent transparent #0b1627 transparent;bottom:calc(100% - 1px);left:21px;top:auto}
+/* arr-bottom: bubble зверху, стрілка виходить З НИЗУ bubble вниз до елемента */
+#zp-tour-bubble.arr-bottom::before{border-width:9px 9px 0 9px;border-color:rgba(255,215,0,.5) transparent transparent transparent;top:100%;left:20px;bottom:auto}
+#zp-tour-bubble.arr-bottom::after{border-width:8px 8px 0 8px;border-color:#0b1627 transparent transparent transparent;top:calc(100% - 1px);left:21px;bottom:auto}
+/* arr-left: bubble праворуч, стрілка виходить З ЛІВОГО БОКУ bubble вліво до елемента */
+#zp-tour-bubble.arr-left::before{border-width:9px 9px 9px 0;border-color:transparent rgba(255,215,0,.5) transparent transparent;right:100%;left:auto;top:var(--arr-top,18px)}
+#zp-tour-bubble.arr-left::after{border-width:8px 8px 8px 0;border-color:transparent #0b1627 transparent transparent;right:calc(100% - 1px);left:auto;top:calc(var(--arr-top,18px) + 1px)}
+/* arr-right: bubble ліворуч, стрілка виходить З ПРАВОГО БОКУ bubble вправо до елемента */
+#zp-tour-bubble.arr-right::before{border-width:9px 0 9px 9px;border-color:transparent transparent transparent rgba(255,215,0,.5);left:100%;right:auto;top:var(--arr-top,18px)}
+#zp-tour-bubble.arr-right::after{border-width:8px 0 8px 8px;border-color:transparent transparent transparent #0b1627;left:calc(100% - 1px);right:auto;top:calc(var(--arr-top,18px) + 1px)}
+</style>
 <!--------->
 
 <div id="preloader">
@@ -114,27 +159,50 @@ body{visibility:hidden}
 </div>
 <canvas width="1365" height="953"></canvas>
 <header id="topbar">
-  <div id="logo"><span id="logo-star">&#9733;</span> <em id="logo-em">Зоряна</em> Памʼять<span id="app-version" style="font-size:9px;color:#4a5a6a;margin-left:7px;font-weight:400;letter-spacing:.04em;vertical-align:middle">v2.42 beta</span></div>
+  <a id="logo" href="/promo/" title="Про проєкт" style="text-decoration:none;color:inherit;cursor:pointer"><span id="logo-star">&#9733;</span> <em id="logo-em">Зоряна</em> Памʼять<span id="app-version" style="font-size:9px;color:#4a5a6a;margin-left:7px;font-weight:400;letter-spacing:.04em;vertical-align:middle">v2.42 beta</span></a>
   <div class="tstat"><span id="icon-people">👥</span> <strong id="sttotal">0</strong>&nbsp;людей</div>
   <div class="tstat"><span id="icon-likes">⭐</span> <strong id="stlikes">0</strong>&nbsp;зірок</div>
   <div class="tstat"><span class="tdot"></span><strong id="stonline">—</strong>&nbsp;онлайн</div>
+  <div class="tb-break"></div>
   <div id="smoke-ctrl" onclick="toggleSmoke()" title="Ефект диму вкл/викл">
     <span id="smoke-lbl">Дим увімкнено</span>
     <div id="btn-smoke" class="smoke-toggle active"><div class="smoke-thumb"></div></div>
-  </div> 
-  
-<div id="sw">
-    <span class="sico"><i class="fi fi-rr-search"></i></span>
-    <input type="text" id="search" placeholder="Пошук за іменем, позивним, місцем…" autocomplete="off">
-    <button id="search-clear" onclick="si.value='';closeDrop();this.style.display='none';" title="Очистити">✕</button>
-    <div id="sdrop"></div>
   </div>
+  <div id="sw">
+    <div id="map-mode-bar" style="display:none">
+      <div id="map-mode-toggle" onclick="setMapMode(_mapMode==='ukraine'?'world':'ukraine')" title="Перемкнути карту">
+        <div id="mmt-track"><div id="mmt-thumb"></div></div>
+        <div id="mmt-labels">
+          <span id="mmt-ua">
+            <svg width="14" height="10" viewBox="0 0 28 20" style="border-radius:2px;flex-shrink:0"><rect width="28" height="10" fill="#005BBB"/><rect y="10" width="28" height="10" fill="#FFD500"/></svg>
+            UA
+          </span>
+          <span id="mmt-sep">|</span>
+          <span id="mmt-world">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+            World
+          </span>
+        </div>
+      </div>
+    </div>
+    <button id="view-switcher" onclick="vsSwitchTo('mobile')" title="Мобільна версія">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><circle cx="12" cy="17" r="1" fill="currentColor" stroke="none"/></svg>
+      Мобільна
+    </button>
+    <div id="sw-input">
+      <span class="sico"><i class="fi fi-rr-search"></i></span>
+      <input type="text" id="search" placeholder="Пошук за іменем, позивним, місцем…" autocomplete="off">
+      <button id="search-clear" onclick="si.value='';closeDrop();this.style.display='none';" title="Очистити">✕</button>
+      <div id="sdrop"></div>
+    </div>
+  </div>
+  <div class="tb-break"></div>
   <span id="un" onclick="openProfile()" style="cursor:pointer" title="Мій профіль"></span>
   <button id="btn-profile" onclick="openProfile()" style="display:none">Профіль</button>
   <button id="btn-logout" onclick="doLogout()">Вийти</button>
-  <button id="btn-auth" onclick="openAuth()">Увійти</button>
-  <button id="btn-add" onclick="onAdd()"><span class="add-ico">+</span><span class="add-txt"> ДОДАТИ</span></button>
-  <a id="btn-coffee" href="https://www.buymeacoffee.com" target="_blank" rel="noopener noreferrer" title="Підтримати розробника"><span class="cf-ico">☕</span><span class="cf-txt">Кава адміну</span></a>
+  <button id="btn-auth" onclick="openAuth()" title="Увійти"><i class="fi fi-rr-sign-in-alt auth-ico"></i><span class="auth-txt"> Увійти</span></button>
+  <button id="btn-add" onclick="onAdd()"><i class="fi fi-rr-plus add-ico"></i><span class="add-txt"> Додати</span></button>
+  <a id="btn-coffee" href="https://send.monobank.ua/jar/3Q5N8FwVvY" target="_blank" rel="noopener noreferrer" title="Підтримати розробника"><span class="cf-ico">☕</span><span class="cf-txt">Кава адміну</span></a>
 </header>
 
 <div id="map-wrap">
@@ -2198,13 +2266,17 @@ body{visibility:hidden}
        style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:visible;opacity:0;transition:opacity .5s ease"></svg>
   <canvas id="canvas-layer"></canvas>
   <div id="pick-bar">&#128205; Клікніть на карті — місце поховання</div>
+
+  <!-- Контейнер для Leaflet (карта світу) -->
+  <div id="world-map-container" style="position:absolute;top:0;left:0;width:100%;height:100%;z-index:10;display:none"></div>
+
   <button class="zbtn" id="btn-fs" onclick="toggleFullscreen()" title="Повноекранний режим">
     <svg id="fs-icon" viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
       <path d="M3 3h6v2H5v4H3V3zm12 0h6v6h-2V5h-4V3zM3 15h2v4h4v2H3v-6zm16 4h-4v2h6v-6h-2v4z"/>
     </svg>
   </button>
 
-   <div style="
+   <div id="copyright-bar" style="
     position: fixed;
     bottom: 20px;
     right: 115px;
@@ -2215,7 +2287,7 @@ body{visibility:hidden}
     white-space: nowrap;
     text-align: right;
     ">
-    © 2026 <b style="color:#929191;">TREETEX</b> NPO · All rights reserved
+    © 2026 <a id="treetex-npo" href="/portfolio/" style="color:#929191;text-decoration:none"><b style="color:#929191;">TREETEX</b> NPO</a> · All rights reserved
     <span style="font-size:10px;">Denys KOSHELENKO</span>
     </div>
 
@@ -2226,6 +2298,26 @@ body{visibility:hidden}
     <button class="zbtn" id="zout">&#8722;</button>
     <button class="zbtn" style="font-size:11px" id="zrst">&#8962;</button>
   </div>
+  <!-- ── Мікро-чат ── -->
+  <div id="micro-chat" class="mc-hidden">
+    <div id="mc-header">
+      <span id="mc-title">💬 Чат</span>
+      <span id="mc-badge"></span>
+      <button id="mc-toggle" title="Згорнути/розгорнути">−</button>
+    </div>
+    <div id="mc-body">
+      <div id="mc-messages"></div>
+      <div id="mc-input-row" style="display:flex">
+        <input id="mc-input" type="text" maxlength="100" placeholder="Написати…" autocomplete="off">
+        <button id="mc-send" title="Надіслати">›</button>
+      </div>
+      <div id="mc-chars" style="font-size:9px;color:#2a4a5a;text-align:right;padding:0 8px 3px;display:none">0/100</div>
+      <div id="mc-auth-hint" style="display:none;font-size:9px;color:#4a7a8a;text-align:center;padding:2px 8px 4px">
+        Гість: 1 повідомлення кожні 10 хв
+      </div>
+    </div>
+  </div>
+
   <div id="bottom-blocks">
     <div id="count"><strong id="btotal">0</strong><span>у памʼяті</span></div>
     <div id="site-rules">
@@ -2281,10 +2373,10 @@ body{visibility:hidden}
       <div id="cvideo-container"></div>
       <div id="cvideo-hint" style="font-size:9px;color:var(--muted);text-align:center;margin-top:4px;opacity:.6;display:none">ПРОБІЛ — звук вкл/викл</div>
     </div>
-    <button id="detail-btn" onclick="openDetailCard()" style="display:flex;align-items:center;justify-content:center;gap:7px;width:100%;margin-bottom:8px;padding:10px 16px;border-radius:10px;border:1px solid rgba(240,181,74,.45);background:rgba(240,181,74,.08);color:#f0b54a;font-family:'Unbounded',sans-serif;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;transition:background .2s,box-shadow .2s" onmouseover="this.style.background='rgba(240,181,74,.18)';this.style.boxShadow='0 3px 14px rgba(240,181,74,.25)'" onmouseout="this.style.background='rgba(240,181,74,.08)';this.style.boxShadow='none'">
+    <a id="detail-btn" href="#" target="_blank" rel="noopener" style="display:flex;align-items:center;justify-content:center;gap:7px;width:100%;margin-bottom:8px;padding:10px 16px;border-radius:10px;border:1px solid rgba(240,181,74,.45);background:rgba(240,181,74,.08);color:#f0b54a;font-family:'Unbounded',sans-serif;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;transition:background .2s,box-shadow .2s;text-decoration:none;box-sizing:border-box" onmouseover="this.style.background='rgba(240,181,74,.18)';this.style.boxShadow='0 3px 14px rgba(240,181,74,.25)'" onmouseout="this.style.background='rgba(240,181,74,.08)';this.style.boxShadow='none'">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
       Детальніше
-    </button>
+    </a>
     <button id="lbtn" onclick="doLike()">
       <span>&#11088;</span><span>Зірка памʼяті</span><span id="lcnt">0</span>
     </button>
@@ -2356,8 +2448,9 @@ body{visibility:hidden}
         <div class="fg">
           <label>Нік * <span id="cnt-nick" style="float:right;font-size:10px;color:var(--muted)">0/50</span></label>
           <input id="r-nick" maxlength="50" placeholder="oleg_ua або oleg_ua" autocomplete="username"
-            oninput="_fNick(this,'cnt-nick','hint-nick')" onblur="_blurNick(this,'hint-nick')">
+            oninput="_fNick(this,'cnt-nick','hint-nick');_checkAvailField('nick',this.value,'r-nick-avail')" onblur="_blurNick(this,'hint-nick')">
           <div id="hint-nick" class="f-hint inf">Укр/лат літери, цифри, _ . -</div>
+          <span id="r-nick-avail" class="f-hint"></span>
         </div>
       </div>
       <!-- Рядок 3: Email + Телефон -->
@@ -2365,8 +2458,9 @@ body{visibility:hidden}
         <div class="fg">
           <label>Email *</label>
           <input type="email" id="r-email" maxlength="100" placeholder="you@email.com" autocomplete="email"
-            oninput="_fEmail(this,'hint-email')" onblur="_fEmail(this,'hint-email')">
+            oninput="_fEmail(this,'hint-email');_checkAvailField('email',this.value,'r-email-avail')" onblur="_fEmail(this,'hint-email')">
           <div id="hint-email" class="f-hint"></div>
+          <span id="r-email-avail" class="f-hint"></span>
         </div>
         <div class="fg" id="freg-phone">
           <label id="lbl-phone">Телефон</label>
@@ -2441,11 +2535,14 @@ body{visibility:hidden}
         Продовжити з Google
       </a>
       <a href="/api/auth/diia" class="oauth-btn oauth-diia">
-        <svg width="20" height="20" viewBox="0 0 32 32" aria-hidden="true" fill="none">
-          <circle cx="16" cy="16" r="16" fill="#FFD700" opacity=".15"/>
-          <text x="16" y="22" text-anchor="middle" font-size="13" font-weight="700" fill="#FFD700" font-family="sans-serif">Дія</text>
-        </svg>
-        Продовжити з Дія
+        <span class="diia-row">
+          <svg width="20" height="20" viewBox="0 0 32 32" aria-hidden="true" fill="none">
+            <circle cx="16" cy="16" r="16" fill="#fff" opacity=".1"/>
+            <text x="16" y="22" text-anchor="middle" font-size="13" font-weight="700" fill="#fff" font-family="sans-serif">Дія</text>
+          </svg>
+          Продовжити з Дія
+        </span>
+        <span class="diia-unavail">тимчасово не працює</span>
       </a>
     </div>
   </div>
@@ -2571,9 +2668,24 @@ body{visibility:hidden}
         <div class="csw" style="background:#80cbc4" data-c="#80cbc4"></div>
       </div>
     </div>
-    <p class="plbl">&#128205; Місце поховання на карті: <strong id="pstatus">не обрано</strong></p>
-    <div class="ph" onclick="startPick()">&#128506; Клікніть щоб поставити точку на карті</div>
+    <div id="faward-block" style="display:none;margin-bottom:12px">
+      <label style="display:block;margin-bottom:6px;font-size:13px;color:var(--text-secondary,#aaa)">Нагороди та відзнаки <span style="font-size:11px;opacity:.6">(необов'язково)</span></label>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:6px">
+        <input type="text" id="faward-search" placeholder="Пошук нагороди..."
+          style="flex:1;min-width:110px;padding:6px 10px;border-radius:6px;border:1px solid var(--border2,#333);background:var(--surface2,#1a1a2e);color:var(--text,#e0e0e0);font-size:12px">
+        <select id="faward-sel"
+          style="flex:2;min-width:150px;padding:6px 8px;border-radius:6px;border:1px solid var(--border2,#333);background:var(--surface2,#1a1a2e);color:var(--text,#e0e0e0);font-size:12px">
+          <option value="">— обрати нагороду —</option>
+        </select>
+        <button type="button" onclick="_userAddAward()" style="padding:6px 14px;border-radius:6px;background:#0a4f7a;color:#a8e0f8;border:1px solid rgba(0,136,187,.6);font-size:12px;cursor:pointer;white-space:nowrap">+ Додати</button>
+      </div>
+      <div id="faward-list"></div>
+    </div>
+    <p class="plbl" style="margin-bottom:6px">&#128205; Місце загибелі / поховання: <strong id="pstatus" style="color:#4ade80">не обрано</strong></p>
+    <div id="madd-map" style="height:260px;border-radius:10px;border:1px solid rgba(255,255,255,.15);overflow:hidden;margin-bottom:6px"></div>
+    <p style="font-size:11px;color:rgba(255,255,255,.35);margin:0 0 8px">Клікніть на карті щоб поставити мітку · Мітку можна перетягнути</p>
     <input type="hidden" id="fpx"><input type="hidden" id="fpy">
+    <input type="hidden" id="fwlat"><input type="hidden" id="fwlng">
     <button class="fsub" onclick="submitAdd()">&#10022; НАДІСЛАТИ НА МОДЕРАЦІЮ</button>
   </div>
 </div>
@@ -2643,6 +2755,145 @@ function _densityMinScore(scale) {
 }
 // ─────────────────────────────────────────────────────────
 
+/* ── Карта світу (Leaflet) ─────────────────────────────── */
+let _worldMap = null;
+let _worldMapReady = false;
+let _mapMode = 'ukraine';
+let _worldMarkersLayer = null;
+
+// pos_x/pos_y (0..1 відносно SVG України) → географічні [lat, lng]
+function _p2ll(px, py) {
+  return [
+    (1 - py) * (52.37 - 43.95) + 43.95,
+    px * (41.03 - 22.15) + 22.15
+  ];
+}
+
+// Генерує SVG-рядок зіркової форми (pts кінців)
+function _starSvgPath(cx, cy, outer, inner, pts) {
+  const step = Math.PI / pts;
+  let d = '';
+  for (let i = 0; i < pts * 2; i++) {
+    const rv = i % 2 === 0 ? outer : inner;
+    const a = i * step - Math.PI / 2;
+    d += (i === 0 ? 'M' : 'L') + (cx + rv * Math.cos(a)).toFixed(2) + ',' + (cy + rv * Math.sin(a)).toFixed(2);
+  }
+  return d + 'Z';
+}
+
+function _renderWorldMarkers() {
+  if (!_worldMapReady || !_worldMap) return;
+  if (_worldMarkersLayer) {
+    _worldMarkersLayer.clearLayers();
+  } else {
+    _worldMarkersLayer = L.featureGroup().addTo(_worldMap);
+  }
+  if (!people || !people.length) return;
+
+  // Унікальна фаза анімації для кожного маркера (offset затримки)
+  people.forEach(p => {
+    if (!p || !isFinite(p.x) || !isFinite(p.y)) return;
+    const [lat, lng] = (p.world_lat != null && p.world_lng != null)
+      ? [parseFloat(p.world_lat), parseFloat(p.world_lng)]
+      : _p2ll(p.x, p.y);
+    const color = p.color || '#4fc3f7';
+    const rn = p._rn ?? 0;
+    const pts = rn > 0.5 ? 5 : 4;
+    const sz = 13;
+    const cx = sz / 2, cy = sz / 2;
+    const outer = sz * 0.46;
+    const inner = outer * (rn > 0.5 ? 0.40 : 0.35);
+    const delay = (((p.id || 0) * 2654435761) >>> 0) % 3000 / 1000;
+    const starPath = _starSvgPath(cx, cy, outer, inner, pts);
+    const starPathSoft = _starSvgPath(cx, cy, outer * 1.55, inner * 1.55, pts);
+    const rl = sz * 0.42;
+    // Без SVG filter — два шари зірки (м'який + чіткий) + промені через opacity
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${sz}" height="${sz}" viewBox="0 0 ${sz} ${sz}" style="overflow:visible">
+      <g style="animation:wstar-pulse 2.8s ${delay.toFixed(2)}s ease-in-out infinite alternate">
+        <path d="${starPathSoft}" fill="${color}" opacity="0.28"/>
+        <rect x="${(cx-0.7).toFixed(1)}" y="${(cy-rl).toFixed(1)}" width="1.4" height="${(rl*2).toFixed(1)}" fill="${color}" opacity="0.32"/>
+        <rect x="${(cx-rl).toFixed(1)}" y="${(cy-0.7).toFixed(1)}" width="${(rl*2).toFixed(1)}" height="1.4" fill="${color}" opacity="0.32"/>
+        <path d="${starPath}" fill="${color}" opacity="0.93"/>
+        <circle cx="${cx}" cy="${cy}" r="${(outer*0.28).toFixed(2)}" fill="rgba(255,255,255,0.95)"/>
+      </g>
+    </svg>`;
+    const icon = L.divIcon({
+      html: svg,
+      className: '',
+      iconSize: [sz, sz],
+      iconAnchor: [cx, cy]
+    });
+    const marker = L.marker([lat, lng], { icon });
+    const dupes = people.filter(x=>x._dupKey&&x._dupKey===p._dupKey&&x.id!==p.id);
+    const hasVid = !!_ytExtractId(p.video_url);
+    const tipHtml =
+      `<div class="tn">${h(p.last)} ${h(p.first)}</div>` +
+      `<div class="tl">&#9875; ${h(p.bury)||'—'}</div>` +
+      `<div class="ts">&#11088; ${p.likes||0}${dupes.length?' &nbsp;&#128279;'+dupes.length+' збіг':''}${hasVid?' &nbsp;&#9654; відео':''}</div>`;
+    marker.bindTooltip(tipHtml, {sticky: true, opacity: 1, className: 'lf-tip', offset: [10, 0]});
+    marker.on('click', () => {
+      openCard(p);
+    });
+    _worldMarkersLayer.addLayer(marker);
+  });
+}
+
+function _initWorldMap() {
+  if (_worldMapReady || typeof L === 'undefined') return;
+  const tileUrl = getC('worldmap_tile_url') ||
+    'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+  _worldMap = L.map('world-map-container', {
+    center: [49.0, 32.0],
+    zoom: 5,
+    zoomControl: false,
+    attributionControl: true,
+    minZoom: 2,
+    maxZoom: 18,
+    renderer: L.canvas()
+  });
+  L.tileLayer(tileUrl, {
+    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/">CARTO</a>',
+    subdomains: 'abcd',
+    maxZoom: 20
+  }).addTo(_worldMap);
+  _worldMapReady = true;
+
+  _renderWorldMarkers();
+}
+
+function setMapMode(mode) {
+  if (mode === _mapMode) return;
+  _mapMode = mode;
+  localStorage.setItem('zp_map_mode', mode);
+
+  const worldCont = document.getElementById('world-map-container');
+  const svgLayer  = document.getElementById('svg-layer');
+  const cvLayer   = document.getElementById('canvas-layer');
+  const cityOvl   = document.getElementById('city-overlay');
+  const seaEl     = document.getElementById('sea-svg');
+
+  if (mode === 'world') {
+    _initWorldMap();
+    if (worldCont) worldCont.style.display = '';
+    if (svgLayer)  svgLayer.style.display  = 'none';
+    if (cvLayer)   cvLayer.style.display   = 'none';
+    if (cityOvl)   cityOvl.style.display   = 'none';
+    if (seaEl)     seaEl.style.display     = 'none';
+    _canvasLoopRunning = false;
+    setTimeout(() => { _worldMap && _worldMap.invalidateSize(); _renderWorldMarkers(); }, 60);
+  } else {
+    if (worldCont) worldCont.style.display = 'none';
+    if (svgLayer)  svgLayer.style.display  = '';
+    if (cvLayer)   cvLayer.style.display   = '';
+    if (cityOvl)   cityOvl.style.display   = '';
+    if (seaEl && getC('sea_enabled') === '1') seaEl.style.display = '';
+    _startCanvasLoop();
+  }
+
+  document.getElementById('map-mode-toggle')?.classList.toggle('mode-world', mode === 'world');
+}
+/* ── /Карта світу ──────────────────────────────────────── */
+
 async function loadColors() {
   try {
     const r = await fetch(API+'/api/colors');
@@ -2652,6 +2903,7 @@ async function loadColors() {
     applyColors();
     applySocialLinks();
     _applyRegSettings();
+    window._showDevModalIfNeeded?.();
     const ver = COLORS['app_version']?.value;
     if (ver) {
       const el = document.getElementById('app-version');
@@ -2676,7 +2928,19 @@ async function loadColors() {
       window.gtag = function(){ dataLayer.push(arguments); };
       gtag('js', new Date()); gtag('config', gaId);
     }
-  } catch { console.warn('Кольори не завантажено — використовуємо типові'); }
+    // ── Карта світу: показати/сховати toggle + відновити режим ──
+    const wmEnabled = getC('worldmap_enabled') === '1';
+    const modeBar = document.getElementById('map-mode-bar');
+    if (modeBar) modeBar.style.display = wmEnabled ? 'flex' : 'none';
+    if (wmEnabled) {
+      const saved = localStorage.getItem('zp_map_mode')
+        || (getC('worldmap_default') === '1' ? 'world' : 'ukraine');
+      if (saved === 'world' && _mapMode !== 'world') setMapMode('world');
+    } else if (_mapMode === 'world') {
+      setMapMode('ukraine');
+    }
+    // ── /Карта світу ─────────────────────────────────────────
+  } catch { console.warn('Кольори не завантажено — використовуємо типові'); applySocialLinks(); }
 }
 
 function _applyRegSettings() {
@@ -2728,6 +2992,14 @@ function _applyRegSettings() {
     hintPhone.className = 'f-hint ' + (fieldPhone === 'required' ? '' : 'inf');
   }
 
+  // ── Мобільна версія ────────────────────────────────────
+  const mobileEnabled = g('mobile_enabled','1') === '1';
+  const mobileBlock = document.getElementById('mobile-blocked');
+  if (mobileBlock) {
+    const isMobile = window.innerWidth < 768 || ('ontouchstart' in window && window.innerWidth < 1024);
+    mobileBlock.style.display = (!mobileEnabled && isMobile) ? 'flex' : 'none';
+  }
+
   // ── Мінімальна довжина пароля ───────────────────────────
   const minPass = parseInt(g('reg_min_pass_len','10')) || 10;
   const lblPMin = document.getElementById('lbl-pass-min');
@@ -2752,12 +3024,14 @@ function applySocialLinks() {
     .split(',').map(s => s.trim()).filter(Boolean);
 
   // Показ/URL
+  let visibleCount = 0;
   order.forEach(cls => {
     const el = bar.querySelector(`.soc-link.${cls}`);
     if (!el) return;
     const on  = getC('social_'+cls, '1') !== '0';
     const url = getC('social_'+cls+'_url', '');
-    el.style.display = on ? '' : 'none';
+    el.style.display = on ? 'flex' : 'none';  // 'flex' щоб зняти inline display:none
+    if (on) visibleCount++;
     el.href = url || '#';
   });
 
@@ -2768,6 +3042,9 @@ function applySocialLinks() {
     const el = row.querySelector(`.soc-link.${cls}`);
     if (el) row.appendChild(el);
   });
+
+  // Ховаємо весь блок якщо жодна іконка не увімкнена
+  bar.style.display = visibleCount > 0 ? '' : 'none';
 }
 
 function getC(key, fallback='') {
@@ -2805,12 +3082,34 @@ function applyColors() {
       stroke: ${c('oblast_stroke') || '#1e4a7a'};
       stroke-width: 2px;
     }
+    #ukraine-svg g[data-rid] path, #ukraine-svg g[data-rid] polygon {
+      stroke: transparent;
+      stroke-width: 1px;
+    }
+    #ukraine-svg #contours path {
+      fill: none;
+      stroke: ${c('city_border') || 'rgba(100,140,180,0.4)'};
+      stroke-width: 1px;
+    }
+    #ukraine-svg #contours {
+      filter: none;
+    }
     #count strong { color: ${c('yellow2') || '#f0c030'}; }
-    #btn-add { background: linear-gradient(135deg, ${c('btn_add_bg')||'#0e2860'}, #0088bb); color: ${c('btn_add_text')||'#a8e0f8'}; }
     #svg-layer.zoom-city #ukraine-svg g path,
     #svg-layer.zoom-city #ukraine-svg g polygon {
       stroke: ${c('city_border') || 'rgba(40,110,180,.55)'};
       stroke-width: 1px;
+    }
+    #svg-layer.zoom-city #ukraine-svg g[data-rid] path,
+    #svg-layer.zoom-city #ukraine-svg g[data-rid] polygon {
+      stroke: transparent;
+    }
+    #svg-layer.zoom-city #ukraine-svg #contours path {
+      stroke: ${c('city_border') || 'rgba(100,140,180,0.45)'};
+      stroke-width: 1px;
+    }
+    #svg-layer.zoom-city #ukraine-svg #contours {
+      filter: none;
     }
   `;
   // Іконки сайту
@@ -2850,6 +3149,10 @@ function applyColors() {
     _applyCookiePrefs(); // читаємо збережений стан з куки
   }
   _applySmokeState();   // застосовуємо до UI і WebGL (враховує smoke_enabled)
+
+  // Кнопка «Кава адміну»
+  const coffeeBtn = document.getElementById('btn-coffee');
+  if (coffeeBtn) coffeeBtn.style.display = getC('show_coffee') === '0' ? 'none' : '';
 }
 function applySmokeConfig() {
   const fc = window._fluidConfig;
@@ -3006,6 +3309,9 @@ function getSvgBounds() {
 window.addEventListener('resize',resize); resize();
 
 const _cityOverlay=document.getElementById('city-overlay');
+const _elZoomScale=document.getElementById('zoom-scale');
+let _mwRect=null;
+window.addEventListener('resize',()=>{ _svgBoundsCache=null; _mwRect=null; });
 
 // Update Ukraine+sea SVG viewBoxes to match the current tr (pan/zoom).
 // This replaces CSS transform on #svg-layer — SVG paths render at full
@@ -3032,15 +3338,19 @@ function updateMapSvgViewBox() {
   if(seaSvg)seaSvg.style.transform=`translate(${tr.x.toFixed(1)}px,${tr.y.toFixed(1)}px) scale(${tr.s})`;
 }
 
+let _scaleLabelRaf=null;
+function _scheduleScaleCityLabels(){
+  if(_scaleLabelRaf)return;
+  _scaleLabelRaf=requestAnimationFrame(()=>{ _scaleLabelRaf=null; scaleCityLabels(); });
+}
 function applyTr() {
   _canvasDirty = true; // карта рухається → canvas має перемалюватись синхронно
-  const _zs = document.getElementById('zoom-scale');
-  if (_zs) _zs.textContent = '×' + tr.s.toFixed(1);
+  if(_elZoomScale) _elZoomScale.textContent='×'+tr.s.toFixed(1);
   updateMapSvgViewBox();
   const zc=tr.s>=(window.CITY_BORDER_ZOOM||2.5);
   sl.classList.toggle('zoom-city',zc);
   sl.classList.toggle('zoom-deep',tr.s>=5);
-  scaleCityLabels();
+  _scheduleScaleCityLabels();
   if(_cityOverlay)_cityOverlay.style.opacity=zc?'1':'0';
 }
 // Throttle applyTr to one call per rAF frame — avoids SVG layout storm during drag/wheel
@@ -3111,7 +3421,7 @@ function flyTo(xr,yr,ts) {
   })(t0);
 }
 
-function dotR(p) { return(2+(p._rn??0)*3.5)*_cachedSqrtS; }
+function dotR(p) { return(1.5+(p._rn??0)*2.8)*_cachedSqrtS; }
 function hit(sx,sy) {
   let best=null,bd=Infinity;
   for(const p of people){const pos=w2s(p.x,p.y);const d=Math.hypot(sx-pos.x,sy-pos.y);const r=dotR(p)*3+10;if(d<r&&d<bd){best=p;bd=d;}}
@@ -3119,7 +3429,8 @@ function hit(sx,sy) {
 }
 
 mw.addEventListener('mousedown',e=>{
-  if(e.target.closest('#zoom,#count'))return;
+  if(e.target.closest('#zoom,#count,#bottom-blocks,#micro-chat,#social-bar,#pick-bar,#topbar,.mov,.zbtn,.btn,button,[role="button"]'))return;
+  if(document.querySelector('#dev-modal[style*="flex"],.mov.open'))return;
   if(isPick){const r=mw.getBoundingClientRect();const w=s2w(e.clientX-r.left,e.clientY-r.top);if(pickCb)pickCb(w);return;}
   drag=true;dragS={x:e.clientX,y:e.clientY};trS={x:tr.x,y:tr.y};mw.classList.add('grabbing');
 });
@@ -3135,6 +3446,7 @@ window.addEventListener('mousemove',e=>{
   if(typeof SilenceModule!=='undefined')SilenceModule._primeAudio();
   if(drag){tr.x=trS.x+(e.clientX-dragS.x);tr.y=trS.y+(e.clientY-dragS.y);clampTr();scheduleApplyTr();document.getElementById('tip').style.display='none';return;}
   _lastMX=e.clientX;_lastMY=e.clientY;
+  if(_mapMode==='world'){document.getElementById('tip').style.display='none';return;}
   if(_mousePending)return;
   _mousePending=true;
   requestAnimationFrame(()=>{
@@ -3240,10 +3552,14 @@ window.addEventListener('keydown',e=>{
 });
 window.addEventListener('mouseup',e=>{
   const was=drag;drag=false;mw.classList.remove('grabbing');
+  if(e.target.closest('#zoom,#count,#bottom-blocks,#micro-chat,#social-bar,#pick-bar,#topbar,.mov,.zbtn,.btn,button,[role="button"]'))return;
+  if(document.querySelector('#dev-modal[style*="flex"],.mov.open'))return;
   if(was&&Math.hypot(e.clientX-dragS.x,e.clientY-dragS.y)>5)return;
-  const r=mw.getBoundingClientRect();const p=hit(e.clientX-r.left,e.clientY-r.top);
-  if(p&&!isPick){openCard(p);flyTo(p.x,p.y,Math.max(tr.s,3.5));}
+  if(!_mwRect) _mwRect=mw.getBoundingClientRect();
+  const p=hit(e.clientX-_mwRect.left,e.clientY-_mwRect.top);
+  if(p&&!isPick&&_mapMode!=='world'){openCard(p);flyTo(p.x,p.y,Math.max(tr.s,3.5));}
 });
+let _zoomPauseTimer = null;
 mw.addEventListener('wheel',e=>{
   e.preventDefault();
   const now=performance.now();
@@ -3251,7 +3567,8 @@ mw.addEventListener('wheel',e=>{
   // Пауза > 1.5с → скидаємо «борг» _vZoom: наступний скрол реагує з поточного зуму
   if(now - _lastWheel > 1500) _vZoom=tr.s;
   _lastWheel = now;
-  const r=mw.getBoundingClientRect();
+  if(!_mwRect) _mwRect=mw.getBoundingClientRect();
+  const r=_mwRect;
   let dy=e.deltaY;
   if(e.deltaMode===1) dy*=30;
   else if(e.deltaMode===2) dy*=300;
@@ -3261,11 +3578,27 @@ mw.addEventListener('wheel',e=>{
   // На мінімумі + прокрутка вниз → скок на x1
   if(dy>0 && tr.s<=(window.ZOOM_MIN||0.4)+0.01){resetView();return;}
   const f=Math.pow(0.999,dy);
+  // Тимчасово зупиняємо WebGL-симуляцію під час zoom — звільняє GPU для SVG
+  if(window._fluidConfig&&!window._fluidConfig.PAUSED){
+    window._fluidConfig.PAUSED=true;
+    if(_zoomPauseTimer)clearTimeout(_zoomPauseTimer);
+    _zoomPauseTimer=setTimeout(()=>{if(window._fluidConfig)window._fluidConfig.PAUSED=false;},120);
+  }
   wheelZoom(e.clientX-r.left,e.clientY-r.top,f);
 },{passive:false});
-document.getElementById('zin').onclick  =()=>zoomAt(W/2,H/2,1.28);
-document.getElementById('zout').onclick =()=>{if(tr.s<=(window.ZOOM_MIN||0.4)+0.01){resetView();return;}zoomAt(W/2,H/2,0.78);};
-document.getElementById('zrst').onclick =resetView;
+document.getElementById('zin').onclick  =()=>{
+  if(_mapMode==='world'&&_worldMap){_worldMap.zoomIn();return;}
+  zoomAt(W/2,H/2,1.28);
+};
+document.getElementById('zout').onclick =()=>{
+  if(_mapMode==='world'&&_worldMap){_worldMap.zoomOut();return;}
+  if(tr.s<=(window.ZOOM_MIN||0.4)+0.01){resetView();return;}
+  zoomAt(W/2,H/2,0.78);
+};
+document.getElementById('zrst').onclick =()=>{
+  if(_mapMode==='world'&&_worldMap){_worldMap.setView([49.0,32.0],5);return;}
+  resetView();
+};
 
 function toggleFullscreen(){
   if(!document.fullscreenElement){
@@ -3341,19 +3674,64 @@ function drawNeonThreads(visIds) {
   ctx.restore();
 }
 
+// ── Зіркова форма: pts кінці, inner — радіус западин ──────
+function _drawStar(cx,cy,outer,inner,pts){
+  const step=Math.PI/pts;
+  ctx.beginPath();
+  for(let i=0;i<pts*2;i++){
+    const rv=i%2===0?outer:inner;
+    const a=i*step-Math.PI/2;
+    i===0?ctx.moveTo(cx+rv*Math.cos(a),cy+rv*Math.sin(a))
+         :ctx.lineTo(cx+rv*Math.cos(a),cy+rv*Math.sin(a));
+  }
+  ctx.closePath();
+}
+
+// Кеш градієнтів свічення (ключ = color+radius, скидається при зміні zoom)
+const _glowCache = new Map();
+let _glowCacheZoom = -1;
+
 function drawDotFX(p, pos, pulse) {
   const rn=p._rn??0;
   const r=dotR(p);
   const isH=hovId===p.id, isS=selId===p.id;
-  // ── свічення (завжди увімкнено, конфігуроване) ──────────
+  // ── радіальне свічення (з кешем градієнтів) ─────────────
   const gr=r*(_dotGlowR+rn*2)*pulse;
   if(gr>0&&isFinite(gr)){
-    const baseA=_dotGlowInt*pulse*(isH||isS?2.2:1);
-    const grd=ctx.createRadialGradient(pos.x,pos.y,0,pos.x,pos.y,gr);
-    grd.addColorStop(0,   `rgba(${p._r},${p._g},${p._b},${Math.min(1,baseA*.85).toFixed(2)})`);
-    grd.addColorStop(0.45,`rgba(${p._r},${p._g},${p._b},${Math.min(1,baseA*.35).toFixed(2)})`);
-    grd.addColorStop(1,   `rgba(${p._r},${p._g},${p._b},0)`);
-    ctx.beginPath();ctx.arc(pos.x,pos.y,gr,0,Math.PI*2);ctx.fillStyle=grd;ctx.fill();
+    const baseA=_dotGlowInt*pulse*(isH||isS?2.5:1);
+    // Кешуємо градієнт по кольору+радіусу (відтворюємо якщо zoom змінився)
+    const zKey=Math.round(tr.s*10);
+    if(zKey!==_glowCacheZoom){_glowCache.clear();_glowCacheZoom=zKey;}
+    const gKey=`${p.color}|${gr.toFixed(1)}`;
+    let grd=_glowCache.get(gKey);
+    if(!grd){
+      grd=ctx.createRadialGradient(0,0,0,0,0,gr);
+      grd.addColorStop(0,   `rgba(${p._r},${p._g},${p._b},${Math.min(1,baseA*.9).toFixed(2)})`);
+      grd.addColorStop(0.4, `rgba(${p._r},${p._g},${p._b},${Math.min(1,baseA*.4).toFixed(2)})`);
+      grd.addColorStop(1,   `rgba(${p._r},${p._g},${p._b},0)`);
+      _glowCache.set(gKey,grd);
+    }
+    ctx.save();
+    ctx.translate(pos.x,pos.y);
+    ctx.beginPath();ctx.arc(0,0,gr,0,Math.PI*2);ctx.fillStyle=grd;ctx.fill();
+    ctx.restore();
+  }
+  // ── хрест-промені без ctx.filter (градієнтні прямокутники) ─
+  if(gr>0&&isFinite(gr)){
+    const gl=gr*0.82;
+    const alpha=Math.min(0.45,0.18*pulse*_dotGlowInt*(isH||isS?2:1));
+    // Вертикальний промінь — градієнт зверху вниз
+    const vg=ctx.createLinearGradient(pos.x,pos.y-gl,pos.x,pos.y+gl);
+    vg.addColorStop(0,`rgba(${p._r},${p._g},${p._b},0)`);
+    vg.addColorStop(0.5,`rgba(${p._r},${p._g},${p._b},${alpha.toFixed(2)})`);
+    vg.addColorStop(1,`rgba(${p._r},${p._g},${p._b},0)`);
+    ctx.fillStyle=vg;ctx.fillRect(pos.x-0.8,pos.y-gl,1.6,gl*2);
+    // Горизонтальний промінь
+    const hg=ctx.createLinearGradient(pos.x-gl,pos.y,pos.x+gl,pos.y);
+    hg.addColorStop(0,`rgba(${p._r},${p._g},${p._b},0)`);
+    hg.addColorStop(0.5,`rgba(${p._r},${p._g},${p._b},${alpha.toFixed(2)})`);
+    hg.addColorStop(1,`rgba(${p._r},${p._g},${p._b},0)`);
+    ctx.fillStyle=hg;ctx.fillRect(pos.x-gl,pos.y-0.8,gl*2,1.6);
   }
   // ── неонове кільце для дублікатів ───────────────────────
   if(p._hasDupe){const ringR=r*4.5+Math.sin(animT*2.5+(p.id||0))*r*.5;ctx.beginPath();ctx.arc(pos.x,pos.y,ringR,0,Math.PI*2);ctx.strokeStyle=`rgba(0,200,255,${(.12+.08*Math.sin(animT*2)).toFixed(2)})`;ctx.lineWidth=1;ctx.stroke();}
@@ -3371,12 +3749,11 @@ function _startCanvasLoop() {
   (function loop(ts){
     if(document.hidden){_canvasLoopRunning=false;return;}
     requestAnimationFrame(loop);
-    // При русі карти — 30fps, в стані спокою — 20fps
+    // При русі карти — 30fps, в стані спокою — 15fps
     const _dirty=_canvasDirty; _canvasDirty=false;
-    const cap=_dirty?33:50;
+    const cap=_dirty?33:67;
     if(ts - _lastCanvasFrame < cap) return;
     _lastCanvasFrame = ts;
-    _svgBoundsCache = null;
     _cachedSqrtS = Math.min(Math.sqrt(tr.s), 2.5);
     animT+=.033;ctx.clearRect(0,0,W,H);
     // Pre-compute visible dots + індивідуальний pulse кожної зірки
@@ -3407,27 +3784,42 @@ function _startCanvasLoop() {
     if(!_dirty){
       for(const {p,pos,pulse} of _vis)drawDotFX(p,pos,pulse);
     }
-    // Pass 2: основні кола зі змазаними краями (blur → реалістична зірка)
+    // Pass 2a: м'яке тіло зірки (трохи більша, напівпрозора — імітує blur без GPU)
     const _cb=new Map();
-    for(const {p,pos} of _vis){
+    for(const {p,pos,pulse} of _vis){
       const r=dotR(p);
+      const rPulse=r*(0.92+0.08*pulse);
+      const inner=rPulse*0.35;
       if(!_cb.has(p.color))_cb.set(p.color,[]);
-      _cb.get(p.color).push({pos,r});
+      _cb.get(p.color).push({pos,outer:rPulse*1.5,inner:inner*1.5});
     }
-    ctx.save();
-    ctx.filter='blur(1.2px)';
+    ctx.globalAlpha=0.35;
     for(const[color,dots]of _cb){
       ctx.beginPath();ctx.fillStyle=color;
-      for(const{pos,r}of dots){ctx.moveTo(pos.x+r,pos.y);ctx.arc(pos.x,pos.y,r,0,Math.PI*2);}
+      for(const{pos,outer,inner}of dots)_drawStar(pos.x,pos.y,outer,inner,4);
       ctx.fill();
     }
-    ctx.restore();
-    // Pass 3: яскраве біле ядро поверх (пульсує асинхронно, без blur)
+    // Pass 2b: чітке тіло зірки (основний розмір, повна непрозорість)
+    const _cb2=new Map();
+    for(const {p,pos,pulse} of _vis){
+      const r=dotR(p);
+      const rPulse=r*(0.92+0.08*pulse);
+      const inner=rPulse*0.35;
+      if(!_cb2.has(p.color))_cb2.set(p.color,[]);
+      _cb2.get(p.color).push({pos,outer:rPulse,inner});
+    }
+    ctx.globalAlpha=1;
+    for(const[color,dots]of _cb2){
+      ctx.beginPath();ctx.fillStyle=color;
+      for(const{pos,outer,inner}of dots)_drawStar(pos.x,pos.y,outer,inner,4);
+      ctx.fill();
+    }
+    // Pass 3: яскраве біле ядро (серцевина зірки)
+    ctx.fillStyle='rgba(255,255,255,0.95)';
     for(const {p,pos,pulse} of _vis){
       const r=dotR(p);const isH=hovId===p.id,isS=selId===p.id;
-      ctx.globalAlpha=Math.min(1,(0.3+0.65*pulse)*(isH||isS?1.4:1));
-      ctx.beginPath();ctx.arc(pos.x,pos.y,r*.38,0,Math.PI*2);
-      ctx.fillStyle='rgba(255,255,255,0.92)';ctx.fill();
+      ctx.globalAlpha=Math.min(1,(0.4+0.6*pulse)*(isH||isS?1.5:1));
+      ctx.beginPath();ctx.arc(pos.x,pos.y,r*0.28,0,Math.PI*2);ctx.fill();
     }
     ctx.globalAlpha=1;
     for(let i=particles.length-1;i>=0;i--){if(particles[i].age>=1)particles.splice(i,1);}
@@ -3449,7 +3841,8 @@ function initSVGBorders() {
   firstPaths.slice(6).forEach(p=>{p.style.stroke=ny;p.style.strokeWidth='3';p.style.filter='';});
 
   // ── Межі населених пунктів (всі path всередині g[data-rid]) ─────────
-  const sc = getC('settlement_stroke','rgba(255,255,255,0.35)');
+  // За замовчуванням — невидимі (transparent). Можна ввімкнути через settlement_stroke в адмінці.
+  const sc = getC('settlement_stroke','transparent');
   const allSettlePaths = [];
   groups.forEach(g=>{
     g.querySelectorAll('path,polygon').forEach(p=>{
@@ -3484,13 +3877,14 @@ function initSVGBorders() {
   firstPaths.slice(6).forEach(p=>{p.style.stroke=ny;p.style.strokeWidth='3';p.style.vectorEffect='';});
 
   // ── Внутрішні кордони областей (contours group) ─────
-  const glowHex = getC('glow_color','#ffd700');
-  const spread  = Math.max(6, Math.min(120, parseInt(getC('glow_spread','28'))));
-  const s1=Math.round(spread*0.15), s2=Math.round(spread*0.43), s3=spread;
+  // Stroke і filter керуються через CSS у applyColors() за rayon_border — не ставимо inline.
   const contours=svg.querySelector('#contours');
   if(contours){
-    contours.querySelectorAll('path').forEach(p=>{p.style.stroke=glowHex;p.style.strokeWidth='5';});
-    contours.style.filter=`drop-shadow(0 0 ${s1}px ${glowHex}) drop-shadow(0 0 ${s2}px ${glowHex}cc) drop-shadow(0 0 ${s3}px ${glowHex}77)`;
+    contours.querySelectorAll('path').forEach(p=>{
+      p.style.stroke='';p.style.strokeWidth='';
+      p.style.vectorEffect='non-scaling-stroke';
+    });
+    contours.style.filter=''; // filter керується CSS
   }
 
   // ── Зовнішнє свічення всієї країни ──────────────────
@@ -3559,7 +3953,9 @@ function renderCityLabels(){
     {r:9, fs:20, fw:'700', dot:'rgba(220,240,255,1.0)' },
   ];
 
-  cities.forEach(city=>{
+  const _citiesEnabled = getC('cities_ua_enabled', '1') !== '0';
+  const _visibleCities = _citiesEnabled ? cities : cities.filter(c => (c.tier||0) >= 2);
+  _visibleCities.forEach(city=>{
     const name=city.name, cx=city.pos_x*14000, cy=city.pos_y*9500, tier=Math.min(city.tier||0,3);
     const c=cfg[tier];
 
@@ -3608,10 +4004,11 @@ function renderCityLabels(){
 
 function scaleCityLabels(){
   if(!_cityLabelGroups.length) return;
+  const b=getSvgBounds();
   _cityLabelGroups.forEach(lg=>{
     const cx=+lg.dataset.cx, cy=+lg.dataset.cy;
-    const sx=(cx * tr.s * W / 14000 + tr.x).toFixed(1);
-    const sy=(cy * tr.s * H / 9500  + tr.y).toFixed(1);
+    const sx=((b.x + cx/14000*b.w) * tr.s + tr.x).toFixed(1);
+    const sy=((b.y + cy/9500 *b.h) * tr.s + tr.y).toFixed(1);
     lg.setAttribute('transform',`translate(${sx},${sy})`);
   });
 }
@@ -3621,6 +4018,8 @@ async function loadData() {
   try {
     const [rs,rc]=await Promise.all([fetch(API+'/api/stats'),fetch(API+'/api/cities')]);
     const stats=await rs.json();cities=await rc.json();
+    // Передобчислюємо нормалізовані назви для пошуку
+    cities.forEach(c=>{ c._nameNorm=(c.name||'').toLowerCase(); c._nameLat=_cityTranslit(c.name); });
     _setPL(20, 'Список захисників...');
     // Пагіноване завантаження всіх записів (по 100 за раз)
     let allPeople=[];
@@ -3641,6 +4040,7 @@ async function loadData() {
     }
     const raw=allPeople;
     people=raw.map(p=>({...p,x:parseFloat(p.pos_x??p.x??0.5),y:parseFloat(p.pos_y??p.y??0.5),grp:p.grp||''}));
+    if (_mapMode === 'world') _renderWorldMarkers();
     // Ключ зв'язку: ПІБ + дата нар. + дата смерті (незалежно від поля grp)
     people.forEach(p=>{
       const last=(p.last||'').trim().toLowerCase();
@@ -3734,6 +4134,8 @@ function _renderCardDetails(p){
 async function openCard(p){
   activePerson=p;
   selId=p.id;
+  const _dBtn=document.getElementById('detail-btn');
+  if(_dBtn){const _slug=p.slug||String(p.id);_dBtn.href='/card?slug='+encodeURIComponent(_slug);}
 
   // ── Фаза 1: одразу показуємо базові дані (є в легкому списку) ──
   _setText('cname',`${p.last} ${p.first} ${p.mid||''}`.trim());
@@ -3775,11 +4177,6 @@ async function openCard(p){
     _renderCardDetails(full);
   }catch(e){}
 }
-function openDetailCard(){
-  if(!activePerson) return;
-  const slug = activePerson.slug || String(activePerson.id);
-  window.open('/card?slug=' + encodeURIComponent(slug), '_blank');
-}
 function closeCard(){
   document.getElementById('card').classList.remove('open');
   selId=null; activePerson=null;
@@ -3798,9 +4195,78 @@ let AWARDS_DATA = [];
 (async () => {
   try {
     const r = await fetch(`${API}/api/awards/catalog`);
-    AWARDS_DATA = (await r.json()).map(a => ({name: a.name, file: a.img_file, desc: a.description||''}));
+    AWARDS_DATA = (await r.json()).map(a => ({name: a.name, file: a.img_file, category: a.category||'badge', desc: a.description||''}));
+    _initUserAwardSel();
+    const fb = document.getElementById('faward-block');
+    if (fb && AWARDS_DATA.length) fb.style.display = '';
   } catch { /* fallback: порожній список */ }
 })();
+
+// ── Форма користувача: нагороди ──
+let _userAwards = [];
+const _UA_CAT_LTR = {hero:'З', order:'О', cross:'Х', medal:'М', badge:'В'};
+
+function _initUserAwardSel() {
+  const sel = document.getElementById('faward-sel');
+  const srch = document.getElementById('faward-search');
+  if (!sel) return;
+  const GROUPS = {hero:'Вищі звання', order:'Ордени', cross:'Хрести', medal:'Медалі', badge:'Відзнаки/Знаки'};
+  function rebuild(q) {
+    q = (q||'').toLowerCase();
+    sel.innerHTML = '<option value="">— обрати нагороду —</option>';
+    const byG = {};
+    AWARDS_DATA.forEach((a, i) => {
+      if (q && !a.name.toLowerCase().includes(q)) return;
+      const c = a.category || 'badge';
+      (byG[c] || (byG[c] = [])).push({i, a});
+    });
+    Object.entries(GROUPS).forEach(([c, lbl]) => {
+      if (!byG[c]) return;
+      const og = document.createElement('optgroup'); og.label = lbl;
+      byG[c].forEach(({i, a}) => { const o = document.createElement('option'); o.value = i; o.textContent = a.name; og.appendChild(o); });
+      sel.appendChild(og);
+    });
+  }
+  rebuild('');
+  if (srch) {
+    if (srch._rebuildFn) srch.removeEventListener('input', srch._rebuildFn);
+    srch._rebuildFn = e => rebuild(e.target.value);
+    srch.addEventListener('input', srch._rebuildFn);
+  }
+}
+
+function _userAddAward() {
+  const sel = document.getElementById('faward-sel');
+  if (!sel || sel.value === '') return;
+  const aw = AWARDS_DATA[parseInt(sel.value)];
+  if (!aw) return;
+  if (_userAwards.find(a => a.name === aw.name)) { sel.value = ''; return; }
+  _userAwards.push({name: aw.name, file: aw.file, category: aw.category || 'badge'});
+  _renderUserAwards();
+  sel.value = '';
+}
+
+function _userRemoveAward(i) {
+  _userAwards.splice(i, 1);
+  _renderUserAwards();
+}
+
+function _renderUserAwards() {
+  const el = document.getElementById('faward-list');
+  if (!el) return;
+  if (!_userAwards.length) { el.innerHTML = ''; return; }
+  el.innerHTML = _userAwards.map((a, i) => {
+    const letter = _UA_CAT_LTR[a.category] || '★';
+    const ph = `<div style="width:28px;height:28px;border-radius:4px;background:#1a1a2e;display:flex;align-items:center;justify-content:center;font-size:13px;color:#555;font-weight:700;flex-shrink:0">${letter}</div>`;
+    const imgHtml = a.file
+      ? `<img src="/img/awards/${encodeURIComponent(a.file)}" style="width:28px;height:28px;object-fit:contain;flex-shrink:0" onerror="this.outerHTML='${ph.replace(/"/g,"'")}'">` : ph;
+    return `<div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.07)">
+      ${imgHtml}
+      <span style="flex:1;font-size:12px;color:#ccc">${h(a.name)}</span>
+      <button type="button" onclick="_userRemoveAward(${i})" style="background:none;border:none;color:#f87171;cursor:pointer;font-size:14px;padding:2px 6px">✕</button>
+    </div>`;
+  }).join('');
+}
 
 function _wikiImg(file, w){
   return `/img/awards/${encodeURIComponent(file)}`;
@@ -3910,7 +4376,48 @@ function startPanelLikesRefresh() {
 
 /* ── Search (розширений) ── */
 const si = document.getElementById('search'), sd = document.getElementById('sdrop');
-let sT = null, sIdx = -1, sResults = [], searchActive = false;
+let sT = null, sIdx = -1, sResults = [], searchActive = false, _cityResults = [];
+
+/* UA/RU → Latin транслітерація для пошуку міст */
+const _CITY_TRANSLIT = {
+  'а':'a','б':'b','в':'v','г':'h','ґ':'g','д':'d','е':'e','є':'ie','ж':'zh',
+  'з':'z','и':'y','і':'i','ї':'i','й':'i','к':'k','л':'l','м':'m','н':'n',
+  'о':'o','п':'p','р':'r','с':'s','т':'t','у':'u','ф':'f','х':'kh','ц':'ts',
+  'ч':'ch','ш':'sh','щ':'shch','ь':'','ю':'iu','я':'ia',
+  // Кириличні символи рос. розкладки:
+  'ё':'ie','ы':'y','э':'e','ъ':'',
+};
+function _cityTranslit(s){
+  return (s||'').toLowerCase().split('').map(c=>_CITY_TRANSLIT[c]??c).join('');
+}
+
+function searchCities(q){
+  if(!q||q.length<2)return[];
+  const ql=q.toLowerCase(), qlat=_cityTranslit(q);
+  return cities.map(c=>{
+    const nm=c._nameNorm||'', nl=c._nameLat||'';
+    let sc=0;
+    if(nm===ql)              sc=10;
+    else if(nm.startsWith(ql))sc=8;
+    else if(nm.includes(ql)) sc=5;
+    if(!sc){
+      if(nl===qlat)               sc=9;
+      else if(nl.startsWith(qlat))sc=7;
+      else if(nl.includes(qlat))  sc=4;
+      else if(nl.startsWith(ql))  sc=6;
+      else if(nl.includes(ql))    sc=3;
+    }
+    return sc>0?{...c,_score:sc+(c.tier||0)}:null;
+  }).filter(Boolean).sort((a,b)=>b._score-a._score).slice(0,5);
+}
+
+function pickCity(idx){
+  const c=_cityResults[idx]; if(!c)return;
+  closeDrop(); si.value=c.name;
+  const zoomTo=c.tier>=2?4:c.tier===1?3.5:3;
+  flyTo(c.pos_x,c.pos_y,Math.max(tr.s,zoomTo));
+  highlightMap([]);
+}
 
 /* --- Highlight: підсвічує збіг у рядку --- */
 function hlText(str, q) {
@@ -3959,6 +4466,41 @@ function renderDrop(results, q) {
   sd.style.display = 'block';
 }
 
+/* --- Комбінований рендер: міста + меморіали --- */
+function renderDropCombined(cityRes, peopleRes, q){
+  const parts=[];
+  if(cityRes.length){
+    parts.push('<div class="sdi-section-hdr">Населені пункти</div>');
+    cityRes.forEach((c,i)=>{
+      const tierLabel=['','обл. центр','місто','столиця'][c.tier]||'';
+      const tierHtml=tierLabel?`<span class="sdi-tier">${tierLabel}</span>`:'';
+      parts.push(`<div class="sdi${i===sIdx?' sdi-active':''}" onmousedown="pickCity(${i})">
+        <div class="sdi-city-ico"></div>
+        <div class="sdi-body"><div class="sdi-name">${hlText(c.name,q)}${tierHtml}</div></div>
+      </div>`);
+    });
+  }
+  if(peopleRes.length){
+    if(cityRes.length) parts.push('<div class="sdi-section-hdr">Меморіали</div>');
+    peopleRes.forEach((p,i)=>{
+      const gi=cityRes.length+i;
+      const name=hlText(`${p.last} ${p.first} ${p.mid||''}`.trim(),q);
+      const call=p.callsign?`<span class="sdi-call">${hlText(p.callsign,q)}</span>`:'';
+      const loc=hlText(p.location||p.bury||'—',q);
+      parts.push(`<div class="sdi${gi===sIdx?' sdi-active':''}" onmousedown="pickRes(${i})">
+        <div class="sdi-dot" style="background:${h(p.color)}"></div>
+        <div class="sdi-body">
+          <div class="sdi-name">${name}${call}</div>
+          <div class="sdi-loc">&#9875; ${loc}${p.likes?` &middot; &#11088; ${p.likes}`:''}</div>
+        </div>
+      </div>`);
+    });
+  }
+  if(!cityRes.length&&!peopleRes.length)
+    parts.push('<div class="sdi sdi-empty">Нічого не знайдено</div>');
+  sd.innerHTML=parts.join(''); sd.style.display='block';
+}
+
 /* --- Підсвітка точок на карті --- */
 function highlightMap(results) {
   const ids = new Set(results.map(r => r.id));
@@ -3997,21 +4539,26 @@ function closeDrop() {
 /* --- Основна функція пошуку --- */
 async function doSearch(q) {
   if (q.length < 2) { closeDrop(); return; }
-
-  // Показуємо loader
-  sd.innerHTML = '<div class="sdi sdi-loader"><span class="sld"></span>Пошук…</div>';
-  sd.style.display = 'block';
   searchActive = true;
 
+  // ① МИТТЄВО: міста (клієнт, без мережі)
+  _cityResults = searchCities(q);
+  if (_cityResults.length) {
+    renderDropCombined(_cityResults, [], q);
+  } else {
+    sd.innerHTML = '<div class="sdi sdi-loader"><span class="sld"></span>Пошук…</div>';
+    sd.style.display = 'block';
+  }
+
+  // ② АСИНХРОННО: меморіали
   try {
     const resp = await fetch(`${API}/api/search?q=${encodeURIComponent(q)}`);
     if (!resp.ok) throw new Error('err');
     sResults = await resp.json();
     sIdx = -1;
-    renderDrop(sResults, q);
+    renderDropCombined(_cityResults, sResults, q);
     highlightMap(sResults);
   } catch {
-    // Fallback: локальний пошук по масиву people
     const ql = q.toLowerCase();
     sResults = people
       .filter(p => `${p.last} ${p.first} ${p.mid||''} ${p.grp||''} ${p.loc||''}`
@@ -4024,29 +4571,36 @@ async function doSearch(q) {
         color: p.color, likes: p.likes || 0
       }));
     sIdx = -1;
-    renderDrop(sResults, q);
+    renderDropCombined(_cityResults, sResults, q);
     highlightMap(sResults);
   }
 }
 
-/* --- Клавіатурна навігація --- */
+/* --- Клавіатурна навігація (міста + меморіали) --- */
 si.addEventListener('keydown', e => {
   if (!searchActive && sd.style.display === 'none') return;
+  const totalLen = _cityResults.length + sResults.length;
   if (e.key === 'ArrowDown') {
     e.preventDefault();
-    sIdx = Math.min(sIdx + 1, sResults.length - 1);
-    renderDrop(sResults, si.value.trim());
-    // Scroll до активного елемента
+    sIdx = Math.min(sIdx + 1, totalLen - 1);
+    renderDropCombined(_cityResults, sResults, si.value.trim());
     const active = sd.querySelector('.sdi-active');
     if (active) active.scrollIntoView({ block: 'nearest' });
   } else if (e.key === 'ArrowUp') {
     e.preventDefault();
     sIdx = Math.max(sIdx - 1, -1);
-    renderDrop(sResults, si.value.trim());
+    renderDropCombined(_cityResults, sResults, si.value.trim());
   } else if (e.key === 'Enter') {
     e.preventDefault();
-    if (sIdx >= 0) pickRes(sIdx);
-    else if (sResults.length) pickRes(0);
+    if (sIdx >= 0 && sIdx < _cityResults.length) {
+      pickCity(sIdx);
+    } else if (sIdx >= _cityResults.length) {
+      pickRes(sIdx - _cityResults.length);
+    } else if (_cityResults.length) {
+      pickCity(0);
+    } else if (sResults.length) {
+      pickRes(0);
+    }
   } else if (e.key === 'Escape') {
     closeDrop();
     si.blur();
@@ -4085,6 +4639,12 @@ function updateAuthUI(){
     un.textContent=nick;un.style.display='block';bl.style.display='block';ba.style.display='none';
     if(bp)bp.style.display='none';
   }else{un.style.display='none';bl.style.display='none';ba.style.display='block';if(bp)bp.style.display='none';}
+  // Повідомити WS про зміну стану користувача
+  if(window._onlineWS&&window._onlineWS.readyState===1){
+    if(curUser)window._onlineWS.send('user:'+(curUser.name||'')+'|'+(curUser.role||'user'));
+  }
+  window.curUser = curUser;
+  if(typeof _mcUpdateAuthState==='function') _mcUpdateAuthState();
 }
 function openAuth(){document.getElementById('mauth').classList.add('open');}
 function closeAuth(){document.getElementById('mauth').classList.remove('open');}
@@ -4383,6 +4943,30 @@ async function _sendCodeRequest(email, f) {
   return d;
 }
 
+const _availTimers = {};
+async function _checkAvailField(type, val, statusId) {
+  const el = document.getElementById(statusId);
+  if (!el) return;
+  val = (val || '').trim();
+  if (val.length < 2) { el.textContent = ''; el.className = 'f-hint'; return; }
+  el.textContent = '…'; el.className = 'f-hint inf';
+  clearTimeout(_availTimers[statusId]);
+  _availTimers[statusId] = setTimeout(async () => {
+    try {
+      const r = await fetch(API + '/api/auth/check-availability?type=' + type + '&value=' + encodeURIComponent(val));
+      if (!r.ok) { el.textContent = ''; el.className = 'f-hint'; return; }
+      const d = await r.json();
+      if (!d || d.available === null) {
+        if (d && d.error) { el.textContent = '⚠ ' + d.error; el.className = 'f-hint err'; }
+        else { el.textContent = ''; el.className = 'f-hint'; }
+        return;
+      }
+      if (d.available) { el.textContent = '✓ Вільний'; el.className = 'f-hint ok'; }
+      else { el.textContent = '✗ Вже зайнятий'; el.className = 'f-hint err'; }
+    } catch { el.textContent = ''; el.className = 'f-hint'; }
+  }, 600);
+}
+
 async function doSendCode() {
   const f = _collectRegData();
   if (!_validateRegForm(f)) return;
@@ -4514,43 +5098,116 @@ function onAdd(){
   if(!curUser){showN("Спочатку увійдіть або зареєструйтесь",true);openAuth();return;}
   openAdd();
 }
-function openAdd(){document.getElementById('madd').classList.add('open');}
-function closeAdd(){document.getElementById('madd').classList.remove('open');stopPick();}
+/* ── World map picker (Leaflet) для форми "Додати загиблого" ── */
+let _maddMap = null, _maddMarker = null;
+function _latLngToSvg(lat, lng) {
+  return {
+    x: parseFloat(((lng - 22.15) / (41.03 - 22.15)).toFixed(4)),
+    y: parseFloat((1 - (lat - 43.95) / (52.37 - 43.95)).toFixed(4))
+  };
+}
+function _initMaddMap() {
+  if (_maddMap) { _maddMap.invalidateSize(); return; }
+  _maddMap = L.map('madd-map', {center:[49.0,32.0], zoom:5, attributionControl:false});
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {maxZoom:19, attribution:''}).addTo(_maddMap);
+  _maddMap.on('click', function(e) { _maddMapSetPoint(e.latlng.lat, e.latlng.lng); });
+}
+function _maddMapSetPoint(lat, lng) {
+  const ll = L.latLng(lat, lng);
+  if (_maddMarker) {
+    _maddMarker.setLatLng(ll);
+  } else {
+    _maddMarker = L.marker(ll, {draggable:true}).addTo(_maddMap);
+    _maddMarker.on('dragend', function(ev) {
+      _maddMapSetPoint(ev.target.getLatLng().lat, ev.target.getLatLng().lng);
+    });
+  }
+  const svg = _latLngToSvg(lat, lng);
+  document.getElementById('fpx').value = svg.x;
+  document.getElementById('fpy').value = svg.y;
+  document.getElementById('fwlat').value = lat.toFixed(6);
+  document.getElementById('fwlng').value = lng.toFixed(6);
+  const ps = document.getElementById('pstatus');
+  if (ps) { ps.textContent = 'lat: '+lat.toFixed(4)+', lng: '+lng.toFixed(4); ps.style.color='#4ade80'; }
+}
+
+function openAdd(){
+  document.getElementById('madd').classList.add('open');
+  setTimeout(function(){
+    _initMaddMap();
+    setTimeout(function(){ if(_maddMap) _maddMap.invalidateSize(); }, 150);
+  }, 50);
+}
+function closeAdd(){
+  document.getElementById('madd').classList.remove('open');
+  stopPick();
+  // Скидаємо статус для наступного відкриття
+  document.getElementById('fwlat').value='';
+  document.getElementById('fwlng').value='';
+  document.getElementById('fpx').value='';
+  document.getElementById('fpy').value='';
+  const ps=document.getElementById('pstatus');
+  if(ps){ps.textContent='не обрано';ps.style.color='';}
+  if(_maddMarker){_maddMarker.remove();_maddMarker=null;}
+}
 document.getElementById('crow').addEventListener('click',e=>{
   const sw=e.target.closest('.csw');if(!sw)return;
   document.querySelectorAll('.csw').forEach(s=>s.classList.remove('sel'));sw.classList.add('sel');selColor=sw.dataset.c;
 });
-function startPick(){
-  closeAdd();isPick=true;mw.classList.add('picking');document.getElementById('pick-bar').classList.add('on');
-  pickCb=w=>{document.getElementById('fpx').value=w.x.toFixed(4);document.getElementById('fpy').value=w.y.toFixed(4);document.getElementById('pstatus').textContent=`x=${w.x.toFixed(3)}, y=${w.y.toFixed(3)}`;stopPick();openAdd();};
-}
+function startPick(){} // Карта тепер вбудована у форму — функція залишена для сумісності
 function stopPick(){isPick=false;pickCb=null;mw.classList.remove('picking');document.getElementById('pick-bar').classList.remove('on');}
 async function submitAdd(){
   const last=document.getElementById('flast').value.trim();
   const first=document.getElementById('ffirst').value.trim();
+  const wlat=document.getElementById('fwlat').value;
+  const wlng=document.getElementById('fwlng').value;
+  if(!last||!first){showN("Введіть прізвище та імʼя",true);return;}
+  if(!wlat||!wlng){showN("Оберіть місце на карті",true);return;}
   const px=document.getElementById('fpx').value;
   const py=document.getElementById('fpy').value;
-  if(!last||!first){showN("Введіть прізвище та імʼя",true);return;}
-  if(!px||!py){showN("Оберіть місце поховання на карті",true);return;}
-  const body={last,first,mid:document.getElementById('fmid').value.trim(),birth:document.getElementById('fbirth').value||null,death:document.getElementById('fdeath').value||null,loc:document.getElementById('floc').value.trim(),bury:document.getElementById('fbury').value.trim(),circ:document.getElementById('fcirc').value,descr:document.getElementById('fdesc').value.trim(),photo:document.getElementById('fphoto').value.trim(),video_url:document.getElementById('fvideo').value.trim(),color:selColor,pos_x:+px,pos_y:+py,added_by:curUser?.name||''};
-  try{const r=await fetch(API+'/api/people',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const d=await r.json();showN(d.message||"Надіслано на модерацію");}
-  catch{showN("Надіслано на модерацію (офлайн)");}
+  const body={last,first,mid:document.getElementById('fmid').value.trim(),birth:document.getElementById('fbirth').value||null,death:document.getElementById('fdeath').value||null,loc:document.getElementById('floc').value.trim(),bury:document.getElementById('fbury').value.trim(),circ:document.getElementById('fcirc').value,descr:document.getElementById('fdesc').value.trim(),photo:document.getElementById('fphoto').value.trim(),video_url:document.getElementById('fvideo').value.trim(),color:selColor,pos_x:+px,pos_y:+py,world_lat:+wlat,world_lng:+wlng,added_by:curUser?.name||'',awards:_userAwards.filter(a=>a.name).map(a=>({name:a.name,img_file:a.file||'',category:a.category||''}))};
+  try{
+    const r=await fetch(API+'/api/people',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const d=await r.json();
+    if(!r.ok){showN(d.detail||d.message||'Помилка відправки',true);return;}
+    showN(d.message||"Надіслано на модерацію");
+  }catch{showN("Помилка мережі. Спробуйте ще раз.",true);return;}
+  _userAwards=[]; _renderUserAwards();
   closeAdd();
-  // Оновимо дані
   setTimeout(loadData,500);
 }
 
-/* ── WS ── */
+/* ── Online counter: WebSocket + HTTP fallback ── */
 function connectWS(){
-  try{
-    const wsUrl=(window.API||'http://127.0.0.1:8000').replace(/^http/,'ws');
-    const ws=new WebSocket(`${wsUrl}/ws/online`);
-    ws.onopen=()=>{if(curUser)ws.send('user:'+curUser.name);};
-    ws.onmessage=e=>{try{const d=JSON.parse(e.data);if(d.online!==undefined)document.getElementById('stonline').textContent=d.online;}catch{}};
-    ws.onclose=()=>{document.getElementById('stonline').textContent='—';setTimeout(connectWS,3000);};
-    ws.onerror=()=>ws.close();
-    setInterval(()=>{if(ws.readyState===1)ws.send('ping');},25000);
-  }catch{document.getElementById('stonline').textContent='—';}
+  const el=document.getElementById('stonline');
+  // Унікальний ID вкладки — різний для кожної вкладки браузера
+  let tabId=sessionStorage.getItem('_tab_id');
+  if(!tabId){tabId=Math.random().toString(36).slice(2)+Date.now().toString(36);sessionStorage.setItem('_tab_id',tabId);}
+
+  let ws=null,wsOk=false,pingTimer=null,reconnTimer=null;
+
+  function httpPing(){
+    fetch('/api/online/ping',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tab_id:tabId})})
+      .then(r=>r.json()).then(d=>{if(d.online!==undefined)el.textContent=d.online;}).catch(()=>{});
+  }
+  function startFallback(){if(pingTimer)return;httpPing();pingTimer=setInterval(httpPing,25000);}
+  function stopFallback(){if(pingTimer){clearInterval(pingTimer);pingTimer=null;}}
+
+  function openWS(){
+    if(ws){try{ws.close();}catch{}}
+    const proto=location.protocol==='https:'?'wss':'ws';
+    ws=new WebSocket(`${proto}://${location.host}/ws/online`);
+    ws.onopen=()=>{
+      wsOk=true;stopFallback();window._onlineWS=ws;
+      if(curUser){ws.send('user:'+(curUser.name||'')+'|'+(curUser.role||'user'));}
+    };
+    ws.onmessage=e=>{try{const d=JSON.parse(e.data);if(d.online!==undefined)el.textContent=d.online;if(d.event==='chat_delete'&&window._mcOnDelete)window._mcOnDelete(d.id);}catch{}};
+    ws.onclose=()=>{wsOk=false;startFallback();if(reconnTimer)clearTimeout(reconnTimer);reconnTimer=setTimeout(openWS,5000);};
+    ws.onerror=()=>{ws.close();};
+  }
+
+  openWS();
+  setTimeout(()=>{if(!wsOk)startFallback();},3000);
 }
 
 /* ── Notif ── */
@@ -4652,12 +5309,14 @@ window.addEventListener('load', () => {
 /* ── LIVE COLOR UPDATES FROM ADMIN ── */
 function _onColorsBC(data) {
   if (!data || data.type !== 'colors_update') return;
+  const needCityRerender = 'cities_ua_enabled' in data.colors;
   Object.entries(data.colors).forEach(([k, v]) => {
     if (!COLORS[k]) COLORS[k] = { value: v, label: k };
     else COLORS[k].value = v;
   });
   if ('density_config' in data.colors) _DENSITY_CFG_CACHE = null;
   applyColors();
+  if (needCityRerender) renderCityLabels();
 }
 try {
   const _colorBC = new BroadcastChannel('zoryana_colors');
@@ -4706,10 +5365,59 @@ function _setPL(pct, label) {
   if (tEl && label) tEl.textContent = label;
 }
 
+/* ── View Switcher ── */
+function vsSetCookie(v){
+  const exp=new Date(Date.now()+365*24*3600*1000).toUTCString();
+  document.cookie='preferred_view='+v+';path=/;expires='+exp;
+}
+function vsSwitchTo(v){
+  vsSetCookie(v);
+  if(v==='mobile') window.location.href='/mobile';
+  // на desktop — вже тут, нічого не робимо
+}
+
+/* ── Device Access ── */
+function _deviceBlockPage(msg) {
+  return `<!DOCTYPE html><html lang="uk"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Зоряна Пам'ять</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;background:#03070e}
+body{display:flex;align-items:center;justify-content:center;min-height:100vh;
+  text-align:center;padding:24px;color:#d0dce8;font-family:sans-serif}
+.wrap{max-width:480px}
+.star{font-size:52px;margin-bottom:20px;color:#f0c030}
+h1{font-size:18px;font-weight:600;margin-bottom:12px;color:#f0c030}
+p{font-size:14px;color:#8a9cb0;line-height:1.6}
+</style></head><body>
+<div class="wrap">
+  <div class="star">&#9733;</div>
+  <h1>Зоряна Пам’ять</h1>
+  <p>${msg}</p>
+</div></body></html>`;
+}
+async function checkDeviceAccess() {
+  try {
+    const ctrl = new AbortController();
+    const tid = setTimeout(() => ctrl.abort(), 3000);
+    const r = await fetch('/api/device-status', { signal: ctrl.signal });
+    clearTimeout(tid);
+    if (!r.ok) return;
+    const d = await r.json();
+    const ua = navigator.userAgent;
+    let type = 'desktop';
+    if (/iPad|Tablet/i.test(ua)) type = 'tablet';
+    else if (/Mobile|Android|iPhone|iPod|BlackBerry|IEMobile|Opera Mini|webOS/i.test(ua)) type = 'mobile';
+    if (!d[type]) { document.open(); document.write(_deviceBlockPage(d.block_msg||'Версія сайту для вашого пристрою тимчасово недоступна.')); document.close(); }
+  } catch { /* timeout або мережева помилка — не блокуємо */ }
+}
+
 /* ── INIT ── */
 (async()=>{
   _setPL(0, 'Завантаження...');
   await loadColors();
+  await checkDeviceAccess();
   _setPL(15, 'Налаштування...');
   await loadData();
   _setPL(88, 'Підписи карти...');
@@ -4726,6 +5434,8 @@ function _setPL(pct, label) {
   document.body.style.visibility = 'visible';
   const pl=document.getElementById('preloader');
   if(pl) pl.classList.add('hidden');
+  if(typeof _tourStart==='function') _tourStart();
+  if(typeof _mcInit==='function') _mcInit();
 })();
 </script>
 
@@ -4827,28 +5537,28 @@ function closeInfo(id){document.getElementById('m-'+id).classList.remove('open')
 
 <div id="social-bar">
   <div class="soc-row">
-    <a href="#" class="soc-link facebook" target="_blank" rel="noopener noreferrer" title="Facebook">
+    <a href="#" class="soc-link facebook" style="display:none" target="_blank" rel="noopener noreferrer" title="Facebook">
       <img src="img/social/facebook.png" alt="Facebook">
     </a>
-    <a href="#" class="soc-link twitter" target="_blank" rel="noopener noreferrer" title="Twitter / X">
+    <a href="#" class="soc-link twitter" style="display:none" target="_blank" rel="noopener noreferrer" title="Twitter / X">
       <img src="img/social/twitter.png" alt="Twitter">
     </a>
-    <a href="#" class="soc-link instagram" target="_blank" rel="noopener noreferrer" title="Instagram">
+    <a href="#" class="soc-link instagram" style="display:none" target="_blank" rel="noopener noreferrer" title="Instagram">
       <img src="img/social/instagram.png" alt="Instagram">
     </a>
-    <a href="#" class="soc-link youtube" target="_blank" rel="noopener noreferrer" title="YouTube">
+    <a href="#" class="soc-link youtube" style="display:none" target="_blank" rel="noopener noreferrer" title="YouTube">
       <img src="img/social/youtube.png" alt="YouTube">
     </a>
-    <a href="#" class="soc-link telegram" target="_blank" rel="noopener noreferrer" title="Telegram">
+    <a href="#" class="soc-link telegram" style="display:none" target="_blank" rel="noopener noreferrer" title="Telegram">
       <img src="img/social/telegram.png" alt="Telegram">
     </a>
-    <a href="#" class="soc-link tiktok" target="_blank" rel="noopener noreferrer" title="TikTok">
+    <a href="#" class="soc-link tiktok" style="display:none" target="_blank" rel="noopener noreferrer" title="TikTok">
       <img src="img/social/tiktok.png" alt="TikTok">
     </a>
-    <a href="#" class="soc-link linkedin" target="_blank" rel="noopener noreferrer" title="LinkedIn">
+    <a href="#" class="soc-link linkedin" style="display:none" target="_blank" rel="noopener noreferrer" title="LinkedIn">
       <img src="img/social/linkedin.png" alt="LinkedIn">
     </a>
-    <a href="#" class="soc-link viber" target="_blank" rel="noopener noreferrer" title="Viber">
+    <a href="#" class="soc-link viber" style="display:none" target="_blank" rel="noopener noreferrer" title="Viber">
       <img src="img/social/viber.png" alt="Viber">
     </a>
 
@@ -4857,7 +5567,7 @@ function closeInfo(id){document.getElementById('m-'+id).classList.remove('open')
 </div>
 
 <!-- Cookie Consent & Disclaimer Banner -->
-<div id="cookie-consent" style="position: fixed; bottom: 0; left: 0; right: 0; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); color: #e0e0e0; padding: 20px 30px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 -4px 15px rgba(0,0,0,0.4); z-index: 1000; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+<div id="cookie-consent" style="position: fixed; bottom: 0; left: 0; right: 0; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); color: #e0e0e0; padding: 20px 30px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 -4px 15px rgba(0,0,0,0.4); z-index: 20000; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; pointer-events: auto;">
 
   <!-- 18+ Warning -->
   <div style="display: flex; align-items: center; gap: 8px; background: rgba(255,82,82,0.15); border: 1px solid rgba(255,82,82,0.4); border-radius: 6px; padding: 8px 12px; width: fit-content;">
@@ -4914,43 +5624,60 @@ function closeInfo(id){document.getElementById('m-'+id).classList.remove('open')
     const layer = document.getElementById('partners-layer');
     if (!layer) return;
     layer.innerHTML = '';
+    if (!list || !list.length) return;
+
     list.forEach(function(p) {
-      const wrap = document.createElement('a');
-      wrap.href = p.link_url || '#';
-      if (p.link_url) { wrap.target = '_blank'; wrap.rel = 'noopener noreferrer'; }
-      var baseOpacity = p.opacity;
-      wrap.style.cssText =
+      // Чорний блок для кожного партнера окремо
+      const box = document.createElement('a');
+      box.href = p.link_url || '#';
+      if (p.link_url) { box.target = '_blank'; box.rel = 'noopener noreferrer'; }
+      var baseOpacity = p.opacity != null ? p.opacity : 0.82;
+      box.style.cssText =
         'position:fixed;left:' + p.pos_x + 'px;top:' + p.pos_y + 'px;' +
-        'display:flex;flex-direction:column;align-items:center;gap:4px;' +
-        'opacity:' + baseOpacity + ';z-index:9990;text-decoration:none;' +
-        'transition:opacity 0.25s ease;' +
+        'display:inline-flex;flex-direction:column;align-items:center;gap:3px;' +
+        'z-index:9990;text-decoration:none;width:fit-content;' +
+        'background:rgba(8,10,14,.82);border:1px solid rgba(255,255,255,.1);' +
+        'border-radius:8px;padding:3px;box-sizing:border-box;' +
+        'backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);' +
+        'box-shadow:0 4px 18px rgba(0,0,0,.45);' +
+        'opacity:' + baseOpacity + ';' +
+        'transition:opacity 0.25s ease,box-shadow 0.25s ease;' +
         'cursor:' + (p.link_url ? 'pointer' : 'default') + ';';
-      wrap.addEventListener('mouseenter', function() { this.style.opacity = '1'; });
-      wrap.addEventListener('mouseleave', function() { this.style.opacity = baseOpacity; });
+      box.addEventListener('mouseenter', function() {
+        this.style.opacity = '1';
+        this.style.boxShadow = '0 6px 28px rgba(0,0,0,.7)';
+      });
+      box.addEventListener('mouseleave', function() {
+        this.style.opacity = baseOpacity;
+        this.style.boxShadow = '0 4px 18px rgba(0,0,0,.45)';
+      });
+
       const img = document.createElement('img');
       img.src = p.image_url;
       img.alt = p.name || '';
-      img.style.cssText = 'width:' + p.width + 'px;height:auto;display:block;';
+      img.style.cssText = 'width:' + p.width + 'px;height:auto;display:block;object-fit:contain;margin:0;padding:0;';
       img.onerror = function() {
         const fb = document.createElement('div');
         fb.style.cssText =
-          'width:' + p.width + 'px;min-height:48px;' +
+          'width:' + p.width + 'px;min-height:36px;' +
           'background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);' +
-          'border-radius:8px;display:flex;align-items:center;justify-content:center;' +
-          'font-size:11px;color:#ccc;padding:8px;text-align:center;box-sizing:border-box';
+          'border-radius:6px;display:flex;align-items:center;justify-content:center;' +
+          'font-size:11px;color:#ccc;padding:6px;text-align:center;box-sizing:border-box';
         fb.textContent = p.name || '?';
         this.parentNode.replaceChild(fb, this);
       };
-      wrap.appendChild(img);
+      box.appendChild(img);
+
       if (p.caption) {
         const cap = document.createElement('span');
         cap.textContent = p.caption;
         cap.style.cssText =
-          'font-size:11px;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.8);' +
-          'text-align:center;max-width:140px;line-height:1.3;pointer-events:none';
-        wrap.appendChild(cap);
+          'font-size:10px;color:rgba(255,255,255,.5);letter-spacing:.04em;' +
+          'text-align:center;max-width:120px;line-height:1.3;pointer-events:none';
+        box.appendChild(cap);
       }
-      layer.appendChild(wrap);
+
+      layer.appendChild(box);
     });
   }
 
@@ -4970,6 +5697,296 @@ function closeInfo(id){document.getElementById('m-'+id).classList.remove('open')
   window.addEventListener('storage', function(e) {
     if (e.key === '_bc_zoryana_partners') try { var d = JSON.parse(e.newValue); if (d && d.cmd === 'reload') load(); } catch {}
   });
+})();
+</script>
+
+<div id="too-small-overlay">
+  <div id="too-small-box">
+    <div id="too-small-icon">
+      <svg viewBox="0 0 64 64" width="80" height="80" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="10" y="6" width="44" height="52" rx="5"/>
+        <line x1="22" y1="23" x2="42" y2="41"/>
+        <line x1="42" y1="23" x2="22" y2="41"/>
+      </svg>
+    </div>
+    <div id="too-small-title">Вибачте</div>
+    <div id="too-small-msg">
+      Ваш пристрій має занадто малий екран<br>
+      для коректного відображення сайту.<br><br>
+      Будь ласка, скористайтесь пристроєм<br>
+      з більшим екраном.
+    </div>
+  </div>
+</div>
+<script>
+(function() {
+  function alignSocialBar() {
+    var bar  = document.getElementById('social-bar');
+    var info = document.getElementById('site-rules');
+    if (!bar || !info) return;
+    var isPhoneLandscape = window.innerHeight <= 480 && window.innerWidth > window.innerHeight;
+    if (isPhoneLandscape) {
+      var r = info.getBoundingClientRect();
+      bar.style.left = (r.right + 18) + 'px';
+    } else {
+      bar.style.left = '';
+    }
+  }
+  window.addEventListener('resize', alignSocialBar);
+  document.addEventListener('DOMContentLoaded', alignSocialBar);
+  window.addEventListener('load', alignSocialBar);
+})();
+</script>
+
+<!-- Dev Mode Warning Modal -->
+<div id="dev-modal" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.75);backdrop-filter:blur(4px);align-items:center;justify-content:center">
+  <div style="background:#0d1526;border:1px solid rgba(245,166,35,.45);border-radius:14px;padding:32px 36px;max-width:420px;width:calc(100% - 40px);text-align:center;box-shadow:0 0 40px rgba(245,166,35,.15)">
+    <div style="font-size:36px;margin-bottom:12px">🚧</div>
+    <div style="font-family:'Unbounded',sans-serif;font-size:16px;font-weight:700;color:#f5a623;margin-bottom:14px;letter-spacing:.02em">Режим розробки</div>
+    <div style="font-size:13px;line-height:1.65;color:#a0b0c8;margin-bottom:24px">
+      Сайт працює в тестовому режимі.<br>
+      Усі імена, прізвища, дані та записи є <strong style="color:#f5a623">вигаданими</strong> і використовуються виключно для перевірки функціоналу проєкту.<br><br>
+      <span style="display:block;margin:10px 0;font-size:13px;color:#8ab0c8">💻 Сайт оптимізовано для <strong style="color:#d8e8f8">ПК та планшетів</strong>. Мобільна версія наразі в розробці — рекомендуємо використовувати ПК або планшет.</span>
+      <span style="color:#6a7a99;font-size:11px">Будь-яка схожість із реальними особами є випадковою.</span>
+    </div>
+    <button onclick="document.getElementById('dev-modal').style.display='none';event.stopPropagation();event.preventDefault()"
+            style="background:rgba(245,166,35,.18);border:1px solid rgba(245,166,35,.5);border-radius:8px;color:#f5a623;font-size:13px;font-weight:600;padding:10px 36px;cursor:pointer;transition:background .2s;font-family:inherit"
+            onmouseover="this.style.background='rgba(245,166,35,.28)'"
+            onmouseout="this.style.background='rgba(245,166,35,.18)'">
+      Зрозуміло
+    </button>
+  </div>
+</div>
+<script>
+(function(){
+  // Показуємо після завантаження COLORS (dev_mode перевіряється в loadColors)
+  window._showDevModalIfNeeded = function(){
+    if(window.COLORS && COLORS['dev_mode']?.value === '1'){
+      document.getElementById('dev-modal').style.display = 'flex';
+    }
+  };
+})();
+</script>
+<script src="/js/leaflet.js"></script>
+
+<!-- ── Onboarding Tour ── -->
+<div id="zp-tour-overlay"></div>
+<div id="zp-tour-bubble">
+  <div id="zp-tour-title"></div>
+  <div id="zp-tour-text"></div>
+  <div id="zp-tour-btns">
+    <button id="zp-tour-skip" onclick="_tourEnd()">Пропустити навчання</button>
+    <button id="zp-tour-next" onclick="_tourNext()">Далі →</button>
+  </div>
+  <div id="zp-tour-dots"></div>
+</div>
+
+<script>
+(function(){
+var _tourStep = 0;
+var _tourPrevEl = null;
+var _tourOpenedCard = false;
+
+// arrowDir: напрямок стрілки на bubble (вказує ВІД bubble ДО елемента)
+// 'top' = bubble знизу елемента, стрілка догори
+// 'bottom' = bubble зверху елемента, стрілка донизу
+// 'left' = bubble праворуч елемента, стрілка вліво
+// 'right' = bubble ліворуч елемента, стрілка вправо
+var _TOUR_STEPS = [
+  {
+    el: '#logo',
+    title: 'Зоряна Памʼять',
+    text: '★ Це меморіальна платформа вічної памʼяті захисників України. Натисніть на логотип, щоб дізнатись більше про проєкт.',
+    arrowDir: 'top'
+  },
+  {
+    el: null,
+    title: 'Зірки на карті',
+    text: 'Кожна зірка ★ на карті — це загиблий захисник України. Клікніть на будь-яку зірку, щоб відкрити картку з деталями.',
+    arrowDir: null
+  },
+  {
+    el: '#card',
+    title: 'Дошка памʼяті',
+    text: 'Це бічна панель захисника: імʼя, дати, фото, звання та нагороди. Відкривається кліком на зірку карти.',
+    arrowDir: 'right',
+    onShow: function(){ if(window.people && people.length){ openCard(people[0]); _tourOpenedCard=true; } }
+  },
+  {
+    el: '#count',
+    title: 'Лічильник памʼяті',
+    text: 'Кількість захисників у меморіалі. Допоможіть зберегти більше — додайте запис про загиблого.',
+    arrowDir: 'bottom'
+  },
+  {
+    el: '#search',
+    title: 'Пошук',
+    text: 'Шукайте за прізвищем, позивним або підрозділом — результати зʼявляються одразу.',
+    arrowDir: 'top'
+  },
+  {
+    el: '#zoom',
+    title: 'Масштаб карти',
+    text: 'Кнопки + та − масштабують карту. Також можна крутити колесо миші. Чим ближче — тим більше зірок і деталей видно.',
+    arrowDir: 'right'
+  },
+  {
+    el: '#map-mode-bar',
+    title: 'Режим карти',
+    text: 'Перемикайтесь між картою України та інтерактивною картою світу — обидва режими містять маркери загиблих.',
+    arrowDir: 'top'
+  },
+  {
+    el: '#btn-add',
+    title: 'Додати запис',
+    text: 'Знаєте загиблого якого ще немає тут? Додайте запис — збережіть памʼять разом з нами.',
+    arrowDir: 'top'
+  },
+  {
+    el: '#logo',
+    title: 'Про проєкт',
+    text: 'Дізнайтеся більше про проєкт та команду на сторінці portfolio → зоряна-памʼять.укр/portfolio/',
+    arrowDir: 'top'
+  },
+  {
+    el: '#treetex-npo',
+    title: 'TREETEX NPO',
+    text: 'Платформу розроблено громадською організацією TREETEX NPO. Натисніть, щоб дізнатись більше про команду та ініціативи.',
+    arrowDir: 'right',
+    isLast: true
+  }
+];
+
+function _tourStart() {
+  if (localStorage.getItem('zp_tour_done') === '1') return;
+  if (window.innerWidth < 768) return;
+  setTimeout(function(){ _tourShow(0); }, 1800);
+}
+
+function _tourShow(idx) {
+  _tourStep = idx;
+  var steps = _TOUR_STEPS;
+  if (idx >= steps.length) { _tourEnd(); return; }
+  var step = steps[idx];
+
+  // Знімаємо підсвічення попереднього елемента
+  if (_tourPrevEl) { _tourPrevEl.classList.remove('zp-tour-hl'); _tourPrevEl = null; }
+
+  // Callback перед показом кроку
+  if (step.onShow) step.onShow();
+
+  var bubble = document.getElementById('zp-tour-bubble');
+  var overlay = document.getElementById('zp-tour-overlay');
+  overlay.classList.add('active');
+
+  // Заповнюємо вміст
+  document.getElementById('zp-tour-title').textContent = step.title;
+  document.getElementById('zp-tour-text').textContent = step.text;
+
+  // Кнопка "Далі" / "Завершити"
+  var btnNext = document.getElementById('zp-tour-next');
+  btnNext.textContent = (step.isLast || idx === steps.length - 1) ? 'Завершити ✓' : 'Далі →';
+
+  // Точки прогресу
+  var dotsEl = document.getElementById('zp-tour-dots');
+  dotsEl.innerHTML = '';
+  for (var i = 0; i < steps.length; i++) {
+    var d = document.createElement('div');
+    d.className = 'zp-tour-dot' + (i === idx ? ' on' : '');
+    dotsEl.appendChild(d);
+  }
+
+  // Підсвічення цільового елемента
+  var targetEl = step.el ? document.querySelector(step.el) : null;
+  if (targetEl) {
+    targetEl.classList.add('zp-tour-hl');
+    _tourPrevEl = targetEl;
+  }
+
+  // Позиціонування bubble
+  // arrowDir вказує куди ПОКАЗУЄ стрілка (у бік елемента)
+  // 'top'    → bubble знизу від елемента, стрілка угору
+  // 'bottom' → bubble зверху від елемента, стрілка вниз
+  // 'left'   → bubble праворуч від елемента, стрілка вліво
+  // 'right'  → bubble ліворуч від елемента, стрілка вправо
+  bubble.className = '';
+  bubble.style.cssText = '';
+  void bubble.offsetWidth; // trigger reflow для анімації
+  bubble.classList.add('visible');
+
+  var bW = 280, bH = 170, margin = 14;
+  var vW = window.innerWidth, vH = window.innerHeight;
+
+  if (!targetEl || !step.arrowDir) {
+    bubble.style.top = '50%';
+    bubble.style.left = '50%';
+    bubble.style.transform = 'translate(-50%, -50%)';
+  } else {
+    var r = targetEl.getBoundingClientRect();
+    var ad = step.arrowDir;
+    var top, left;
+    bubble.style.transform = '';
+
+    if (ad === 'top') {
+      // bubble знизу елемента, стрілка вгору (arr-top = стрілка з верху bubble)
+      top = r.bottom + margin;
+      left = r.left;
+      bubble.classList.add('arr-top');
+    } else if (ad === 'bottom') {
+      // bubble зверху елемента, стрілка вниз (arr-bottom = стрілка з низу bubble)
+      top = r.top - bH - margin;
+      left = r.left;
+      bubble.classList.add('arr-bottom');
+    } else if (ad === 'left') {
+      // bubble праворуч від елемента, стрілка вліво (arr-left = стрілка з лівого боку bubble)
+      top = r.top;
+      left = r.right + margin;
+      bubble.classList.add('arr-left');
+    } else if (ad === 'right') {
+      // bubble ліворуч від елемента, стрілка вправо (arr-right = стрілка з правого боку bubble)
+      top = r.top;
+      left = r.left - bW - margin;
+      bubble.classList.add('arr-right');
+    }
+
+    // Вирівнювання по горизонталі для top/bottom — прив'язуємо ліво bubble до лівого краю елемента
+    // Вирівнювання по вертикалі для left/right — до верхнього краю елемента
+
+    // Захист від виходу за межі екрану
+    if (left + bW > vW - 8) left = vW - bW - 8;
+    if (left < 8) left = 8;
+    var topBefore = top;
+    if (top + bH > vH - 8) top = vH - bH - 8;
+    if (top < 8) top = 8;
+    // Для arr-left/arr-right — коригуємо позицію стрілки якщо bubble зсунуло по вертикалі
+    if ((ad === 'left' || ad === 'right') && top !== topBefore) {
+      var arrowOffset = (r.top + r.height / 2) - top - 9;
+      arrowOffset = Math.max(8, Math.min(bH - 24, arrowOffset));
+      bubble.style.setProperty('--arr-top', arrowOffset + 'px');
+    } else {
+      bubble.style.setProperty('--arr-top', '18px');
+    }
+
+    bubble.style.top = top + 'px';
+    bubble.style.left = left + 'px';
+  }
+}
+
+window._tourNext = function() {
+  _tourShow(_tourStep + 1);
+};
+
+window._tourEnd = function() {
+  localStorage.setItem('zp_tour_done', '1');
+  if (_tourPrevEl) { _tourPrevEl.classList.remove('zp-tour-hl'); _tourPrevEl = null; }
+  var bubble = document.getElementById('zp-tour-bubble');
+  var overlay = document.getElementById('zp-tour-overlay');
+  if (bubble) bubble.classList.remove('visible');
+  if (overlay) overlay.classList.remove('active');
+  if (_tourOpenedCard && typeof closeCard === 'function') { closeCard(); _tourOpenedCard = false; }
+};
+
+window._tourStart = _tourStart;
 })();
 </script>
 </body>

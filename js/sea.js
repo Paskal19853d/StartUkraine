@@ -161,7 +161,7 @@ window.seaApplyConfig = () => syncCfg();
 /* ── ПЕРЕЗАВАНТАЖЕННЯ COLORS З СЕРВЕРА (після завантаження нового SVG) ── */
 async function reloadFromServer() {
   try {
-    const api = window.API || 'http://127.0.0.1:8000';
+    const api = (window.API && window.API !== '') ? window.API : window.location.origin;
     const r = await fetch(`${api}/api/colors`);
     window.COLORS = await r.json();
     syncCfg();

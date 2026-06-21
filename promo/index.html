@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Зоряна Памʼять — Реклама</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy-0:#04060f;
+    --navy-1:#0a1020;
+    --navy-2:#0f1830;
+    --gold:#ffc01e;
+    --gold-soft:#f5b800;
+    --cyan:#2bb8f0;
+    --cyan-deep:#1a6fd6;
+    --ink:#eaf0ff;
+    --muted:#8a97b8;
+    --muted-dim:#5d6a88;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html{-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+  body{
+    font-family:'Manrope',system-ui,sans-serif;
+    background:var(--navy-0);
+    color:var(--ink);
+    overflow-x:hidden;
+  }
+
+  /* ── starfield / glow backdrop ───────────────────────────── */
+  .stage{
+    position:relative;
+    min-height:100vh;
+    background:
+      radial-gradient(120% 80% at 50% 118%, rgba(255,192,30,0.16) 0%, rgba(255,192,30,0.04) 32%, transparent 60%),
+      radial-gradient(90% 70% at 50% -10%, rgba(43,184,240,0.10) 0%, transparent 55%),
+      linear-gradient(180deg, var(--navy-0) 0%, var(--navy-1) 45%, var(--navy-0) 100%);
+    overflow:hidden;
+  }
+  .stars{position:absolute;inset:0;pointer-events:none;opacity:.85;}
+  .stars span{
+    position:absolute;width:2px;height:2px;border-radius:50%;
+    background:#fff;box-shadow:0 0 6px 1px rgba(255,255,255,.6);
+    animation:tw 4s ease-in-out infinite;
+  }
+  @keyframes tw{0%,100%{opacity:.25}50%{opacity:1}}
+
+  .wrap{position:relative;z-index:2;max-width:1240px;margin:0 auto;padding:0 40px;}
+
+  /* ── top brand bar ───────────────────────────────────────── */
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:34px 0 6px;}
+  .brand{display:flex;align-items:center;gap:12px;font-family:'Unbounded';font-weight:700;font-size:22px;letter-spacing:.2px;}
+  .brand .star{color:var(--gold);font-size:18px;filter:drop-shadow(0 0 8px rgba(255,192,30,.7));}
+  .brand .b1{color:var(--cyan);}
+  .brand .b2{color:var(--gold);}
+  .npo{font-family:'Manrope';font-size:12px;letter-spacing:2.5px;color:var(--muted);text-transform:uppercase;}
+  .npo b{color:#c9d3ec;font-weight:800;}
+
+  /* ── hero ────────────────────────────────────────────────── */
+  .hero{display:grid;grid-template-columns:1.05fr .95fr;gap:48px;align-items:center;padding:48px 0 30px;}
+  .eyebrow{
+    display:inline-flex;align-items:center;gap:9px;
+    font-size:12.5px;letter-spacing:2.5px;text-transform:uppercase;color:var(--cyan);font-weight:700;
+    border:1px solid rgba(43,184,240,.32);border-radius:999px;padding:8px 16px;background:rgba(43,184,240,.06);
+  }
+  .eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--gold);box-shadow:0 0 8px 1px var(--gold);}
+  h1.head{
+    font-family:'Unbounded';font-weight:800;line-height:1.04;letter-spacing:-.5px;
+    font-size:clamp(40px,5vw,68px);margin:24px 0 0;text-wrap:balance;
+  }
+  h1.head .g{color:var(--gold);}
+  h1.head .c{color:var(--cyan);}
+  .sub{margin-top:22px;font-size:18.5px;line-height:1.6;color:var(--muted);max-width:30em;text-wrap:pretty;}
+  .stats{display:flex;gap:34px;margin-top:34px;}
+  .stat .n{font-family:'Unbounded';font-weight:700;font-size:30px;}
+  .stat:nth-child(1) .n{color:var(--gold);}
+  .stat:nth-child(2) .n{color:var(--cyan);}
+  .stat:nth-child(3) .n{color:#7fe3a8;}
+  .stat .l{font-size:12.5px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-top:4px;}
+
+  .hero-phones{position:relative;display:flex;justify-content:center;align-items:center;min-height:680px;}
+  .hero-phones .device.back{position:absolute;left:2%;top:60px;transform:rotate(-7deg) scale(.82);opacity:.92;z-index:1;}
+  .hero-phones .device.front{position:relative;z-index:3;}
+  .hero-phones .device.side{position:absolute;right:0%;top:48px;transform:rotate(7deg) scale(.82);opacity:.92;z-index:1;}
+
+  /* ── iPhone 13/14 frame ──────────────────────────────────── */
+  .device{
+    --w:300px;
+    width:var(--w);
+    aspect-ratio:390/844;
+    padding:calc(var(--w)*.030);
+    border-radius:calc(var(--w)*.165);
+    background:
+      linear-gradient(145deg,#3a4255 0%,#10131c 22%,#1a1f2b 50%,#0c0e15 78%,#2c3142 100%);
+    box-shadow:
+      0 2px 2px rgba(255,255,255,.10) inset,
+      0 0 0 calc(var(--w)*.004) rgba(0,0,0,.6),
+      0 50px 90px -20px rgba(0,0,0,.85),
+      0 0 70px -10px rgba(43,184,240,.10);
+    position:relative;
+  }
+  .screen{
+    position:relative;width:100%;height:100%;
+    border-radius:calc(var(--w)*.135);
+    overflow:hidden;background:#04060f;
+  }
+  .screen img{width:100%;height:100%;object-fit:cover;display:block;}
+
+  /* ── auto-swipe slideshow inside a screen ────────────────── */
+  .swiper{position:absolute;inset:0;display:flex;width:100%;height:100%;
+    will-change:transform;}
+  .swiper .slide{position:relative;flex:0 0 100%;width:100%;height:100%;}
+  .swiper .slide img{width:100%;height:100%;object-fit:cover;display:block;}
+  /* swipe easing: quick flick with a touch of overshoot */
+  .swiper.animate{transition:transform .62s cubic-bezier(.22,1.0,.30,1.0);}
+
+  /* page dots */
+  .dots{position:absolute;left:50%;bottom:calc(var(--w)*.045);transform:translateX(-50%);
+    z-index:7;display:flex;gap:calc(var(--w)*.018);pointer-events:none;}
+  .dots i{width:calc(var(--w)*.020);height:calc(var(--w)*.020);border-radius:50%;
+    background:rgba(255,255,255,.35);transition:all .4s ease;}
+  .dots i.on{background:var(--gold);width:calc(var(--w)*.055);border-radius:99px;
+    box-shadow:0 0 8px 1px rgba(255,192,30,.6);}
+
+  /* finger / touch gesture cue */
+  .finger{position:absolute;z-index:8;top:58%;left:62%;width:calc(var(--w)*.16);height:calc(var(--w)*.16);
+    pointer-events:none;opacity:0;}
+  .finger .ring{position:absolute;inset:0;border-radius:50%;
+    background:radial-gradient(circle at 50% 50%,rgba(255,255,255,.55),rgba(255,255,255,.12) 60%,transparent 72%);
+    box-shadow:0 0 0 2px rgba(255,255,255,.25);}
+  .finger.go{animation:swipeCue 1.0s ease-in-out forwards;}
+  @keyframes swipeCue{
+    0%{opacity:0;transform:translateX(0) scale(.6);}
+    18%{opacity:1;transform:translateX(0) scale(1);}
+    70%{opacity:1;transform:translateX(calc(var(--w)*-.42)) scale(1);}
+    100%{opacity:0;transform:translateX(calc(var(--w)*-.52)) scale(.7);}
+  }
+
+  /* gentle float on side phones */
+  @media (prefers-reduced-motion: no-preference){
+    .hero-phones .device.back{animation:floatB 6.5s ease-in-out infinite;}
+    .hero-phones .device.side{animation:floatS 7.5s ease-in-out infinite;}
+  }
+  @keyframes floatB{0%,100%{transform:rotate(-7deg) scale(.82) translateY(0);}50%{transform:rotate(-7deg) scale(.82) translateY(-14px);}}
+  @keyframes floatS{0%,100%{transform:rotate(7deg) scale(.82) translateY(0);}50%{transform:rotate(7deg) scale(.82) translateY(-12px);}}
+  .notch{
+    position:absolute;top:0;left:50%;transform:translateX(-50%);
+    width:41%;height:calc(var(--w)*.082);
+    background:#000;border-radius:0 0 calc(var(--w)*.05) calc(var(--w)*.05);
+    z-index:6;display:flex;align-items:center;justify-content:center;gap:calc(var(--w)*.03);
+  }
+  .notch .cam{width:calc(var(--w)*.026);height:calc(var(--w)*.026);border-radius:50%;
+    background:radial-gradient(circle at 35% 30%,#1c3a4a,#020306 70%);box-shadow:0 0 0 1px rgba(40,70,90,.4);}
+  .notch .spk{width:calc(var(--w)*.10);height:calc(var(--w)*.012);border-radius:99px;background:#0c0e14;}
+  /* side buttons */
+  .device::before{content:"";position:absolute;left:calc(var(--w)*-.006);top:21%;width:calc(var(--w)*.006);height:5%;background:#23283400;border-radius:2px;
+    box-shadow: 0 0 0 0 transparent, calc(var(--w)*-.0) 0 0 0 #2a3040;}
+  .btns{position:absolute;left:calc(var(--w)*-.0065);top:18%;display:flex;flex-direction:column;gap:calc(var(--w)*.03);}
+  .btns i{display:block;width:calc(var(--w)*.0065);background:#2a3040;border-radius:2px 0 0 2px;}
+  .btns i.s{height:calc(var(--w)*.035);} .btns i.v{height:calc(var(--w)*.075);}
+  .pwr{position:absolute;right:calc(var(--w)*-.0065);top:26%;width:calc(var(--w)*.0065);height:calc(var(--w)*.11);background:#2a3040;border-radius:0 2px 2px 0;}
+
+  .caption{text-align:center;margin-top:22px;}
+  .caption .t{font-family:'Unbounded';font-weight:600;font-size:17px;color:var(--ink);}
+  .caption .d{font-size:14px;color:var(--muted);margin-top:7px;line-height:1.5;max-width:22em;margin-left:auto;margin-right:auto;}
+
+  /* ── feature strip ───────────────────────────────────────── */
+  .section-h{text-align:center;padding:30px 0 6px;}
+  .section-h .k{font-size:12.5px;letter-spacing:3px;text-transform:uppercase;color:var(--cyan);font-weight:700;}
+  .section-h h2{font-family:'Unbounded';font-weight:700;font-size:clamp(26px,3vw,38px);margin-top:14px;}
+  .gallery{display:grid;grid-template-columns:repeat(3,1fr);gap:30px;padding:46px 0 20px;justify-items:center;align-items:start;}
+
+  /* ── footer ──────────────────────────────────────────────── */
+  .footer{border-top:1px solid rgba(255,255,255,.07);margin-top:40px;padding:30px 0 46px;text-align:center;color:var(--muted-dim);font-size:13.5px;}
+  .footer b{color:#c9d3ec;}
+  .footer .sm{margin-top:8px;color:#46506e;}
+
+  @media (max-width:920px){
+    .hero{grid-template-columns:1fr;gap:10px;text-align:center;}
+    .stats{justify-content:center;}
+    .eyebrow{margin:0 auto;}
+    .sub{margin-left:auto;margin-right:auto;}
+    .hero-phones{min-height:600px;margin-top:18px;}
+    .gallery{grid-template-columns:1fr;gap:54px;}
+  }
+  @media (max-width:560px){
+    .wrap{padding:0 20px;}
+    .npo{display:none;}
+    .hero-phones .device.back,.hero-phones .device.side{display:none;}
+    .hero-phones{min-height:auto;}
+    .device{--w:260px;}
+  }
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="stars" id="stars"></div>
+  <div class="wrap">
+
+    <!-- brand bar -->
+    <header class="topbar">
+      <div class="brand"><span class="star">★</span><span class="b1">Зоряна</span><span class="b2">Пам’ять</span></div>
+      <div class="npo">© 2026 <a href="/portfolio/" style="color:inherit;text-decoration:none"><b>TREETEX</b> NPO</a></div>
+    </header>
+
+    <!-- hero -->
+    <section class="hero">
+      <div class="hero-copy">
+        <span class="eyebrow"><span class="dot"></span>Інтерактивна карта пам’яті України</span>
+        <h1 class="head">Кожна <span class="g">зірка</span><br>— чиєсь <span class="c">ім’я</span>.</h1>
+        <p class="sub">Запали зірку пам’яті на честь тих, кого ми не забудемо. Тисячі вогників на мапі України — жива історія, яку творимо разом.</p>
+        <div class="stats">
+          <div class="stat"><div class="n">128</div><div class="l">у пам’яті</div></div>
+          <div class="stat"><div class="n">14 142</div><div class="l">зірок</div></div>
+          <div class="stat"><div class="n">online</div><div class="l">щодня</div></div>
+        </div>
+      </div>
+
+      <div class="hero-phones">
+        <div class="device back">
+          <div class="screen"><div class="notch"><span class="spk"></span><span class="cam"></span></div><img src="screens/login.png" alt="Вхід"></div>
+        </div>
+        <div class="device side">
+          <div class="screen"><div class="notch"><span class="spk"></span><span class="cam"></span></div><img src="screens/menu.png" alt="Меню" style="margin: 0px"></div>
+        </div>
+        <div class="device front" style="--w:320px;">
+          <div class="btns"><i class="s"></i><i class="v"></i><i class="v"></i></div><div class="pwr"></div>
+          <div class="screen">
+            <div class="notch"><span class="spk"></span><span class="cam"></span></div>
+            <div class="swiper" id="heroSwiper">
+              <div class="slide"><img src="screens/map.png" alt="Карта пам’яті"></div>
+              <div class="slide"><img src="screens/login.png" alt="Вхід"></div>
+              <div class="slide"><img src="screens/menu.png" alt="Меню"></div>
+              <div class="slide"><img src="screens/register.png" alt="Реєстрація"></div>
+            </div>
+            <div class="finger" id="heroFinger"><span class="ring"></span></div>
+            <div class="dots" id="heroDots"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- feature gallery -->
+    <section>
+      <div class="section-h">
+        <div class="k">Сервіс у телефоні</div>
+        <h2>Усе під рукою</h2>
+      </div>
+      <div class="gallery">
+        <figure class="g-item">
+          <div class="device" style="--w:280px;">
+            <div class="screen"><div class="notch"><span class="spk"></span><span class="cam"></span></div><img src="screens/map.png" alt="Карта"></div>
+          </div>
+          <figcaption class="caption"><div class="t">Карта пам’яті</div><div class="d">Світлові зірки по всій Україні — наближай, шукай, додавай.</div></figcaption>
+        </figure>
+        <figure class="g-item">
+          <div class="device" style="--w:280px;">
+            <div class="screen"><div class="notch"><span class="spk"></span><span class="cam"></span></div><img src="screens/login.png" alt="Вхід"></div>
+          </div>
+          <figcaption class="caption"><div class="t">Швидкий вхід</div><div class="d">Email, Google або Дія — кілька секунд до старту.</div></figcaption>
+        </figure>
+        <figure class="g-item">
+          <div class="device" style="--w:280px;">
+            <div class="screen"><div class="notch"><span class="spk"></span><span class="cam"></span></div><img src="screens/menu.png" alt="Профіль"></div>
+          </div>
+          <figcaption class="caption"><div class="t">Профіль і статистика</div><div class="d">Зірки, налаштування дим-ефекту та спільнота поруч.</div></figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <div>© 2026 <a href="/portfolio/" style="color:inherit;text-decoration:none"><b>TREETEX</b> NPO</a> · All rights reserved</div>
+      <div class="sm">Denys KOSHELENKO</div>
+    </footer>
+
+  </div>
+</div>
+
+<script>
+  // sprinkle a soft starfield
+  (function(){
+    const box=document.getElementById('stars');
+    const n=70;
+    let html='';
+    for(let i=0;i<n;i++){
+      const x=Math.random()*100, y=Math.random()*100;
+      const d=(Math.random()*4+2).toFixed(2);
+      const delay=(Math.random()*4).toFixed(2);
+      const s=(Math.random()*1.4+0.6).toFixed(2);
+      html+=`<span style="left:${x}%;top:${y}%;width:${s}px;height:${s}px;animation-duration:${d}s;animation-delay:${delay}s"></span>`;
+    }
+    box.innerHTML=html;
+  })();
+
+  // auto-swipe slideshow for the hero phone — feels like a user flicking through
+  (function(){
+    const swiper=document.getElementById('heroSwiper');
+    const dotsBox=document.getElementById('heroDots');
+    const finger=document.getElementById('heroFinger');
+    if(!swiper) return;
+    const n=swiper.children.length;
+    const reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // build dots
+    for(let i=0;i<n;i++){const d=document.createElement('i');if(i===0)d.className='on';dotsBox.appendChild(d);}
+    const dots=[...dotsBox.children];
+    let idx=0;
+
+    function show(i){
+      swiper.classList.add('animate');
+      swiper.style.transform=`translateX(${-i*100}%)`;
+      dots.forEach((d,k)=>d.classList.toggle('on',k===i));
+    }
+    function cue(){
+      if(reduce) return;
+      finger.classList.remove('go');void finger.offsetWidth;finger.classList.add('go');
+    }
+
+    if(reduce){ // no motion: just hold the map screen
+      return;
+    }
+
+    const HOLD=2200;      // time each screen stays
+    function tick(){
+      cue();
+      setTimeout(()=>{ idx=(idx+1)%n; show(idx); }, 520); // start swipe partway through the finger cue
+      setTimeout(tick, HOLD);
+    }
+    setTimeout(tick, 1400); // first dwell on the map
+  })();
+</script>
+</body>
+</html>

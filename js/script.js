@@ -1690,15 +1690,20 @@ function correctRadius(radius) {
 let lastMove = -1;
 function checkLastMove() { return true; }
 
+// Throttle: не частіше ніж раз на кадр (16мс ≈ 60fps)
+let _smokeMovePending = false;
 window.addEventListener("mousemove", (e) => {
-  let posX = scaleByPixelRatio(e.clientX);
-  let posY = scaleByPixelRatio(e.clientY);
-  let pointer = pointers[0];
-  updatePointerMoveData(pointer, posX, posY);
-  if (pointer.moved) {
-    pointer.moved = false;
-    splatPointer(pointer);
-  }
+  if (_smokeMovePending) return;
+  _smokeMovePending = true;
+  requestAnimationFrame(() => {
+    _smokeMovePending = false;
+    if (config.PAUSED) return;
+    let posX = scaleByPixelRatio(e.clientX);
+    let posY = scaleByPixelRatio(e.clientY);
+    let pointer = pointers[0];
+    updatePointerMoveData(pointer, posX, posY);
+    // НЕ викликаємо splatPointer тут — це робить applyInputs() в update()
+  });
 });
 
 window.addEventListener("mouseup", () => {

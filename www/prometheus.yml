@@ -1,0 +1,18 @@
+# ── Prometheus конфігурація для Зоряна Пам'ять ──
+# Встановлення: https://prometheus.io/download/
+# Запуск: prometheus --config.file=prometheus.yml
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'zoryna'
+    static_configs:
+      - targets: ['127.0.0.1:8000']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  - job_name: 'node'
+    static_configs:
+      - targets: ['localhost:9100']

@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
 <title>Адмін — Зоряна Памʼять</title>
 <link rel="stylesheet" href="/fonts/uicons/uicons.css">
+<link rel="stylesheet" href="/js/leaflet.css">
+<script src="/js/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"
         integrity="sha256-Mh46P6mNpKqpV9EL5Xy7UU3gmJ7tj51ya10FkCzQGQQ="
         crossorigin="anonymous"></script>
@@ -213,6 +215,12 @@ html,body{height:100%;font-family:"Segoe UI",sans-serif;background:var(--bg);col
 #adm-topbar .spacer{flex:1}
 .link-btn{font-size:11px;color:var(--accent);text-decoration:none;padding:5px 10px;border-radius:6px;border:1px solid rgba(0,200,255,.2);transition:background .15s}
 .link-btn:hover{background:rgba(0,200,255,.08)}
+.toggle-switch{position:relative;display:inline-block;width:38px;height:20px}
+.toggle-switch input{opacity:0;width:0;height:0}
+.toggle-slider{position:absolute;inset:0;background:#3fb950;border-radius:20px;cursor:pointer;transition:.2s}
+.toggle-slider:before{content:'';position:absolute;width:14px;height:14px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s}
+input:checked + .toggle-slider{background:#f85149}
+input:checked + .toggle-slider:before{transform:translateX(18px)}
 #btn-coffee{display:inline-flex;align-items:center;gap:7px;padding:6px 14px;border-radius:20px;border:none;cursor:pointer;font-size:12px;font-weight:700;letter-spacing:.03em;text-decoration:none;background:linear-gradient(135deg,#3a1a00,#7a3a00);color:#ffb347;box-shadow:0 0 12px rgba(255,140,0,.25),inset 0 1px 0 rgba(255,180,80,.15);transition:all .2s;position:relative;overflow:hidden}
 #btn-coffee::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,160,50,.12),transparent);pointer-events:none}
 #btn-coffee:hover{background:linear-gradient(135deg,#4a2200,#9a4800);box-shadow:0 0 20px rgba(255,140,0,.45),inset 0 1px 0 rgba(255,180,80,.2);transform:translateY(-1px);color:#ffd080}
@@ -225,6 +233,30 @@ html,body{height:100%;font-family:"Segoe UI",sans-serif;background:var(--bg);col
 .section{display:none;height:100%;overflow-y:auto;padding:20px}
 .section.active{display:block}
 .sec-title{font-size:17px;font-weight:700;margin-bottom:18px;display:flex;align-items:center;gap:10px}
+/* ── ЧАТ АДМІН ── */
+.tab-bar{display:flex;gap:4px;margin-bottom:16px;border-bottom:1px solid var(--border);padding-bottom:4px;flex-wrap:wrap}
+.tab-btn{background:none;border:none;color:var(--text2);font-size:12px;font-family:inherit;padding:5px 12px;cursor:pointer;border-radius:6px 6px 0 0;border-bottom:2px solid transparent;transition:all .15s}
+.tab-btn:hover{color:var(--text);background:rgba(255,255,255,.04)}
+.tab-btn.active{color:var(--accent);border-bottom-color:var(--accent)}
+.chat-tab-pane{animation:fadeIn .18s ease}
+.chat-msg-row{display:flex;gap:8px;align-items:flex-start;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px}
+.chat-msg-row.is-deleted{opacity:.45}
+.chat-msg-nick{font-weight:600;color:var(--accent);white-space:nowrap;min-width:80px}
+.chat-msg-text{flex:1;color:var(--text);word-break:break-word}
+.chat-msg-time{color:var(--muted);font-size:10px;white-space:nowrap}
+.chat-msg-del{background:none;border:none;color:var(--red,#e05070);cursor:pointer;font-size:11px;padding:2px 6px;border-radius:4px;transition:background .15s}
+.chat-msg-del:hover{background:rgba(224,80,112,.15)}
+.chat-filter-row{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.chat-word-row{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px}
+.chat-word-cat{font-size:10px;color:var(--muted);background:rgba(255,255,255,.05);border-radius:4px;padding:2px 6px}
+.chat-report-row{display:flex;flex-wrap:wrap;gap:6px;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px}
+.chat-report-msg{color:var(--text2);flex:1;min-width:160px;font-style:italic}
+.chat-report-meta{color:var(--muted);font-size:10px;white-space:nowrap}
+.chat-adm-table{width:100%;border-collapse:collapse;font-size:12px}
+.chat-adm-table th{text-align:left;color:var(--muted);font-weight:600;font-size:11px;padding:5px 8px;border-bottom:1px solid var(--border)}
+.chat-adm-table td{padding:6px 8px;border-bottom:1px solid var(--border);vertical-align:top}
+.chat-adm-table tr:hover td{background:rgba(255,255,255,.02)}
+.chat-adm-empty{color:var(--muted);text-align:center;padding:24px 0;font-size:12px}
 
 /* ── AUTH / REGISTRATION SECTION ── */
 .rg-group{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:0 18px;margin-bottom:18px;max-width:720px}
@@ -259,7 +291,7 @@ html,body{height:100%;font-family:"Segoe UI",sans-serif;background:var(--bg);col
 #map-editor-layout{display:flex;height:100%;overflow:hidden}
 #map-canvas-wrap{flex:1;position:relative;overflow:hidden;background:#07111f}
 #map-sidebar{width:300px;background:var(--surface);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
-#map-toolbar{position:absolute;top:12px;left:12px;z-index:10;display:flex;gap:6px;flex-wrap:wrap}
+#map-toolbar{position:absolute;top:12px;left:12px;z-index:10;display:flex;gap:6px;flex-wrap:wrap;align-items:flex-start}
 .map-tool-btn{background:rgba(7,13,26,.92);border:1px solid var(--border2);border-radius:7px;color:var(--text2);padding:7px 12px;cursor:pointer;font-size:11px;transition:all .15s}
 .map-tool-btn:hover{background:rgba(0,200,255,.1);color:var(--accent);border-color:rgba(0,200,255,.3)}
 .map-tool-btn.active{background:rgba(0,200,255,.15);color:var(--accent);border-color:rgba(0,200,255,.4)}
@@ -524,6 +556,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
   <symbol id="ico-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></symbol>
   <symbol id="ico-lock" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol>
   <symbol id="ico-upload" viewBox="0 0 24 24"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></symbol>
+  <symbol id="ico-device" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><rect x="9" y="18" width="6" height="1" rx="0.5" fill="currentColor" stroke="none"/><rect x="9" y="6" width="6" height="8" rx="1"/></symbol>
 </svg>
 
 <!-- Hamburger (mobile) -->
@@ -538,6 +571,8 @@ tr:hover td{background:rgba(255,255,255,.02)}
     <div class="lf"><label>Email</label><input type="email" id="adm-email"></div>
     <div class="lf"><label>Пароль</label><input type="password" id="adm-pass" onkeydown="if(event.key==='Enter')adminLogin()"></div>
     <button id="btn-adm-login" onclick="adminLogin()">Увійти в панель</button>
+    <div style="text-align:center;margin:10px 0;font-size:10px;color:var(--muted)">або</div>
+    <button id="btn-google-login" onclick="window.location.href='/api/auth/google'" style="width:100%;background:#fff;color:#222;border:1px solid #ccc;border-radius:6px;padding:8px;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;gap:8px"><svg width="16" height="16" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.1 0 5.9 1.1 8.1 2.9l6-6C34.5 3.1 29.6 1 24 1 14.9 1 7.1 6.7 3.7 14.8l7 5.4C12.4 13.7 17.8 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.7c-.5 2.9-2.2 5.3-4.7 6.9l7.2 5.6c4.2-3.9 6.3-9.6 6.3-16.5z"/><path fill="#FBBC05" d="M10.7 28.8A14.6 14.6 0 0 1 9.5 24c0-1.7.3-3.3.8-4.8l-7-5.4A23.9 23.9 0 0 0 0 24c0 3.9.9 7.5 2.5 10.8l8.2-6z"/><path fill="#34A853" d="M24 47c5.9 0 10.9-2 14.5-5.3l-7.2-5.6c-2 1.3-4.5 2.1-7.3 2.1-6.2 0-11.6-4.2-13.5-9.8l-8.2 6C7.1 41.3 14.9 47 24 47z"/></svg> Увійти через Google</button>
     <div id="lerr"><i class="fi-rr-cross"></i> Невірний логін або пароль</div>
   </div>
 </div>
@@ -562,6 +597,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
     <div class="nav-item"        draggable="true" onclick="showSec('authreg')"   data-s="authreg">   <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-auth"/></svg></span>Реєстрація</div>
     <div class="nav-item"        draggable="true" onclick="showSec('emailcfg')"  data-s="emailcfg">  <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-email"/></svg></span>Електронна пошта</div>
     <div class="nav-item"        draggable="true" onclick="showSec('mapeditor')" data-s="mapeditor"> <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-map"/></svg></span>Редактор карти</div>
+    <div class="nav-item"        draggable="true" onclick="showSec('worldmap')"  data-s="worldmap">  <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-map"/></svg></span>Карта світу</div>
     <div class="nav-item"        draggable="true" onclick="showSec('social')"    data-s="social">    <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-share"/></svg></span>Соцмережі</div>
     <div class="nav-item"        draggable="true" onclick="showSec('colors')"    data-s="colors">    <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-palette"/></svg></span>Кольори</div>
     <div class="nav-item"        draggable="true" onclick="showSec('smoke')"     data-s="smoke">     <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-smoke"/></svg></span>Ефект диму</div>
@@ -573,6 +609,9 @@ tr:hover td{background:rgba(255,255,255,.02)}
     <div class="nav-item"        draggable="true" onclick="showSec('silence')"   data-s="silence">   <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-candle"/></svg></span>Хв. Мовчання</div>
     <div class="nav-item"        draggable="true" onclick="showSec('seo')"     data-s="seo">     <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-search"/></svg></span>SEO</div>
     <div class="nav-item"        draggable="true" onclick="showSec('card')"    data-s="card">    <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-star"/></svg></span>Картка</div>
+    <div class="nav-item"        draggable="true" onclick="showSec('portfolio')" data-s="portfolio"><span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-users"/></svg></span>Сторінка Автора</div>
+    <div class="nav-item"        draggable="true" onclick="showSec('device')"    data-s="device">   <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-device"/></svg></span>Пристрої</div>
+    <div class="nav-item"        draggable="true" onclick="showSec('chat')"      data-s="chat">      <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-candle"/></svg></span>Чат<span class="nb" id="chat-nb" style="display:none">0</span></div>
     <div class="nav-group" id="navg-admin" draggable="true">
       <div class="nav-group-hdr" onclick="_toggleNavGroup('navg-admin')">
         <span class="nav-drag">⠿</span>
@@ -606,12 +645,27 @@ tr:hover td{background:rgba(255,255,255,.02)}
       <div class="adm-stat">Записів: <strong id="tb-total">—</strong></div>
       <div class="adm-stat">Модерація: <strong id="tb-pend">—</strong></div>
       <div class="adm-stat">Юзерів: <strong id="tb-users">—</strong></div>
-      <div class="adm-stat"><span class="dot"></span>Онлайн: <strong id="tb-online">—</strong></div>
+      <div class="adm-stat"><span class="dot"></span>Реальних: <strong id="tb-online-real">—</strong> <span style="color:var(--border2)">|</span> <span style="color:#7a7ab0">Ботів: <strong id="tb-online-bots" style="color:#7a7ab0">—</strong></span></div>
+      <div class="adm-stat" style="display:none"><strong id="tb-online">—</strong></div>
       <div class="spacer"></div>
       <button id="btn-theme" onclick="toggleAdminTheme()" title="Змінити тему" style="display:flex;align-items:center;gap:6px;background:var(--surface3);border:1px solid var(--border2);border-radius:20px;padding:5px 13px;cursor:pointer;font-size:11px;color:var(--text2);transition:all .2s">
         <span id="theme-ico"><i class="fi-rr-moon"></i></span><span id="theme-lbl">Темна</span>
       </button>
       <a class="link-btn" href="/" target="_blank" rel="noopener noreferrer"><i class="fi-rr-globe"></i>Відкрити сайт</a>
+      <div id="maint-toggle-wrap" style="display:flex;align-items:center;gap:8px;margin-left:4px">
+        <span id="maint-lbl" style="font-size:11px;color:var(--text2)">Онлайн</span>
+        <label class="toggle-switch" title="Online / Offline режим">
+          <input type="checkbox" id="maint-toggle" onchange="setMaintenance(this.checked)">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;margin-left:8px;padding:0 8px;border-left:1px solid var(--border2)">
+        <span style="font-size:11px;color:#f5a623;white-space:nowrap">🚧 Dev</span>
+        <label class="toggle-switch" title="Режим розробки — показувати попередження на сайті">
+          <input type="checkbox" id="dev-mode-tog" onchange="adminToggleDevMode(this.checked)">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
 
     </div>
 
@@ -628,7 +682,8 @@ tr:hover td{background:rgba(255,255,255,.02)}
           <div class="stat-card"><div class="num" id="st-pend">—</div><div class="lbl">На модерації</div></div>
           <div class="stat-card"><div class="num" id="st-users">—</div><div class="lbl">Користувачів</div></div>
           <div class="stat-card"><div class="num" id="st-likes">—</div><div class="lbl">Зірок</div></div>
-          <div class="stat-card" style="border-color:rgba(58,154,96,.3)"><div class="num" id="st-online" style="color:#3a9a60">—</div><div class="lbl"><span class="online-dot"></span>Онлайн зараз</div></div>
+          <div class="stat-card" style="border-color:rgba(58,154,96,.3)"><div class="num" id="st-online" style="color:#3a9a60">—</div><div class="lbl"><span class="online-dot"></span>Реальних онлайн</div></div>
+          <div class="stat-card" style="border-color:rgba(100,100,160,.3)"><div class="num" id="st-online-bots" style="color:#7a7ab0">—</div><div class="lbl">Ботів онлайн</div></div>
         </div>
 
         <!-- Widget controls bar -->
@@ -744,6 +799,12 @@ tr:hover td{background:rgba(255,255,255,.02)}
             <div class="dw-rsz"></div>
           </div>
 
+          <div class="dash-widget" id="dw-realtime-12h" style="grid-column:1/-1">
+            <div class="dw-head"><span class="dw-grip">⠿</span><svg class="dw-icon adm-ico"><use href="#ico-stats"/></svg><span class="dw-title">Реалтайм — останні 12 годин (відвідувачі / боти / запити БД / CPU / RAM)</span></div>
+            <div class="dw-body dw-chart" style="height:220px"><canvas id="realtime-12h-chart"></canvas></div>
+            <div class="dw-rsz"></div>
+          </div>
+
           <div class="dash-widget" id="dw-seo-pages">
             <div class="dw-head"><span class="dw-grip">⠿</span><svg class="dw-icon adm-ico"><use href="#ico-doc"/></svg><span class="dw-title">Топ сторінок (30 днів)</span></div>
             <div class="dw-body">
@@ -840,7 +901,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
       <div id="sec-pend" class="section">
         <div class="sec-title"><svg class="adm-ico"><use href="#ico-hourglass"/></svg> На модерації</div>
         <div class="tbl-wrap"><table>
-          <thead><tr><th>ID</th><th>ПІБ</th><th>Місце пох.</th><th>Хто додав</th><th>Дії</th></tr></thead>
+          <thead><tr><th>ID</th><th>ПІБ</th><th>Місце заг./пох.</th><th>Хто додав</th><th>Дії</th></tr></thead>
           <tbody id="pend-tb"></tbody>
         </table></div>
       </div>
@@ -1194,12 +1255,147 @@ tr:hover td{background:rgba(255,255,255,.02)}
               <button class="map-tool-btn active" id="tool-labels" onclick="setTool('labels')"><i class="fi-rr-label"></i> Підписи областей</button>
               <button class="map-tool-btn" id="tool-dots" onclick="setTool('dots')"><i class="fi-rr-map-pin"></i> Точки меморіалів</button>
               <button class="map-tool-btn" id="tool-cities" onclick="setTool('cities')"><i class="fi-rr-map-marker"></i> Міста</button>
+              <span style="border-left:1px solid var(--border2);margin:0 4px;height:24px;align-self:center"></span>
+              <button class="map-tool-btn" id="toggle-cities-vis" onclick="toggleLayerVis('cities')" title="Сховати міста"><i class="fi-rr-map-marker"></i> Міста</button>
+              <button class="map-tool-btn" id="toggle-dots-vis"   onclick="toggleLayerVis('dots')"   title="Сховати точки меморіалів"><i class="fi-rr-map-pin"></i> Точки</button>
+              <span style="border-left:1px solid var(--border2);margin:0 4px;height:24px;align-self:center"></span>
               <button class="map-tool-btn" onclick="resetMapView()">Скинути вигляд</button>
               <button class="map-tool-btn" onclick="zoomMapOut()">−</button>
               <span id="map-zoom-lbl" title="Подвійний клік — скинути зум" ondblclick="resetMapView()"
                 style="font-size:11px;color:var(--accent);min-width:36px;text-align:center;cursor:pointer;padding:4px 6px;border-radius:5px;border:1px solid rgba(0,200,255,.25);user-select:none">1.0×</span>
               <button class="map-tool-btn" onclick="zoomMapIn()">+</button>
               <span style="font-size:10px;color:var(--muted);padding:0 4px">Макс: 50×</span>
+              <span style="border-left:1px solid var(--border2);margin:0 4px;height:24px;align-self:center"></span>
+              <button class="map-tool-btn" id="btn-crosshair" onclick="_toggleCrosshair()" title="Прицільний хрест">✛</button>
+              <button class="map-tool-btn" id="btn-ref-img" onclick="_toggleRefImg()" title="Накладена карта-орієнтир (img/map_ua.jpg)">Еталон</button>
+              <span id="ref-img-ctrls"
+                    style="display:none;flex-direction:row;gap:8px;align-items:flex-start;
+                           background:rgba(4,9,18,.96);border:1px solid var(--border2);
+                           border-radius:8px;padding:7px 10px;margin-left:4px">
+
+                <!-- Ліво: MOVE джойстик -->
+                <div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0;align-items:center">
+                  <span style="font-size:8px;color:var(--muted);letter-spacing:.5px;align-self:flex-start">MOVE</span>
+                  <div style="display:grid;grid-template-columns:repeat(3,24px);grid-template-rows:repeat(3,24px);gap:2px">
+                    <div></div>
+                    <button class="map-tool-btn" onmousedown="_rStartMove(0,-1)" onmouseup="_rStopMove()" onmouseleave="_rStopMove()"
+                            style="padding:0;font-size:13px;display:flex;align-items:center;justify-content:center">▲</button>
+                    <div></div>
+                    <button class="map-tool-btn" onmousedown="_rStartMove(-1,0)" onmouseup="_rStopMove()" onmouseleave="_rStopMove()"
+                            style="padding:0;font-size:13px;display:flex;align-items:center;justify-content:center">◀</button>
+                    <div style="background:rgba(255,255,255,.05);border-radius:3px;display:flex;align-items:center;justify-content:center">
+                      <span style="font-size:6px;color:var(--muted)">XY</span>
+                    </div>
+                    <button class="map-tool-btn" onmousedown="_rStartMove(1,0)"  onmouseup="_rStopMove()" onmouseleave="_rStopMove()"
+                            style="padding:0;font-size:13px;display:flex;align-items:center;justify-content:center">▶</button>
+                    <div></div>
+                    <button class="map-tool-btn" onmousedown="_rStartMove(0,1)"  onmouseup="_rStopMove()" onmouseleave="_rStopMove()"
+                            style="padding:0;font-size:13px;display:flex;align-items:center;justify-content:center">▼</button>
+                    <div></div>
+                  </div>
+                </div>
+
+                <!-- Середина: координати + кроки + розмір + прозорість + зберегти -->
+                <div style="display:flex;flex-direction:column;gap:5px;border-left:1px solid var(--border2);border-right:1px solid var(--border2);padding:0 8px">
+
+                  <!-- X / Y -->
+                  <div style="display:flex;align-items:center;gap:4px">
+                    <span style="font-size:10px;color:var(--muted)">X</span>
+                    <input type="number" id="ref-img-x-inp" value="0" onchange="_setRefImgXY()"
+                           style="width:52px;font-size:10px;padding:2px 4px;background:var(--input-bg,var(--panel));
+                                  border:1px solid var(--border);border-radius:4px;color:var(--accent);font-family:monospace">
+                    <span style="font-size:10px;color:var(--muted)">Y</span>
+                    <input type="number" id="ref-img-y-inp" value="0" onchange="_setRefImgXY()"
+                           style="width:52px;font-size:10px;padding:2px 4px;background:var(--input-bg,var(--panel));
+                                  border:1px solid var(--border);border-radius:4px;color:var(--accent);font-family:monospace">
+                    <span style="font-size:9px;color:var(--muted)" title="SVG-одиниці (0–14000 / 0–9500)">svg</span>
+                  </div>
+
+                  <!-- SX / SY -->
+                  <div style="display:flex;align-items:center;gap:4px">
+                    <span style="font-size:10px;color:var(--muted)">SX</span>
+                    <input type="number" id="ref-img-sx-inp" value="1.00" min="0.1" max="5" step="0.01" onchange="_setRefImgScale()"
+                           style="width:48px;font-size:10px;padding:2px 4px;background:var(--input-bg,var(--panel));
+                                  border:1px solid var(--border);border-radius:4px;color:var(--accent);font-family:monospace">
+                    <span style="font-size:10px;color:var(--muted)">SY</span>
+                    <input type="number" id="ref-img-sy-inp" value="1.00" min="0.1" max="5" step="0.01" onchange="_setRefImgScale()"
+                           style="width:48px;font-size:10px;padding:2px 4px;background:var(--input-bg,var(--panel));
+                                  border:1px solid var(--border);border-radius:4px;color:var(--accent);font-family:monospace">
+                  </div>
+
+                  <!-- Крок XY -->
+                  <div style="display:flex;align-items:center;gap:4px">
+                    <span style="font-size:10px;color:var(--muted)">Крок XY</span>
+                    <input type="number" id="ref-img-step" min="1" max="2000" value="50"
+                           style="width:46px;font-size:10px;padding:2px 4px;background:var(--input-bg,var(--panel));
+                                  border:1px solid var(--border);border-radius:4px;color:var(--text)">
+                    <span style="font-size:9px;color:var(--muted)">svg</span>
+                  </div>
+
+                  <!-- Крок S -->
+                  <div style="display:flex;align-items:center;gap:4px">
+                    <span style="font-size:10px;color:var(--muted)">Крок S</span>
+                    <input type="number" id="ref-img-sstep" min="0.001" max="0.5" value="0.005" step="0.001"
+                           style="width:46px;font-size:10px;padding:2px 4px;background:var(--input-bg,var(--panel));
+                                  border:1px solid var(--border);border-radius:4px;color:var(--text)">
+                  </div>
+
+                  <!-- Розмір -->
+                  <div style="display:flex;align-items:center;gap:4px">
+                    <span style="font-size:10px;color:var(--muted)">Розмір</span>
+                    <button class="map-tool-btn" onclick="_resizeRefImg(-5)" style="padding:1px 6px;font-size:13px;line-height:1">−</button>
+                    <input type="number" id="ref-img-size" min="20" max="300" value="100" step="5" oninput="_updateRefImg()"
+                           style="width:46px;font-size:10px;padding:2px 4px;background:var(--input-bg,var(--panel));
+                                  border:1px solid var(--border);border-radius:4px;color:var(--text);text-align:center">
+                    <button class="map-tool-btn" onclick="_resizeRefImg(5)"  style="padding:1px 6px;font-size:13px;line-height:1">+</button>
+                    <span style="font-size:9px;color:var(--muted)">%</span>
+                  </div>
+
+                  <!-- Прозорість -->
+                  <div style="display:flex;align-items:center;gap:4px">
+                    <span style="font-size:10px;color:var(--muted)">Прозор.</span>
+                    <input type="range" id="ref-img-opacity" min="5" max="95" value="40" step="5"
+                           oninput="_updateRefImg()" style="width:60px;cursor:pointer;accent-color:var(--accent)">
+                    <span id="ref-img-op-lbl" style="font-size:10px;color:var(--accent);min-width:24px">40%</span>
+                  </div>
+
+                  <!-- Зберегти + Скинути -->
+                  <div style="display:flex;gap:4px">
+                    <button id="btn-ref-img-save" class="map-tool-btn" onclick="_saveRefImgSettings()"
+                            style="padding:3px 8px;font-size:10px;color:#4ade80;border-color:rgba(74,222,128,.35)">
+                      💾 Зберегти
+                    </button>
+                    <button class="map-tool-btn" onclick="_resetRefImgToCalc()"
+                            style="padding:3px 8px;font-size:10px;color:#a0b4cc;border-color:rgba(100,150,200,.35)"
+                            title="Скинути до розрахункових координат (bbox України)">
+                      ↺ Авто
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Право: STRETCH джойстик (хрест як MOVE) -->
+                <div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0;align-items:center">
+                  <span style="font-size:8px;color:var(--muted);letter-spacing:.5px;align-self:flex-start">STRETCH</span>
+                  <div style="display:grid;grid-template-columns:repeat(3,24px);grid-template-rows:repeat(3,24px);gap:2px">
+                    <div></div>
+                    <button class="map-tool-btn" onmousedown="_rStartScale(0,-1)" onmouseup="_rStopMove()" onmouseleave="_rStopMove()"
+                            style="padding:0;font-size:13px;display:flex;align-items:center;justify-content:center" title="Звузити Y">▲</button>
+                    <div></div>
+                    <button class="map-tool-btn" onmousedown="_rStartScale(-1,0)" onmouseup="_rStopMove()" onmouseleave="_rStopMove()"
+                            style="padding:0;font-size:13px;display:flex;align-items:center;justify-content:center" title="Звузити X">◀</button>
+                    <div style="background:rgba(255,255,255,.05);border-radius:3px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0">
+                      <span id="ref-sx-lbl" style="font-size:7px;color:var(--accent);font-family:monospace;line-height:1.1">1.00</span>
+                      <span id="ref-sy-lbl" style="font-size:7px;color:var(--accent);font-family:monospace;line-height:1.1">1.00</span>
+                    </div>
+                    <button class="map-tool-btn" onmousedown="_rStartScale(1,0)"  onmouseup="_rStopMove()" onmouseleave="_rStopMove()"
+                            style="padding:0;font-size:13px;display:flex;align-items:center;justify-content:center" title="Розтягнути X">▶</button>
+                    <div></div>
+                    <button class="map-tool-btn" onmousedown="_rStartScale(0,1)"  onmouseup="_rStopMove()" onmouseleave="_rStopMove()"
+                            style="padding:0;font-size:13px;display:flex;align-items:center;justify-content:center" title="Розтягнути Y">▼</button>
+                    <div></div>
+                  </div>
+                </div>
+              </span>
             </div>
             <!-- SVG Map -->
             <div id="admin-map-svg-container">
@@ -3241,17 +3437,26 @@ tr:hover td{background:rgba(255,255,255,.02)}
 </svg>
 
             </div>
+            <!-- Еталонна карта-орієнтир: рухається з панорамою, не масштабується при зумі -->
+            <img id="map-ref-img" src="/img/map_ua.jpg" alt=""
+                 style="position:absolute;pointer-events:none;display:none;opacity:0.4;object-fit:fill;left:0;top:0;z-index:1">
+            <!-- Прицільний хрест (рухається за курсором) -->
+            <div id="map-crosshair" style="display:none;position:absolute;inset:0;pointer-events:none;z-index:20">
+              <div id="ch-v" style="position:absolute;top:0;bottom:0;left:0;width:1px;background:#000"></div>
+              <div id="ch-h" style="position:absolute;left:0;right:0;top:0;height:1px;background:#000"></div>
+              <div id="ch-dot" style="position:absolute;width:2px;height:2px;background:#00ff44;border-radius:50%;box-shadow:0 0 3px #00ff44,0 0 6px rgba(0,255,68,.7)"></div>
+            </div>
             <!-- Overlay SVGs live OUTSIDE the scaled container → always crisp at any zoom.
                  viewBox is updated dynamically in updateOverlayViewBoxes(). -->
             <svg id="adm-labels-svg" xmlns="http://www.w3.org/2000/svg"
                  style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:visible"
-                 viewBox="0 0 14000 9500" preserveAspectRatio="none"></svg>
+                 viewBox="0 0 14000 9500" preserveAspectRatio="xMidYMid meet"></svg>
             <svg id="adm-dots-svg" xmlns="http://www.w3.org/2000/svg"
                  style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:visible"
-                 viewBox="0 0 14000 9500" preserveAspectRatio="none"></svg>
+                 viewBox="0 0 14000 9500" preserveAspectRatio="xMidYMid meet"></svg>
             <svg id="adm-cities-svg" xmlns="http://www.w3.org/2000/svg"
                  style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:visible"
-                 viewBox="0 0 14000 9500" preserveAspectRatio="none"></svg>
+                 viewBox="0 0 14000 9500" preserveAspectRatio="xMidYMid meet"></svg>
             <div id="map-hint">Виберіть режим редагування вгорі</div>
           </div>
 
@@ -3373,6 +3578,70 @@ tr:hover td{background:rgba(255,255,255,.02)}
           <button class="btn" onclick="loadColors()"><i class="fi-rr-refresh"></i>Скасувати зміни</button>
         </div>
         <div class="colors-grid" id="colors-grid"></div>
+      </div>
+
+      <!-- WORLDMAP SECTION -->
+      <div id="sec-worldmap" class="section">
+        <div class="sec-title"><svg class="adm-ico"><use href="#ico-map"/></svg> Карта світу</div>
+
+        <!-- Налаштування карти України -->
+        <div style="background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:20px;max-width:700px">
+          <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px;display:flex;align-items:center;gap:8px">
+            <svg class="adm-ico"><use href="#ico-city"/></svg> Карта України — міста і населені пункти
+          </div>
+          <label style="display:flex;align-items:center;gap:12px;cursor:pointer;padding:10px 14px;background:rgba(255,255,255,.04);border:1px solid var(--border2);border-radius:8px">
+            <div style="position:relative;width:44px;height:24px;flex-shrink:0">
+              <input type="checkbox" id="cities-ua-toggle" style="opacity:0;position:absolute;width:100%;height:100%;cursor:pointer;margin:0;z-index:1"
+                onchange="saveCitiesUaEnabled(this.checked)">
+              <div id="cities-ua-track" style="position:absolute;inset:0;border-radius:12px;background:var(--red,#f87171);transition:background .2s"></div>
+              <div id="cities-ua-thumb" style="position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.4)"></div>
+            </div>
+            <div>
+              <div style="font-size:13px;font-weight:500;color:var(--text)">Показувати міста та населені пункти</div>
+              <div style="font-size:11px;color:var(--muted);margin-top:2px">Вимкнено — на карті залишаться тільки обласні центри</div>
+            </div>
+          </label>
+        </div>
+
+        <p style="font-size:12px;color:var(--muted);margin:0 0 16px">Налаштування другого режиму карти (Leaflet + тайли OpenStreetMap/CARTO).</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;max-width:700px">
+
+          <label style="display:flex;align-items:center;gap:10px;font-size:13px;cursor:pointer">
+            <input type="checkbox" id="wm-enabled" onchange="saveWMSetting('worldmap_enabled',this.checked?'1':'0')">
+            Карта світу активна (показувати перемикач)
+          </label>
+
+          <label style="display:flex;align-items:center;gap:10px;font-size:13px;cursor:pointer">
+            <input type="checkbox" id="wm-default" onchange="saveWMSetting('worldmap_default',this.checked?'1':'0')">
+            Показувати карту світу за замовчуванням
+          </label>
+
+          <div style="grid-column:span 2">
+            <div style="font-size:12px;color:var(--muted);margin-bottom:6px">URL тайлів</div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <input type="text" id="wm-tile-url" style="flex:1;padding:8px 10px;border:1px solid var(--border2);border-radius:6px;background:var(--surface2);color:var(--text);font-size:12px;font-family:monospace" placeholder="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png">
+              <button class="btn btn-p" onclick="saveWMSetting('worldmap_tile_url',document.getElementById('wm-tile-url').value)">
+                <svg class="adm-ico"><use href="#ico-check"/></svg> Зберегти
+              </button>
+            </div>
+          </div>
+
+          <div style="grid-column:span 2">
+            <div style="font-size:12px;color:var(--muted);margin-bottom:8px">Пресети стилів тайлів</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn btn-p" onclick="_wmPreset('dark')">🌑 Dark Matter</button>
+              <button class="btn btn-p" onclick="_wmPreset('positron')">☀️ Positron (Light)</button>
+              <button class="btn btn-p" onclick="_wmPreset('osm')">🗺 OpenStreetMap</button>
+            </div>
+          </div>
+
+          <div style="grid-column:span 2;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:12px;color:var(--muted);line-height:1.6">
+            <strong style="color:var(--text)">Як використовувати:</strong><br>
+            Карта світу підключається через бібліотеку Leaflet.js. Тайли завантажуються браузером напряму з CARTO/OSM — без навантаження на сервер.<br>
+            Файл <code>/js/leaflet.js</code> та <code>/js/leaflet.css</code> мають бути на сервері (завантажити з <a href="https://unpkg.com/leaflet@1.9.4/dist/" target="_blank" style="color:var(--accent)">unpkg.com</a>).
+          </div>
+
+        </div>
       </div>
 
       <!-- SOCIAL SECTION -->
@@ -4427,6 +4696,283 @@ tr:hover td{background:rgba(255,255,255,.02)}
 
       </div><!-- /sec-density -->
 
+      <!-- ══ СТОРІНКА АВТОРА ══ -->
+      <div id="sec-portfolio" class="section">
+        <div class="sec-title"><svg class="adm-ico"><use href="#ico-users"/></svg> Сторінка Автора — «Дякую тим, хто поряд»</div>
+        <p style="font-size:12px;color:var(--muted);margin:0 0 16px">Список імен у блоці подяк на сторінці <a href="/portfolio/" target="_blank" style="color:var(--accent)">/portfolio/</a>. Порядок — drag-and-drop.</p>
+
+        <!-- Додати нове ім'я -->
+        <div style="display:flex;gap:8px;margin-bottom:16px;align-items:center">
+          <input type="text" id="pt-new-name" placeholder="Прізвище І. П. або ім'я" maxlength="200"
+                 style="flex:1;max-width:320px;padding:7px 10px;font-size:12px;background:var(--input-bg,var(--surface2));
+                        border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit"
+                 onkeydown="if(event.key==='Enter')ptAddName()">
+          <button class="btn btn-p" onclick="ptAddName()">
+            <svg class="adm-ico"><use href="#ico-plus"/></svg> Додати
+          </button>
+        </div>
+
+        <!-- Список -->
+        <div id="pt-list" style="display:flex;flex-direction:column;gap:6px;max-width:520px"></div>
+
+        <div style="display:flex;gap:10px;margin-top:18px">
+          <button class="btn btn-p" onclick="ptSave()">
+            <svg class="adm-ico"><use href="#ico-check"/></svg> Зберегти порядок
+          </button>
+          <button class="btn" onclick="ptLoad()">
+            <svg class="adm-ico"><use href="#ico-refresh"/></svg> Оновити
+          </button>
+        </div>
+      </div><!-- /sec-portfolio -->
+
+      <!-- ── DEVICE ACCESS ──────────────────────────────────────── -->
+      <div id="sec-device" class="section">
+        <div class="sec-title"><svg class="adm-ico"><use href="#ico-device"/></svg> Доступ за типом пристрою</div>
+        <p style="font-size:12px;color:var(--muted);margin:0 0 20px;line-height:1.6">
+          Вимкнений тип пристрою бачить сторінку-заглушку замість сайту. Адміністратори завжди мають доступ.
+        </p>
+
+        <div class="rg-row">
+          <div class="rg-row-info">
+            <div class="rg-row-label"><svg class="adm-ico" style="width:14px;height:14px"><use href="#ico-server"/></svg> ПК / Ноутбук</div>
+            <div class="rg-row-desc">Дозволити доступ з персональних комп'ютерів і ноутбуків</div>
+          </div>
+          <label class="rg-toggle">
+            <input type="checkbox" id="dev-desktop" onchange="saveDeviceSetting('device_desktop_enabled',this.checked?'1':'0')">
+            <span class="rg-slider"></span>
+          </label>
+        </div>
+
+        <div class="rg-row">
+          <div class="rg-row-info">
+            <div class="rg-row-label"><svg class="adm-ico" style="width:14px;height:14px"><use href="#ico-photo"/></svg> Планшет</div>
+            <div class="rg-row-desc">Дозволити доступ з планшетів (iPad, Android-планшет тощо)</div>
+          </div>
+          <label class="rg-toggle">
+            <input type="checkbox" id="dev-tablet" onchange="saveDeviceSetting('device_tablet_enabled',this.checked?'1':'0')">
+            <span class="rg-slider"></span>
+          </label>
+        </div>
+
+        <div class="rg-row">
+          <div class="rg-row-info">
+            <div class="rg-row-label"><svg class="adm-ico" style="width:14px;height:14px"><use href="#ico-device"/></svg> Смартфон</div>
+            <div class="rg-row-desc">Дозволити доступ зі смартфонів (iPhone, Android тощо)</div>
+          </div>
+          <label class="rg-toggle">
+            <input type="checkbox" id="dev-mobile" onchange="saveDeviceSetting('device_mobile_enabled',this.checked?'1':'0')">
+            <span class="rg-slider"></span>
+          </label>
+        </div>
+
+        <div class="rg-row">
+          <div class="rg-row-info">
+            <div class="rg-row-label"><svg class="adm-ico" style="width:14px;height:14px"><use href="#ico-star"/></svg> Кнопка «Кава адміну»</div>
+            <div class="rg-row-desc">Показувати кнопку підтримки розробника на головній сторінці</div>
+          </div>
+          <label class="rg-toggle">
+            <input type="checkbox" id="chk-coffee" onchange="saveDeviceSetting('show_coffee',this.checked?'1':'0')">
+            <span class="rg-slider"></span>
+          </label>
+        </div>
+
+        <div class="rg-row" style="align-items:flex-start;padding-top:14px">
+          <div class="rg-row-info">
+            <div class="rg-row-label">Повідомлення заглушки</div>
+            <div class="rg-row-desc">Текст, який бачить відвідувач з заблокованого типу пристрою</div>
+          </div>
+          <div style="flex-shrink:0;width:300px">
+            <textarea id="dev-block-msg" rows="3"
+              style="width:100%;padding:8px 10px;font-size:12px;border-radius:6px;border:1px solid var(--border2);
+                     background:var(--surface2);color:var(--text);font-family:inherit;resize:vertical;line-height:1.5"
+            ></textarea>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:10px;margin-top:16px;align-items:center">
+          <button class="btn btn-p" onclick="saveDeviceSettings()">
+            <svg class="adm-ico"><use href="#ico-check"/></svg> Зберегти
+          </button>
+          <button class="btn" onclick="loadDeviceSettings()">
+            <svg class="adm-ico"><use href="#ico-refresh"/></svg> Скасувати
+          </button>
+          <span id="dev-save-hint" style="font-size:11px;color:var(--green);margin-left:4px"></span>
+        </div>
+      </div><!-- /sec-device -->
+
+      <!-- ── ЧАТ ── -->
+      <div id="sec-chat" class="section">
+        <div class="sec-title"><svg class="adm-ico"><use href="#ico-candle"/></svg> Мікро-чат</div>
+
+        <!-- Вкладки -->
+        <div class="tab-bar" id="chat-tabs">
+          <button class="tab-btn active" onclick="chatTab('msgs')">Повідомлення</button>
+          <button class="tab-btn" onclick="chatTab('reports')">Скарги <span id="chat-rep-cnt"></span></button>
+          <button class="tab-btn" onclick="chatTab('words')">Заборонені слова</button>
+          <button class="tab-btn" onclick="chatTab('settings')">Налаштування</button>
+        </div>
+
+        <!-- Повідомлення -->
+        <div id="chat-tab-msgs" class="chat-tab-pane">
+          <div class="chat-filter-row">
+            <label style="font-size:12px;color:var(--muted)">
+              <input type="checkbox" id="chat-show-deleted" onchange="chatLoadMsgs()"> Показати видалені
+            </label>
+            <button class="btn btn-b" onclick="chatLoadMsgs()" style="margin-left:auto">
+              <svg class="adm-ico"><use href="#ico-search"/></svg> Оновити
+            </button>
+          </div>
+          <div id="chat-msgs-list"></div>
+          <div id="chat-msgs-more" style="text-align:center;margin-top:8px;display:none">
+            <button class="btn" onclick="chatLoadMoreMsgs()">Завантажити ще</button>
+          </div>
+        </div>
+
+        <!-- Скарги -->
+        <div id="chat-tab-reports" class="chat-tab-pane" style="display:none">
+          <button class="btn btn-b" onclick="chatLoadReports()" style="margin-bottom:12px">
+            <svg class="adm-ico"><use href="#ico-search"/></svg> Оновити
+          </button>
+          <div id="chat-reports-list"></div>
+        </div>
+
+        <!-- Заборонені слова -->
+        <div id="chat-tab-words" class="chat-tab-pane" style="display:none">
+          <!-- Додати одне слово -->
+          <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+            <input type="text" id="chat-word-inp" placeholder="Слово або фраза…" style="flex:1;min-width:140px" maxlength="200">
+            <select id="chat-word-cat" style="width:130px">
+              <option value="profanity">Лайка</option>
+              <option value="threat">Погроза</option>
+              <option value="spam">Спам</option>
+            </select>
+            <button class="btn btn-g" onclick="chatAddWord()">
+              <svg class="adm-ico"><use href="#ico-plus"/></svg> Додати
+            </button>
+          </div>
+
+          <!-- Імпорт з файлу -->
+          <details style="margin-bottom:16px;border:1px solid var(--border);border-radius:8px;padding:10px 14px">
+            <summary style="cursor:pointer;font-size:12px;font-weight:600;color:var(--text2);user-select:none">
+              <svg class="adm-ico" style="vertical-align:middle;margin-right:4px"><use href="#ico-plus"/></svg>
+              Імпорт списку слів з файлу або тексту
+            </summary>
+            <div style="margin-top:12px;display:flex;flex-direction:column;gap:8px">
+              <div style="font-size:11px;color:var(--muted)">Вставте слова через кому або завантажте .txt файл. Дублікати ігноруються.</div>
+              <textarea id="chat-import-text" rows="5" placeholder="лайка1, лайка2, лайка3…&#10;або кожне слово з нового рядка"
+                style="width:100%;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;padding:8px;resize:vertical;font-family:inherit"></textarea>
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                <input type="file" id="chat-import-file" accept=".txt,.csv" style="display:none" onchange="chatImportFileRead()">
+                <button class="btn" onclick="document.getElementById('chat-import-file').click()" style="font-size:11px">
+                  <svg class="adm-ico"><use href="#ico-doc"/></svg> Обрати .txt файл
+                </button>
+                <select id="chat-import-cat" style="width:130px">
+                  <option value="profanity">Лайка</option>
+                  <option value="threat">Погроза</option>
+                  <option value="spam">Спам</option>
+                </select>
+                <button class="btn btn-g" onclick="chatImportWords()" style="font-size:11px">
+                  <svg class="adm-ico"><use href="#ico-plus"/></svg> Імпортувати
+                </button>
+                <span id="chat-import-status" style="font-size:11px;color:var(--muted)"></span>
+              </div>
+            </div>
+          </details>
+
+          <div id="chat-words-list"></div>
+        </div>
+
+        <!-- Налаштування -->
+        <div id="chat-tab-settings" class="chat-tab-pane" style="display:none">
+          <div class="rg-row">
+            <div class="rg-row-info">
+              <div class="rg-row-label">Чат активний</div>
+              <div class="rg-row-desc">Показувати мікро-чат на сайті</div>
+            </div>
+            <label class="rg-toggle">
+              <input type="checkbox" id="chat-cfg-enabled" onchange="chatSaveCfg('chat_enabled',this.checked?'1':'0')">
+              <span class="rg-slider"></span>
+            </label>
+          </div>
+          <div class="rg-row">
+            <div class="rg-row-info">
+              <div class="rg-row-label">Кількість повідомлень в історії</div>
+              <div class="rg-row-desc">Скільки останніх повідомлень завантажувати при відкритті (10–200)</div>
+            </div>
+            <input type="number" id="chat-cfg-count" min="10" max="200" style="width:70px"
+              onchange="chatSaveCfg('chat_history_count',this.value)">
+          </div>
+          <div class="rg-row">
+            <div class="rg-row-info">
+              <div class="rg-row-label">Інтервал оновлення (мс)</div>
+              <div class="rg-row-desc">Як часто чат перевіряє нові повідомлення (мінімум 2000)</div>
+            </div>
+            <input type="number" id="chat-cfg-interval" min="2000" max="30000" step="1000" style="width:90px"
+              onchange="chatSaveCfg('chat_poll_interval',this.value)">
+          </div>
+
+          <!-- Чат-боти -->
+          <div style="margin-top:18px;padding-top:14px;border-top:1px solid rgba(255,255,255,.07)">
+            <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Чат-боти</div>
+            <div class="rg-row">
+              <div class="rg-row-info">
+                <div class="rg-row-label">Боти активні</div>
+                <div class="rg-row-desc">Боти пишуть повідомлення кожні 2–4 хвилини. Зараз онлайн: <strong id="bots-online-count">—</strong></div>
+              </div>
+              <label class="rg-toggle">
+                <input type="checkbox" id="bots-enabled-tog" onchange="botsSetEnabled(this.checked)">
+                <span class="rg-slider"></span>
+              </label>
+            </div>
+            <div style="margin-top:10px">
+              <div style="font-size:11px;color:var(--text2);margin-bottom:6px">Фрази ботів</div>
+              <div id="bots-phrases-list" style="max-height:260px;overflow-y:auto;display:flex;flex-direction:column;gap:4px"></div>
+              <div style="display:flex;gap:6px;margin-top:8px">
+                <input type="text" id="bots-new-phrase" placeholder="Нова фраза…" style="flex:1;background:var(--surface3);border:1px solid var(--border2);border-radius:6px;padding:5px 8px;color:var(--text1);font-size:12px">
+                <button class="btn btn-p" style="font-size:11px;padding:4px 10px" onclick="botsAddPhrase()">
+                  <svg class="adm-ico"><use href="#ico-plus"/></svg> Додати
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Звукові сповіщення -->
+          <div style="margin-top:18px;padding-top:14px;border-top:1px solid rgba(255,255,255,.07)">
+            <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Звукові сповіщення (тільки для адміна)</div>
+            <div class="rg-row">
+              <div class="rg-row-info">
+                <div class="rg-row-label">Новий відвідувач</div>
+                <div class="rg-row-desc">Сигнал при підключенні до сайту</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <button class="btn" style="font-size:11px;padding:3px 8px" onclick="window._admSoundTest&&window._admSoundTest('join')">▶ Тест</button>
+                <label class="rg-toggle"><input type="checkbox" id="snd-join" onchange="_admSoundToggle('join',this.checked)"><span class="rg-slider"></span></label>
+              </div>
+            </div>
+            <div class="rg-row">
+              <div class="rg-row-info">
+                <div class="rg-row-label">Вихід відвідувача</div>
+                <div class="rg-row-desc">Сигнал при відключенні від сайту</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <button class="btn" style="font-size:11px;padding:3px 8px" onclick="window._admSoundTest&&window._admSoundTest('leave')">▶ Тест</button>
+                <label class="rg-toggle"><input type="checkbox" id="snd-leave" onchange="_admSoundToggle('leave',this.checked)"><span class="rg-slider"></span></label>
+              </div>
+            </div>
+            <div class="rg-row">
+              <div class="rg-row-info">
+                <div class="rg-row-label">Нове повідомлення в чаті</div>
+                <div class="rg-row-desc">Сигнал ICQ-стилю при новому повідомленні</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <button class="btn" style="font-size:11px;padding:3px 8px" onclick="window._admSoundTest&&window._admSoundTest('chat')">▶ Тест</button>
+                <label class="rg-toggle"><input type="checkbox" id="snd-chat" onchange="_admSoundToggle('chat',this.checked)"><span class="rg-slider"></span></label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div><!-- /sec-chat -->
+
     </div><!-- /content-area -->
   </div><!-- /main -->
 </div><!-- /layout -->
@@ -4559,17 +5105,22 @@ tr:hover td{background:rgba(255,255,255,.02)}
       <div class="em-f em-full"><label>Відео YouTube URL <span style="float:right;font-weight:400;color:rgba(150,180,210,.5);font-size:9px">youtube.com/… або youtu.be/…</span></label><input id="e-video" maxlength="500" placeholder="https://youtu.be/… або youtube.com/watch?v=…" oninput="_V.url(this)"></div>
       <div class="em-f em-full"><label>Опис <span id="e-desc-cnt" style="float:right;font-weight:400;color:rgba(150,180,210,.6)">0/200</span></label><textarea id="e-desc" maxlength="200" oninput="_V.text(this);document.getElementById('e-desc-cnt').textContent=this.value.length+'/200'"></textarea></div>
     </div>
-    <!-- Coordinates picker -->
-    <div id="em-coords-section" style="margin-bottom:10px;padding:10px 14px;border:1px solid rgba(248,113,113,.35);border-radius:8px;background:rgba(248,113,113,.06)">
-      <div style="font-size:11px;color:var(--muted);margin-bottom:6px"><i class="fi-rr-map-pin"></i> Місце Зірки на карті <span style="color:#f87171;font-size:10px">★ обов'язково для відображення</span></div>
-      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-        <span id="em-coords-txt" style="font-size:11px;font-family:monospace;color:#f87171">не задано</span>
-        <button class="btn btn-b" style="font-size:11px;padding:4px 12px" onclick="_editPickStart()"><i class="fi-rr-map-marker"></i> Вибрати місце Зірки</button>
+    <!-- Coordinates picker — Leaflet world map -->
+    <div id="em-coords-section" style="margin-bottom:10px">
+      <div style="font-size:11px;color:var(--muted);margin-bottom:6px;display:flex;align-items:center;gap:8px">
+        <svg class="adm-ico"><use href="#ico-map"/></svg>
+        Місце Зірки на карті
+        <span style="color:#f87171;font-size:10px">★ обов'язково для відображення</span>
+        <span style="margin-left:auto;font-family:monospace" id="em-coords-txt" style="color:#f87171">не задано</span>
       </div>
+      <div id="em-pick-map" style="height:260px;border-radius:8px;border:1px solid rgba(248,113,113,.4);overflow:hidden"></div>
+      <div style="font-size:10px;color:var(--muted);margin-top:4px">Клікніть на карті щоб поставити мітку · Мітку можна перетягнути</div>
     </div>
     <!-- Awards section -->
     <div style="margin-bottom:10px;padding:10px 14px;border:1px solid var(--border2);border-radius:8px;background:rgba(255,255,255,.02)">
       <div style="font-size:11px;color:var(--muted);margin-bottom:8px"><i class="fi-rr-medal"></i> Нагороди та відзнаки</div>
+      <input type="text" id="em-award-search" placeholder="Пошук нагороди..."
+        style="width:100%;margin-bottom:6px;padding:5px 8px;border-radius:6px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:12px;box-sizing:border-box">
       <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
         <select id="em-award-sel" style="flex:1;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:6px 10px;font-size:12px">
           <option value="">— обрати нагороду —</option>
@@ -4613,6 +5164,7 @@ const _V = {
   chkUrl(s){ if(!s)return true; try{const u=new URL(s);return['http:','https:'].includes(u.protocol);}catch{return false;} },
 };
 function authH(extra = {}) {
+  if (!AP) return Object.assign({}, extra);
   const creds = btoa(unescape(encodeURIComponent(AE + ':' + AP)));
   return Object.assign({'Authorization': 'Basic ' + creds}, extra);
 }
@@ -4716,6 +5268,36 @@ async function tryAutoLogin() {
 }
 document.addEventListener('DOMContentLoaded', () => { tryAutoLogin(); _loadAwardsCatalog(); });
 
+async function loadMaintenance() {
+  try {
+    const r = await fetch('/api/admin/maintenance', {credentials:'include'});
+    if (!r.ok) return;
+    const d = await r.json();
+    const cb = document.getElementById('maint-toggle');
+    const lbl = document.getElementById('maint-lbl');
+    if (cb) cb.checked = d.enabled;
+    if (lbl) lbl.textContent = d.enabled ? 'Офлайн' : 'Онлайн';
+  } catch {}
+}
+
+async function setMaintenance(enabled) {
+  const lbl = document.getElementById('maint-lbl');
+  try {
+    const r = await fetch('/api/admin/maintenance', {
+      method:'PUT', credentials:'include',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({enabled, message:''})
+    });
+    if (!r.ok) throw new Error();
+    if (lbl) lbl.textContent = enabled ? 'Офлайн' : 'Онлайн';
+    showN(enabled ? 'Сайт переведено в Офлайн' : 'Сайт переведено в Онлайн');
+  } catch {
+    const cb = document.getElementById('maint-toggle');
+    if (cb) cb.checked = !enabled;
+    showN('Помилка зміни режиму', true);
+  }
+}
+
 function _renderRoleBadge() {
   const el = document.getElementById('adm-role-badge');
   if (!el) return;
@@ -4750,7 +5332,10 @@ function showSec(id) {
   if(id==='icons')   { if(Object.keys(COLORS).length>0) renderIconsSection(); else loadColors(); }
   if(id==='cities')  { document.getElementById('city-search').value=''; loadCitiesAdmin(); }
   if(id==='friends') { document.getElementById('partners-search').value=''; loadPartnersAdmin(); }
-  if(id==='silence') _loadSilenceSettings();
+  if(id==='silence')   _loadSilenceSettings();
+  if(id==='portfolio') ptLoad();
+  if(id==='device')    loadDeviceSettings();
+  if(id==='worldmap')  loadWMSettings();
   if(id==='seo')     loadSeoAdminDash();
   if(id==='card')    cardSettingsLoad();
   if(id==='version') versionLoad();
@@ -4988,14 +5573,23 @@ async function loadStats() {
     const r=await fetch(`${API}/api/admin/stats`, {headers: authH()});
     if(r.status===401||r.status===403){_handleAuthFail();return;}
     const d=await r.json();
-    ['total','appr','pend','users','likes','online'].forEach(k=>{
+    ['total','appr','pend','users','likes'].forEach(k=>{
       const el=document.getElementById('st-'+k); if(el) el.textContent=d[k==='appr'?'approved':k==='pend'?'pending':k]??'—';
     });
-    document.getElementById('tb-total').textContent=d.total;
-    document.getElementById('tb-pend').textContent=d.pending;
-    document.getElementById('tb-users').textContent=d.users;
+    // Розділений лічильник онлайн
+    const onlineReal = d.online_real ?? d.online ?? 0;
+    const onlineBots = d.online_bots ?? 0;
+    const elStOnline = document.getElementById('st-online');
+    if(elStOnline) elStOnline.textContent = onlineReal;
+    const elStBots = document.getElementById('st-online-bots');
+    if(elStBots) elStBots.textContent = onlineBots;
+    const elTbReal = document.getElementById('tb-online-real');
+    if(elTbReal) elTbReal.textContent = onlineReal;
+    const elTbBots = document.getElementById('tb-online-bots');
+    if(elTbBots) elTbBots.textContent = onlineBots;
     document.getElementById('tb-online').textContent=d.online;
     document.getElementById('adm-online').textContent=d.online;
+    if(d.online_users!==undefined)_renderOnlineList(d.online_users);
     const nb=document.getElementById('pend-nb');
     nb.textContent=d.pending; nb.style.display=d.pending>0?'':'none';
   } catch {}
@@ -5003,6 +5597,153 @@ async function loadStats() {
 
 /* ══════════ SERVER STATS + CHART ══════════ */
 let _visitsChart = null;
+let _realtimeChart = null;
+
+async function loadRealtimeChart() {
+  try {
+    const r = await fetch(`${API}/api/admin/realtime-12h`, {headers: authH(), credentials:'include'});
+    if (!r.ok) return;
+    const d = await r.json();
+
+    const el = document.getElementById('realtime-12h-chart');
+    if (!el) return;
+
+    // Градієнтні заливки (колір зверху → прозорий знизу, як у Virtualizor)
+    const gCtx = el.getContext('2d');
+    const gh = el.parentElement.offsetHeight || 220;
+    function mkGrad(r2, g2, b2) {
+      const gr = gCtx.createLinearGradient(0, 0, 0, gh);
+      gr.addColorStop(0,    `rgba(${r2},${g2},${b2},0.60)`);
+      gr.addColorStop(0.60, `rgba(${r2},${g2},${b2},0.18)`);
+      gr.addColorStop(1,    `rgba(${r2},${g2},${b2},0.01)`);
+      return gr;
+    }
+
+    function segColor(val, warn, crit) {
+      if (val === null || val === undefined) return 'rgba(120,120,120,0.6)';
+      if (val >= crit) return '#e03030';
+      if (val >= warn) return '#d4b020';
+      return '#28c860';
+    }
+
+    const cfg = {
+      type: 'line',
+      data: {
+        labels: d.labels || [],
+        datasets: [
+          {
+            label: 'Відвідувачі',
+            data: d.visits || [],
+            borderColor: 'rgb(40,170,255)',
+            backgroundColor: mkGrad(40,170,255),
+            tension: 0.42, fill: true, yAxisID: 'y',
+            pointRadius: 0, pointHoverRadius: 6,
+            pointHoverBackgroundColor: 'rgb(40,170,255)',
+            pointHoverBorderColor: '#fff', pointHoverBorderWidth: 2,
+            borderWidth: 2.5,
+          },
+          {
+            label: 'Боти',
+            data: d.bots_total || [],
+            borderColor: 'rgb(255,138,40)',
+            backgroundColor: mkGrad(255,138,40),
+            tension: 0.42, fill: true, yAxisID: 'y',
+            pointRadius: 0, pointHoverRadius: 6,
+            pointHoverBackgroundColor: 'rgb(255,138,40)',
+            pointHoverBorderColor: '#fff', pointHoverBorderWidth: 2,
+            borderWidth: 2.5,
+          },
+          {
+            label: 'Запити БД',
+            data: d.db_queries || [],
+            borderColor: 'rgb(210,55,135)',
+            backgroundColor: mkGrad(210,55,135),
+            tension: 0.42, fill: true, yAxisID: 'y',
+            pointRadius: 0, pointHoverRadius: 6,
+            pointHoverBackgroundColor: 'rgb(210,55,135)',
+            pointHoverBorderColor: '#fff', pointHoverBorderWidth: 2,
+            borderWidth: 2.5,
+          },
+          {
+            label: 'CPU %',
+            data: d.cpu || [],
+            borderColor: 'rgb(90,215,130)',
+            backgroundColor: mkGrad(90,215,130),
+            tension: 0.42, fill: true, yAxisID: 'y2',
+            pointRadius: 0, pointHoverRadius: 6,
+            pointHoverBorderColor: '#fff', pointHoverBorderWidth: 2,
+            borderWidth: 2,
+            segment: {
+              borderColor: ctx => segColor(ctx.p1.parsed.y, 70, 90),
+              pointHoverBackgroundColor: ctx => segColor(ctx.p1.parsed.y, 70, 90),
+            },
+          },
+          {
+            label: 'RAM %',
+            data: d.ram || [],
+            borderColor: 'rgb(215,178,45)',
+            backgroundColor: mkGrad(215,178,45),
+            tension: 0.42, fill: true, yAxisID: 'y2',
+            pointRadius: 0, pointHoverRadius: 6,
+            pointHoverBorderColor: '#fff', pointHoverBorderWidth: 2,
+            borderWidth: 2,
+            segment: {
+              borderColor: ctx => segColor(ctx.p1.parsed.y, 75, 90),
+            },
+          },
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: {
+            position: 'bottom', align: 'center',
+            labels: {
+              color: '#777', font: { size: 11 }, padding: 18,
+              usePointStyle: true, pointStyle: 'circle', boxWidth: 8, boxHeight: 8,
+            },
+          },
+          tooltip: {
+            backgroundColor: 'rgba(6,8,14,0.95)',
+            titleColor: '#bbb', bodyColor: '#888',
+            borderColor: 'rgba(255,255,255,0.07)', borderWidth: 1,
+            padding: 10, caretSize: 6,
+            callbacks: {
+              label: ctx => {
+                const v = ctx.parsed.y;
+                if (v === null || v === undefined) return `  ${ctx.dataset.label}: н/д`;
+                return `  ${ctx.dataset.label}: ${v}${ctx.dataset.yAxisID === 'y2' ? '%' : ''}`;
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            ticks: { color: '#505050', font: { size: 10 }, maxTicksLimit: 12 },
+            grid: { display: false },
+            border: { display: false },
+          },
+          y: {
+            position: 'left',
+            ticks: { color: '#505050', font: { size: 10 }, maxTicksLimit: 5 },
+            grid: { color: 'rgba(255,255,255,0.04)', drawTicks: false },
+            border: { display: false },
+          },
+          y2: {
+            position: 'right', min: 0, max: 100,
+            ticks: { color: '#505050', font: { size: 10 }, maxTicksLimit: 5, callback: v => v + '%' },
+            grid: { drawOnChartArea: false },
+            border: { display: false },
+          },
+        }
+      }
+    };
+
+    if (_realtimeChart) { _realtimeChart.destroy(); _realtimeChart = null; }
+    _realtimeChart = new Chart(el, cfg);
+  } catch(e) { console.warn('realtime-12h chart:', e); }
+}
 
 async function loadServerStats() {
   try {
@@ -5829,7 +6570,7 @@ let _impEditIdx = null;
 let _impPickMode = false;
 let _impPickRowIdx = null;
 let _editPickMode = false;
-let _editPickCoords = {x:0, y:0};
+let _editPickCoords = {x:0, y:0, lat:null, lng:null};
 let _editAwards = [];
 let _editAwardsExisting = [];
 let _editAwardsToDelete = [];
@@ -6040,10 +6781,23 @@ async function _loadAwardsCatalog() {
     const r = await fetch(`${API}/api/awards/catalog`);
     const data = await r.json();
     AWARDS_DATA_ADM.length = 0;
-    data.forEach(a => AWARDS_DATA_ADM.push({name: a.name, file: a.img_file}));
+    data.forEach(a => AWARDS_DATA_ADM.push({name: a.name, file: a.img_file, category: a.category||'badge'}));
+    // Перебудовуємо select якщо модаль вже відкрита
+    _initEditAwardSel();
   } catch {}
 }
-function _wikiImg(file, w){ return `/img/awards/${encodeURIComponent(file)}`; }
+function _wikiImg(file, w){ return file ? `/img/awards/${encodeURIComponent(file)}` : ''; }
+
+// Сірий placeholder з першою літерою категорії
+const _CAT_LTR = {hero:'З', order:'О', cross:'Х', medal:'М', badge:'В'};
+function _awardImg(file, cat, sz) {
+  sz = sz || 30;
+  const letter = _CAT_LTR[cat] || '★';
+  const ph = `<div style="width:${sz}px;height:${sz}px;border-radius:4px;background:#2a2a3a;display:flex;align-items:center;justify-content:center;font-size:${Math.round(sz*.5)}px;color:#666;font-weight:700;flex-shrink:0">${letter}</div>`;
+  if (!file) return ph;
+  const phQ = ph.replace(/"/g,"'");
+  return `<img src="/img/awards/${encodeURIComponent(file)}" style="width:${sz}px;height:${sz}px;object-fit:contain;flex-shrink:0" onerror="this.outerHTML='${phQ}'">`;
+}
 
 const _IMP_FIELDS = [
   {k:'last',  l:'Прізвище *',                             san:'name', max:100},
@@ -6125,7 +6879,7 @@ function _renderImpAwardsList(awards) {
   if (!awards || !awards.length) return '<div style="color:var(--muted);font-size:11px;padding:4px 0">Немає нагород — оберіть зі списку</div>';
   return awards.map((a, ai) => `
     <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border)">
-      <img src="${_wikiImg(a.img_file,60)}" style="width:32px;height:32px;object-fit:contain;flex-shrink:0" onerror="this.style.opacity='.2'">
+      ${_awardImg(a.img_file, a.category, 32)}
       <span style="flex:1;font-size:11px;line-height:1.3">${h(a.name)}</span>
       <button class="btn btn-r" style="font-size:10px;padding:2px 7px;flex-shrink:0" onclick="_impRemoveAward(${_impEditIdx},${ai})">✕</button>
     </div>`).join('');
@@ -6138,7 +6892,7 @@ function _impAddAward(idx) {
   if (!aw) return;
   if (!_impRows[idx]._awards) _impRows[idx]._awards = [];
   if (_impRows[idx]._awards.find(a => a.name === aw.name)) { sel.value = ''; return; }
-  _impRows[idx]._awards.push({ name: aw.name, img_file: aw.file });
+  _impRows[idx]._awards.push({ name: aw.name, img_file: aw.file, category: aw.category||'badge' });
   document.getElementById('ief-awards-list').innerHTML = _renderImpAwardsList(_impRows[idx]._awards);
   sel.value = '';
 }
@@ -6151,50 +6905,120 @@ function _impRemoveAward(idx, ai) {
 
 function closeImpOverlay() { document.getElementById('imp-overlay').style.display = 'none'; _impRows = []; }
 
-/* ── EDIT MODAL: координати + нагороди ─────────────────── */
-function _editPickStart() {
-  _editPickMode = true;
-  document.getElementById('edit-modal').classList.remove('open');
-  document.getElementById('edit-pick-banner').style.display = 'flex';
-  mapCont.classList.add('pick-mode');
-  showSec('mapeditor');
+/* ── WORLD MAP PICKER (Leaflet) ─────────────────────────── */
+const _UA_BOUNDS_ADM = {latMin:43.95, latMax:52.37, lngMin:22.15, lngMax:41.03};
+let _emMap = null, _emMarker = null;
+
+function _latLngToSvg(lat, lng) {
+  const x = parseFloat(((lng - _UA_BOUNDS_ADM.lngMin) / (_UA_BOUNDS_ADM.lngMax - _UA_BOUNDS_ADM.lngMin)).toFixed(4));
+  const y = parseFloat((1 - (lat - _UA_BOUNDS_ADM.latMin) / (_UA_BOUNDS_ADM.latMax - _UA_BOUNDS_ADM.latMin)).toFixed(4));
+  return {x, y};
 }
-function _editPickDone(rx, ry) {
-  _editPickMode = false;
-  mapCont.classList.remove('pick-mode');
-  document.getElementById('edit-pick-banner').style.display = 'none';
-  _editPickCoords = {x: rx, y: ry};
-  document.getElementById('edit-modal').classList.add('open');
+
+function _initEmMap() {
+  if (_emMap) { _emMap.invalidateSize(); return; }
+  _emMap = L.map('em-pick-map', {center:[49.0,32.0], zoom:5, attributionControl:false});
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {maxZoom:19, attribution:''}).addTo(_emMap);
+  _emMap.on('click', function(e) { _emMapSetPoint(e.latlng.lat, e.latlng.lng); });
+}
+
+function _emMapSetPoint(lat, lng) {
+  const ll = L.latLng(lat, lng);
+  if (_emMarker) {
+    _emMarker.setLatLng(ll);
+  } else {
+    _emMarker = L.marker(ll, {draggable:true}).addTo(_emMap);
+    _emMarker.on('dragend', function(ev) {
+      _emMapSetPoint(ev.target.getLatLng().lat, ev.target.getLatLng().lng);
+    });
+  }
+  const svg = _latLngToSvg(lat, lng);
+  _editPickCoords = {x:svg.x, y:svg.y, lat:lat, lng:lng};
   _refreshEditCoords();
 }
-function _editPickCancel() {
-  _editPickMode = false;
-  mapCont.classList.remove('pick-mode');
-  document.getElementById('edit-pick-banner').style.display = 'none';
-  document.getElementById('edit-modal').classList.add('open');
+
+function _svgToLatLng(x, y) {
+  const lng = x * (_UA_BOUNDS_ADM.lngMax - _UA_BOUNDS_ADM.lngMin) + _UA_BOUNDS_ADM.lngMin;
+  const lat = (1 - y) * (_UA_BOUNDS_ADM.latMax - _UA_BOUNDS_ADM.latMin) + _UA_BOUNDS_ADM.latMin;
+  return {lat: parseFloat(lat.toFixed(4)), lng: parseFloat(lng.toFixed(4))};
 }
+
+function _emMapLoadCoords() {
+  setTimeout(function() {
+    _initEmMap();
+    // Якщо немає world_lat але є pos_x/pos_y — конвертуємо назад в lat/lng
+    if ((_editPickCoords.lat === null || _editPickCoords.lat === undefined)
+        && _editPickCoords.x > 0 && _editPickCoords.y > 0) {
+      const ll = _svgToLatLng(_editPickCoords.x, _editPickCoords.y);
+      _editPickCoords.lat = ll.lat;
+      _editPickCoords.lng = ll.lng;
+      _refreshEditCoords();
+    }
+    if (_editPickCoords.lat !== null && _editPickCoords.lat !== undefined) {
+      const ll = L.latLng(_editPickCoords.lat, _editPickCoords.lng);
+      if (_emMarker) _emMarker.setLatLng(ll);
+      else {
+        _emMarker = L.marker(ll, {draggable:true}).addTo(_emMap);
+        _emMarker.on('dragend', function(ev) {
+          _emMapSetPoint(ev.target.getLatLng().lat, ev.target.getLatLng().lng);
+        });
+      }
+      _emMap.setView(ll, 8);
+    } else {
+      _emMap.setView([49.0,32.0], 5);
+      if (_emMarker) { _emMarker.remove(); _emMarker = null; }
+    }
+    setTimeout(function() { if (_emMap) _emMap.invalidateSize(); }, 150);
+  }, 50);
+}
+
+/* ── EDIT MODAL: координати + нагороди ─────────────────── */
 function _refreshEditCoords() {
-  const {x, y} = _editPickCoords;
-  const has = x > 0 && y > 0;
-  const sec = document.getElementById('em-coords-section');
-  if (sec) {
-    sec.style.borderColor = has ? 'rgba(74,222,128,.3)' : 'rgba(248,113,113,.35)';
-    sec.style.background  = has ? 'rgba(74,222,128,.06)' : 'rgba(248,113,113,.06)';
+  const {x, y, lat, lng} = _editPickCoords;
+  const has = lat !== null && lat !== undefined;
+  const mapEl = document.getElementById('em-pick-map');
+  if (mapEl) {
+    mapEl.style.borderColor = has ? 'rgba(74,222,128,.4)' : 'rgba(248,113,113,.4)';
   }
   const txt = document.getElementById('em-coords-txt');
   if (txt) {
-    txt.textContent = has ? `x: ${x.toFixed(4)}, y: ${y.toFixed(4)}` : 'не задано';
-    txt.style.color = has ? '#4ade80' : '#f87171';
+    if (has) {
+      txt.textContent = 'lat: ' + lat.toFixed(4) + ', lng: ' + lng.toFixed(4);
+      txt.style.color = '#4ade80';
+    } else {
+      txt.textContent = 'не задано';
+      txt.style.color = '#f87171';
+    }
   }
+}
+function _buildAwardOptgroups(sel, data, q) {
+  q = (q||'').toLowerCase();
+  sel.innerHTML = '<option value="">— оберіть нагороду —</option>';
+  const GROUPS = {hero:'Вищі звання', order:'Ордени', cross:'Хрести', medal:'Медалі', badge:'Відзнаки/Знаки'};
+  const byG = {};
+  data.forEach((a, i) => {
+    if (q && !a.name.toLowerCase().includes(q)) return;
+    const c = a.category || 'badge';
+    (byG[c] || (byG[c] = [])).push({i, a});
+  });
+  Object.entries(GROUPS).forEach(([c, lbl]) => {
+    if (!byG[c]) return;
+    const og = document.createElement('optgroup'); og.label = lbl;
+    byG[c].forEach(({i, a}) => { const o = document.createElement('option'); o.value = i; o.textContent = a.name; og.appendChild(o); });
+    sel.appendChild(og);
+  });
 }
 function _initEditAwardSel() {
   const sel = document.getElementById('em-award-sel');
-  if (!sel || sel.options.length > 1) return;
-  AWARDS_DATA_ADM.forEach((a, i) => {
-    const o = document.createElement('option');
-    o.value = i; o.textContent = a.name;
-    sel.appendChild(o);
-  });
+  const srch = document.getElementById('em-award-search');
+  if (!sel) return;
+  if (srch) srch.value = '';
+  _buildAwardOptgroups(sel, AWARDS_DATA_ADM, '');
+  if (srch) {
+    if (srch._rebuildFn) srch.removeEventListener('input', srch._rebuildFn);
+    srch._rebuildFn = e => _buildAwardOptgroups(sel, AWARDS_DATA_ADM, e.target.value);
+    srch.addEventListener('input', srch._rebuildFn);
+  }
 }
 function _renderEditAwardsList() {
   const visible = [
@@ -6206,7 +7030,7 @@ function _renderEditAwardsList() {
   if (!visible.length) { el.innerHTML = '<div style="color:var(--muted);font-size:11px;padding:4px 0">Немає нагород</div>'; return; }
   el.innerHTML = visible.map((a, li) => `
     <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border)">
-      <img src="${_wikiImg(a.img_file||'',60)}" style="width:30px;height:30px;object-fit:contain;flex-shrink:0" onerror="this.style.opacity='.2'">
+      ${_awardImg(a.img_file||'', a.category||'badge', 30)}
       <span style="flex:1;font-size:11px;line-height:1.3">${h(a.name)}</span>
       <button class="btn btn-r" style="font-size:10px;padding:2px 7px;flex-shrink:0"
         onclick="_editRemoveAward(${a._existing?1:0},${a.id||'null'},${a._newIdx!==undefined?a._newIdx:-1})">✕</button>
@@ -6220,7 +7044,7 @@ function _editAddAward() {
   const nm = aw.name;
   if (_editAwardsExisting.some(a => a.name === nm && !_editAwardsToDelete.includes(a.id))) { sel.value=''; return; }
   if (_editAwards.some(a => a.name === nm)) { sel.value=''; return; }
-  _editAwards.push({name: nm, img_file: aw.file});
+  _editAwards.push({name: nm, img_file: aw.file, category: aw.category||'badge'});
   _renderEditAwardsList();
   sel.value = '';
 }
@@ -6260,24 +7084,87 @@ async function applyImport() {
   } catch { showN('Помилка імпорту', true); if (btn) btn.disabled = false; }
 }
 
+let _pendMaps = {};
+
 async function loadPend() {
+  Object.values(_pendMaps).forEach(m=>{ try{m.remove();}catch(e){} });
+  _pendMaps = {};
   const r=await fetch(`${API}/api/admin/pending`, {headers: authH()});
   const pend=await r.json();
-  pend.forEach(rec=>{if(!allPeople.find(x=>x.id===rec.id))allPeople.push(rec);});
+  pend.forEach(rec=>{const i=allPeople.findIndex(x=>x.id===rec.id);if(i>=0)allPeople[i]=rec;else allPeople.push(rec);});
   document.getElementById('pend-tb').innerHTML=!pend.length
     ?'<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px">Немає записів</td></tr>'
     :pend.map(p=>`
-    <tr>
+    <tr id="pend-row-${p.id}" style="cursor:pointer" onclick="togglePendPreview(${p.id})" title="Натисніть щоб переглянути деталі">
       <td style="color:var(--muted)">${p.id}</td>
-      <td><strong>${h(p.last)} ${h(p.first)} ${h(p.mid)}</strong></td>
-      <td style="font-size:11px">${h(p.bury)||'—'}</td>
+      <td><strong>${h(p.last)} ${h(p.first)} ${h(p.mid)}</strong>${p.grp?`<br><span style="font-size:10px;color:var(--muted)">${h(p.grp)}</span>`:''}</td>
+      <td style="font-size:11px">${p.loc?h(p.loc)+'<br>':''}${h(p.bury)||'—'}</td>
       <td style="font-size:11px">${h(p.added_by)||'—'}</td>
-      <td style="display:flex;gap:5px">
-        <button class="btn btn-g" onclick="approveMem(${p.id})" title="Схвалити"><i class="fi-rr-check"></i></button>
-        <button class="btn btn-b" onclick="openEditById(${p.id})" title="Редагувати"><i class="fi-rr-pencil"></i></button>
-        <button class="btn btn-r" onclick="delMem(${p.id})" title="Видалити"><i class="fi-rr-trash"></i></button>
+      <td style="display:flex;gap:5px" onclick="event.stopPropagation()">
+        <button class="btn btn-g" onclick="approveMem(${p.id})" title="Схвалити"><svg class="adm-ico"><use href="#ico-check"/></svg></button>
+        <button class="btn btn-b" onclick="openEditById(${p.id})" title="Редагувати"><svg class="adm-ico"><use href="#ico-edit"/></svg></button>
+        <button class="btn btn-r" onclick="delMem(${p.id})" title="Видалити"><svg class="adm-ico"><use href="#ico-trash"/></svg></button>
+      </td>
+    </tr>
+    <tr id="pend-preview-${p.id}" style="display:none">
+      <td colspan="5" style="padding:0;border-top:none">
+        <div style="display:grid;grid-template-columns:1fr 220px;gap:12px;padding:12px 16px;background:var(--surface2);border-bottom:1px solid var(--border)">
+          <div>
+            <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:10px;font-size:12px">
+              ${p.birth||p.death?`<span style="color:var(--muted)">${p.birth?h(p.birth):'?'} — ${p.death?h(p.death):'?'}</span>`:''}
+              ${p.rank?`<span style="color:var(--accent)">${h(p.rank)}</span>`:''}
+              ${p.unit?`<span style="color:var(--muted)">${h(p.unit)}</span>`:''}
+              ${p.position?`<span style="color:var(--muted)">${h(p.position)}</span>`:''}
+            </div>
+            ${p.circ?`<div style="font-size:12px;color:var(--muted);margin-bottom:8px"><strong style="color:var(--text)">Обставини:</strong> ${h(p.circ)}</div>`:''}
+            ${p.descr?`<div style="font-size:12px;color:var(--muted);max-height:80px;overflow:hidden"><strong style="color:var(--text)">Опис:</strong> ${h(p.descr)}</div>`:''}
+            <div id="pend-map-${p.id}" data-lat="${p.world_lat||''}" data-lng="${p.world_lng||''}" data-px="${p.pos_x||''}" data-py="${p.pos_y||''}" style="height:220px;border-radius:8px;margin-top:10px;border:1px solid var(--border);overflow:hidden;background:#0a0a10"></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
+            ${p.photo?`<img src="${h(p.photo)}" style="width:200px;height:160px;object-fit:cover;object-position:top;border-radius:8px;border:1px solid var(--border)" onerror="this.src='/img/foto_false.png'">`:'<div style="width:200px;height:160px;border-radius:8px;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px">Фото відсутнє</div>'}
+            ${p.color?`<div style="font-size:11px;color:var(--muted)">Колір зірки: <span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${h(p.color)};vertical-align:middle"></span> ${h(p.color)}</div>`:''}
+            ${p.world_lat&&p.world_lng?`<div style="font-size:10px;color:var(--muted);font-family:monospace">lat ${(+p.world_lat).toFixed(4)}, lng ${(+p.world_lng).toFixed(4)}</div>`:'<div style="font-size:10px;color:var(--muted)">координати не задані</div>'}
+          </div>
+        </div>
       </td>
     </tr>`).join('');
+}
+
+function togglePendPreview(id) {
+  const row = document.getElementById('pend-preview-'+id);
+  if (!row) return;
+  const open = row.style.display !== 'none';
+  row.style.display = open ? 'none' : '';
+  if (!open) _initPendMap(id);
+}
+
+function _initPendMap(id) {
+  if (_pendMaps[id]) { _pendMaps[id].invalidateSize(); return; }
+  const el = document.getElementById('pend-map-'+id);
+  if (!el) return;
+  const map = L.map(el, {attributionControl:false, zoomControl:true});
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {maxZoom:19, attribution:''}).addTo(map);
+  const lat = parseFloat(el.dataset.lat);
+  const lng = parseFloat(el.dataset.lng);
+  if (!isNaN(lat) && !isNaN(lng) && (lat || lng)) {
+    const ll = L.latLng(lat, lng);
+    L.marker(ll).addTo(map);
+    map.setView(ll, 9);
+  } else {
+    // fallback: якщо є pos_x/pos_y — конвертуємо назад в lat/lng
+    const px = parseFloat(el.dataset.px);
+    const py = parseFloat(el.dataset.py);
+    if (!isNaN(px) && !isNaN(py) && (px || py)) {
+      const flng = 22.15 + px * (41.03 - 22.15);
+      const flat = (1 - py) * (52.37 - 43.95) + 43.95;
+      const ll = L.latLng(flat, flng);
+      L.marker(ll).addTo(map);
+      map.setView(ll, 9);
+    } else {
+      map.setView([49.0, 32.0], 5);
+    }
+  }
+  _pendMaps[id] = map;
 }
 
 async function approveMem(id){try{const r=await fetch(`${API}/api/admin/approve/${id}`,{method:'POST',headers:authH()});if(!r.ok)throw new Error(r.status);showN('Схвалено');loadPend();loadStats();}catch{showN('Помилка схвалення',true);}}
@@ -6301,7 +7188,7 @@ let _usersBanMenu = null;
 
 async function loadUsers() {
   try {
-    const r = await fetch(`${API}/api/admin/users`, {headers: authH()});
+    const r = await fetch(`${API}/api/admin/users`, {headers: authH(), credentials: 'include'});
     if (!r.ok) throw new Error(r.status);
     _usersData = await r.json();
     _renderUserStats();
@@ -6801,6 +7688,7 @@ function applyMapTr(){
   updateDotSizes();
   const zl=document.getElementById('map-zoom-lbl');
   if(zl) zl.textContent=mtr.s.toFixed(1)+'×';
+  if(_refImgVisible) _updateRefImgPos();
 }
 
 /* Перераховує розміри точок так щоб вони залишались фіксованого екранного розміру при зумі */
@@ -6876,6 +7764,276 @@ function svg2screen(svgX,svgY){
   };
 }
 
+/* ── Еталонна карта-орієнтир ──────────────────────────── */
+let _refImgVisible = false;
+let _refImgOffX = 0, _refImgOffY = 0;
+let _refImgSize = 100, _refImgOpacity = 40;
+let _refImgScaleX = 1.0, _refImgScaleY = 1.0;
+
+function _toggleCrosshair() {
+  const el  = document.getElementById('map-crosshair');
+  const btn = document.getElementById('btn-crosshair');
+  if (!el) return;
+  const vis = el.style.display === 'none' || !el.style.display;
+  el.style.display = vis ? 'block' : 'none';
+  if (btn) btn.classList.toggle('active', vis);
+}
+
+// Рух прицілу за курсором — слухаємо на mapCont
+mapCont.addEventListener('mousemove', e => {
+  const ch = document.getElementById('map-crosshair');
+  if (!ch || ch.style.display === 'none') return;
+  const r = mapCont.getBoundingClientRect();
+  const x = e.clientX - r.left;
+  const y = e.clientY - r.top;
+  document.getElementById('ch-v').style.left   = x + 'px';
+  document.getElementById('ch-h').style.top    = y + 'px';
+  document.getElementById('ch-dot').style.left = (x - 1) + 'px';
+  document.getElementById('ch-dot').style.top  = (y - 1) + 'px';
+});
+// Ховаємо прицільні лінії коли миша виходить за межі карти
+mapCont.addEventListener('mouseleave', () => {
+  const ch = document.getElementById('map-crosshair');
+  if (ch && ch.style.display !== 'none') ch.style.opacity = '0';
+});
+mapCont.addEventListener('mouseenter', () => {
+  const ch = document.getElementById('map-crosshair');
+  if (ch && ch.style.display !== 'none') ch.style.opacity = '1';
+});
+
+function _toggleRefImg() {
+  _refImgVisible = !_refImgVisible;
+  const img   = document.getElementById('map-ref-img');
+  const btn   = document.getElementById('btn-ref-img');
+  const ctrls = document.getElementById('ref-img-ctrls');
+  if (img)   img.style.display = _refImgVisible ? 'block' : 'none';
+  if (btn)   btn.classList.toggle('active', _refImgVisible);
+  if (ctrls) ctrls.style.display = _refImgVisible ? 'flex' : 'none';
+  if (_refImgVisible) { _loadRefImgSettings(); _updateRefImgPos(); }
+}
+
+function _updateRefImg() {
+  const opEl = document.getElementById('ref-img-opacity');
+  const szEl = document.getElementById('ref-img-size');
+  const lbl  = document.getElementById('ref-img-op-lbl');
+  const img  = document.getElementById('map-ref-img');
+  if (!img) return;
+  _refImgOpacity = Math.max(5,  Math.min(95,  +(opEl?.value || _refImgOpacity)));
+  _refImgSize    = Math.max(20, Math.min(300, +(szEl?.value || _refImgSize)));
+  if (lbl) lbl.textContent = _refImgOpacity + '%';
+  img.style.opacity = _refImgOpacity / 100;
+  _updateRefImgPos();
+  _riCookieSave();
+}
+
+// _refImgOffX/Y — SVG-одиниці (0–14000 / 0–9500), ліво-верхній кут зображення.
+// _refImgScaleX/Y — множники розтягнення по осях (1.0 = без змін).
+// Формула позиції: зворотня проєкція viewBox з applyMapTr.
+function _updateRefImgPos() {
+  const img = document.getElementById('map-ref-img');
+  if (!img || !_refImgVisible) return;
+  const sz = Math.max(20, Math.min(300, _refImgSize)) / 100;
+  const b  = getAdminMapBounds();
+  const s  = mtr.s;
+  const vbx = -(b.x*(s-1)+mtr.x)*14000/(b.w*s);
+  const vby = -(b.y*(s-1)+mtr.y)*9500 /(b.h*s);
+  const vbw = 14000/s;
+  const vbh = 9500/s;
+  const screenX = b.x + (_refImgOffX - vbx) / vbw * b.w;
+  const screenY = b.y + (_refImgOffY - vby) / vbh * b.h;
+  img.style.left   = screenX + 'px';
+  img.style.top    = screenY + 'px';
+  img.style.width  = (b.w * sz * _refImgScaleX * s) + 'px';
+  img.style.height = (b.h * sz * _refImgScaleY * s) + 'px';
+  // Синхронізуємо всі поля/мітки
+  const xi = document.getElementById('ref-img-x-inp');
+  const yi = document.getElementById('ref-img-y-inp');
+  if (xi) xi.value = Math.round(_refImgOffX);
+  if (yi) yi.value = Math.round(_refImgOffY);
+  const sxi = document.getElementById('ref-img-sx-inp');
+  const syi = document.getElementById('ref-img-sy-inp');
+  if (sxi) sxi.value = _refImgScaleX.toFixed(2);
+  if (syi) syi.value = _refImgScaleY.toFixed(2);
+  const sxl = document.getElementById('ref-sx-lbl');
+  const syl = document.getElementById('ref-sy-lbl');
+  if (sxl) sxl.textContent = _refImgScaleX.toFixed(2);
+  if (syl) syl.textContent = _refImgScaleY.toFixed(2);
+}
+
+// ── Cookie-буфер для ref-img налаштувань ──────────────────
+const _RI_COOKIE = 'ref_img_buf';
+
+function _riCookieSave() {
+  const data = {
+    x: Math.round(_refImgOffX),
+    y: Math.round(_refImgOffY),
+    size: _refImgSize,
+    op: _refImgOpacity,
+    sx: +_refImgScaleX.toFixed(3),
+    sy: +_refImgScaleY.toFixed(3),
+  };
+  const exp = new Date(Date.now() + 30*24*3600*1000).toUTCString();
+  document.cookie = `${_RI_COOKIE}=${encodeURIComponent(JSON.stringify(data))};path=/;expires=${exp}`;
+}
+
+function _riCookieLoad() {
+  const m = document.cookie.split(';').map(c=>c.trim()).find(c=>c.startsWith(_RI_COOKIE+'='));
+  if (!m) return null;
+  try { return JSON.parse(decodeURIComponent(m.slice(_RI_COOKIE.length+1))); } catch { return null; }
+}
+
+function _riCookieClear() {
+  document.cookie = `${_RI_COOKIE}=;path=/;expires=Thu, 01 Jan 1970 00:00:00 UTC`;
+}
+
+// ── Застосувати стан з об'єкта {x,y,size,op,sx,sy} ────────
+function _riApplyState(d) {
+  _refImgOffX   = d.x   ?? _refImgOffX;
+  _refImgOffY   = d.y   ?? _refImgOffY;
+  _refImgSize   = d.size?? _refImgSize;
+  _refImgOpacity= d.op  ?? _refImgOpacity;
+  _refImgScaleX = d.sx  ?? _refImgScaleX;
+  _refImgScaleY = d.sy  ?? _refImgScaleY;
+  _riSyncUI();
+}
+
+function _riSyncUI() {
+  const opEl = document.getElementById('ref-img-opacity');
+  const szEl = document.getElementById('ref-img-size');
+  const lbl  = document.getElementById('ref-img-op-lbl');
+  const xi   = document.getElementById('ref-img-x-inp');
+  const yi   = document.getElementById('ref-img-y-inp');
+  const sxi  = document.getElementById('ref-img-sx-inp');
+  const syi  = document.getElementById('ref-img-sy-inp');
+  const sxl  = document.getElementById('ref-sx-lbl');
+  const syl  = document.getElementById('ref-sy-lbl');
+  if (opEl) opEl.value = _refImgOpacity;
+  if (szEl) szEl.value = _refImgSize;
+  if (lbl)  lbl.textContent = _refImgOpacity + '%';
+  if (xi)   xi.value = Math.round(_refImgOffX);
+  if (yi)   yi.value = Math.round(_refImgOffY);
+  if (sxi)  sxi.value = _refImgScaleX.toFixed(2);
+  if (syi)  syi.value = _refImgScaleY.toFixed(2);
+  if (sxl)  sxl.textContent = _refImgScaleX.toFixed(2);
+  if (syl)  syl.textContent = _refImgScaleY.toFixed(2);
+  const img = document.getElementById('map-ref-img');
+  if (img)  img.style.opacity = _refImgOpacity / 100;
+}
+
+function _moveRefImg(dx, dy) {
+  const step = Math.max(1, parseInt(document.getElementById('ref-img-step')?.value || 50));
+  _refImgOffX += dx * step;
+  _refImgOffY += dy * step;
+  _updateRefImgPos();
+  _riCookieSave();
+}
+
+// Утримання кнопки джойстика — безперервний рух/розтягнення
+let _rMoveTimer = null;
+function _rStartMove(dx, dy) {
+  _moveRefImg(dx, dy);
+  _rMoveTimer = setInterval(() => _moveRefImg(dx, dy), 80);
+}
+function _rStartScale(dsx, dsy) {
+  _scaleRefImg(dsx, dsy);
+  _rMoveTimer = setInterval(() => _scaleRefImg(dsx, dsy), 80);
+}
+function _rStopMove() {
+  if (_rMoveTimer) { clearInterval(_rMoveTimer); _rMoveTimer = null; }
+  _riCookieSave();
+}
+
+function _scaleRefImg(dsx, dsy) {
+  const step = Math.max(0.001, parseFloat(document.getElementById('ref-img-sstep')?.value || 0.005));
+  if (dsx) _refImgScaleX = Math.max(0.1, Math.min(5.0, _refImgScaleX + dsx * step));
+  if (dsy) _refImgScaleY = Math.max(0.1, Math.min(5.0, _refImgScaleY + dsy * step));
+  _updateRefImgPos();
+}
+
+// Ручний ввід X/Y
+function _setRefImgXY() {
+  const xi = document.getElementById('ref-img-x-inp');
+  const yi = document.getElementById('ref-img-y-inp');
+  if (xi) _refImgOffX = parseFloat(xi.value) || 0;
+  if (yi) _refImgOffY = parseFloat(yi.value) || 0;
+  _updateRefImgPos();
+  _riCookieSave();
+}
+
+// Ручний ввід SX/SY
+function _setRefImgScale() {
+  const sxi = document.getElementById('ref-img-sx-inp');
+  const syi = document.getElementById('ref-img-sy-inp');
+  if (sxi) _refImgScaleX = Math.max(0.1, Math.min(5.0, parseFloat(sxi.value) || 1.0));
+  if (syi) _refImgScaleY = Math.max(0.1, Math.min(5.0, parseFloat(syi.value) || 1.0));
+  _updateRefImgPos();
+  _riCookieSave();
+}
+
+// Розрахункові координати: SVG bbox України (X 573–13402, Y 365–9007, простір 14000×9500)
+function _resetRefImgToCalc() {
+  _riApplyState({x:573, y:365, size:100, op:_refImgOpacity, sx:0.916, sy:0.910});
+  _updateRefImgPos();
+  _riCookieSave();
+  _saveRefImgSettings();
+}
+
+function _resizeRefImg(delta) {
+  _refImgSize = Math.max(20, Math.min(300, _refImgSize + delta));
+  const szEl = document.getElementById('ref-img-size');
+  if (szEl) szEl.value = _refImgSize;
+  _updateRefImgPos();
+  _riCookieSave();
+}
+
+// ── Зберегти в БД (з куки → БД, очищаємо куку) ─────────────
+async function _saveRefImgSettings() {
+  const btn = document.getElementById('btn-ref-img-save');
+  if (btn) { btn.textContent = '…'; btn.disabled = true; }
+  try {
+    const payload = [
+      {key:'ref_img_x',       value: String(Math.round(_refImgOffX))},
+      {key:'ref_img_y',       value: String(Math.round(_refImgOffY))},
+      {key:'ref_img_size',    value: String(_refImgSize)},
+      {key:'ref_img_opacity', value: String(_refImgOpacity)},
+      {key:'ref_img_sx',      value: _refImgScaleX.toFixed(3)},
+      {key:'ref_img_sy',      value: _refImgScaleY.toFixed(3)},
+    ];
+    const res = await fetch(`${API}/api/admin/colors/batch`, {
+      method: 'PUT',
+      credentials: 'include',
+      headers: {...authH(), 'Content-Type': 'application/json'},
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) {
+      const txt = await res.text().catch(()=>'');
+      showN(`Помилка збереження: ${res.status} ${txt.slice(0,80)}`, true);
+      return;
+    }
+    payload.forEach(({key, value}) => {
+      if (!COLORS[key]) COLORS[key] = {label:''};
+      COLORS[key].value = value;
+    });
+    _riCookieClear();
+    showN('Налаштування еталонної карти збережено в БД ✓');
+  } catch(e) { showN('Помилка збереження: ' + e.message, true); }
+  finally { if (btn) { btn.textContent = '💾 Зберегти'; btn.disabled = false; } }
+}
+
+// ── Завантажити: спочатку кука, потім БД ───────────────────
+function _loadRefImgSettings() {
+  const fromDB = {
+    x:    parseFloat(COLORS['ref_img_x']?.value       || '0'),
+    y:    parseFloat(COLORS['ref_img_y']?.value       || '0'),
+    size: parseFloat(COLORS['ref_img_size']?.value    || '100'),
+    op:   parseFloat(COLORS['ref_img_opacity']?.value || '40'),
+    sx:   parseFloat(COLORS['ref_img_sx']?.value      || '1'),
+    sy:   parseFloat(COLORS['ref_img_sy']?.value      || '1'),
+  };
+  const fromCookie = _riCookieLoad();
+  _riApplyState(fromCookie || fromDB);
+}
+
 async function initMapEditor() {
   const [rl,rc] = await Promise.all([
     fetch(`${API}/api/labels`),
@@ -6902,6 +8060,14 @@ async function initMapEditor() {
   setTool('labels');
   applyMapBorders();
   updateOverlayViewBoxes();
+  // Якщо COLORS ще не завантажено — завантажити перед читанням налаштувань
+  if (!Object.keys(COLORS).length) {
+    try {
+      const rc2 = await fetch(`${API}/api/colors`);
+      COLORS = await rc2.json();
+    } catch(_) {}
+  }
+  _loadRefImgSettings();
 }
 
 function applyMapBorders(){
@@ -6943,6 +8109,19 @@ function setTool(t){
   showToolHints();
 }
 
+const _layerVis = { cities: true, dots: true };
+function toggleLayerVis(layer) {
+  _layerVis[layer] = !_layerVis[layer];
+  const svg   = layer === 'cities' ? citySVG : dotSVG;
+  const btn   = document.getElementById(`toggle-${layer}-vis`);
+  const shown = _layerVis[layer];
+  if (svg) svg.style.display = shown ? '' : 'none';
+  if (btn) {
+    btn.style.opacity = shown ? '1' : '0.4';
+    btn.title = (shown ? 'Сховати' : 'Показати') + (layer === 'cities' ? ' міста' : ' точки меморіалів');
+  }
+}
+
 /* ── LABELS ── */
 function renderLabels(){
   lblSVG.innerHTML='';
@@ -6959,6 +8138,7 @@ function renderLabels(){
     t.style.cursor='move';
     t.style.userSelect='none';
     t.classList.add('adm-label');
+    t.setAttribute('pointer-events','all');
     t.textContent=l.name;
     t.addEventListener('mousedown',e=>startLblDrag(e,l.id,t));
     t.addEventListener('click',e=>{e.stopPropagation();selectLabel(l.id,t);});
@@ -7436,13 +8616,19 @@ async function openEditById(id){
   document.getElementById('e-desc-cnt').textContent=(p.descr||'').length+'/200';
   updateEditPhotoPreview();
   // Координати
-  _editPickCoords = {x: parseFloat(p.pos_x)||0, y: parseFloat(p.pos_y)||0};
+  _editPickCoords = {
+    x: parseFloat(p.pos_x)||0,
+    y: parseFloat(p.pos_y)||0,
+    lat: p.world_lat != null ? parseFloat(p.world_lat) : null,
+    lng: p.world_lng != null ? parseFloat(p.world_lng) : null
+  };
   _refreshEditCoords();
   // Нагороди
   _editAwards=[]; _editAwardsExisting=[]; _editAwardsToDelete=[];
   _initEditAwardSel();
   _renderEditAwardsList();
   document.getElementById('edit-modal').classList.add('open');
+  _emMapLoadCoords();
   // Підвантажуємо нагороди з БД
   try {
     const ra = await fetch(`${API}/api/memorial/${id}/awards`);
@@ -7474,11 +8660,12 @@ function openCreateModal(){
   document.getElementById('e-desc-cnt').textContent='0/200';
   updateEditPhotoPreview();
   // Координати і нагороди
-  _editPickCoords={x:0,y:0}; _refreshEditCoords();
+  _editPickCoords={x:0,y:0,lat:null,lng:null}; _refreshEditCoords();
   _editAwards=[]; _editAwardsExisting=[]; _editAwardsToDelete=[];
   _initEditAwardSel();
   _renderEditAwardsList();
   document.getElementById('edit-modal').classList.add('open');
+  _emMapLoadCoords();
 }
 function closeEdit(){document.getElementById('edit-modal').classList.remove('open');editId=null;editMode='edit';}
 async function saveEdit(){
@@ -7506,29 +8693,36 @@ async function saveEdit(){
   if(body.video_url && !body.video_url.match(/youtu\.be\/|youtube\.com\//)){showN('Відео URL має бути посиланням YouTube',true);return;}
   try{
     let r, savedId;
+    const _hasPick = _editPickCoords.lat != null;
+    const coords = _hasPick ? {
+      pos_x: _editPickCoords.x,
+      pos_y: _editPickCoords.y,
+      world_lat: _editPickCoords.lat,
+      world_lng: _editPickCoords.lng,
+    } : {};
     if(editMode==='create'){
       r=await fetch(`${API}/api/admin/memorial`,
         {method:'POST',headers:authH({'Content-Type':'application/json'}),
-         body:JSON.stringify({...body,pos_x:_editPickCoords.x,pos_y:_editPickCoords.y,added_by:curAdminName||'admin'})});
+         body:JSON.stringify({...body,...coords,added_by:curAdminName||'admin'})});
       if(!r.ok)throw new Error(r.status);
       const rd=await r.json(); savedId=rd.id;
     } else {
       if(!editId)return;
       r=await fetch(`${API}/api/admin/memorial/${editId}`,
         {method:'PUT',headers:authH({'Content-Type':'application/json'}),
-         body:JSON.stringify({...body,pos_x:_editPickCoords.x,pos_y:_editPickCoords.y})});
+         body:JSON.stringify({...body,...coords})});
       if(!r.ok)throw new Error(r.status);
       savedId=editId;
     }
     // Видаляємо прибрані нагороди
     for(const awId of _editAwardsToDelete){
-      await fetch(`${API}/api/admin/awards/${awId}`,{method:'DELETE',headers:authH()}).catch(()=>{});
+      await fetch(`${API}/api/admin/awards/${awId}`,{method:'DELETE',headers:authH(),credentials:'include'}).catch(()=>{});
     }
     // Зберігаємо нові нагороди
     for(const aw of _editAwards){
       await fetch(`${API}/api/admin/memorial/${savedId}/awards`,
-        {method:'POST',headers:authH({'Content-Type':'application/json'}),
-         body:JSON.stringify({name:aw.name,img_file:aw.img_file||'',sort_order:0})}).catch(()=>{});
+        {method:'POST',headers:authH({'Content-Type':'application/json'}),credentials:'include',
+         body:JSON.stringify({name:aw.name,img_file:aw.img_file||'',category:aw.category||'',sort_order:0})}).catch(()=>{});
     }
     showN(editMode==='create'?'Запис додано':'Збережено');
     closeEdit(); loadMem(); loadPend();
@@ -7605,6 +8799,7 @@ async function loadColors(){
   applyAdminTheme(COLORS['admin_theme']?.value || 'dark');
   applyAdminLogo();
   _applyVersionDisplay(COLORS['app_version']?.value || '2.42 beta');
+  _applyDevModeTogUI();
 
   // Перевіряємо чорновик з куки
   const draft = _loadDraftCookie();
@@ -9626,18 +10821,55 @@ function showN(msg,err=false){
   clearTimeout(nt);nt=setTimeout(()=>el.classList.remove('show'),3000);
 }
 
-// WS
+// Online polling
 let _ws = null;
 function connectWS(){
-  try{
-    const wsUrl=(window.location.protocol==='https:'?'wss://':'ws://')+window.location.host;
-    const ws=new WebSocket(`${wsUrl}/ws/online`);
-    _ws=ws;
-    ws.onopen=()=>_wsSendIdent();
-    ws.onmessage=e=>{try{const d=JSON.parse(e.data);if(d.online!==undefined){document.getElementById('adm-online').textContent=d.online;document.getElementById('tb-online').textContent=d.online;}if(d.users)_renderOnlineList(d.users);}catch{}};
-    ws.onclose=()=>{_ws=null;setTimeout(connectWS,3000);};ws.onerror=()=>ws.close();
-    setInterval(()=>{if(ws.readyState===1)ws.send('ping');},25000);
-  }catch{}
+  let tabId=sessionStorage.getItem('_adm_tab');
+  if(!tabId){tabId=Math.random().toString(36).slice(2)+Date.now().toString(36);sessionStorage.setItem('_adm_tab',tabId);}
+  let ws=null,wsOk=false,pingTimer=null,reconnTimer=null;
+  let _prevOnline=-1; // -1 = ще не ініціалізовано (перше повідомлення ігноруємо)
+
+  function setCount(n){
+    document.getElementById('adm-online').textContent=n;
+    document.getElementById('tb-online').textContent=n;
+    if(_prevOnline>=0 && n!==_prevOnline){
+      if(n>_prevOnline) window._admSound&&window._admSound('join');
+      if(n<_prevOnline) window._admSound&&window._admSound('leave');
+    }
+    _prevOnline=n;
+  }
+  function httpPing(){
+    fetch(`${API}/api/online/ping`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tab_id:tabId})})
+      .then(r=>r.json()).then(d=>{if(d.online!==undefined)setCount(d.online);}).catch(()=>{});
+  }
+  function startFallback(){if(pingTimer)return;httpPing();pingTimer=setInterval(httpPing,25000);}
+  function stopFallback(){if(pingTimer){clearInterval(pingTimer);pingTimer=null;}}
+
+  function openWS(){
+    if(ws){try{ws.close();}catch{}}
+    const proto=location.protocol==='https:'?'wss':'ws';
+    ws=new WebSocket(`${proto}://${location.host}/ws/online`);
+    ws.onopen=()=>{
+      wsOk=true;stopFallback();window._adminWS=ws;_ws=ws;
+      _wsSendIdent();
+    };
+    ws.onmessage=e=>{
+      try{
+        const d=JSON.parse(e.data);
+        if(d.online!==undefined)setCount(d.online);
+        if(d.users!==undefined)_renderOnlineList(d.users);
+        if(d.event==='chat_msg'){
+          console.log('[ADM-SOUND] chat_msg received, _admSound=',typeof window._admSound);
+          window._admSound&&window._admSound('chat');
+        }
+      }catch(err){console.error('[ADM-WS] parse error',err);}
+    };
+    ws.onclose=()=>{wsOk=false;startFallback();if(reconnTimer)clearTimeout(reconnTimer);reconnTimer=setTimeout(openWS,5000);};
+    ws.onerror=()=>{ws.close();};
+  }
+
+  openWS();
+  setTimeout(()=>{if(!wsOk)startFallback();},3000);
 }
 function _wsSendIdent(){
   if(_ws&&_ws.readyState===1&&curAdminName)
@@ -9648,6 +10880,28 @@ function _toggleOnlineList(){
   _onlineListOpen=!_onlineListOpen;
   document.getElementById('online-users-list').style.display=_onlineListOpen?'flex':'none';
   document.getElementById('online-arrow').textContent=_onlineListOpen?'▴':'▾';
+}
+
+async function adminToggleDevMode(checked){
+  const on = typeof checked === 'boolean' ? checked : !(COLORS['dev_mode']?.value === '1');
+  const next = on ? '1' : '0';
+  try {
+    await fetch(`${API}/api/admin/colors/batch`, {
+      method: 'PUT',
+      headers: authH({'Content-Type':'application/json'}),
+      body: JSON.stringify([{key:'dev_mode', value: next}])
+    });
+    if (!COLORS['dev_mode']) COLORS['dev_mode'] = {value: next, label: 'Режим розробки'};
+    else COLORS['dev_mode'].value = next;
+    _applyDevModeTogUI();
+    showN(on ? '🚧 Режим розробки увімкнено' : 'Режим розробки вимкнено');
+  } catch(_) { showN('Помилка збереження', true); _applyDevModeTogUI(); }
+}
+
+function _applyDevModeTogUI(){
+  const chk = document.getElementById('dev-mode-tog');
+  if(!chk) return;
+  chk.checked = COLORS['dev_mode']?.value === '1';
 }
 function _renderOnlineList(users){
   const el=document.getElementById('online-users-list');
@@ -10199,7 +11453,7 @@ function renderCitiesTable() {
       </td>
       <td>
         <span class="cname-view" style="cursor:pointer" title="Двічі клікніть щоб редагувати"
-              ondblclick="startCityNameEdit(${c.id})">${h(c.name)}</span>
+              ondblclick="startCityNameEdit(${c.id})">${h(c.name)}</span>${c.tier>0?`<span style="font-size:9px;margin-left:4px;padding:1px 4px;border-radius:3px;background:var(--panel);color:var(--muted)">${TIER[c.tier]}</span>`:''}
         <input class="cname-inp" type="text" value="${h(c.name)}"
                style="display:none;background:var(--bg);border:1px solid var(--accent);border-radius:4px;
                       color:var(--text);padding:3px 8px;font-size:12px;width:160px"
@@ -10222,10 +11476,21 @@ function renderCitiesTable() {
                style="width:34px;height:28px;padding:2px;border:1px solid var(--border2);
                       border-radius:5px;background:transparent;cursor:pointer">
       </td>
-      <td style="font-family:monospace;font-size:11px;color:var(--muted)">
-        ${placed
-          ? `<span title="pos_x / pos_y (0–1)">${c.pos_x.toFixed(4)}<br>${c.pos_y.toFixed(4)}</span>`
-          : '<span style="color:var(--red)">не встановлено</span>'}
+      <td style="font-family:monospace;font-size:11px">
+        <div style="display:flex;flex-direction:column;gap:2px">
+          <label style="font-size:9px;color:var(--muted)">X:
+            <input type="number" step="0.0001" min="0" max="1"
+                   value="${placed?c.pos_x.toFixed(4):'0.0000'}"
+                   style="width:70px;background:var(--bg);border:1px solid var(--border2);border-radius:3px;color:${placed?'var(--text)':'var(--red)'};padding:1px 4px;font-size:11px;font-family:monospace"
+                   onchange="saveCityField(${c.id},'pos_x',parseFloat(this.value))">
+          </label>
+          <label style="font-size:9px;color:var(--muted)">Y:
+            <input type="number" step="0.0001" min="0" max="1"
+                   value="${placed?c.pos_y.toFixed(4):'0.0000'}"
+                   style="width:70px;background:var(--bg);border:1px solid var(--border2);border-radius:3px;color:${placed?'var(--text)':'var(--red)'};padding:1px 4px;font-size:11px;font-family:monospace"
+                   onchange="saveCityField(${c.id},'pos_y',parseFloat(this.value))">
+          </label>
+        </div>
       </td>
       <td>
         <span class="badge ${placed?'bg':'by'}" style="font-size:10px">${placed?'На карті':'Без місця'}</span>
@@ -10305,15 +11570,22 @@ async function deleteCityAdmin(id) {
 }
 
 function goToCityOnMap(id) {
+  const c = _citiesAdminList.find(x => x.id === id);
   showSec('mapeditor');
   setTimeout(() => {
     setMapTool('cities');
+    if (c && c.pos_x > 0) {
+      const b = getAdminMapBounds();
+      const svgX = c.pos_x * 14000;
+      const svgY = c.pos_y * 9500;
+      mtr.s = 4;
+      mtr.x = mapCont.clientWidth  / 2 - (b.x + svgX / 14000 * b.w) * mtr.s;
+      mtr.y = mapCont.clientHeight / 2 - (b.y + svgY / 9500  * b.h) * mtr.s;
+      applyMapTr();
+    }
     const g = citySVG?.querySelector(`[data-id="${id}"]`);
     if (g) { selectCity(id, g); }
-    else {
-      // місто без координат — додаємо в центр карти
-      placeCity(id);
-    }
+    else    { placeCity(id); }
   }, 400);
 }
 
@@ -10545,12 +11817,13 @@ function _broadcastPartners() {
 }
 
 /* ══════════ INIT ══════════ */
-let _statsTimer = null, _serverStatsTimer = null, _dashTimer = null, _seoTimer = null;
+let _statsTimer = null, _serverStatsTimer = null, _dashTimer = null, _seoTimer = null, _realtimeTimer = null;
 function _stopPolling() {
   if(_statsTimer)       { clearInterval(_statsTimer);       _statsTimer = null; }
   if(_serverStatsTimer) { clearInterval(_serverStatsTimer); _serverStatsTimer = null; }
   if(_dashTimer)        { clearInterval(_dashTimer);        _dashTimer = null; }
   if(_seoTimer)         { clearInterval(_seoTimer);         _seoTimer = null; }
+  if(_realtimeTimer)    { clearInterval(_realtimeTimer);    _realtimeTimer = null; }
 }
 async function _handleAuthFail() {
   _stopPolling();
@@ -10567,11 +11840,14 @@ async function initAll(){
   loadServerStats();
   loadDashboard();
   loadSeoStats();
+  loadMaintenance();
+  loadRealtimeChart();
   dwInit();
   _statsTimer       = setInterval(loadStats, 10000);
   _serverStatsTimer = setInterval(loadServerStats, 15000);
   _dashTimer = setInterval(loadDashboard, 60000);
   _seoTimer  = setInterval(loadSeoStats, 120000);
+  _realtimeTimer    = setInterval(loadRealtimeChart, 60000);
   connectWS();
   // Завантажуємо COLORS щоб відновити тему, логотип та порядок меню одразу після логіну
   try {
@@ -10581,6 +11857,7 @@ async function initAll(){
     applyAdminTheme(c['admin_theme']?.value || 'dark');
     applyNavOrder(c['admin_nav_order']?.value || '');
     applyAdminLogo();
+    _applyDevModeTogUI();
   } catch(_) {}
 }
 
@@ -11119,6 +12396,238 @@ async function loadSeoScoreHistory() {
     });
   } catch(e) { console.error('SEO history:', e); }
 }
+
+/* ══ Portfolio Thanks ══ */
+let _ptData = [];
+
+async function ptLoad() {
+  try {
+    const r = await fetch(`${API}/api/portfolio/thanks`);
+    if (!r.ok) { showN(`Помилка API: ${r.status}`, true); return; }
+    _ptData = await r.json();
+    if (!Array.isArray(_ptData)) { showN('Невірна відповідь API', true); return; }
+    ptRender();
+  } catch(e) { showN('Помилка завантаження: ' + e.message, true); }
+}
+
+function ptRender() {
+  const list = document.getElementById('pt-list');
+  if (!list) return;
+  list.innerHTML = _ptData.map(item => `
+    <div class="pt-row" data-id="${item.id}"
+         style="display:flex;align-items:center;gap:8px;padding:6px 10px;
+                background:var(--surface2);border:1px solid var(--border);border-radius:6px;
+                opacity:${item.is_visible ? '1' : '.45'}">
+      <span style="cursor:grab;color:var(--muted);font-size:14px;padding:0 2px">⠿</span>
+      <input type="text" value="${_he(item.name)}" data-id="${item.id}"
+             onchange="ptUpdateName(${item.id}, this.value)"
+             style="flex:1;background:transparent;border:none;outline:none;color:var(--text);
+                    font-size:12px;font-family:inherit;padding:2px 4px;border-radius:4px"
+             onfocus="this.style.background='var(--surface3)'"
+             onblur="this.style.background='transparent'">
+      <label class="toggle-switch" title="${item.is_visible ? 'Видимий' : 'Прихований'}" style="flex-shrink:0">
+        <input type="checkbox" ${item.is_visible ? 'checked' : ''} onchange="ptToggleVis(${item.id}, this.checked)">
+        <span class="toggle-slider"></span>
+      </label>
+      <button class="btn btn-r" onclick="ptDelete(${item.id})"
+              style="padding:3px 7px;font-size:11px;flex-shrink:0">
+        <svg class="adm-ico"><use href="#ico-trash"/></svg>
+      </button>
+    </div>
+  `).join('');
+  ptInitDrag();
+}
+
+function _he(s) { return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+
+async function ptAddName() {
+  const inp = document.getElementById('pt-new-name');
+  const name = inp?.value.trim();
+  if (!name) return;
+  const maxOrder = _ptData.length ? Math.max(..._ptData.map(x => x.sort_order)) + 1 : 1;
+  try {
+    const r = await fetch(`${API}/api/admin/portfolio/thanks`, {
+      method: 'POST', credentials: 'include',
+      headers: {...authH(), 'Content-Type': 'application/json'},
+      body: JSON.stringify({ name, sort_order: maxOrder, is_visible: 1 })
+    });
+    if (!r.ok) throw new Error(r.status);
+    inp.value = '';
+    await ptLoad();
+    showN('Додано ✓');
+  } catch(e) { showN('Помилка: ' + e.message, true); }
+}
+
+async function ptDelete(id) {
+  if (!confirm('Видалити?')) return;
+  try {
+    await fetch(`${API}/api/admin/portfolio/thanks/${id}`, {
+      method: 'DELETE', credentials: 'include', headers: authH()
+    });
+    await ptLoad();
+    showN('Видалено');
+  } catch(e) { showN('Помилка', true); }
+}
+
+async function ptUpdateName(id, name) {
+  const item = _ptData.find(x => x.id === id);
+  if (!item) return;
+  item.name = name;
+  try {
+    await fetch(`${API}/api/admin/portfolio/thanks/${id}`, {
+      method: 'PUT', credentials: 'include',
+      headers: {...authH(), 'Content-Type': 'application/json'},
+      body: JSON.stringify({ name, sort_order: item.sort_order, is_visible: item.is_visible })
+    });
+    showN('Збережено ✓');
+  } catch(e) { showN('Помилка', true); }
+}
+
+async function ptToggleVis(id, vis) {
+  const item = _ptData.find(x => x.id === id);
+  if (!item) return;
+  item.is_visible = vis ? 1 : 0;
+  try {
+    await fetch(`${API}/api/admin/portfolio/thanks/${id}`, {
+      method: 'PUT', credentials: 'include',
+      headers: {...authH(), 'Content-Type': 'application/json'},
+      body: JSON.stringify({ name: item.name, sort_order: item.sort_order, is_visible: item.is_visible })
+    });
+  } catch(e) { showN('Помилка', true); }
+}
+
+async function ptSave() {
+  const rows = document.querySelectorAll('#pt-list .pt-row');
+  const updates = [];
+  rows.forEach((row, i) => {
+    const id = parseInt(row.dataset.id);
+    const item = _ptData.find(x => x.id === id);
+    if (item) { item.sort_order = i + 1; updates.push({ id, sort_order: i + 1 }); }
+  });
+  try {
+    await fetch(`${API}/api/admin/portfolio/thanks/reorder`, {
+      method: 'PUT', credentials: 'include',
+      headers: {...authH(), 'Content-Type': 'application/json'},
+      body: JSON.stringify(updates)
+    });
+    showN('Порядок збережено ✓');
+  } catch(e) { showN('Помилка', true); }
+}
+
+function ptInitDrag() {
+  const list = document.getElementById('pt-list');
+  if (!list) return;
+  let drag = null;
+  list.querySelectorAll('.pt-row').forEach(row => {
+    row.draggable = true;
+    row.addEventListener('dragstart', () => { drag = row; row.style.opacity = '.4'; });
+    row.addEventListener('dragend',   () => { drag = null; row.style.opacity = ''; });
+    row.addEventListener('dragover',  e => { e.preventDefault(); if (drag && drag !== row) row.before(drag); });
+  });
+}
+
+// ── Device Access ────────────────────────────────────────────────────────────
+async function loadDeviceSettings() {
+  try {
+    const r = await fetch(`${API}/api/colors`);
+    const d = await r.json();
+    const g = (k, def) => (d[k]?.value ?? def);
+    const chk = (id, val) => { const el = document.getElementById(id); if(el) el.checked = val !== '0'; };
+    chk('dev-desktop', g('device_desktop_enabled', '1'));
+    chk('dev-tablet',  g('device_tablet_enabled',  '1'));
+    chk('dev-mobile',  g('device_mobile_enabled',  '1'));
+    chk('chk-coffee',  g('show_coffee', '1'));
+    const msg = document.getElementById('dev-block-msg');
+    if (msg) msg.value = g('device_block_msg', 'Версія сайту для вашого пристрою тимчасово недоступна.');
+  } catch(e) { console.error('loadDeviceSettings', e); }
+}
+
+async function saveDeviceSetting(key, val) {
+  try {
+    const r = await fetch(`${API}/api/admin/color`, {
+      method: 'PUT', headers: {...authH(), 'Content-Type': 'application/json'},
+      body: JSON.stringify({key, value: val})
+    });
+    if (!r.ok) throw new Error();
+    const hint = document.getElementById('dev-save-hint');
+    if (hint) { hint.textContent = 'Збережено'; setTimeout(() => hint.textContent = '', 2000); }
+  } catch { showN('Помилка збереження', true); }
+}
+
+async function saveDeviceSettings() {
+  try {
+    const chkVal = id => document.getElementById(id)?.checked ? '1' : '0';
+    const msg = document.getElementById('dev-block-msg')?.value || 'Версія сайту для вашого пристрою тимчасово недоступна.';
+    const r = await fetch(`${API}/api/admin/colors/batch`, {
+      method: 'PUT', headers: {...authH(), 'Content-Type': 'application/json'},
+      body: JSON.stringify([
+        {key: 'device_desktop_enabled', value: chkVal('dev-desktop')},
+        {key: 'device_tablet_enabled',  value: chkVal('dev-tablet')},
+        {key: 'device_mobile_enabled',  value: chkVal('dev-mobile')},
+        {key: 'show_coffee',            value: chkVal('chk-coffee')},
+        {key: 'device_block_msg',       value: msg},
+      ])
+    });
+    if (!r.ok) throw new Error();
+    const hint = document.getElementById('dev-save-hint');
+    if (hint) { hint.textContent = 'Збережено'; setTimeout(() => hint.textContent = '', 2500); }
+  } catch { showN('Помилка збереження', true); }
+}
+
+/* ── Карта світу: налаштування ─────────────────────── */
+function loadWMSettings() {
+  const g = (k, d) => COLORS[k]?.value ?? d;
+  const chk = (id, val) => { const el = document.getElementById(id); if (el) el.checked = val === '1'; };
+  chk('wm-enabled', g('worldmap_enabled', '1'));
+  chk('wm-default', g('worldmap_default', '0'));
+  const u = document.getElementById('wm-tile-url');
+  if (u) u.value = g('worldmap_tile_url', 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png');
+  _updateCitiesToggleUI(g('cities_ua_enabled', '1') === '1');
+}
+
+function _updateCitiesToggleUI(enabled) {
+  const cb = document.getElementById('cities-ua-toggle');
+  const track = document.getElementById('cities-ua-track');
+  const thumb = document.getElementById('cities-ua-thumb');
+  if (cb) cb.checked = enabled;
+  if (track) track.style.background = enabled ? 'rgba(74,222,128,.7)' : 'rgba(248,113,113,.5)';
+  if (thumb) thumb.style.transform = enabled ? 'translateX(20px)' : 'translateX(0)';
+}
+
+async function saveCitiesUaEnabled(enabled) {
+  _updateCitiesToggleUI(enabled);
+  await saveWMSetting('cities_ua_enabled', enabled ? '1' : '0');
+}
+
+async function saveWMSetting(key, value) {
+  try {
+    const r = await fetch(`${API}/api/admin/color`, {
+      method: 'PUT',
+      headers: authH({'Content-Type': 'application/json'}),
+      credentials: 'include',
+      body: JSON.stringify({key, value})
+    });
+    if (!r.ok) throw new Error(r.status);
+    if (COLORS[key]) COLORS[key].value = value; else COLORS[key] = {value, label: key};
+    _broadcastColors([{key, value}]);
+    showN('Збережено');
+  } catch { showN('Помилка збереження', true); }
+}
+
+const _WM_PRESETS = {
+  dark:     'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+  positron: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+  osm:      'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
+};
+
+function _wmPreset(name) {
+  const url = _WM_PRESETS[name];
+  if (!url) return;
+  const el = document.getElementById('wm-tile-url');
+  if (el) el.value = url;
+  saveWMSetting('worldmap_tile_url', url);
+}
+/* ── /Карта світу ──────────────────────────────────── */
 </script>
 
 
@@ -11195,5 +12704,7 @@ async function loadSeoScoreHistory() {
   <img id="imp-photo-lb-img" src="" style="max-width:90vw;max-height:90vh;border-radius:8px;box-shadow:0 4px 40px rgba(0,0,0,.8)">
 </div>
 
+<script src="/js/chat-admin.js"></script>
+<script src="/js/admin-sounds.js"></script>
 </body>
 </html>

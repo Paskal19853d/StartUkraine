@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Денис «PASKAL» Кошеленко — автор «Зоряної Памʼяті»</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&family=Manrope:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0a0a; --ink:#f4f4f2; --ink2:#9a9a98; --ink3:#5e5e5c;
+  --line:rgba(255,255,255,.13); --line2:rgba(255,255,255,.28);
+  --paper:#f4f4f2; --paperink:#0a0a0a;
+  --ease:cubic-bezier(.16,1,.3,1);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  font-family:'Manrope',sans-serif; background:var(--bg); color:var(--ink);
+  -webkit-font-smoothing:antialiased; line-height:1.6; overflow-x:hidden;
+}
+::selection{ background:var(--ink); color:var(--bg) }
+a{ color:inherit }
+.wrap{ max-width:1240px; margin:0 auto; padding:0 40px }
+@media(max-width:640px){ .wrap{ padding:0 22px } }
+
+/* cursor */
+#cursor.big{ width:84px; height:84px }
+
+/* variant switch */
+.vswitch{ position:fixed; bottom:20px; left:24px; z-index:80; display:flex; gap:2px; padding:3px;
+  border:1px solid var(--line2); border-radius:2px; background:rgba(10,10,10,.86) }
+.vswitch a{ font-family:'Oswald',sans-serif; font-size:11px; font-weight:500; letter-spacing:.12em; text-transform:uppercase;
+  text-decoration:none; color:var(--ink3); padding:6px 11px; transition:.2s }
+.vswitch a.on{ background:var(--ink); color:var(--bg) }
+.vswitch a:not(.on):hover{ color:var(--ink) }
+
+/* nav */
+.nav{ position:absolute; top:0; left:0; right:0; z-index:40; }
+.nav .wrap{ display:flex; align-items:center; justify-content:space-between; height:96px }
+.logo{ font-family:'Oswald',sans-serif; font-weight:600; font-size:17px; letter-spacing:.04em; text-transform:uppercase; display:flex; align-items:center; gap:9px }
+.logo .x{ width:9px;height:9px;border:1px solid var(--ink); transform:rotate(45deg) }
+.nav .mn{ display:flex; gap:30px; font-family:'Oswald',sans-serif; font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--ink2) }
+.nav .mn a{ text-decoration:none; position:relative; padding-bottom:3px; transition:color .2s; white-space:nowrap }
+.nav .mn a::after{ content:""; position:absolute; left:0; bottom:0; height:1px; width:0; background:var(--ink); transition:width .3s var(--ease) }
+.nav .mn a:hover{ color:var(--ink) } .nav .mn a:hover::after{ width:100% }
+@media(max-width:760px){ .nav .mn{ display:none } }
+
+/* HERO */
+.hero{ position:relative; padding:160px 0 90px; overflow:hidden; min-height:96vh; display:flex; align-items:center }
+/* ── true multi-plane 3D depth background (iPhone-style) ── */
+.hero-depth{ position:absolute; inset:0; z-index:0; overflow:hidden; perspective:900px; perspective-origin:50% 44%; background:#000; pointer-events:none }
+.depth-plane{ position:absolute; inset:-14%; transform-style:preserve-3d; will-change:transform }
+.depth-img{ position:absolute; inset:-6%; background-image:url('assets/depth_squad.jpg'); background-size:cover; background-position:center 32%; backface-visibility:hidden }
+/* each layer parked at its own Z — perspective turns that into parallax */
+.depth-img.sky{ filter:grayscale(1) contrast(.92) brightness(.34);  transform:translateZ(-620px) scale(1.70) }
+.depth-img.far{ filter:grayscale(1) contrast(1.08) brightness(.5);   transform:translateZ(-320px) scale(1.36) }
+.depth-img.mid{ filter:grayscale(1) contrast(1.26) brightness(.64);
+  -webkit-mask-image:radial-gradient(62% 72% at 50% 44%, #000 28%, transparent 78%);
+          mask-image:radial-gradient(62% 72% at 50% 44%, #000 28%, transparent 78%);
+  transform:translateZ(-90px) scale(1.10) }
+.depth-img.near{ filter:grayscale(1) contrast(1.4) brightness(.82);
+  -webkit-mask-image:radial-gradient(38% 50% at 50% 42%, #000 18%, transparent 70%);
+          mask-image:radial-gradient(38% 50% at 50% 42%, #000 18%, transparent 70%);
+  transform:translateZ(50px) scale(0.945) }
+/* foreground dust motes — strongest parallax, sells the volume */
+.depth-dust{ position:absolute; inset:-6%; transform:translateZ(190px) scale(0.79); will-change:transform; opacity:.55;
+  background-image:
+    radial-gradient(2.4px 2.4px at 12% 24%, rgba(255,255,255,.7), transparent 60%),
+    radial-gradient(1.8px 1.8px at 28% 68%, rgba(255,255,255,.5), transparent 60%),
+    radial-gradient(3px 3px at 47% 18%, rgba(255,255,255,.6), transparent 60%),
+    radial-gradient(1.6px 1.6px at 63% 54%, rgba(255,255,255,.5), transparent 60%),
+    radial-gradient(2.6px 2.6px at 78% 32%, rgba(255,255,255,.65), transparent 60%),
+    radial-gradient(1.8px 1.8px at 88% 72%, rgba(255,255,255,.5), transparent 60%),
+    radial-gradient(2px 2px at 36% 88%, rgba(255,255,255,.55), transparent 60%),
+    radial-gradient(2.2px 2.2px at 70% 84%, rgba(255,255,255,.5), transparent 60%); }
+.depth-fog{ position:absolute; inset:-6%; pointer-events:none; will-change:transform;
+  background:radial-gradient(120% 92% at 50% 32%, transparent 22%, rgba(0,0,0,.5) 68%, #000 100%),
+            linear-gradient(180deg, rgba(10,10,10,.6) 0%, rgba(10,10,10,.1) 36%, rgba(10,10,10,.52) 74%, #0a0a0a 100%) }
+.depth-grain{ display:none }
+@media (prefers-reduced-motion:reduce){ .depth-plane,.depth-dust,.depth-fog{ transform:none !important; animation:none !important } }
+.ghost{ position:absolute; top:120px; left:-2%; right:0; z-index:1; pointer-events:none;
+  font-family:'Oswald',sans-serif; font-weight:700; font-size:26vw; line-height:.8; letter-spacing:-.01em;
+  color:transparent; -webkit-text-stroke:1px rgba(255,255,255,.06); white-space:nowrap; text-transform:uppercase }
+.hero-grid{ position:relative; z-index:3; display:grid; grid-template-columns:1.5fr .9fr; gap:50px; align-items:end }
+.hero .eyebrow{ font-family:'Oswald',sans-serif; font-size:12px; font-weight:500; letter-spacing:.3em; text-transform:uppercase; color:var(--ink2); display:flex; align-items:center; gap:14px; margin-bottom:26px }
+.hero .eyebrow::before{ content:""; width:46px; height:1px; background:var(--line2) }
+.hero h1{ font-family:'Oswald',sans-serif; font-weight:600; text-transform:uppercase; line-height:.92; letter-spacing:-.005em;
+  font-size:clamp(38px,6.4vw,96px); color:#fff }
+.hero h1 .thin{ font-weight:300; color:var(--ink2) }
+.hero h1 .out{ color:transparent; -webkit-text-stroke:1.4px var(--ink) }
+.hero .lead{ margin-top:30px; max-width:46ch; font-size:18px; color:var(--ink2); line-height:1.7 }
+.hero .lead b{ color:var(--ink); font-weight:600 }
+.hero .tags{ display:flex; flex-wrap:wrap; gap:9px; margin-top:30px }
+.hero .tags span{ font-family:'Oswald',sans-serif; font-size:12px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink2);
+  border:1px solid var(--line); padding:8px 14px; border-radius:2px }
+
+.portrait{ position:relative }
+.portrait .ph{ position:relative; aspect-ratio:3/4; overflow:hidden; border:1px solid var(--line) }
+.portrait img{ width:100%; height:100%; object-fit:cover; object-position:center 16%;
+  filter:grayscale(1) contrast(1.08) brightness(.95); transition:transform 1.1s var(--ease),filter .6s }
+.portrait .ph:hover img{ transform:scale(1.05); filter:grayscale(1) contrast(1.12) brightness(1.02) }
+.portrait .cap{ display:flex; justify-content:space-between; align-items:baseline; margin-top:14px;
+  font-family:'Oswald',sans-serif; font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--ink2) }
+.portrait .cap b{ color:var(--ink); font-weight:500 }
+@media(max-width:860px){ .hero-grid{ grid-template-columns:1fr; gap:40px } .portrait{ max-width:340px } .ghost{ font-size:38vw } }
+
+/* marquee */
+.marq{ border-top:1px solid var(--line); border-bottom:1px solid var(--line); padding:22px 0; overflow:hidden; white-space:nowrap; background:var(--bg) }
+.marq .row{ display:inline-flex; gap:40px; animation:slide 26s linear infinite; will-change:transform }
+.marq.rev .row{ animation-direction:reverse }
+.marq span{ font-family:'Oswald',sans-serif; font-weight:600; font-size:34px; letter-spacing:.02em; text-transform:uppercase; color:var(--ink) }
+.marq span.o{ color:transparent; -webkit-text-stroke:1px var(--ink2) }
+.marq .st{ color:var(--ink2); font-size:24px; align-self:center }
+@keyframes slide{ to{ transform:translateX(-50%) } }
+
+/* section scaffold */
+section.block{ padding:110px 0; border-bottom:1px solid var(--line); content-visibility:auto; contain-intrinsic-size:auto 600px }
+.row2{ display:grid; grid-template-columns:.42fr .58fr; gap:60px }
+@media(max-width:860px){ .row2{ grid-template-columns:1fr; gap:30px } }
+.idx{ font-family:'Oswald',sans-serif; font-size:13px; font-weight:500; letter-spacing:.22em; text-transform:uppercase; color:var(--ink3); display:flex; align-items:center; gap:14px }
+.idx .n{ color:var(--ink) }
+.idx::after{ content:""; flex:1; height:1px; background:var(--line) }
+.h2{ font-family:'Oswald',sans-serif; font-weight:600; text-transform:uppercase; line-height:.98; letter-spacing:-.005em;
+  font-size:clamp(34px,5.2vw,68px); color:#fff; margin-top:8px }
+.h2 .thin{ font-weight:300; color:var(--ink2) }
+.body p{ font-size:18.5px; color:var(--ink2); line-height:1.75; margin-bottom:20px; max-width:60ch }
+.body p:last-child{ margin-bottom:0 }
+.body p .hl{ color:var(--ink); font-weight:600 }
+
+/* stats */
+.stats{ display:grid; grid-template-columns:repeat(3,1fr); border:1px solid var(--line); margin-top:6px }
+.stats .s{ padding:42px 30px; border-left:1px solid var(--line) }
+.stats .s:first-child{ border-left:none }
+.stats .n{ font-family:'Oswald',sans-serif; font-weight:600; font-size:clamp(46px,6vw,82px); line-height:.9; color:#fff }
+.stats .l{ font-family:'Oswald',sans-serif; font-size:12px; letter-spacing:.18em; text-transform:uppercase; color:var(--ink2); margin-top:14px }
+@media(max-width:680px){ .stats{ grid-template-columns:1fr } .stats .s{ border-left:none; border-top:1px solid var(--line) } .stats .s:first-child{ border-top:none } }
+
+/* inverted */
+section.invert{ background:var(--paper); color:var(--paperink) }
+section.invert .idx{ color:rgba(0,0,0,.4) } section.invert .idx .n{ color:#000 } section.invert .idx::after{ background:rgba(0,0,0,.12) }
+section.invert .h2{ color:#000 } section.invert .h2 .thin{ color:rgba(0,0,0,.45) }
+section.invert .body p{ color:rgba(0,0,0,.62) } section.invert .body p .hl{ color:#000 }
+
+/* big quote */
+.quoteband{ padding:120px 0; border-bottom:1px solid var(--line); text-align:center }
+.quoteband .qm{ font-family:'Oswald',sans-serif; font-size:90px; line-height:.5; color:var(--ink3) }
+.quoteband p{ font-family:'Oswald',sans-serif; font-weight:500; text-transform:uppercase; line-height:1.05; letter-spacing:-.01em;
+  font-size:clamp(28px,4.6vw,60px); color:#fff; max-width:18ch; margin:24px auto 24px }
+.quoteband p .out{ color:transparent; -webkit-text-stroke:1.2px var(--ink) }
+.quoteband cite{ font-family:'Oswald',sans-serif; font-style:normal; font-size:13px; letter-spacing:.22em; text-transform:uppercase; color:var(--ink2) }
+
+/* CTA */
+.cta{ padding:130px 0; text-align:center }
+.cta h2{ font-family:'Oswald',sans-serif; font-weight:600; text-transform:uppercase; line-height:.95; font-size:clamp(40px,8vw,108px); color:#fff }
+.cta h2 .out{ color:transparent; -webkit-text-stroke:1.4px var(--ink) }
+.cta p{ color:var(--ink2); font-size:17px; margin:26px auto 40px; max-width:42ch }
+.cbtn{ display:inline-flex; align-items:center; gap:16px; font-family:'Oswald',sans-serif; font-weight:500; font-size:15px;
+  letter-spacing:.16em; text-transform:uppercase; text-decoration:none; color:var(--bg); background:var(--ink);
+  padding:20px 34px; border-radius:2px; transition:.3s var(--ease); border:1px solid var(--ink) }
+.cbtn:hover{ background:transparent; color:var(--ink) }
+.cbtn .ar{ transition:transform .3s var(--ease) } .cbtn:hover .ar{ transform:translateX(6px) }
+
+/* footer */
+footer{ border-top:1px solid var(--line); padding:50px 0 60px }
+footer .top{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px }
+footer .slava{ font-family:'Oswald',sans-serif; font-weight:600; font-size:18px; letter-spacing:.08em; text-transform:uppercase }
+footer .meta{ font-size:12.5px; color:var(--ink3); letter-spacing:.04em }
+footer .div{ height:1px; background:var(--line); margin:28px 0 }
+
+/* content is always visible; effects must never hide it in this renderer */
+.reveal{ opacity:1 }
+.lines span{ display:block; overflow:visible }
+.lines span i{ display:block; font-style:normal }
+
+/* ── MOBILE ── */
+@media(max-width:600px){
+  /* nav */
+  .nav .wrap{ height:64px }
+  .logo{ font-size:14px }
+
+  /* hero */
+  .hero{ padding:100px 0 60px; min-height:auto; align-items:flex-start }
+  .hero-grid{ display:flex; flex-direction:column; gap:32px }
+  .hero .eyebrow{ font-size:10px; margin-bottom:16px }
+  .hero h1{ font-size:clamp(32px,11vw,54px) }
+  .hero .lead{ font-size:15px; margin-top:18px }
+  .hero .tags{ gap:7px; margin-top:18px }
+  .hero .tags span{ font-size:10px; padding:6px 11px }
+  .portrait{ max-width:100%; order:-1 }
+  .portrait .ph{ aspect-ratio:4/3 }
+  .portrait img{ object-position:center 10% }
+  .ghost{ font-size:48vw; top:80px; left:-4% }
+
+  /* marquee */
+  .marq span{ font-size:22px }
+  .marq .st{ font-size:16px }
+
+  /* section */
+  section.block{ padding:64px 0 }
+  .row2{ display:flex; flex-direction:column; gap:20px }
+  .h2{ font-size:clamp(26px,8vw,42px) }
+  .body p{ font-size:15.5px }
+
+  /* stats */
+  .stats{ grid-template-columns:1fr 1fr }
+  .stats .s:nth-child(2){ border-left:1px solid var(--line) }
+  .stats .s:nth-child(3){ grid-column:span 2; border-top:1px solid var(--line); border-left:none }
+  .stats .s{ padding:28px 20px }
+  .stats .n{ font-size:clamp(36px,9vw,56px) }
+
+  /* quoteband */
+  .quoteband{ padding:64px 0 }
+  .quoteband .qm{ font-size:60px }
+  .quoteband p{ font-size:clamp(22px,6.5vw,38px) }
+
+  /* cta */
+  .cta{ padding:72px 0 }
+  .cta h2{ font-size:clamp(32px,11vw,60px) }
+  .cta p{ font-size:14px }
+  .cbtn{ font-size:13px; padding:16px 24px; gap:10px; width:100%; justify-content:center; box-sizing:border-box }
+
+  /* gratitude */
+  .thx{ padding:64px 0 }
+  .thx .lead2{ font-size:15.5px }
+  .thx .roll{ grid-template-columns:1fr; gap:0 }
+  .thx .nm{ font-size:16px; padding:11px 0 }
+
+  /* footer */
+  footer .top{ flex-direction:column; align-items:flex-start; gap:10px }
+  footer{ padding:36px 0 44px }
+
+  /* audio bar */
+  #audio-bar{ bottom:10px; padding:6px 14px 6px 12px; border-radius:24px }
+
+  /* vswitch — hide on mobile (view switcher not needed) */
+  .vswitch{ display:none }
+}
+
+/* ── FLASHBACK ── */
+#flash{ position:fixed; inset:0; z-index:96; pointer-events:none; opacity:0 }
+#flash .warframe{ position:absolute; inset:0; opacity:0 }
+#flash .warframe img{ width:100%; height:100%; object-fit:cover; display:block; filter:grayscale(1) contrast(1.15) brightness(.92) }
+#flash #whitelayer{ position:absolute; inset:0; background:#fff; opacity:0 }
+@media (prefers-reduced-motion:reduce){ #flash{ display:none } }
+
+/* ── GRATITUDE ── */
+.thx{ padding:110px 0; border-bottom:1px solid var(--line) }
+.thx .lead2{ max-width:62ch; color:var(--ink2); font-size:18.5px; line-height:1.72; margin:20px 0 44px }
+.thx .roll{ display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:2px 30px }
+.thx .nm{ display:flex; align-items:center; gap:13px; font-family:'Oswald',sans-serif; font-weight:400; font-size:20px;
+  letter-spacing:.02em; text-transform:uppercase; color:#3a3a38; padding:14px 0; border-bottom:1px solid var(--line);
+  transition:color .45s var(--ease), transform .45s var(--ease), text-shadow .45s, font-size .45s, font-weight .45s, opacity .45s }
+.thx .nm .st{ color:#2e2e2c; font-size:12px; transition:color .45s, text-shadow .45s, transform .45s, font-size .45s }
+</style>
+</head>
+<body>
+
+<!-- FLASHBACK overlay: sharp white blink with a B&W war photo bleeding through -->
+<div id="flash" aria-hidden="true">
+  <div class="warframe"><img src="assets/war1.png" alt=""></div>
+  <div class="warframe"><img src="assets/war2.png" alt=""></div>
+  <div class="warframe"><img src="assets/war3.png" alt=""></div>
+  <div id="whitelayer"></div>
+</div>
+
+
+<header class="nav">
+  <div class="wrap">
+    <div class="logo"><span class="x"></span>ПАСКАЛЬ</div>
+    <div class="mn">
+      <a href="#about">Про мене</a>
+      <a href="#why">Проєкт</a>
+      <a href="#stand">Позиція</a>
+      <a href="#go">Контакт</a>
+    </div>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="hero-depth" id="heroDepth">
+    <div class="depth-plane">
+      <div class="depth-img sky"></div>
+      <div class="depth-img far"></div>
+      <div class="depth-img mid"></div>
+      <div class="depth-img near"></div>
+      <div class="depth-dust"></div>
+    </div>
+    <div class="depth-fog"></div>
+    <div class="depth-grain"></div>
+  </div>
+  <div class="ghost">PASKAL · 1985</div>
+  <div class="wrap hero-grid">
+    <div>
+      <div class="eyebrow reveal">Ветеран · Автор проєкту «Зоряна Памʼять»</div>
+      <h1 class="lines">
+        <span><i>Денис</i></span>
+        <span><i><span class="out">«Paskal»</span></i></span>
+        <span><i>Кошеленко</i></span>
+      </h1>
+      <p class="lead reveal"><b>82-ї окремої десантно-штурмової бригади</b>. Поранений, комісований. Сьогодні — творець інтерактивної карти памʼяті, де кожна зірка означає чиєсь імʼя.</p>
+      <div class="tags reveal">
+        <span>27.12.1985</span><span>82 ОДШБр · ДШВ ЗСУ</span><span>Поранений · комісований</span>
+      </div>
+    </div>
+    <div class="portrait reveal">
+      <div class="ph"><img src="assets/paskal_orig.jpg" alt="Денис «Paskal» Кошеленко"></div>
+      <div class="cap"><b>«Paskal»</b><span>UA · 2026</span></div>
+    </div>
+  </div>
+</section>
+
+<div class="marq">
+  <div class="row">
+    <span>Кожна зірка — чиєсь імʼя</span><span class="st">✦</span><span class="o">Зоряна Памʼять</span><span class="st">✦</span>
+    <span>Памʼять, яку не вимкнути</span><span class="st">✦</span><span class="o">Слава Україні</span><span class="st">✦</span>
+    <span>Кожна зірка — чиєсь імʼя</span><span class="st">✦</span><span class="o">Зоряна Памʼять</span><span class="st">✦</span>
+    <span>Памʼять, яку не вимкнути</span><span class="st">✦</span><span class="o">Слава Україні</span><span class="st">✦</span>
+  </div>
+</div>
+
+<section class="block" id="about">
+  <div class="wrap row2">
+    <div class="reveal"><div class="idx"><span class="n">01</span> Хто я</div>
+      <h2 class="h2">Я тримаю <span class="thin">памʼять</span></h2>
+    </div>
+    <div class="body reveal">
+      <p>Побратими знають мене за позивним <span class="hl">«Paskal»</span>. Я народився 27 грудня 1985 року — і ніколи не думав, що буду ділити життя на «до» і «після».</p>
+      <p>Я служив у складі 82-ї окремої десантно-штурмової бригади ДШВ ЗСУ. Був поранений. За станом здоровʼя мене комісували. Війна не відпускає одразу — вона лишається в тілі, у снах і в тій тиші між вибухами, якої більше немає.</p>
+      <p>Я не герой з плаката. Я звичайна людина, яка зробила вибір — стати між ворогом і домом. І тепер, коли я не тримаю зброю, <span class="hl">я тримаю памʼять.</span></p>
+    </div>
+  </div>
+</section>
+
+<section class="block">
+  <div class="wrap">
+    <div class="idx reveal" style="margin-bottom:34px"><span class="n">02</span> Цифри проєкту</div>
+    <div class="stats reveal">
+      <div class="s"><div class="n">128</div><div class="l">у памʼяті</div></div>
+      <div class="s"><div class="n">14 142</div><div class="l">зірок засвічено</div></div>
+      <div class="s"><div class="n">∞</div><div class="l">спільнота щодня</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="why">
+  <div class="wrap row2">
+    <div class="reveal"><div class="idx"><span class="n">03</span> Чому</div>
+      <h2 class="h2">Чому зʼявилася <span class="thin">«Зоряна Памʼять»</span></h2>
+    </div>
+    <div class="body reveal">
+      <p>Коли ти більше не в строю, найважче — відчуття, що чиєсь імʼя поступово стирається, і за кілька років про людину памʼятатиме хіба що мати.</p>
+      <p>Я не захотів із цим миритися. Так народилася <span class="hl">«Зоряна Памʼять»</span> — інтерактивна карта України, де кожна світла зірка означає конкретну людину. Не статистику. Не цифру у зведенні. Імʼя, обличчя, історію.</p>
+      <p>Запали зірку — і вона світитиме на мапі поряд із тисячами інших. Над Києвом, над Маріуполем, над рідним селом. Памʼять, яку ми творимо разом і яку вже не вимкнути.</p>
+    </div>
+  </div>
+</section>
+
+<section class="block invert">
+  <div class="wrap row2">
+    <div class="reveal"><div class="idx"><span class="n">04</span> Патріотизм</div>
+      <h2 class="h2">Любов до України — <span class="thin">це дія</span></h2>
+    </div>
+    <div class="body reveal">
+      <p>Патріотизм — це не гучні слова й не прапор у статусі. Це коли ти робиш те, що можеш, там, де ти є.</p>
+      <p>Для когось це — стояти на позиції. Для іншого — возити гуманітарку, лікувати, донатити, вчити дітей, працювати й платити податки, які годують армію. <span class="hl">Любов до України — це дія, а не поза.</span></p>
+      <p>Я зробив свою справу зброєю. Тепер роблю її памʼяттю. І вірю: поки ми памʼятаємо своїх загиблих — ми лишаємося народом, який неможливо перемогти.</p>
+    </div>
+  </div>
+</section>
+
+<div class="quoteband">
+  <div class="wrap reveal">
+    <div class="qm">“</div>
+    <p>Україна — це не територія на мапі. Це <span class="out">люди</span>, які за неї стали.</p>
+    <cite>— Paskal</cite>
+  </div>
+</div>
+
+<section class="block" id="stand">
+  <div class="wrap row2">
+    <div class="reveal"><div class="idx"><span class="n">05</span> Позиція</div>
+      <h2 class="h2">Моя громадянська <span class="thin">позиція</span></h2>
+    </div>
+    <div class="body reveal">
+      <p>Я підтримую <span class="hl">Україну</span> і державу, яку ми разом боронимо. У час війни єдність — це не розкіш, а зброя. Я бачив, як вистоює країна, коли тримається разом, — і не маю наміру розхитувати те, що тримає фронт.</p>
+      <p>Це мій особистий, громадянський вибір. Я поважаю Збройні Сили, Верховного Головнокомандувача і кожного, хто сьогодні робить внесок у Перемогу. <span class="hl">Ми — одна команда.</span> І ми дійдемо до кінця.</p>
+    </div>
+  </div>
+</section>
+
+<section class="thx" id="thanks">
+  <div class="wrap">
+    <div class="idx"><span class="n">06</span> Подяка</div>
+    <h2 class="h2">Дякую тим, <span class="thin">хто поряд</span></h2>
+    <p class="lead2">Цей проєкт існує не завдяки мені одному. За ним — побратими, волонтери, медики, рідні й друзі, які тримали, коли було найважче. Низький уклін кожному з вас.</p>
+    <div class="roll" id="thanks-roll">
+      <div class="nm"><span class="st">✦</span>Волошин А. М.</div>
+      <div class="nm"><span class="st">✦</span>Ковальчук І. С.</div>
+      <div class="nm"><span class="st">✦</span>Бондаренко О. В.</div>
+      <div class="nm"><span class="st">✦</span>Ткаченко Д. П.</div>
+      <div class="nm"><span class="st">✦</span>Мельник Р. Л.</div>
+      <div class="nm"><span class="st">✦</span>Савченко Н. О.</div>
+      <div class="nm"><span class="st">✦</span>Гнатюк В. Я.</div>
+      <div class="nm"><span class="st">✦</span>Кравець М. І.</div>
+      <div class="nm"><span class="st">✦</span>Шевчук Т. Б.</div>
+      <div class="nm"><span class="st">✦</span>Лисенко Ю. Г.</div>
+      <div class="nm"><span class="st">✦</span>Поліщук С. А.</div>
+      <div class="nm"><span class="st">✦</span>Романюк В. В.</div>
+    </div>
+  </div>
+</section>
+
+<div class="marq rev">
+  <div class="row">
+    <span class="o">Зоряна Памʼять</span><span class="st">★</span><span>Героям слава</span><span class="st">★</span>
+    <span class="o">Кожна зірка — чиєсь імʼя</span><span class="st">★</span><span>Слава Україні</span><span class="st">★</span>
+    <span class="o">Зоряна Памʼять</span><span class="st">★</span><span>Героям слава</span><span class="st">★</span>
+    <span class="o">Кожна зірка — чиєсь імʼя</span><span class="st">★</span><span>Слава Україні</span><span class="st">★</span>
+  </div>
+</div>
+
+<section class="cta" id="go">
+  <div class="wrap reveal">
+    <h2>Запали <span class="out">зірку</span><br>памʼяті</h2>
+    <p>Зайди на «Зоряну Памʼять», знайди своїх або засвіти нову зірку. Памʼять жива, поки про неї дбають.</p>
+    <a class="cbtn" href="https://зоряна-память.укр">зоряна-памʼять.укр <span class="ar">→</span></a>
+
+    <div style="margin-top:48px;padding-top:40px;border-top:1px solid rgba(255,255,255,.12)">
+      <div style="font-family:'Oswald',sans-serif;font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:16px">Зворотній зв'язок</div>
+      <p style="font-size:15px;line-height:1.7;color:rgba(255,255,255,.6);max-width:480px;margin:0 auto 24px">
+        Пропозиції щодо співпраці, побажання, спільна праця,<br>виявлені помилки та будь-яке інше — пишіть:
+      </p>
+      <a href="mailto:paskal2582@gmail.com"
+         style="display:inline-flex;align-items:center;gap:10px;font-family:'Oswald',sans-serif;font-size:18px;font-weight:500;letter-spacing:.06em;color:#fff;text-decoration:none;border:1px solid rgba(255,255,255,.25);border-radius:8px;padding:12px 28px;transition:border-color .2s,background .2s"
+         onmouseover="this.style.borderColor='rgba(255,255,255,.6)';this.style.background='rgba(255,255,255,.06)'"
+         onmouseout="this.style.borderColor='rgba(255,255,255,.25)';this.style.background='transparent'">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="opacity:.7"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+        paskal2582@gmail.com
+      </a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="top">
+      <div class="logo"><span class="x"></span>Зоряна Памʼять</div>
+    </div>
+    <div class="div"></div>
+    <div class="meta">© 2026 <a href="/portfolio/" style="color:inherit;text-decoration:none">TREETEX NPO</a> · All rights reserved</div>
+    <div class="meta" style="margin-top:4px">Denys KOSHELENKO · <a href="mailto:paskal2582@gmail.com" style="color:inherit;text-decoration:none;opacity:.7">paskal2582@gmail.com</a></div>
+  </div>
+</footer>
+
+<script>
+// ── DEPTH BACKGROUND: iPhone-style parallax driven by cursor / device tilt ──
+(function(){
+  const wrap=document.getElementById('heroDepth'); if(!wrap) return;
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const plane=wrap.querySelector('.depth-plane');
+  const near=wrap.querySelector('.depth-img.near');
+  const dust=wrap.querySelector('.depth-dust');
+  const fog=wrap.querySelector('.depth-fog');
+  let tx=0,ty=0,cx=0,cy=0;
+  addEventListener('mousemove',e=>{
+    const r=wrap.getBoundingClientRect();
+    tx=((e.clientX-r.left)/r.width-0.5)*2;
+    ty=((e.clientY-r.top)/r.height-0.5)*2;
+    tx=Math.max(-1,Math.min(1,tx)); ty=Math.max(-1,Math.min(1,ty));
+    start();
+  },{passive:true});
+  addEventListener('deviceorientation',e=>{
+    if(e.gamma==null) return;
+    tx=Math.max(-1,Math.min(1,e.gamma/26));
+    ty=Math.max(-1,Math.min(1,(e.beta-42)/26));
+    start();
+  },true);
+  function loop(){
+    if(!visible){ raf=null; return; }
+    cx+=(tx-cx)*0.08; cy+=(ty-cy)*0.08;
+    plane.style.transform='translate3d('+(-cx*26).toFixed(2)+'px,'+(-cy*26).toFixed(2)+'px,0) rotateY('+(cx*7).toFixed(2)+'deg) rotateX('+(-cy*5.5).toFixed(2)+'deg)';
+    if(dust) dust.style.transform='translateZ(190px) scale(0.79) translate('+(-cx*40).toFixed(2)+'px,'+(-cy*40).toFixed(2)+'px)';
+    if(fog)  fog.style.transform='translate('+(cx*16).toFixed(2)+'px,'+(cy*16).toFixed(2)+'px)';
+    // stop the loop once it has settled — no perpetual repaint
+    if(Math.abs(tx-cx)<0.002 && Math.abs(ty-cy)<0.002){ raf=null; return; }
+    raf=requestAnimationFrame(loop);
+  }
+  // run the rAF only while hero is on screen AND there is motion to resolve
+  let visible=true, raf=null;
+  function start(){ if(visible && !raf) raf=requestAnimationFrame(loop); }
+  if('IntersectionObserver' in window){
+    new IntersectionObserver(es=>{ visible=es[0].isIntersecting; if(visible) start(); },{threshold:0}).observe(wrap);
+  }
+})();
+
+// ── FLASHBACK: sharp white blink, war photo bleeds through (2–3×/min) ──
+(function(){
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const flash=document.getElementById('flash'); if(!flash) return;
+  const frames=[...flash.querySelectorAll('.warframe')];
+  const white=document.getElementById('whitelayer');
+  let fi=0;
+  function envelope(t){            // white intensity over the blink (t:0..1)
+    if(t<0.08) return 1;                                  // instant blinding white
+    if(t<0.36) return 0.95-(t-0.08)/0.28*0.68;            // drops → war photo glimpse (~0.27)
+    if(t<0.50) return 0.27+(t-0.36)/0.14*0.63;            // second sharp blink (~0.9)
+    return 0.9*Math.max(0,1-(t-0.50)/0.50);               // fade back to scene
+  }
+  function doFlash(){
+    const cur=frames[fi%frames.length]; fi++;
+    frames.forEach(f=>f.style.opacity='0');
+    cur.style.opacity='1'; flash.style.opacity='1';
+    const D=480, s=performance.now();
+    (function tick(now){
+      const t=(now-s)/D;
+      if(t>=1){ flash.style.opacity='0'; white.style.opacity='0'; cur.style.opacity='0'; schedule(); return; }
+      white.style.opacity=envelope(t).toFixed(3);
+      cur.style.opacity=(t<0.72?1:Math.max(0,1-(t-0.72)/0.28)).toFixed(3);
+      requestAnimationFrame(tick);
+    })(s);
+  }
+  function schedule(){ setTimeout(doFlash, 18000+Math.random()*9000); } // ≈2–3×/min
+  setTimeout(doFlash, 5500);
+})();
+
+// ── GRATITUDE: завантаження з API + монохромна анімація ──
+(function(){
+  const fx = [
+    { color:'#ffffff', sz:'26px', fw:'700', dx:'16px', shadow:'0 0 32px rgba(255,255,255,.6), 0 0 64px rgba(255,255,255,.2)', star:'18px' },
+    { color:'#888886', sz:'19px', fw:'400', dx:'4px',  shadow:'none',                                                          star:'10px' },
+    { color:'#e8e8e6', sz:'24px', fw:'700', dx:'20px', shadow:'0 0 20px rgba(255,255,255,.4), 0 0 40px rgba(255,255,255,.15)', star:'16px' },
+    { color:'#b0b0ae', sz:'21px', fw:'500', dx:'8px',  shadow:'0 0 12px rgba(255,255,255,.22)',                                star:'12px' },
+    { color:'#f4f4f2', sz:'25px', fw:'700', dx:'14px', shadow:'0 0 40px rgba(255,255,255,.7), 0 0 80px rgba(255,255,255,.28)', star:'17px' },
+    { color:'#c8c8c6', sz:'22px', fw:'500', dx:'10px', shadow:'0 0 16px rgba(255,255,255,.3)',                                  star:'14px' },
+  ];
+
+  let cur = -1, timer = null;
+
+  function clr(idx, names) {
+    if (idx < 0 || idx >= names.length) return;
+    const n = names[idx];
+    n.style.cssText = '';
+    const st = n.querySelector('.st'); if (st) st.style.cssText = '';
+  }
+
+  function lit(idx, names, assigned) {
+    const n = names[idx], t = assigned[idx];
+    n.style.color      = t.color;
+    n.style.fontSize   = t.sz;
+    n.style.fontWeight = t.fw;
+    n.style.transform  = 'translateX(' + t.dx + ')';
+    n.style.textShadow = t.shadow;
+    const st = n.querySelector('.st');
+    if (st) { st.style.color = t.color; st.style.fontSize = t.star; st.style.textShadow = t.shadow === 'none' ? '' : t.shadow; }
+  }
+
+  function startAnim(names) {
+    if (!names.length) return;
+    const assigned = names.map((_, i) => fx[i % fx.length]);
+    let i = 0;
+    function next() {
+      clr(cur, names); cur = i % names.length; lit(cur, names, assigned); i++;
+      timer = setTimeout(next, 750 + Math.random() * 400);
+    }
+    timer = setTimeout(next, 800);
+  }
+
+  // Спочатку завантажуємо з API, потім запускаємо анімацію
+  const roll = document.getElementById('thanks-roll');
+  if (roll) {
+    fetch('/api/portfolio/thanks')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data && data.length) {
+          roll.innerHTML = data
+            .filter(x => x.is_visible)
+            .map(x => '<div class="nm"><span class="st">✦</span>' + x.name.replace(/</g,'&lt;') + '</div>')
+            .join('');
+        }
+        // Запускаємо анімацію після оновлення DOM
+        startAnim([...document.querySelectorAll('.thx .nm')]);
+      })
+      .catch(() => {
+        // API недоступний — анімуємо статичний список
+        startAnim([...document.querySelectorAll('.thx .nm')]);
+      });
+  } else {
+    startAnim([...document.querySelectorAll('.thx .nm')]);
+  }
+})();
+</script>
+
+<audio id="bg-audio" src="/img/audio/war.mp3" preload="auto"></audio>
+<div id="audio-bar" style="position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:9999;background:rgba(10,10,10,.82);border:1px solid rgba(255,255,255,.13);border-radius:32px;padding:7px 22px 7px 14px;display:flex;align-items:center;gap:10px;backdrop-filter:blur(8px);cursor:pointer;user-select:none;transition:opacity .4s" onclick="audioBarPlay()">
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+  <span style="color:#aaa;font-size:13px;letter-spacing:.04em;font-family:inherit">Увімкнути звук</span>
+  <svg id="audio-bar-x" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2" stroke-linecap="round" style="margin-left:4px" onclick="event.stopPropagation();document.getElementById('audio-bar').remove()"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+</div>
+<script>
+(function(){
+  const audio = document.getElementById('bg-audio');
+  const bar   = document.getElementById('audio-bar');
+  // Спробувати автовідтворення
+  audio.play().then(() => {
+    // Вдалось — прибрати бар
+    if (bar) bar.remove();
+  }).catch(() => {
+    // Заблоковано браузером — показуємо бар
+  });
+  window.audioBarPlay = function(){
+    audio.play().then(() => { if (bar) bar.remove(); }).catch(()=>{});
+    if (bar) bar.remove();
+  };
+})();
+</script>
+</body>
+</html>
