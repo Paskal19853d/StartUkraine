@@ -3716,6 +3716,11 @@ def admin_me(request: Request):
     return u
 
 
+@app.get("/api/banned-words")
+def public_banned_words():
+    words = _get_banned_words_cached()
+    return {"words": words}
+
 # ── МІКРО-ЧАТ ────────────────────────────────────────────
 
 _banned_words_cache: list = []
@@ -4292,6 +4297,19 @@ def approve(mid: int, request: Request):
     db.close()
     cache_flush_memorials()
     cache_delete("sitemap")
+    return {"ok": True}
+
+@app.post("/api/admin/unapprove/{mid}")
+def unapprove(mid: int, request: Request):
+    require_moder(request)
+    db = get_db()
+    try:
+        with db.cursor() as c:
+            c.execute("UPDATE memorials SET approved=0 WHERE id=%s", (mid,))
+        db.commit()
+    finally:
+        db.close()
+    cache_flush_memorials()
     return {"ok": True}
 
 @app.post("/api/admin/memorial")

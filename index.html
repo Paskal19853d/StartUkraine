@@ -2630,17 +2630,17 @@ body{visibility:hidden}
     <h2>&#10022; Додати загиблого</h2>
     <p class="mo-sub">Записи проходять модерацію. Вказуйте лише достовірні дані.</p>
     <div class="fr">
-      <div class="fg"><label>Прізвище *</label><input id="flast" placeholder="Шевченко"></div>
-      <div class="fg"><label>Імʼя *</label><input id="ffirst" placeholder="Олег"></div>
+      <div class="fg"><label>Прізвище *</label><input id="flast" placeholder="Шевченко" maxlength="50" oninput="this.value=this.value.replace(/[^а-яА-ЯіІїЇєЄґҐёЁa-zA-Z'\-]/gu,'')"></div>
+      <div class="fg"><label>Імʼя *</label><input id="ffirst" placeholder="Олег" maxlength="50" oninput="this.value=this.value.replace(/[^а-яА-ЯіІїЇєЄґҐёЁa-zA-Z'\-]/gu,'')"></div>
     </div>
     <div class="fr">
-      <div class="fg"><label>По батькові</label><input id="fmid" placeholder="Миколайович"></div>
+      <div class="fg"><label>По батькові</label><input id="fmid" placeholder="Миколайович" maxlength="50" oninput="this.value=this.value.replace(/[^а-яА-ЯіІїЇєЄґҐёЁa-zA-Z'\-]/gu,'')"></div>
       <div class="fg"><label>Фото (URL)</label><input id="fphoto" placeholder="https://…"></div>
     </div>
     <div class="fr full"><div class="fg"><label>Відео YouTube (URL)</label><input id="fvideo" placeholder="https://youtu.be/… або youtube.com/watch?v=…"></div></div>
     <div class="fr">
-      <div class="fg"><label>Дата народження</label><input type="date" id="fbirth"></div>
-      <div class="fg"><label>Дата загибелі</label><input type="date" id="fdeath"></div>
+      <div class="fg"><label>Дата народження</label><input type="date" id="fbirth" min="1900-01-01" onchange="_validatePublicDates()"></div>
+      <div class="fg"><label>Дата загибелі</label><input type="date" id="fdeath" min="1900-01-01" onchange="_validatePublicDates()"></div>
     </div>
     <div class="fr full"><div class="fg"><label>Де загинув (текст)</label><input id="floc" placeholder="Авдіївка, Донецька обл."></div></div>
     <div class="fr full"><div class="fg"><label>Де похований (текст)</label><input id="fbury" placeholder="с. Березівка, Київська обл."></div></div>
@@ -5133,6 +5133,7 @@ function _maddMapSetPoint(lat, lng) {
 
 function openAdd(){
   document.getElementById('madd').classList.add('open');
+  _validatePublicDates();
   setTimeout(function(){
     _initMaddMap();
     setTimeout(function(){ if(_maddMap) _maddMap.invalidateSize(); }, 150);
@@ -5156,13 +5157,40 @@ document.getElementById('crow').addEventListener('click',e=>{
 });
 function startPick(){} // Карта тепер вбудована у форму — функція залишена для сумісності
 function stopPick(){isPick=false;pickCb=null;mw.classList.remove('picking');document.getElementById('pick-bar').classList.remove('on');}
+function _validatePublicDates(){
+  const today=new Date().toISOString().slice(0,10);
+  const bEl=document.getElementById('fbirth');
+  const dEl=document.getElementById('fdeath');
+  if(!bEl||!dEl)return;
+  const b=bEl.value,d=dEl.value;
+  bEl.max=d||today;
+  dEl.min=b||'1900-01-01';
+  dEl.max=today;
+}
+let _PUB_BANNED=[];
+async function _loadPublicBannedWords(){
+  try{const r=await fetch('/api/banned-words');if(r.ok){const d=await r.json();_PUB_BANNED=(d.words||[]).map(w=>w.toLowerCase());}}catch{}
+}
+function _checkPubNameBad(v){v=(v||'').toLowerCase();return _PUB_BANNED.some(w=>w&&v.includes(w));}
 async function submitAdd(){
   const last=document.getElementById('flast').value.trim();
   const first=document.getElementById('ffirst').value.trim();
   const wlat=document.getElementById('fwlat').value;
   const wlng=document.getElementById('fwlng').value;
   if(!last||!first){showN("Введіть прізвище та імʼя",true);return;}
+  const _nRe=/^[а-яА-ЯіІїЇєЄґҐёЁa-zA-Z'\-]+$/u;
+  const _fmid=document.getElementById('fmid').value.trim();
+  if(!_nRe.test(last)){showN('Прізвище: тільки літери без пробілів',true);return;}
+  if(!_nRe.test(first)){showN("Ім'я: тільки літери без пробілів",true);return;}
+  if(_fmid&&!_nRe.test(_fmid)){showN('По батькові: тільки літери без пробілів',true);return;}
+  if(_checkPubNameBad(last)||_checkPubNameBad(first)||(_fmid&&_checkPubNameBad(_fmid))){showN('ПІБ містить недопустимі слова',true);return;}
   if(!wlat||!wlng){showN("Оберіть місце на карті",true);return;}
+  const _today=new Date().toISOString().slice(0,10);
+  const _b=document.getElementById('fbirth').value;
+  const _d=document.getElementById('fdeath').value;
+  if(_b&&_b>_today){showN('Дата народження не може бути в майбутньому',true);return;}
+  if(_d&&_d>_today){showN('Дата загибелі не може бути в майбутньому',true);return;}
+  if(_b&&_d&&_b>_d){showN('Дата народження не може бути пізніше дати загибелі',true);return;}
   const px=document.getElementById('fpx').value;
   const py=document.getElementById('fpy').value;
   const body={last,first,mid:document.getElementById('fmid').value.trim(),birth:document.getElementById('fbirth').value||null,death:document.getElementById('fdeath').value||null,loc:document.getElementById('floc').value.trim(),bury:document.getElementById('fbury').value.trim(),circ:document.getElementById('fcirc').value,descr:document.getElementById('fdesc').value.trim(),photo:document.getElementById('fphoto').value.trim(),video_url:document.getElementById('fvideo').value.trim(),color:selColor,pos_x:+px,pos_y:+py,world_lat:+wlat,world_lng:+wlng,added_by:curUser?.name||'',awards:_userAwards.filter(a=>a.name).map(a=>({name:a.name,img_file:a.file||'',category:a.category||''}))};
@@ -5409,7 +5437,8 @@ async function checkDeviceAccess() {
     let type = 'desktop';
     if (/iPad|Tablet/i.test(ua)) type = 'tablet';
     else if (/Mobile|Android|iPhone|iPod|BlackBerry|IEMobile|Opera Mini|webOS/i.test(ua)) type = 'mobile';
-    if (!d[type]) { document.open(); document.write(_deviceBlockPage(d.block_msg||'Версія сайту для вашого пристрою тимчасово недоступна.')); document.close(); }
+    if (!d[type] && type === 'desktop') { document.open(); document.write(_deviceBlockPage(d.block_msg||'Версія сайту для вашого пристрою тимчасово недоступна.')); document.close(); }
+    if (!d.mobile) { const vs = document.getElementById('view-switcher'); if (vs) vs.style.display = 'none'; }
   } catch { /* timeout або мережева помилка — не блокуємо */ }
 }
 
@@ -5417,6 +5446,7 @@ async function checkDeviceAccess() {
 (async()=>{
   _setPL(0, 'Завантаження...');
   await loadColors();
+  _loadPublicBannedWords();
   await checkDeviceAccess();
   _setPL(15, 'Налаштування...');
   await loadData();

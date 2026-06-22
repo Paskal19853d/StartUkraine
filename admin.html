@@ -5011,8 +5011,8 @@ tr:hover td{background:rgba(255,255,255,.02)}
       <div class="em-f"><label>Імʼя <span id="e-first-cnt" style="float:right;font-weight:400;color:rgba(150,180,210,.5)">0/100</span></label><input id="e-first" maxlength="100" oninput="_V.name(this)"></div>
       <div class="em-f"><label>По батькові <span id="e-mid-cnt" style="float:right;font-weight:400;color:rgba(150,180,210,.5)">0/100</span></label><input id="e-mid" maxlength="100" oninput="_V.name(this)"></div>
       <div class="em-f"><label>Колір</label><input id="e-color" type="color"></div>
-      <div class="em-f"><label>Дата нар.</label><input id="e-birth" type="date" min="1900-01-01" max="2099-12-31"></div>
-      <div class="em-f"><label>Дата заг.</label><input id="e-death" type="date" min="1900-01-01" max="2099-12-31"></div>
+      <div class="em-f"><label>Дата нар.</label><input id="e-birth" type="date" min="1900-01-01" onchange="_validateDates()"></div>
+      <div class="em-f"><label>Дата заг.</label><input id="e-death" type="date" min="1900-01-01" onchange="_validateDates()"></div>
       <div class="em-f em-full"><label>Місце загибелі <span id="e-loc-cnt" style="float:right;font-weight:400;color:rgba(150,180,210,.5)">0/200</span></label><input id="e-loc" maxlength="200" oninput="_V.text(this)"></div>
       <div class="em-f em-full"><label>Місце поховання <span id="e-bury-cnt" style="float:right;font-weight:400;color:rgba(150,180,210,.5)">0/200</span></label><input id="e-bury" maxlength="200" oninput="_V.text(this)"></div>
       <div class="em-f"><label>Обставини</label>
@@ -5156,8 +5156,8 @@ const _V = {
   _cnt(el){ const mx=parseInt(el.maxLength)||0; if(!mx)return; const sp=document.getElementById(el.id+'-cnt'); if(sp)sp.textContent=el.value.length+'/'+mx; },
   // Звичайний текст — знімає HTML, обмежує до maxlength
   text(el){ let v=this._xss(el.value); const mx=parseInt(el.maxLength)||0; if(mx&&v.length>mx)v=v.slice(0,mx); if(el.value!==v)el.value=v; this._cnt(el); },
-  // Ім'я/прізвище — тільки літери будь-якого алфавіту, пробіл, дефіс, апостроф, крапка
-  name(el){ let v=this._xss(el.value).replace(/[<>="'`\\;{}]/g,''); const mx=parseInt(el.maxLength)||100; if(v.length>mx)v=v.slice(0,mx); if(el.value!==v)el.value=v; this._cnt(el); },
+  // Ім'я/прізвище — тільки літери (укр/рос/лат), дефіс, апостроф; без пробілів і цифр
+  name(el){ let v=el.value.replace(/[^а-яА-ЯіІїЇєЄґҐёЁa-zA-Z'\-]/gu,''); const mx=parseInt(el.maxLength)||100; if(v.length>mx)v=v.slice(0,mx); if(el.value!==v)el.value=v; this._cnt(el); },
   // URL — без пробілів і спецсимволів
   url(el){ let v=el.value.replace(/\s/g,'').replace(/[<>"'`\x00-\x1f;{}()\\]/g,'').slice(0,500); if(el.value!==v)el.value=v; },
   // Перевірка URL перед збереженням (повертає true/false)
@@ -6409,6 +6409,7 @@ function renderMemPage() {
       <td>
         <div style="display:flex;gap:4px;flex-wrap:nowrap">
           <button class="btn btn-b" style="flex:1;min-width:70px;font-size:11px" onclick="openEditById(${p.id})"><i class="fi-rr-pencil"></i>Редагувати</button>
+          ${p.approved?`<button class="btn btn-w" style="flex:1;min-width:70px;font-size:11px" onclick="unapproveMem(${p.id})" title="Відправити на модерацію"><svg class="adm-ico"><use href="#ico-hourglass"/></svg>На мод.</button>`:''}
           ${curAdminRole==='admin'?`<button class="btn btn-r" style="flex:1;min-width:70px;font-size:11px" onclick="delMem(${p.id},'${safeNameJs}')"><i class="fi-rr-trash"></i>Видалити</button>`:''}
         </div>
       </td>
@@ -8629,6 +8630,7 @@ async function openEditById(id){
   _renderEditAwardsList();
   document.getElementById('edit-modal').classList.add('open');
   _emMapLoadCoords();
+  _validateDates();
   // Підвантажуємо нагороди з БД
   try {
     const ra = await fetch(`${API}/api/memorial/${id}/awards`);
@@ -8666,6 +8668,7 @@ function openCreateModal(){
   _renderEditAwardsList();
   document.getElementById('edit-modal').classList.add('open');
   _emMapLoadCoords();
+  _validateDates();
 }
 function closeEdit(){document.getElementById('edit-modal').classList.remove('open');editId=null;editMode='edit';}
 async function saveEdit(){
@@ -8689,6 +8692,15 @@ async function saveEdit(){
     descr:document.getElementById('e-desc').value,
   };
   if(!body.last||!body.first){showN('Вкажіть прізвище та імʼя',true);return;}
+  const _nameRe=/^[а-яА-ЯіІїЇєЄґҐёЁa-zA-Z'\-]+$/u;
+  if(!_nameRe.test(body.last)){showN('Прізвище: тільки літери без пробілів',true);return;}
+  if(!_nameRe.test(body.first)){showN("Ім'я: тільки літери без пробілів",true);return;}
+  if(body.mid&&!_nameRe.test(body.mid)){showN('По батькові: тільки літери без пробілів',true);return;}
+  if(_checkNameBadWords(body.last)||_checkNameBadWords(body.first)||(body.mid&&_checkNameBadWords(body.mid))){showN('ПІБ містить недопустимі слова',true);return;}
+  const _today = new Date().toISOString().slice(0, 10);
+  if(body.birth && body.birth > _today){showN('Дата народження не може бути в майбутньому',true);return;}
+  if(body.death && body.death > _today){showN('Дата загибелі не може бути в майбутньому',true);return;}
+  if(body.birth && body.death && body.birth > body.death){showN('Дата народження не може бути пізніше дати загибелі',true);return;}
   if(body.photo && !_V.chkUrl(body.photo)){showN('Фото URL має починатись з https://',true);return;}
   if(body.video_url && !body.video_url.match(/youtu\.be\/|youtube\.com\//)){showN('Відео URL має бути посиланням YouTube',true);return;}
   try{
@@ -11836,6 +11848,7 @@ async function _handleAuthFail() {
   document.getElementById('lerr').style.display='block';
 }
 async function initAll(){
+  _loadBannedWords();
   loadStats();
   loadServerStats();
   loadDashboard();
@@ -12706,5 +12719,6 @@ function _wmPreset(name) {
 
 <script src="/js/chat-admin.js"></script>
 <script src="/js/admin-sounds.js"></script>
+<script src="/js/admin-mem.js"></script>
 </body>
 </html>
