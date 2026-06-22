@@ -612,6 +612,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
     <div class="nav-item"        draggable="true" onclick="showSec('portfolio')" data-s="portfolio"><span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-users"/></svg></span>Сторінка Автора</div>
     <div class="nav-item"        draggable="true" onclick="showSec('device')"    data-s="device">   <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-device"/></svg></span>Пристрої</div>
     <div class="nav-item"        draggable="true" onclick="showSec('chat')"      data-s="chat">      <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-candle"/></svg></span>Чат<span class="nb" id="chat-nb" style="display:none">0</span></div>
+    <div class="nav-item"        draggable="true" onclick="showSec('legacy')" data-s="legacy"><span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-hourglass"/></svg></span>Спадщина</div>
     <div class="nav-group" id="navg-admin" draggable="true">
       <div class="nav-group-hdr" onclick="_toggleNavGroup('navg-admin')">
         <span class="nav-drag">⠿</span>
@@ -4973,6 +4974,341 @@ tr:hover td{background:rgba(255,255,255,.02)}
         </div>
       </div><!-- /sec-chat -->
 
+    
+
+      <!-- ══════════════════════════════════════════════════════════
+     SEC-LEGACY — Спадщина пам'яті
+     ══════════════════════════════════════════════════════════ -->
+<script>
+/* ── Legacy Admin Module ───────────────────────────────── */
+(function(){
+  var _legacyTab = 'settings';
+
+  function legacyTab(t) {
+    _legacyTab = t;
+    document.querySelectorAll('#sec-legacy .tab-btn').forEach(function(b){
+      b.classList.toggle('active', b.dataset.t === t);
+    });
+    document.querySelectorAll('#sec-legacy .ltab-pane').forEach(function(p){
+      p.style.display = p.id === 'ltab-'+t ? 'block' : 'none';
+    });
+    var loaders = {
+      trusted:  legacyLoadTrusted,
+      requests: legacyLoadRequests,
+      accounts: legacyLoadAccounts,
+      logs:     legacyLoadLogs,
+    };
+    if (loaders[t]) loaders[t]();
+  }
+  window.legacyTab = legacyTab;
+
+  /* ── Settings ── */
+  window.legacyLoadSettings = function() {
+    fetch('/api/admin/legacy/settings', {credentials:'include'})
+      .then(function(r){return r.json();})
+      .then(function(d){
+        var f = function(id,v){ var e=document.getElementById(id); if(e) e.value=v||''; };
+        var c = function(id,v){ var e=document.getElementById(id); if(e) e.checked=v==='1'; };
+        c('leg-cfg-enabled',  d.legacy_enabled);
+        c('leg-cfg-refund',   d.legacy_refund);
+        f('leg-cfg-price',    d.legacy_price);
+        var sel=document.getElementById('leg-cfg-currency');
+        if(sel) sel.value = d.legacy_currency||'USD';
+      });
+  };
+
+  window.legacySaveSettings = function() {
+    var gv=function(id){var e=document.getElementById(id);return e?e.value:'';};
+    var gc=function(id){var e=document.getElementById(id);return e&&e.checked?'1':'0';};
+    fetch('/api/admin/legacy/settings',{
+      method:'PUT', credentials:'include',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        legacy_enabled:  gc('leg-cfg-enabled'),
+        legacy_refund:   gc('leg-cfg-refund'),
+        legacy_price:    gv('leg-cfg-price'),
+        legacy_currency: gv('leg-cfg-currency'),
+      })
+    }).then(function(r){return r.json();})
+      .then(function(d){
+        var m=document.getElementById('leg-cfg-msg');
+        if(m){m.textContent=d.ok?'Збережено!':'Помилка';m.className='adm-msg '+(d.ok?'ok':'err');
+          setTimeout(function(){m.textContent='';m.className='adm-msg';},2500);}
+      });
+  };
+
+  /* ── Activate user manually ── */
+  window.legacyActivateUser = function(uid) {
+    var notes = prompt('Нотатки (необов\'язково):') || '';
+    fetch('/api/admin/legacy/activate/'+uid,{
+      method:'POST', credentials:'include',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({notes:notes})
+    }).then(function(r){return r.json();})
+      .then(function(d){
+        if(d.ok){ alert('Активовано!'); legacyLoadAccounts(); }
+        else alert(d.detail||'Помилка');
+      });
+  };
+
+  /* ── Accounts ── */
+  window.legacyLoadAccounts = function(page) {
+    page = page||1;
+    fetch('/api/admin/legacy/accounts?page='+page+'&limit=50',{credentials:'include'})
+      .then(function(r){return r.json();})
+      .then(function(d){
+        var tb=document.getElementById('leg-acc-tbody');
+        if(!tb) return;
+        if(!d.items||!d.items.length){ tb.innerHTML='<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--muted)">Немає активованих</td></tr>'; return; }
+        tb.innerHTML = d.items.map(function(a){
+          var dt = a.activated_at ? new Date(a.activated_at*1000).toLocaleDateString('uk-UA') : '—';
+          var who = a.activated_by_admin ? '<span style="color:var(--muted);font-size:11px">адмін</span>' : '<span style="color:#4a9e6a;font-size:11px">оплата</span>';
+          return '<tr>'+
+            '<td>'+escA(a.nickname||'—')+'</td>'+
+            '<td style="font-size:12px">'+escA(a.email||'')+'</td>'+
+            '<td>'+(a.payment_amount?escA(a.payment_amount)+' '+escA(a.payment_currency||''):'—')+'</td>'+
+            '<td>'+who+'</td>'+
+            '<td>'+dt+'</td>'+
+            '<td>'+escA(a.notes||'')+'</td>'+
+          '</tr>';
+        }).join('');
+        document.getElementById('leg-acc-total').textContent = 'Всього: '+d.total;
+      });
+  };
+
+  /* ── Trusted ── */
+  window.legacyLoadTrusted = function(status) {
+    var s = status||document.getElementById('leg-tr-filter').value||'';
+    fetch('/api/admin/legacy/trusted?limit=100&status='+encodeURIComponent(s),{credentials:'include'})
+      .then(function(r){return r.json();})
+      .then(function(d){
+        var tb=document.getElementById('leg-tr-tbody');
+        if(!tb) return;
+        if(!d.items||!d.items.length){ tb.innerHTML='<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--muted)">Записів немає</td></tr>'; return; }
+        var stMap={pending:'Очікує',confirmed:'Підтверджено',rejected:'Відхилено'};
+        var stCol={pending:'#c8a020',confirmed:'#4a9e6a',rejected:'#e05050'};
+        tb.innerHTML = d.items.map(function(t){
+          var dt = t.created_at ? new Date(t.created_at*1000).toLocaleDateString('uk-UA') : '—';
+          return '<tr>'+
+            '<td>@'+escA(t.owner_nick||'')+'</td>'+
+            '<td>@'+escA(t.trusted_nick||'')+'</td>'+
+            '<td><span style="color:'+stCol[t.status]+';font-size:12px">'+(stMap[t.status]||t.status)+'</span></td>'+
+            '<td style="font-size:11px;color:var(--muted)">'+dt+'</td>'+
+          '</tr>';
+        }).join('');
+        document.getElementById('leg-tr-total').textContent = 'Всього: '+d.total;
+      });
+  };
+
+  /* ── Requests ── */
+  window.legacyLoadRequests = function(status) {
+    var s = status||document.getElementById('leg-req-filter').value||'';
+    fetch('/api/admin/legacy/requests?limit=100&status='+encodeURIComponent(s),{credentials:'include'})
+      .then(function(r){return r.json();})
+      .then(function(d){
+        var tb=document.getElementById('leg-req-tbody');
+        if(!tb) return;
+        if(!d.items||!d.items.length){ tb.innerHTML='<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--muted)">Заявок немає</td></tr>'; return; }
+        var stMap={new:'Нова',review:'На перевірці',confirmed:'Підтверджено',rejected:'Відхилено'};
+        var stCol={new:'#c8a020',review:'#7c6fe0',confirmed:'#4a9e6a',rejected:'#e05050'};
+        tb.innerHTML = d.items.map(function(r){
+          var dt = r.created_at ? new Date(r.created_at*1000).toLocaleDateString('uk-UA') : '—';
+          var dth = r.death_date||'—';
+          var acts = '';
+          if(r.status==='new'||r.status==='review'){
+            acts='<button class="btn btn-g" style="font-size:11px;padding:4px 10px" onclick="legacyUpdateReq('+r.id+',\'review\')">На перевірку</button> '+
+                 '<button class="btn btn-g" style="font-size:11px;padding:4px 10px" onclick="legacyUpdateReq('+r.id+',\'confirmed\')">Підтвердити</button> '+
+                 '<button class="btn btn-r" style="font-size:11px;padding:4px 10px" onclick="legacyUpdateReq('+r.id+',\'rejected\')">Відхилити</button>';
+          }
+          return '<tr>'+
+            '<td style="font-size:11px">'+r.id+'</td>'+
+            '<td>@'+escA(r.owner_nick||'')+'<br><small style="color:var(--muted)">'+escA((r.first_name||'')+' '+(r.last_name||''))+'</small></td>'+
+            '<td>@'+escA(r.trusted_nick||'')+'</td>'+
+            '<td style="font-size:12px">'+escA(dth)+'</td>'+
+            '<td><span style="color:'+stCol[r.status]+';font-size:12px">'+(stMap[r.status]||r.status)+'</span></td>'+
+            '<td style="white-space:nowrap">'+acts+'</td>'+
+          '</tr>';
+        }).join('');
+        document.getElementById('leg-req-total').textContent = 'Всього: '+d.total;
+      });
+  };
+
+  window.legacyUpdateReq = function(rid, status) {
+    var comment = '';
+    if(status==='rejected') comment = prompt('Причина відхилення:')||'';
+    fetch('/api/admin/legacy/requests/'+rid,{
+      method:'PUT', credentials:'include',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({status:status, mod_comment:comment})
+    }).then(function(r){return r.json();})
+      .then(function(d){
+        if(d.ok) legacyLoadRequests();
+        else alert(d.detail||'Помилка');
+      });
+  };
+
+  /* ── Logs ── */
+  window.legacyLoadLogs = function() {
+    fetch('/api/admin/legacy/logs?limit=100',{credentials:'include'})
+      .then(function(r){return r.json();})
+      .then(function(d){
+        var tb=document.getElementById('leg-log-tbody');
+        if(!tb) return;
+        if(!d.items||!d.items.length){ tb.innerHTML='<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--muted)">Журнал порожній</td></tr>'; return; }
+        tb.innerHTML = d.items.map(function(l){
+          var dt = l.created_at ? new Date(l.created_at*1000).toLocaleString('uk-UA') : '—';
+          return '<tr>'+
+            '<td style="font-size:11px;color:var(--muted)">'+dt+'</td>'+
+            '<td>'+escA(l.nickname||('uid:'+l.user_id)||'—')+'</td>'+
+            '<td><code style="font-size:11px;color:#a8e0f8">'+escA(l.action)+'</code></td>'+
+            '<td style="font-size:11px;color:var(--muted)">'+escA(l.ip||'')+'</td>'+
+            '<td style="font-size:11px;color:var(--muted);max-width:200px;overflow:hidden;text-overflow:ellipsis">'+escA(l.metadata||'')+'</td>'+
+          '</tr>';
+        }).join('');
+        document.getElementById('leg-log-total').textContent = 'Всього: '+d.total;
+      });
+  };
+
+  function escA(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+  /* ── Init при відкритті секції ── */
+  window.legacyOpen = function() {
+    legacyTab('settings');
+  };
+})();
+</script>
+
+<div id="sec-legacy" class="section">
+  <div class="sec-title"><svg class="adm-ico"><use href="#ico-hourglass"/></svg> Спадщина пам'яті</div>
+
+  <!-- Вкладки всередині секції -->
+  <div class="tab-bar" style="margin-bottom:20px">
+    <button class="tab-btn active" data-t="settings" onclick="legacyTab('settings')">Налаштування</button>
+    <button class="tab-btn" data-t="accounts"  onclick="legacyTab('accounts')">Платежі</button>
+    <button class="tab-btn" data-t="trusted"   onclick="legacyTab('trusted')">Довірені особи</button>
+    <button class="tab-btn" data-t="requests"  onclick="legacyTab('requests')">Заявки про смерть</button>
+    <button class="tab-btn" data-t="logs"      onclick="legacyTab('logs')">Журнал</button>
+  </div>
+
+  <!-- ── Налаштування ── -->
+  <div id="ltab-settings" class="ltab-pane">
+    <div class="rg-row">
+      <div class="rg-row-info">
+        <div class="rg-row-label">Модуль увімкнено</div>
+        <div class="rg-row-desc">Якщо вимкнено — вкладка «Спадщина» прихована у профілях</div>
+      </div>
+      <label class="rg-toggle">
+        <input type="checkbox" id="leg-cfg-enabled">
+        <span class="rg-slider"></span>
+      </label>
+    </div>
+    <div class="rg-row">
+      <div class="rg-row-info">
+        <div class="rg-row-label">Дозволити повернення коштів</div>
+        <div class="rg-row-desc">Чи може користувач запросити повернення оплати</div>
+      </div>
+      <label class="rg-toggle">
+        <input type="checkbox" id="leg-cfg-refund">
+        <span class="rg-slider"></span>
+      </label>
+    </div>
+    <div class="rg-row">
+      <div class="rg-row-info">
+        <div class="rg-row-label">Ціна підключення</div>
+        <div class="rg-row-desc">Вартість активації модуля для користувача</div>
+      </div>
+      <input type="number" id="leg-cfg-price" min="0" step="1" style="width:100px;padding:7px 10px;background:var(--bg);border:1px solid var(--border-2);border-radius:7px;color:var(--text);font-size:13px">
+    </div>
+    <div class="rg-row">
+      <div class="rg-row-info">
+        <div class="rg-row-label">Валюта</div>
+        <div class="rg-row-desc">USD, EUR або UAH</div>
+      </div>
+      <select id="leg-cfg-currency" style="padding:7px 10px;background:var(--bg);border:1px solid var(--border-2);border-radius:7px;color:var(--text);font-size:13px">
+        <option value="USD">USD</option>
+        <option value="EUR">EUR</option>
+        <option value="UAH">UAH</option>
+      </select>
+    </div>
+    <div style="margin-top:18px;display:flex;align-items:center;gap:14px">
+      <button class="btn btn-g" onclick="legacySaveSettings()"><svg class="adm-ico"><use href="#ico-check"/></svg> Зберегти</button>
+      <span class="adm-msg" id="leg-cfg-msg"></span>
+    </div>
+  </div>
+
+  <!-- ── Платежі / акаунти ── -->
+  <div id="ltab-accounts" class="ltab-pane" style="display:none">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+      <span id="leg-acc-total" style="font-size:12px;color:var(--muted)">Всього: —</span>
+      <button class="btn" onclick="legacyLoadAccounts()"><svg class="adm-ico"><use href="#ico-search"/></svg> Оновити</button>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="adm-table">
+        <thead><tr>
+          <th>Нік</th><th>Email</th><th>Сума</th><th>Активовано</th><th>Дата</th><th>Нотатки</th>
+        </tr></thead>
+        <tbody id="leg-acc-tbody"><tr><td colspan="6" style="text-align:center;padding:20px;color:var(--muted)">Завантаження…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── Довірені особи ── -->
+  <div id="ltab-trusted" class="ltab-pane" style="display:none">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">
+      <select id="leg-tr-filter" onchange="legacyLoadTrusted(this.value)" style="padding:7px 10px;background:var(--bg);border:1px solid var(--border-2);border-radius:7px;color:var(--text);font-size:12px">
+        <option value="">Всі</option>
+        <option value="pending">Очікує</option>
+        <option value="confirmed">Підтверджено</option>
+        <option value="rejected">Відхилено</option>
+      </select>
+      <button class="btn" onclick="legacyLoadTrusted()"><svg class="adm-ico"><use href="#ico-search"/></svg> Оновити</button>
+      <span id="leg-tr-total" style="font-size:12px;color:var(--muted)">Всього: —</span>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="adm-table">
+        <thead><tr><th>Власник</th><th>Довірена особа</th><th>Статус</th><th>Дата</th></tr></thead>
+        <tbody id="leg-tr-tbody"><tr><td colspan="4" style="text-align:center;padding:20px;color:var(--muted)">Завантаження…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── Заявки про смерть ── -->
+  <div id="ltab-requests" class="ltab-pane" style="display:none">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">
+      <select id="leg-req-filter" onchange="legacyLoadRequests(this.value)" style="padding:7px 10px;background:var(--bg);border:1px solid var(--border-2);border-radius:7px;color:var(--text);font-size:12px">
+        <option value="">Всі</option>
+        <option value="new">Нові</option>
+        <option value="review">На перевірці</option>
+        <option value="confirmed">Підтверджено</option>
+        <option value="rejected">Відхилено</option>
+      </select>
+      <button class="btn" onclick="legacyLoadRequests()"><svg class="adm-ico"><use href="#ico-search"/></svg> Оновити</button>
+      <span id="leg-req-total" style="font-size:12px;color:var(--muted)">Всього: —</span>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="adm-table">
+        <thead><tr><th>#</th><th>Власник</th><th>Подав</th><th>Дата смерті</th><th>Статус</th><th>Дії</th></tr></thead>
+        <tbody id="leg-req-tbody"><tr><td colspan="6" style="text-align:center;padding:20px;color:var(--muted)">Завантаження…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── Журнал ── -->
+  <div id="ltab-logs" class="ltab-pane" style="display:none">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+      <button class="btn" onclick="legacyLoadLogs()"><svg class="adm-ico"><use href="#ico-search"/></svg> Оновити</button>
+      <span id="leg-log-total" style="font-size:12px;color:var(--muted)">Всього: —</span>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="adm-table">
+        <thead><tr><th>Час</th><th>Користувач</th><th>Дія</th><th>IP</th><th>Дані</th></tr></thead>
+        <tbody id="leg-log-tbody"><tr><td colspan="5" style="text-align:center;padding:20px;color:var(--muted)">Завантаження…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+</div><!-- /sec-legacy -->
+
     </div><!-- /content-area -->
   </div><!-- /main -->
 </div><!-- /layout -->
@@ -5341,6 +5677,7 @@ function showSec(id) {
   if(id==='version') versionLoad();
   if(id==='google')  _loadGoogleSettings();
   if(id==='density') _densityLoad();
+  if(id==='legacy')  { if(typeof legacyOpen==='function') legacyOpen(); }
 }
 
 /* ══════════ ХВИЛИНА МОВЧАННЯ ══════════ */
@@ -12700,6 +13037,8 @@ function _wmPreset(name) {
   </div>
 </div>
 
+
+      
 <!-- ══ ROW EDIT MODAL (всередині перегляду імпорту) ════════ -->
 <div id="imp-edit-modal" style="display:none;position:fixed;inset:0;z-index:9100;background:rgba(0,0,0,.75);align-items:center;justify-content:center">
   <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px 28px;width:900px;max-width:97vw;max-height:95vh;overflow-y:auto">
@@ -12716,6 +13055,29 @@ function _wmPreset(name) {
 <div id="imp-photo-lb" onclick="this.style.display='none'" style="display:none;position:fixed;inset:0;z-index:9200;background:rgba(0,0,0,.88);align-items:center;justify-content:center;cursor:zoom-out">
   <img id="imp-photo-lb-img" src="" style="max-width:90vw;max-height:90vh;border-radius:8px;box-shadow:0 4px 40px rgba(0,0,0,.8)">
 </div>
+
+<script src="/js/chat-admin.js"></script>
+<script src="/js/admin-sounds.js"></script>
+<script src="/js/admin-mem.js"></script>
+
+<script src="/js/chat-admin.js"></script>
+<script src="/js/admin-sounds.js"></script>
+<script src="/js/admin-mem.js"></script>
+</body>
+</html
+
+
+<script src="/js/chat-admin.js"></script>
+<script src="/js/admin-sounds.js"></script>
+<script src="/js/admin-mem.js"></script>
+</body>
+</html
+<script src="/js/chat-admin.js"></script>
+<script src="/js/admin-sounds.js"></script>
+<script src="/js/admin-mem.js"></script>
+</body>
+</html
+
 
 <script src="/js/chat-admin.js"></script>
 <script src="/js/admin-sounds.js"></script>

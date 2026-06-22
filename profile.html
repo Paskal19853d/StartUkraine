@@ -6,192 +6,13 @@
 <meta charset="UTF-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#050507">
+<meta name="theme-color" content="#0a0a0c">
 <meta name="robots" content="noindex">
 <title>Профіль — Зоряна Памʼять</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<style>
-  :root {
-    --bg: #050507;
-    --bg-2: #0b0b10;
-    --text: #e8e6e1;
-    --muted: #8a8a93;
-    --dim: #5a5a63;
-    --card: #0f1015;
-    --line: rgba(255,255,255,0.07);
-    --accent: #f0b54a;
-    --accent-soft: rgba(240,181,74,0.12);
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body { background: var(--bg); color: var(--text); }
-  body { font-family: 'Inter', system-ui, sans-serif; overflow-x: hidden; -webkit-font-smoothing: antialiased; line-height: 1.6; }
-  .serif { font-family: 'Cormorant Garamond', Georgia, serif; font-weight: 500; letter-spacing: -0.01em; }
-
-  /* Loading */
-  #loading-screen {
-    position: fixed; inset: 0; background: var(--bg);
-    display: flex; align-items: center; justify-content: center;
-    flex-direction: column; gap: 20px; z-index: 999;
-  }
-  .load-star {
-    width: 48px; height: 48px;
-    background: var(--accent);
-    clip-path: polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);
-    animation: pulse 1.4s ease-in-out infinite;
-  }
-  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(.85)} }
-  .load-txt { color: var(--muted); font-size: .8rem; letter-spacing: .2em; text-transform: uppercase; }
-
-  /* Error screen */
-  #error-screen {
-    position: fixed; inset: 0; background: var(--bg);
-    display: none; align-items: center; justify-content: center;
-    flex-direction: column; gap: 16px; z-index: 999; text-align: center; padding: 24px;
-  }
-  #error-screen h2 { font-size: 1.4rem; color: var(--text); }
-  #error-screen p { color: var(--muted); font-size: .9rem; }
-  #error-screen a { color: var(--accent); text-decoration: none; }
-
-  /* Page content */
-  #page-content { display: none; }
-
-  /* HERO */
-  .profile-hero {
-    display: flex; flex-direction: column; align-items: center;
-    padding: 72px 20px 48px;
-    text-align: center;
-    border-bottom: 1px solid var(--line);
-    background: radial-gradient(ellipse at 50% 0%, rgba(240,181,74,.07) 0%, transparent 65%);
-  }
-  .avatar-circle {
-    width: 88px; height: 88px; border-radius: 50%;
-    background: var(--accent-soft);
-    border: 2px solid var(--accent);
-    display: flex; align-items: center; justify-content: center;
-    font-family: 'Cormorant Garamond', Georgia, serif;
-    font-size: 2rem; font-weight: 600;
-    color: var(--accent); letter-spacing: .05em;
-    margin-bottom: 20px;
-  }
-  .profile-name {
-    font-family: 'Cormorant Garamond', Georgia, serif;
-    font-size: 2rem; font-weight: 600;
-    color: var(--text); line-height: 1.2;
-    margin-bottom: 8px;
-  }
-  .profile-meta {
-    display: flex; align-items: center; justify-content: center;
-    flex-wrap: wrap; gap: 8px 16px;
-    color: var(--muted); font-size: .8rem;
-  }
-  .profile-nick { color: var(--dim); }
-  .role-badge {
-    padding: 2px 10px; border-radius: 20px;
-    font-size: .7rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
-    background: var(--accent-soft); color: var(--accent); border: 1px solid rgba(240,181,74,.3);
-  }
-  .role-badge.admin { background: rgba(239,68,68,.1); color: #f87171; border-color: rgba(239,68,68,.3); }
-  .role-badge.moder { background: rgba(99,102,241,.1); color: #a5b4fc; border-color: rgba(99,102,241,.3); }
-  .profile-since { color: var(--dim); font-size: .75rem; }
-  .profile-count {
-    margin-top: 20px;
-    font-size: .8rem; letter-spacing: .16em; text-transform: uppercase;
-    color: var(--muted);
-  }
-  .profile-count strong { color: var(--accent); font-size: 1.1rem; font-weight: 600; }
-
-  /* Divider */
-  .divider {
-    display: flex; align-items: center; gap: 12px;
-    margin: 48px auto 32px; max-width: 900px; padding: 0 20px;
-  }
-  .divider-line { flex: 1; height: 1px; background: var(--line); }
-  .divider-star {
-    width: 14px; height: 14px;
-    background: var(--accent);
-    clip-path: polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);
-    opacity: .6;
-  }
-
-  /* Memorial grid */
-  .mem-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 16px;
-    max-width: 900px; margin: 0 auto; padding: 0 20px 80px;
-  }
-  .mem-card {
-    background: var(--card);
-    border: 1px solid var(--line);
-    border-radius: 10px;
-    overflow: hidden;
-    text-decoration: none;
-    color: inherit;
-    display: flex; flex-direction: column;
-    transition: border-color .2s, transform .2s;
-  }
-  .mem-card:hover { border-color: rgba(240,181,74,.35); transform: translateY(-2px); }
-  .mem-photo {
-    width: 100%; height: 160px;
-    object-fit: cover; object-position: center top;
-    background: #0b0b10;
-    display: block;
-  }
-  .mem-photo-ph {
-    width: 100%; height: 160px;
-    background: #0c0c14;
-    display: flex; align-items: center; justify-content: center;
-  }
-  .mem-photo-ph svg { width: 48px; height: 48px; opacity: .18; }
-  .mem-info { padding: 14px 16px 16px; flex: 1; display: flex; flex-direction: column; gap: 6px; }
-  .mem-name {
-    font-family: 'Cormorant Garamond', Georgia, serif;
-    font-size: 1.05rem; font-weight: 600; color: var(--text); line-height: 1.25;
-  }
-  .mem-foot {
-    display: flex; align-items: center; justify-content: space-between;
-    margin-top: auto; padding-top: 8px;
-    border-top: 1px solid var(--line);
-  }
-  .mem-death { font-size: .75rem; color: var(--muted); }
-  .mem-likes { font-size: .75rem; color: var(--dim); }
-  .mem-likes svg { width: 12px; height: 12px; vertical-align: middle; margin-right: 3px; }
-
-  /* Empty state */
-  .empty-state {
-    text-align: center; padding: 64px 20px;
-    color: var(--muted); font-size: .9rem;
-  }
-  .empty-state .star-ico {
-    width: 40px; height: 40px;
-    background: var(--dim);
-    clip-path: polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);
-    margin: 0 auto 16px; opacity: .3;
-  }
-
-  /* Footer */
-  .profile-footer {
-    text-align: center; padding: 32px 20px 48px;
-    border-top: 1px solid var(--line);
-  }
-  .profile-footer a {
-    color: var(--muted); font-size: .8rem; text-decoration: none;
-    transition: color .2s;
-  }
-  .profile-footer a:hover { color: var(--accent); }
-
-  @media (max-width: 480px) {
-    .profile-name { font-size: 1.5rem; }
-    .avatar-circle { width: 72px; height: 72px; font-size: 1.6rem; }
-    .mem-grid { grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 12px 60px; }
-    .mem-photo, .mem-photo-ph { height: 120px; }
-  }
-  @media (max-width: 340px) {
-    .mem-grid { grid-template-columns: 1fr; }
-  }
-</style>
+<link rel="stylesheet" href="/css/profile.css">
 </head>
 <body>
 
@@ -201,140 +22,360 @@
 </div>
 
 <div id="error-screen">
-  <h2>Профіль не знайдено</h2>
+  <h2>Доступ обмежено</h2>
   <p id="error-msg">Такого користувача не існує або його заблоковано.</p>
+  <a id="error-login-link" href="/" style="display:none;margin-bottom:8px">← Увійти на сайт</a>
   <a href="/">← На головну</a>
 </div>
 
 <div id="page-content">
-  <div class="profile-hero">
-    <div class="avatar-circle" id="prof-avatar"></div>
-    <div class="profile-name serif" id="prof-name"></div>
-    <div class="profile-meta">
-      <span class="profile-nick" id="prof-nick"></span>
-      <span class="role-badge" id="prof-role"></span>
-      <span class="profile-since" id="prof-since"></span>
+
+  <!-- Profile header — Facebook style -->
+  <div class="prof-cover-wrap">
+
+    <!-- Cover-фото -->
+    <div class="prof-cover">
+      <div class="prof-actions">
+        <button class="btn-share" onclick="copyProfileLink()">&#8599; Поділитись</button>
+      </div>
     </div>
-    <div class="profile-count" id="prof-count"></div>
+
+    <!-- Аватар + інфо в один рядок -->
+    <div class="prof-header-body">
+
+      <!-- Аватар (виступає вгору на половину висоти) -->
+      <div class="prof-av-wrap">
+        <div class="prof-av-initials" id="prof-avatar"></div>
+      </div>
+
+      <!-- Ім'я, нік, статистика -->
+      <div class="prof-info">
+        <div class="prof-name" id="prof-name"></div>
+        <div class="prof-sub">
+          <span class="prof-nick" id="prof-nick"></span>
+          <span class="role-tag" id="prof-role"></span>
+          <span id="prof-since"></span>
+        </div>
+        <div class="prof-stats">
+          <div class="stat-item">
+            <span class="stat-num" id="stat-memorials">0</span>
+            <span class="stat-lbl">меморіалів</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-num" id="stat-likes">0</span>
+            <span class="stat-lbl">вподобань</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-num" id="stat-days">0</span>
+            <span class="stat-lbl">днів з нами</span>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /prof-header-body -->
+    <div class="prof-header-divider"></div>
+
+  </div><!-- /prof-cover-wrap -->
+
+  <!-- Tabs -->
+  <div class="prof-tabs">
+    <button class="tab-btn active" onclick="switchTab('memorials', this)">Меморіали</button>
+    <button class="tab-btn" onclick="switchTab('settings', this)">Налаштування</button>
+    <button class="tab-btn" id="tab-btn-legacy" onclick="switchTab('legacy', this)">Спадщина</button>
+    <button class="tab-btn" onclick="switchTab('info', this)">Інформація</button>
   </div>
 
-  <div id="mem-section">
-    <div class="divider">
-      <div class="divider-line"></div>
-      <div class="divider-star"></div>
-      <div class="divider-line"></div>
+  <!-- Memorials tab -->
+  <div class="tab-panel active" id="tab-memorials">
+    <div class="mem-section">
+      <div class="sec-label" id="sec-label-count"></div>
+      <div class="mem-grid" id="mem-grid"></div>
     </div>
-    <div class="mem-grid" id="mem-grid"></div>
   </div>
 
-  <footer class="profile-footer">
+  <!-- Settings tab -->
+  <div class="tab-panel" id="tab-settings">
+    <div class="settings-section">
+
+      <!-- ФІО (тільки читання) -->
+      <div class="sett-card">
+        <div class="sett-card-title">ПІБ</div>
+        <div class="sett-fio" id="sett-fio"></div>
+        <div class="sett-hint">ПІБ встановлюється при реєстрації і не змінюється</div>
+      </div>
+
+      <!-- Нікнейм -->
+      <div class="sett-card">
+        <div class="sett-card-title">Нікнейм</div>
+        <div class="sett-field">
+          <label for="sett-nick">Нік</label>
+          <input id="sett-nick" type="text" maxlength="50"
+            placeholder="мій_нік або мій_нік_укр"
+            autocomplete="username"
+            oninput="settNickInput(this)">
+          <div class="sett-field-hint" id="hint-sett-nick">Укр/латинські літери, цифри, _ . -</div>
+        </div>
+      </div>
+
+      <!-- Email -->
+      <div class="sett-card">
+        <div class="sett-card-title">Email</div>
+        <div class="sett-field">
+          <label for="sett-email">Новий email</label>
+          <input id="sett-email" type="email" maxlength="100"
+            placeholder="you@email.com" autocomplete="email">
+        </div>
+        <div class="sett-field">
+          <label for="sett-email2">Підтвердження email</label>
+          <input id="sett-email2" type="email" maxlength="100"
+            placeholder="повторіть email">
+        </div>
+      </div>
+
+      <!-- Телефон -->
+      <div class="sett-card">
+        <div class="sett-card-title">Телефон</div>
+        <div class="sett-field">
+          <label for="sett-phone">Номер телефону</label>
+          <input id="sett-phone" type="tel" maxlength="18"
+            placeholder="0671234567 або +380671234567"
+            autocomplete="tel" inputmode="tel">
+          <div class="sett-field-hint">Лише українські номери (+380)</div>
+        </div>
+      </div>
+
+      <!-- Пароль -->
+      <div class="sett-card">
+        <div class="sett-card-title">Зміна пароля</div>
+        <div class="sett-field">
+          <label for="sett-oldpass">Поточний пароль</label>
+          <input id="sett-oldpass" type="password" maxlength="72"
+            placeholder="поточний пароль" autocomplete="current-password">
+        </div>
+        <div class="sett-field">
+          <label for="sett-newpass">Новий пароль</label>
+          <input id="sett-newpass" type="password" maxlength="72"
+            placeholder="мінімум 10 символів" autocomplete="new-password"
+            oninput="settPassStrength(this.value)">
+          <div class="sett-pass-bar"><div class="sett-pass-fill" id="sett-pass-fill"></div></div>
+          <div class="sett-field-hint" id="sett-pass-hint"></div>
+        </div>
+        <div class="sett-field">
+          <label for="sett-newpass2">Підтвердження пароля</label>
+          <input id="sett-newpass2" type="password" maxlength="72"
+            placeholder="повторіть пароль" autocomplete="new-password">
+        </div>
+      </div>
+
+      <!-- Кнопка збереження -->
+      <div class="sett-actions">
+        <button class="sett-save-btn" onclick="settSave()">Зберегти зміни</button>
+        <div class="sett-save-msg" id="sett-save-msg"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Legacy tab -->
+  <div class="tab-panel" id="tab-legacy">
+    <div class="legacy-section" id="legacy-section">
+
+      <!-- Заглушка: модуль не активовано -->
+      <div class="legacy-inactive" id="legacy-inactive" style="display:none">
+        <div class="legacy-promo">
+          <div class="legacy-promo-icon">&#9733;</div>
+          <h2 class="legacy-promo-title serif">Спадщина пам'яті</h2>
+          <p class="legacy-promo-desc">Залиште цифровий слід для нащадків — фото, біографія, останнє звернення, відеозапис та інструкції для довіреної особи. Все це буде збережено і передано після вашого підтвердженого відходу.</p>
+          <div class="legacy-promo-price" id="legacy-promo-price"></div>
+          <button class="sett-save-btn legacy-buy-btn" onclick="legacyActivate()">Активувати модуль</button>
+          <div class="sett-save-msg" id="legacy-buy-msg"></div>
+        </div>
+      </div>
+
+      <!-- Запрошення бути довіреною особою (для іншого юзера) -->
+      <div class="legacy-invite-banner" id="legacy-invite-banner" style="display:none">
+        <div class="legacy-invite-inner">
+          <div class="legacy-invite-title">&#9733; Вас запрошено стати довіреною особою</div>
+          <div class="legacy-invite-desc" id="legacy-invite-desc"></div>
+          <div class="legacy-invite-btns">
+            <button class="btn-legacy-confirm" onclick="legacyRespondInvite('confirm')">Підтвердити</button>
+            <button class="btn-legacy-reject"  onclick="legacyRespondInvite('reject')">Відмовитись</button>
+          </div>
+          <div class="sett-save-msg" id="legacy-invite-msg"></div>
+        </div>
+      </div>
+
+      <!-- Активний контент -->
+      <div id="legacy-active-content" style="display:none">
+
+        <!-- Блок: довірена особа -->
+        <div class="sett-card">
+          <div class="sett-card-title">Довірена особа</div>
+          <div id="legacy-trusted-info" class="legacy-trusted-info"></div>
+          <div class="legacy-trusted-form" id="legacy-trusted-form" style="display:none">
+            <div class="sett-field">
+              <label for="legacy-trusted-nick">Нікнейм користувача</label>
+              <input id="legacy-trusted-nick" type="text" maxlength="50" placeholder="нік довіреної особи">
+            </div>
+            <div class="legacy-trusted-btns">
+              <button class="sett-save-btn" style="width:auto;padding:10px 22px" onclick="legacySetTrusted()">Надіслати запрошення</button>
+              <button class="btn-legacy-reject" onclick="document.getElementById('legacy-trusted-form').style.display='none'">Скасувати</button>
+            </div>
+          </div>
+          <div class="sett-save-msg" id="legacy-trusted-msg"></div>
+        </div>
+
+        <!-- Блок: фото пам'яті -->
+        <div class="sett-card">
+          <div class="sett-card-title">Фото пам'яті</div>
+          <div class="sett-field">
+            <label for="legacy-photo">URL фотографії</label>
+            <input id="legacy-photo" type="url" maxlength="500" placeholder="https://..." oninput="legacyPhotoPreview(this.value)">
+          </div>
+          <div id="legacy-photo-preview" class="legacy-photo-preview"></div>
+        </div>
+
+        <!-- Блок: мій спадок -->
+        <div class="sett-card">
+          <div class="sett-card-title">Мій спадок</div>
+
+          <div class="sett-field">
+            <label for="legacy-epitaph">Епітафія <span class="legacy-counter" id="legacy-epitaph-cnt">0/300</span></label>
+            <textarea id="legacy-epitaph" maxlength="300" rows="2" placeholder="Коротке прощальне слово…" oninput="legacyCount(this,'legacy-epitaph-cnt',300)"></textarea>
+          </div>
+
+          <div class="sett-field">
+            <label for="legacy-bio">Біографія</label>
+            <textarea id="legacy-bio" rows="5" placeholder="Розкажіть про своє життя…"></textarea>
+          </div>
+
+          <div class="sett-field">
+            <label for="legacy-final">Останнє звернення</label>
+            <textarea id="legacy-final" rows="4" placeholder="Слова до близьких…"></textarea>
+          </div>
+
+          <div class="sett-field">
+            <label for="legacy-video">Відеозвернення (YouTube URL)</label>
+            <input id="legacy-video" type="url" maxlength="500" placeholder="https://youtube.com/...">
+          </div>
+
+          <div class="sett-field">
+            <label for="legacy-wishes">Побажання рідним</label>
+            <textarea id="legacy-wishes" rows="3" placeholder="Побажання та настанови…"></textarea>
+          </div>
+
+          <div class="sett-field">
+            <label for="legacy-advice">Поради нащадкам</label>
+            <textarea id="legacy-advice" rows="3" placeholder="Що передати наступним поколінням…"></textarea>
+          </div>
+
+          <div class="sett-field">
+            <label for="legacy-achieve">Досягнення</label>
+            <textarea id="legacy-achieve" rows="3" placeholder="Важливі події та здобутки…"></textarea>
+          </div>
+
+          <div class="sett-field">
+            <label for="legacy-instr">
+              &#128274; Інструкції для довіреної особи
+              <span class="legacy-private-badge">Приватно</span>
+            </label>
+            <textarea id="legacy-instr" rows="4" placeholder="Інструкції, що стануть доступні довіреній особі після підтвердження вашого відходу…"></textarea>
+          </div>
+
+          <div class="sett-actions">
+            <button class="sett-save-btn" id="legacy-save-btn" onclick="legacySaveContent()">Зберегти спадок</button>
+            <div class="sett-save-msg" id="legacy-save-msg"></div>
+          </div>
+        </div>
+
+        <!-- Блок: налаштування публікації -->
+        <div class="sett-card">
+          <div class="sett-card-title">Налаштування публікації</div>
+
+          <label class="legacy-toggle-row">
+            <span class="legacy-toggle-label">Публікувати всі матеріали автоматично</span>
+            <input type="checkbox" id="leg-pub-all" class="legacy-toggle-cb">
+            <span class="legacy-toggle-slider"></span>
+          </label>
+          <label class="legacy-toggle-row">
+            <span class="legacy-toggle-label">Дозволити доповнення біографії</span>
+            <input type="checkbox" id="leg-bio-edit" class="legacy-toggle-cb">
+            <span class="legacy-toggle-slider"></span>
+          </label>
+          <label class="legacy-toggle-row">
+            <span class="legacy-toggle-label">Дозволити публікацію спогадів</span>
+            <input type="checkbox" id="leg-memories" class="legacy-toggle-cb">
+            <span class="legacy-toggle-slider"></span>
+          </label>
+          <label class="legacy-toggle-row">
+            <span class="legacy-toggle-label">Дозволити нові фотографії</span>
+            <input type="checkbox" id="leg-photos" class="legacy-toggle-cb">
+            <span class="legacy-toggle-slider"></span>
+          </label>
+          <label class="legacy-toggle-row">
+            <span class="legacy-toggle-label">Заблокувати будь-які зміни після активації меморіалу</span>
+            <input type="checkbox" id="leg-lock-after" class="legacy-toggle-cb">
+            <span class="legacy-toggle-slider"></span>
+          </label>
+        </div>
+
+        <!-- Блок: зафіксувати волю -->
+        <div class="sett-card">
+          <div class="sett-card-title">Зафіксувати волю</div>
+          <div id="legacy-will-status" class="legacy-will-status"></div>
+          <div id="legacy-will-form">
+            <p class="sett-hint" style="margin-bottom:14px">Після фіксації редагування буде заблоковано. Для розблокування потрібен пароль.</p>
+            <div class="sett-field">
+              <label for="legacy-will-pass">Підтвердіть паролем</label>
+              <input id="legacy-will-pass" type="password" maxlength="72" placeholder="ваш пароль" autocomplete="current-password">
+            </div>
+            <div class="legacy-will-btns">
+              <button class="btn-legacy-lock" onclick="legacyLockWill(false)">&#128274; Зафіксувати волю</button>
+            </div>
+          </div>
+          <div id="legacy-unlock-form" style="display:none">
+            <div class="sett-field">
+              <label for="legacy-unlock-pass">Пароль для розблокування</label>
+              <input id="legacy-unlock-pass" type="password" maxlength="72" placeholder="ваш пароль" autocomplete="current-password">
+            </div>
+            <div class="legacy-will-btns">
+              <button class="btn-legacy-reject" onclick="legacyLockWill(true)">Розблокувати</button>
+            </div>
+          </div>
+          <div class="sett-save-msg" id="legacy-will-msg"></div>
+        </div>
+
+        <!-- Блок: повідомити про смерть (тільки для підтвердженої довіреної особи) -->
+        <div class="sett-card" id="legacy-death-card" style="display:none">
+          <div class="sett-card-title">Повідомити про відхід</div>
+          <p class="sett-hint" style="margin-bottom:14px">Як підтверджена довірена особа ви можете подати заявку про відхід власника. Модератор розгляне її та підтвердить.</p>
+          <div class="sett-field">
+            <label for="legacy-death-date">Дата відходу</label>
+            <input id="legacy-death-date" type="date">
+          </div>
+          <div class="sett-field">
+            <label for="legacy-death-comment">Коментар</label>
+            <textarea id="legacy-death-comment" rows="3" placeholder="Будь-яка додаткова інформація…"></textarea>
+          </div>
+          <button class="sett-save-btn" style="max-width:280px" onclick="legacyReportDeath()">Подати заявку</button>
+          <div class="sett-save-msg" id="legacy-death-msg"></div>
+        </div>
+
+      </div><!-- /legacy-active-content -->
+    </div>
+  </div>
+
+  <!-- Info tab -->
+  <div class="tab-panel" id="tab-info">
+    <div class="info-section" id="info-section"></div>
+  </div>
+
+  <footer class="prof-footer">
     <a href="/">← Зоряна Памʼять</a>
   </footer>
-</div>
 
-<script>
-(function(){
-  const PATH = location.pathname;
-  const nick = PATH.split('/').filter(Boolean).pop() || '';
-  if (!nick) { showError('Нікнейм не вказано'); return; }
+</div><!-- /page-content -->
 
-  fetch('/api/user/' + encodeURIComponent(nick))
-    .then(r => {
-      if (r.status === 404) throw new Error('not_found');
-      if (!r.ok) throw new Error('server_error');
-      return r.json();
-    })
-    .then(data => fillProfile(data))
-    .catch(e => {
-      if (e.message === 'not_found')
-        showError('Такого користувача не існує або його заблоковано.');
-      else
-        showError('Помилка завантаження. Спробуйте пізніше.');
-    });
-
-  function fillProfile(d) {
-    document.title = (d.display_name || '@' + d.nickname) + ' — Зоряна Памʼять';
-
-    const initials = (d.display_name || d.nickname || '?')
-      .split(' ').slice(0, 2).map(w => w[0] || '').join('').toUpperCase() || '?';
-    document.getElementById('prof-avatar').textContent = initials;
-    document.getElementById('prof-name').textContent = d.display_name || d.nickname;
-    document.getElementById('prof-nick').textContent = '@' + d.nickname;
-
-    const roleEl = document.getElementById('prof-role');
-    const roleMap = { admin: 'Адмін', moder: 'Модератор', user: 'Учасник' };
-    roleEl.textContent = roleMap[d.role] || d.role;
-    if (d.role === 'admin') roleEl.classList.add('admin');
-    else if (d.role === 'moder') roleEl.classList.add('moder');
-
-    if (d.created) {
-      const dt = new Date(d.created * 1000);
-      const months = ['січня','лютого','березня','квітня','травня','червня',
-                      'липня','серпня','вересня','жовтня','листопада','грудня'];
-      document.getElementById('prof-since').textContent =
-        'з ' + dt.getDate() + ' ' + months[dt.getMonth()] + ' ' + dt.getFullYear();
-    }
-
-    const profCount = d.count || 0;
-    document.getElementById('prof-count').innerHTML =
-      '<strong>' + profCount + '</strong> ' + plural(profCount, 'меморіал', 'меморіали', 'меморіалів') + ' додано';
-
-    const grid = document.getElementById('mem-grid');
-    if (!d.memorials || !d.memorials.length) {
-      grid.innerHTML = '';
-      const ms = document.getElementById('mem-section');
-      ms.innerHTML = '<div class="empty-state"><div class="star-ico"></div><p>Меморіалів ще немає</p></div>';
-    } else {
-      grid.innerHTML = d.memorials.map(m => cardHTML(m)).join('');
-    }
-
-    document.getElementById('loading-screen').style.display = 'none';
-    document.getElementById('page-content').style.display = 'block';
-  }
-
-  function cardHTML(m) {
-    const name = [m.last, m.first, m.mid].filter(Boolean).join(' ') || '—';
-    const href = m.slug ? '/memorial/' + m.slug : '/card?id=' + m.id;
-    const photoBlock = m.photo
-      ? '<img class="mem-photo" src="' + escH(m.photo) + '" alt="' + escH(name) + '" loading="lazy" onerror="this.onerror=null;this.src=\'/img/foto_false.png\'">'
-      : '<div class="mem-photo-ph">' + starSVG() + '</div>';
-    const death = m.death ? '<span class="mem-death">' + escH(m.death) + '</span>' : '<span></span>';
-    const likes = m.likes ? '<span class="mem-likes">&#9733; ' + m.likes + '</span>' : '';
-    return '<a class="mem-card" href="' + href + '">' +
-      photoBlock +
-      '<div class="mem-info">' +
-        '<div class="mem-name">' + escH(name) + '</div>' +
-        '<div class="mem-foot">' + death + likes + '</div>' +
-      '</div>' +
-    '</a>';
-  }
-
-  function starSVG() {
-    return '<svg viewBox="0 0 24 24" fill="currentColor" style="color:var(--accent)">' +
-      '<path d="M12 2l2.7 7.5H22l-6.4 4.7 2.4 7.4L12 17.3l-6 4.3 2.4-7.4L2 9.5h7.3z"/>' +
-    '</svg>';
-  }
-
-  function showError(msg) {
-    document.getElementById('loading-screen').style.display = 'none';
-    const es = document.getElementById('error-screen');
-    es.style.display = 'flex';
-    document.getElementById('error-msg').textContent = msg;
-  }
-
-  function escH(s) {
-    return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-  }
-
-  function plural(n, one, few, many) {
-    const m = n % 100;
-    if (m >= 11 && m <= 14) return many;
-    const r = n % 10;
-    if (r === 1) return one;
-    if (r >= 2 && r <= 4) return few;
-    return many;
-  }
-})();
-</script>
+<script src="/js/profile.js"></script>
 </body>
 </html>

@@ -59,19 +59,26 @@
     return palette[idx];
   }
 
-  // Генерує fingerprint браузера (для анонімів)
+  // Генерує fingerprint браузера (для анонімів) — мінімум 8 символів
   function _mcFingerprint() {
     var raw = [
       navigator.userAgent,
-      screen.width,
-      screen.height,
-      new Date().getTimezoneOffset()
+      screen.width + 'x' + screen.height,
+      new Date().getTimezoneOffset(),
+      navigator.language || '',
+      navigator.hardwareConcurrency || 0,
+      screen.colorDepth || 0
     ].join('|');
-    var h = 0;
+    var h1 = 0, h2 = 0x9e3779b9;
     for (var i = 0; i < raw.length; i++) {
-      h = Math.imul(31, h) + raw.charCodeAt(i) | 0;
+      var c = raw.charCodeAt(i);
+      h1 = Math.imul(31, h1) + c | 0;
+      h2 = Math.imul(1540483477, h2 ^ c) | 0;
     }
-    return Math.abs(h).toString(36);
+    var fp = Math.abs(h1).toString(36) + Math.abs(h2).toString(36);
+    // Гарантуємо мінімум 8 символів
+    while (fp.length < 8) fp = '0' + fp;
+    return fp;
   }
 
   function _mcUpdateAuthState() {
@@ -190,10 +197,12 @@
         credentials: 'include',
         body: JSON.stringify(payload)
       });
-      var d = await r.json();
+      var d = {};
+      try { d = await r.json(); } catch (_) {}
       if (!r.ok || !d.ok) {
         inp.value = text;
-        if (window.showN) window.showN(d.detail || 'Помилка відправки', true);
+        var errMsg = d.detail || (r.status === 429 ? 'Занадто часто. Зачекайте.' : r.status === 403 ? 'Чат вимкнений' : 'Помилка відправки');
+        if (window.showN) window.showN(errMsg, true);
       } else {
         _mcAppend([d.msg]);
       }
