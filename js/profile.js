@@ -60,18 +60,17 @@
   function buildInfoTab(d) {
     var roleMap = { admin: 'Адміністратор', moder: 'Модератор', user: 'Учасник' };
     var rows = [
-      ['👤', escH(d.display_name || d.nickname), "Відображуване ім'я"],
       ['@', '@' + escH(d.nickname), 'Нікнейм'],
-      ['🛡', roleMap[d.role] || d.role, 'Роль']
+      ['&#9733;', roleMap[d.role] || d.role, 'Роль']
     ];
     if (d.created) {
       var dt = new Date(d.created * 1000);
-      rows.push(['📅', dt.toLocaleDateString('uk-UA'), 'Дата реєстрації']);
+      rows.push(['&#128197;', dt.toLocaleDateString('uk-UA'), 'Дата реєстрації']);
     }
-    if (d.email) rows.push(['✉', escH(d.email), 'Email']);
-    if (d.phone) rows.push(['📞', escH(d.phone), 'Телефон']);
     var cnt = d.count || 0;
-    rows.push(['★', String(cnt) + ' ' + plural(cnt, 'меморіал', 'меморіали', 'меморіалів'), 'Додано']);
+    rows.push(['&#11088;', String(cnt) + ' ' + plural(cnt, 'меморіал', 'меморіали', 'меморіалів'), 'Меморіалів додано']);
+    if (d.email) rows.push(['&#9993;', escH(d.email), 'Email']);
+    if (d.phone) rows.push(['&#128222;', escH(d.phone), 'Телефон']);
     return rows.map(function (row) {
       return '<div class="info-row">' +
         '<span class="info-icon">' + row[0] + '</span>' +
@@ -80,11 +79,27 @@
     }).join('');
   }
 
+  var _TAB_TITLES = {
+    memorials: 'Меморіали',
+    settings:  'Налаштування',
+    legacy:    'Спадщина',
+    info:      'Інформація'
+  };
+
   window.switchTab = function (id, btn) {
+    // Panels
     document.querySelectorAll('.tab-panel').forEach(function (p) { p.classList.remove('active'); });
-    document.querySelectorAll('.tab-btn').forEach(function (b) { b.classList.remove('active'); });
-    document.getElementById('tab-' + id).classList.add('active');
-    btn.classList.add('active');
+    var panel = document.getElementById('tab-' + id);
+    if (panel) panel.classList.add('active');
+
+    // Nav buttons (sidebar) + tab bar buttons (header) — both have data-tab
+    document.querySelectorAll('.x-nav-btn, .x-tab-btn').forEach(function (b) {
+      b.classList.toggle('active', b.dataset.tab === id);
+    });
+
+    // Content title
+    var titleEl = document.getElementById('x-content-title');
+    if (titleEl) titleEl.textContent = _TAB_TITLES[id] || '';
   };
 
   window.copyProfileLink = function () {
@@ -152,6 +167,7 @@
 
     if (email && email !== email2) { settMsg('Email адреси не збігаються', 'err'); return; }
     if (newpass && newpass !== newpass2) { settMsg('Нові паролі не збігаються', 'err'); return; }
+    if (newpass && newpass.length < 10) { settMsg('Новий пароль занадто короткий (мін. 10 символів)', 'err'); return; }
 
     var body = {};
     if (nick && _curData && nick !== _curData.nickname) body.nickname = nick;
@@ -194,6 +210,7 @@
   function fillSettingsTab(d) {
     var fioEl = document.getElementById('sett-fio');
     if (fioEl) fioEl.textContent = d.fio || d.display_name || d.nickname;
+
     var nickEl = document.getElementById('sett-nick');
     if (nickEl) nickEl.value = d.nickname || '';
     var emailEl = document.getElementById('sett-email');
@@ -205,6 +222,55 @@
       var el = document.getElementById(id); if (el) el.value = '';
     });
   }
+
+  /* ── Перевірка доступності ніку/email (debounced) ── */
+  var _availTimers = {};
+  function _checkAvail(type, val, statusId, excludeCurrentVal) {
+    var el = document.getElementById(statusId);
+    if (!el) return;
+    val = (val || '').trim();
+    if (val.length < 2 || val === excludeCurrentVal) { el.textContent = ''; el.className = 'sett-field-hint'; return; }
+    el.textContent = '…'; el.className = 'sett-field-hint';
+    clearTimeout(_availTimers[statusId]);
+    _availTimers[statusId] = setTimeout(function () {
+      fetch('/api/auth/check-availability?type=' + type + '&value=' + encodeURIComponent(val), { credentials: 'include' })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (d) {
+          if (!d || d.available === null) { el.textContent = ''; el.className = 'sett-field-hint'; return; }
+          if (d.available) { el.textContent = '✓ Вільний'; el.className = 'sett-field-hint ok'; }
+          else { el.textContent = '✗ Вже зайнятий'; el.className = 'sett-field-hint err'; }
+        })
+        .catch(function () { el.textContent = ''; el.className = 'sett-field-hint'; });
+    }, 600);
+  }
+
+  window.settCheckNickAvail = function (val) {
+    _checkAvail('nick', val, 'sett-nick-avail', _curData && _curData.nickname);
+  };
+
+  window.settCheckEmailAvail = function (val) {
+    _checkAvail('email', val, 'sett-email-avail', _curData && _curData.email);
+  };
+
+  window.settCheckEmail2 = function (val) {
+    var el = document.getElementById('hint-sett-email2');
+    if (!el) return;
+    var ref = (document.getElementById('sett-email') || {}).value || '';
+    if (!val) { el.textContent = ''; el.className = 'sett-field-hint'; return; }
+    if (val === ref) { el.textContent = '✓ Збігаються'; el.className = 'sett-field-hint ok'; }
+    else { el.textContent = '✗ Не збігаються'; el.className = 'sett-field-hint err'; }
+  };
+
+  window.settCheckPhone = function (el) {
+    var hint = document.getElementById('hint-sett-phone');
+    if (!hint) return;
+    var raw = el.value;
+    var digits = raw.replace(/\D/g, '');
+    if (!raw) { hint.textContent = 'Лише українські номери (+380)'; hint.className = 'sett-field-hint'; return; }
+    var ok = /^(\+?380|0)\d{9}$/.test(digits.length === 12 ? '+' + digits : raw.replace(/\s/g,''));
+    if (ok) { hint.textContent = '✓ Вірний формат'; hint.className = 'sett-field-hint ok'; }
+    else { hint.textContent = 'Формат: 0671234567 або +380671234567'; hint.className = 'sett-field-hint err'; }
+  };
 
   /* ── Legacy tab logic ── */
 
@@ -274,13 +340,17 @@
     var inviteBanner = document.getElementById('legacy-invite-banner');
     var deathCard    = document.getElementById('legacy-death-card');
 
+    // Модуль вимкнено адміністратором
     if (!status.enabled) {
-      if (inactive) inactive.innerHTML = '<div class="legacy-promo"><div class="legacy-promo-icon">&#9733;</div><p class="sett-hint" style="text-align:center">Модуль «Спадщина пам\'яті» тимчасово недоступний.</p></div>';
-      if (inactive) inactive.style.display = 'block';
+      if (inactive) {
+        inactive.innerHTML = '<div class="legacy-promo"><div class="legacy-promo-icon">&#9733;</div><p class="sett-hint" style="text-align:center">Модуль «Спадщина пам\'яті» тимчасово недоступний.</p></div>';
+        inactive.style.display = 'block';
+      }
+      if (activeBlock) activeBlock.style.display = 'none';
       return;
     }
 
-    // Запрошення стати довіреною особою
+    // Запрошення стати довіреною особою (для поточного юзера як trusted)
     if (status.pending_invite) {
       var inv = status.pending_invite;
       var ownerName = [inv.first_name, inv.last_name].filter(Boolean).join(' ') || '@' + inv.owner_nick;
@@ -289,17 +359,12 @@
       if (inviteBanner) inviteBanner.style.display = 'block';
     }
 
-    if (!status.active) {
-      // Показати promo з ціною
-      var priceEl = document.getElementById('legacy-promo-price');
-      if (priceEl) priceEl.textContent = status.price + ' ' + (status.currency || 'USD');
-      if (inactive) inactive.style.display = 'block';
-      if (activeBlock) activeBlock.style.display = 'none';
-      return;
-    }
-
+    // Форма завжди доступна — показуємо активний вміст
     if (inactive) inactive.style.display = 'none';
     if (activeBlock) activeBlock.style.display = 'block';
+
+    // Блок статусу публікації (оплати)
+    renderLegacyPayStatus(status);
 
     // Блок довіреної особи
     loadLegacyTrusted();
@@ -310,26 +375,26 @@
       .then(fillLegacyContent)
       .catch(function () {});
 
-    // Кнопка "Повідомити про смерть" — якщо є підтверджене запрошення від когось
-    // (Будь-яка людина, що є trusted_user_id у підтвердженому записі)
-    if (deathCard) {
-      fetch('/api/legacy/trusted', { credentials: 'include' })
-        .then(function (r) { return r.json(); })
-        .then(function (d) {
-          // Власника цікавить свій trusted
-          // Додатково перевіряємо чи поточний юзер є довіреною особою для когось (через статус)
-        })
-        .catch(function () {});
-      // Через статус: pending_invite — ні. Перевіримо через окремий запит
-      fetch('/api/legacy/status', { credentials: 'include' })
-        .then(function (r) { return r.json(); })
-        .then(function (s) {
-          // Якщо є confirmed trusted (ми є trusted_user_id) — показати кнопку
-          // Це перевіряється через поле pending_invite (тільки pending)
-          // Для confirmed — поки не повертаємо, додамо через загальний статус
-          // Показуємо кнопку якщо _curData.is_trusted_confirmed (встановлюємо нижче)
-        })
-        .catch(function () {});
+    // Кнопка "Повідомити про смерть" — якщо поточний юзер є підтвердженою довіреною особою
+    if (deathCard && status.is_trusted_confirmed) {
+      deathCard.style.display = 'block';
+    }
+  }
+
+  function renderLegacyPayStatus(status) {
+    var el = document.getElementById('legacy-pay-status');
+    if (!el) return;
+    if (status.published) {
+      el.innerHTML = '<div class="legacy-pay-active">&#10003; Публікацію активовано — меморіальна картка буде опублікована після підтвердження</div>';
+    } else {
+      var price = (status.price || '82') + ' ' + (status.currency || 'USD');
+      el.innerHTML =
+        '<div class="legacy-pay-pending">' +
+          '<div class="legacy-pay-title">Публікацію не оплачено</div>' +
+          '<div class="legacy-pay-desc">Заповніть і збережіть спадок, а потім активуйте публікацію меморіальної картки за ' + escH(price) + '.</div>' +
+          '<button class="sett-save-btn legacy-buy-btn" onclick="legacyActivate()" style="max-width:260px;margin-top:10px">Активувати публікацію — ' + escH(price) + '</button>' +
+          '<div class="sett-save-msg" id="legacy-buy-msg"></div>' +
+        '</div>';
     }
   }
 
@@ -518,11 +583,8 @@
 
   function loadLegacyStatus() {
     fetch('/api/legacy/status', { credentials: 'include' })
-      .then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (s) {
-        if (!s) return;
-        initLegacyTab(s);
-      })
+      .then(function (r) { return (r.ok && r.status !== 401) ? r.json() : null; })
+      .then(function (s) { if (s) initLegacyTab(s); })
       .catch(function () {});
   }
 
@@ -536,17 +598,24 @@
     document.getElementById('prof-name').textContent = d.display_name || d.nickname;
     document.getElementById('prof-nick').textContent = '@' + d.nickname;
 
+    // Role badge — показувати для admin/moder
     var roleEl = document.getElementById('prof-role');
-    var roleMap = { admin: 'Адмін', moder: 'Модератор', user: 'Учасник' };
-    roleEl.textContent = roleMap[d.role] || d.role;
-    roleEl.className = 'role-tag ' + (d.role || 'user');
+    var roleMap = { admin: 'Адмін', moder: 'Модератор' };
+    if (d.role && roleMap[d.role]) {
+      roleEl.textContent = roleMap[d.role];
+      roleEl.className = 'role-tag ' + d.role;
+      roleEl.style.display = 'inline-block';
+    }
 
+    // Дата реєстрації
     if (d.created) {
       var dt = new Date(d.created * 1000);
       var months = ['січня','лютого','березня','квітня','травня','червня',
                     'липня','серпня','вересня','жовтня','листопада','грудня'];
-      document.getElementById('prof-since').textContent =
-        'з ' + dt.getDate() + ' ' + months[dt.getMonth()] + ' ' + dt.getFullYear();
+      var sinceEl = document.getElementById('prof-since');
+      if (sinceEl) sinceEl.textContent = 'з ' + dt.getDate() + ' ' + months[dt.getMonth()] + ' ' + dt.getFullYear();
+      var sinceRow = document.getElementById('prof-since-row');
+      if (sinceRow) sinceRow.style.display = 'flex';
     }
 
     var mems = d.memorials || [];
@@ -569,11 +638,28 @@
     }
 
     document.getElementById('info-section').innerHTML = buildInfoTab(d);
+
+    // Показати кнопки Settings і Legacy (профіль завжди власний)
+    var navSett = document.getElementById('nav-settings');
+    var navLeg  = document.getElementById('nav-legacy');
+    var xtSett  = document.getElementById('xtab-settings');
+    var xtLeg   = document.getElementById('xtab-legacy');
+    if (navSett) navSett.style.display = 'flex';
+    if (navLeg)  navLeg.style.display  = 'flex';
+    if (xtSett)  xtSett.style.display  = 'block';
+    if (xtLeg)   xtLeg.style.display   = 'block';
+
     fillSettingsTab(d);
     loadLegacyStatus();
 
     document.getElementById('loading-screen').style.display = 'none';
     document.getElementById('page-content').style.display = 'block';
+
+    // Встановлюємо curUser для чату (авторизований юзер)
+    window.curUser = { nickname: d.nickname, role: d.role || 'user', name: d.display_name };
+
+    // Ініціалізуємо чат після показу сторінки
+    if (typeof _mcInit === 'function') _mcInit();
   }
 
   // Init

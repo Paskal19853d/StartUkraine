@@ -2548,80 +2548,6 @@ body{visibility:hidden}
   </div>
 </div>
 
-<!-- Модал профілю -->
-<div class="mov" id="mprofile">
-  <div class="mo" style="max-width:420px">
-    <button class="moc" onclick="closeProfile()">&#10005;</button>
-    <h2>&#9998; Швидке редагування</h2>
-    <div style="background:var(--surface);border-radius:10px;padding:12px 14px;margin-bottom:16px">
-      <div style="font-size:12px;color:var(--text-secondary);margin-bottom:6px">ПІБ (незмінне)</div>
-      <div id="pf-fio" style="font-weight:600;color:var(--text-primary)"></div>
-      <a id="pf-public-link" href="#" rel="noopener"
-         style="display:none;margin-top:6px;font-size:12px;color:var(--accent);text-decoration:none;font-weight:600">
-        &#128100; Мій профіль →
-      </a>
-    </div>
-    <div class="fr full">
-      <div class="fg">
-        <label>Нік <span id="cnt-pf-nick" style="float:right;font-size:10px;color:var(--muted)"></span></label>
-        <input id="pf-nick" maxlength="50" placeholder="мій_нік або мій_нік_укр" autocomplete="username"
-          oninput="_fNick(this,'cnt-pf-nick','hint-pf-nick')" onblur="_blurNick(this,'hint-pf-nick')">
-        <div id="hint-pf-nick" class="f-hint inf">Укр/латинські літери, цифри, _ . -</div>
-      </div>
-    </div>
-    <div class="fr full">
-      <div class="fg">
-        <label>Email</label>
-        <input type="email" id="pf-email" maxlength="100" placeholder="you@email.com" autocomplete="email"
-          oninput="_fEmail(this,'hint-pf-email')" onblur="_fEmail(this,'hint-pf-email')">
-        <div id="hint-pf-email" class="f-hint"></div>
-      </div>
-    </div>
-    <div class="fr full">
-      <div class="fg">
-        <label>Підтвердження Email</label>
-        <input type="email" id="pf-email2" maxlength="100" placeholder="повторіть email"
-          oninput="_fEmail2(this,'hint-pf-email2')" onblur="_fEmail2(this,'hint-pf-email2')">
-        <div id="hint-pf-email2" class="f-hint"></div>
-      </div>
-    </div>
-    <div class="fr full">
-      <div class="fg">
-        <label>Телефон</label>
-        <input id="pf-phone" maxlength="18" placeholder="0671234567 або +380671234567" autocomplete="tel" inputmode="tel"
-          oninput="_fPhone(this,'hint-pf-phone')">
-        <div id="hint-pf-phone" class="f-hint inf">Лише українські номери</div>
-      </div>
-    </div>
-    <div style="border-top:1px solid var(--border);margin:10px 0 10px"></div>
-    <div style="font-size:11px;color:var(--text-secondary);margin-bottom:6px">Зміна пароля (заповніть якщо хочете змінити)</div>
-    <div class="fr full">
-      <div class="fg">
-        <label>Поточний пароль</label>
-        <input type="password" id="pf-oldpass" maxlength="72" placeholder="поточний пароль" autocomplete="current-password">
-      </div>
-    </div>
-    <div class="fr full" style="margin-bottom:0">
-      <div class="fg">
-        <label>Новий пароль</label>
-        <input type="password" id="pf-newpass" maxlength="72" placeholder="мінімум 10 символів" autocomplete="new-password"
-          oninput="checkPassStrength(this.value,'pf-')">
-      </div>
-    </div>
-    <div id="pf-pass-strength-bar" style="height:4px;border-radius:2px;margin-bottom:3px;background:var(--surface)"><div id="pf-pass-strength-fill" style="height:100%;width:0;border-radius:2px;transition:all .3s"></div></div>
-    <div id="pf-pass-strength-hint" class="f-hint" style="margin-bottom:8px"></div>
-    <div class="fr full">
-      <div class="fg">
-        <label>Підтвердження нового пароля</label>
-        <input type="password" id="pf-newpass2" maxlength="72" placeholder="повторіть пароль" autocomplete="new-password"
-          oninput="_fPass2(this,'hint-pf-newpass2')">
-        <div id="hint-pf-newpass2" class="f-hint" style="margin-bottom:8px"></div>
-      </div>
-    </div>
-    <button class="fsub" onclick="doUpdateProfile()">Зберегти зміни</button>
-    <button class="btn btn-b" onclick="closeProfile()" style="margin-top:8px;width:100%">Скасувати</button>
-  </div>
-</div>
 
 <!-- ADD -->
 <div class="mov" id="madd">
@@ -5053,44 +4979,8 @@ function doLogout(){
 }
 function openProfile(){
   if(!curUser){openAuth();return;}
-  document.getElementById('pf-fio').textContent=
-    [curUser.last_name,curUser.first_name,curUser.middle_name].filter(Boolean).join(' ')||curUser.name||'';
-  document.getElementById('pf-nick').value=curUser.nickname||'';
-  const pfLink=document.getElementById('pf-public-link');
-  if(pfLink){if(curUser.nickname){pfLink.href='/user/'+curUser.nickname;pfLink.style.display='inline';}else{pfLink.style.display='none';}}
-  document.getElementById('pf-email').value=curUser.email||'';
-  document.getElementById('pf-email2').value='';
-  document.getElementById('pf-phone').value=curUser.phone||'';
-  document.getElementById('pf-oldpass').value='';
-  document.getElementById('pf-newpass').value='';
-  document.getElementById('pf-newpass2').value='';
-  document.getElementById('mprofile').classList.add('open');
-}
-function closeProfile(){document.getElementById('mprofile').classList.remove('open');}
-async function doUpdateProfile(){
-  const nick=document.getElementById('pf-nick').value.trim();
-  const email=document.getElementById('pf-email').value.trim();
-  const email2=document.getElementById('pf-email2').value.trim();
-  const phone=document.getElementById('pf-phone').value.trim();
-  const oldpass=document.getElementById('pf-oldpass').value;
-  const newpass=document.getElementById('pf-newpass').value;
-  const newpass2=document.getElementById('pf-newpass2').value;
-  if(email&&email!==curUser.email&&email!==email2){showN("Email адреси не збігаються",true);return;}
-  if(newpass&&newpass!==newpass2){showN("Нові паролі не збігаються",true);return;}
-  if(newpass&&_passScore(newpass)<2){showN("Новий пароль занадто слабкий",true);return;}
-  const body={};
-  if(nick&&nick!==curUser.nickname){body.nickname=nick;}
-  if(email&&email!==curUser.email){body.email=email;body.email_confirm=email2;}
-  if(phone!==curUser.phone){body.phone=phone;}
-  if(newpass){body.old_password=oldpass;body.password=newpass;}
-  if(!Object.keys(body).length){showN("Нічого не змінено",false);closeProfile();return;}
-  try{
-    const r=await fetch(API+'/api/auth/profile',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-    const d=await r.json();
-    if(!d.ok)throw new Error(d.detail||'Помилка');
-    curUser={...curUser,...d.user};localStorage.setItem('mu',JSON.stringify(curUser));
-    updateAuthUI();closeProfile();showN("Профіль оновлено!");
-  }catch(e){showN(e.message||"Помилка збереження",true);}
+  const nick=curUser.nickname||'';
+  window.open('/user/'+(nick||'me'),'_blank');
 }
 
 /* ── Add ── */

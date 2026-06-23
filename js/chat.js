@@ -32,15 +32,17 @@
   // Повертає відображуване ім'я
   function _mcDisplayName(m) {
     if (m.role === 'guest') {
-      // Номер гостя з fingerprint (останні 3 символи id повідомлення або fp з сервера)
       var guestNum = m.id ? String(m.id).slice(-3).replace(/^0+/, '') || m.id : '?';
       return 'Гість#' + guestNum;
     }
+    if (m.is_bot) return m.name || 'Бот';
     if (m.nickname) return '@' + m.nickname;
     if (m.email) return _maskEmail(m.email);
+    // Технічне ім'я (name з email-prefix) — маскуємо щоб не показувати сирий логін
     if (m.name) {
-      if (m.name.indexOf('@') !== -1) return _maskEmail(m.name);
-      return m.name;
+      var n = String(m.name);
+      var visible = n.slice(0, Math.min(3, n.length));
+      return '@' + visible + '***';
     }
     return '?';
   }
@@ -99,6 +101,9 @@
     if (!box) return;
     var atBottom = box.scrollTop + box.clientHeight >= box.scrollHeight - 8;
     msgs.forEach(function (m) {
+      if (!m || !m.id) return;
+      // Не додавати дублікати (id вже є в DOM)
+      if (box.querySelector('.mc-msg[data-id="' + parseInt(m.id, 10) + '"]')) return;
       if (m.created_at > _mcLastTs) _mcLastTs = m.created_at;
       var displayName = _mcDisplayName(m);
       var nickColor;
@@ -204,7 +209,14 @@
         var errMsg = d.detail || (r.status === 429 ? 'Занадто часто. Зачекайте.' : r.status === 403 ? 'Чат вимкнений' : 'Помилка відправки');
         if (window.showN) window.showN(errMsg, true);
       } else {
-        _mcAppend([d.msg]);
+        if (d.msg && d.msg.id) {
+          _mcAppend([d.msg]);
+        }
+        // Завжди прокручуємо і оновлюємо після відправки
+        var box = document.getElementById('mc-messages');
+        if (box) box.scrollTop = box.scrollHeight;
+        // Негайний poll щоб підтвердити і підтягнути будь-які нові повідомлення
+        setTimeout(_mcPoll, 300);
       }
     } catch (e) {
       inp.value = text;

@@ -6,13 +6,11 @@
 <meta charset="UTF-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#0a0a0c">
+<meta name="theme-color" content="#000000">
 <meta name="robots" content="noindex">
 <title>Профіль — Зоряна Памʼять</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/css/profile.css">
+<link rel="stylesheet" href="/css/chat.css">
 </head>
 <body>
 
@@ -29,353 +27,403 @@
 </div>
 
 <div id="page-content">
+<div class="x-layout">
 
-  <!-- Profile header — Facebook style -->
-  <div class="prof-cover-wrap">
+  <!-- ═══════════════════════════════
+       ЛІВА КОЛОНКА — профіль
+       ═══════════════════════════════ -->
+  <aside class="x-sidebar">
 
     <!-- Cover-фото -->
     <div class="prof-cover">
       <div class="prof-actions">
-        <button class="btn-share" onclick="copyProfileLink()">&#8599; Поділитись</button>
+        <button class="btn-share" onclick="copyProfileLink()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M8.684 13.342C8.886 12.938 9 12.482 9 12s-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/>
+          </svg>
+          Поділитись
+        </button>
       </div>
     </div>
 
-    <!-- Аватар + інфо в один рядок -->
-    <div class="prof-header-body">
-
-      <!-- Аватар (виступає вгору на половину висоти) -->
-      <div class="prof-av-wrap">
-        <div class="prof-av-initials" id="prof-avatar"></div>
-      </div>
-
-      <!-- Ім'я, нік, статистика -->
-      <div class="prof-info">
-        <div class="prof-name" id="prof-name"></div>
-        <div class="prof-sub">
-          <span class="prof-nick" id="prof-nick"></span>
-          <span class="role-tag" id="prof-role"></span>
-          <span id="prof-since"></span>
-        </div>
-        <div class="prof-stats">
-          <div class="stat-item">
-            <span class="stat-num" id="stat-memorials">0</span>
-            <span class="stat-lbl">меморіалів</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-num" id="stat-likes">0</span>
-            <span class="stat-lbl">вподобань</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-num" id="stat-days">0</span>
-            <span class="stat-lbl">днів з нами</span>
-          </div>
-        </div>
-      </div>
-
-    </div><!-- /prof-header-body -->
-    <div class="prof-header-divider"></div>
-
-  </div><!-- /prof-cover-wrap -->
-
-  <!-- Tabs -->
-  <div class="prof-tabs">
-    <button class="tab-btn active" onclick="switchTab('memorials', this)">Меморіали</button>
-    <button class="tab-btn" onclick="switchTab('settings', this)">Налаштування</button>
-    <button class="tab-btn" id="tab-btn-legacy" onclick="switchTab('legacy', this)">Спадщина</button>
-    <button class="tab-btn" onclick="switchTab('info', this)">Інформація</button>
-  </div>
-
-  <!-- Memorials tab -->
-  <div class="tab-panel active" id="tab-memorials">
-    <div class="mem-section">
-      <div class="sec-label" id="sec-label-count"></div>
-      <div class="mem-grid" id="mem-grid"></div>
+    <!-- Аватар -->
+    <div class="prof-av-wrap">
+      <div class="prof-av-initials" id="prof-avatar"></div>
     </div>
-  </div>
 
-  <!-- Settings tab -->
-  <div class="tab-panel" id="tab-settings">
-    <div class="settings-section">
+    <!-- Інфо -->
+    <div class="prof-sidebar-info">
+      <div class="prof-name" id="prof-name"></div>
+      <span class="prof-nick" id="prof-nick"></span>
+      <span class="role-tag" id="prof-role" style="display:none"></span>
 
-      <!-- ФІО (тільки читання) -->
-      <div class="sett-card">
-        <div class="sett-card-title">ПІБ</div>
-        <div class="sett-fio" id="sett-fio"></div>
-        <div class="sett-hint">ПІБ встановлюється при реєстрації і не змінюється</div>
+      <div class="prof-since-row" id="prof-since-row" style="display:none">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>
+        </svg>
+        <span id="prof-since"></span>
       </div>
 
-      <!-- Нікнейм -->
-      <div class="sett-card">
-        <div class="sett-card-title">Нікнейм</div>
-        <div class="sett-field">
-          <label for="sett-nick">Нік</label>
-          <input id="sett-nick" type="text" maxlength="50"
-            placeholder="мій_нік або мій_нік_укр"
-            autocomplete="username"
-            oninput="settNickInput(this)">
-          <div class="sett-field-hint" id="hint-sett-nick">Укр/латинські літери, цифри, _ . -</div>
+      <div class="prof-stats" id="prof-stats">
+        <div class="stat-item">
+          <span class="stat-lbl">Меморіалів</span>
+          <span class="stat-num" id="stat-memorials">0</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-lbl">Вподобань</span>
+          <span class="stat-num" id="stat-likes">0</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-lbl">Днів з нами</span>
+          <span class="stat-num" id="stat-days">0</span>
         </div>
       </div>
-
-      <!-- Email -->
-      <div class="sett-card">
-        <div class="sett-card-title">Email</div>
-        <div class="sett-field">
-          <label for="sett-email">Новий email</label>
-          <input id="sett-email" type="email" maxlength="100"
-            placeholder="you@email.com" autocomplete="email">
-        </div>
-        <div class="sett-field">
-          <label for="sett-email2">Підтвердження email</label>
-          <input id="sett-email2" type="email" maxlength="100"
-            placeholder="повторіть email">
-        </div>
-      </div>
-
-      <!-- Телефон -->
-      <div class="sett-card">
-        <div class="sett-card-title">Телефон</div>
-        <div class="sett-field">
-          <label for="sett-phone">Номер телефону</label>
-          <input id="sett-phone" type="tel" maxlength="18"
-            placeholder="0671234567 або +380671234567"
-            autocomplete="tel" inputmode="tel">
-          <div class="sett-field-hint">Лише українські номери (+380)</div>
-        </div>
-      </div>
-
-      <!-- Пароль -->
-      <div class="sett-card">
-        <div class="sett-card-title">Зміна пароля</div>
-        <div class="sett-field">
-          <label for="sett-oldpass">Поточний пароль</label>
-          <input id="sett-oldpass" type="password" maxlength="72"
-            placeholder="поточний пароль" autocomplete="current-password">
-        </div>
-        <div class="sett-field">
-          <label for="sett-newpass">Новий пароль</label>
-          <input id="sett-newpass" type="password" maxlength="72"
-            placeholder="мінімум 10 символів" autocomplete="new-password"
-            oninput="settPassStrength(this.value)">
-          <div class="sett-pass-bar"><div class="sett-pass-fill" id="sett-pass-fill"></div></div>
-          <div class="sett-field-hint" id="sett-pass-hint"></div>
-        </div>
-        <div class="sett-field">
-          <label for="sett-newpass2">Підтвердження пароля</label>
-          <input id="sett-newpass2" type="password" maxlength="72"
-            placeholder="повторіть пароль" autocomplete="new-password">
-        </div>
-      </div>
-
-      <!-- Кнопка збереження -->
-      <div class="sett-actions">
-        <button class="sett-save-btn" onclick="settSave()">Зберегти зміни</button>
-        <div class="sett-save-msg" id="sett-save-msg"></div>
-      </div>
-
     </div>
-  </div>
 
-  <!-- Legacy tab -->
-  <div class="tab-panel" id="tab-legacy">
-    <div class="legacy-section" id="legacy-section">
+    <!-- Навігація -->
+    <nav class="x-nav">
+      <button class="x-nav-btn active" data-tab="memorials" onclick="switchTab('memorials',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+        </svg>
+        Меморіали
+      </button>
+      <button class="x-nav-btn" data-tab="settings" onclick="switchTab('settings',this)" id="nav-settings" style="display:none">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/>
+        </svg>
+        Налаштування
+      </button>
+      <button class="x-nav-btn" data-tab="legacy" onclick="switchTab('legacy',this)" id="nav-legacy" style="display:none">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
+        Спадщина
+      </button>
+      <button class="x-nav-btn" data-tab="info" onclick="switchTab('info',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        Інформація
+      </button>
+    </nav>
 
-      <!-- Заглушка: модуль не активовано -->
-      <div class="legacy-inactive" id="legacy-inactive" style="display:none">
-        <div class="legacy-promo">
-          <div class="legacy-promo-icon">&#9733;</div>
-          <h2 class="legacy-promo-title serif">Спадщина пам'яті</h2>
-          <p class="legacy-promo-desc">Залиште цифровий слід для нащадків — фото, біографія, останнє звернення, відеозапис та інструкції для довіреної особи. Все це буде збережено і передано після вашого підтвердженого відходу.</p>
-          <div class="legacy-promo-price" id="legacy-promo-price"></div>
-          <button class="sett-save-btn legacy-buy-btn" onclick="legacyActivate()">Активувати модуль</button>
-          <div class="sett-save-msg" id="legacy-buy-msg"></div>
-        </div>
+    <a href="/" class="x-home-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="15 18 9 12 15 6"/>
+      </svg>
+      Зоряна Памʼять
+    </a>
+
+  </aside>
+
+  <!-- ═══════════════════════════════
+       ПРАВА КОЛОНКА — контент
+       ═══════════════════════════════ -->
+  <main class="x-content">
+
+    <!-- Sticky header -->
+    <div class="x-content-header">
+      <div class="x-content-title" id="x-content-title">Меморіали</div>
+      <div class="x-tabs" id="x-tabs-bar">
+        <button class="x-tab-btn active" data-tab="memorials" onclick="switchTab('memorials',this)">Всі</button>
+        <button class="x-tab-btn" data-tab="settings" onclick="switchTab('settings',this)" id="xtab-settings" style="display:none">Налаштування</button>
+        <button class="x-tab-btn" data-tab="legacy"   onclick="switchTab('legacy',this)"   id="xtab-legacy" style="display:none">Спадщина</button>
+        <button class="x-tab-btn" data-tab="info"     onclick="switchTab('info',this)">Інформація</button>
       </div>
+    </div>
 
-      <!-- Запрошення бути довіреною особою (для іншого юзера) -->
-      <div class="legacy-invite-banner" id="legacy-invite-banner" style="display:none">
-        <div class="legacy-invite-inner">
-          <div class="legacy-invite-title">&#9733; Вас запрошено стати довіреною особою</div>
-          <div class="legacy-invite-desc" id="legacy-invite-desc"></div>
-          <div class="legacy-invite-btns">
-            <button class="btn-legacy-confirm" onclick="legacyRespondInvite('confirm')">Підтвердити</button>
-            <button class="btn-legacy-reject"  onclick="legacyRespondInvite('reject')">Відмовитись</button>
-          </div>
-          <div class="sett-save-msg" id="legacy-invite-msg"></div>
-        </div>
+    <!-- ── Меморіали ── -->
+    <div class="tab-panel active" id="tab-memorials">
+      <div class="mem-section">
+        <div class="sec-label" id="sec-label-count"></div>
+        <div class="mem-grid" id="mem-grid"></div>
       </div>
+    </div>
 
-      <!-- Активний контент -->
-      <div id="legacy-active-content" style="display:none">
+    <!-- ── Налаштування ── -->
+    <div class="tab-panel" id="tab-settings">
+      <div class="settings-section">
 
-        <!-- Блок: довірена особа -->
         <div class="sett-card">
-          <div class="sett-card-title">Довірена особа</div>
-          <div id="legacy-trusted-info" class="legacy-trusted-info"></div>
-          <div class="legacy-trusted-form" id="legacy-trusted-form" style="display:none">
+          <div class="sett-card-title">ПІБ</div>
+          <div class="sett-fio" id="sett-fio"></div>
+          <div class="sett-hint">ПІБ встановлюється при реєстрації і не змінюється</div>
+        </div>
+
+        <div class="sett-card">
+          <div class="sett-card-title">Нікнейм</div>
+          <div class="sett-field">
+            <label for="sett-nick">Нік</label>
+            <input id="sett-nick" type="text" maxlength="50"
+              placeholder="мій_нік або мій_нік_укр"
+              autocomplete="username"
+              oninput="settNickInput(this); settCheckNickAvail(this.value)">
+            <div class="sett-field-hint" id="hint-sett-nick">Укр/латинські літери, цифри, _ . -</div>
+            <div class="sett-field-hint" id="sett-nick-avail"></div>
+          </div>
+        </div>
+
+        <div class="sett-card">
+          <div class="sett-card-title">Email</div>
+          <div class="sett-field">
+            <label for="sett-email">Новий email</label>
+            <input id="sett-email" type="email" maxlength="100"
+              placeholder="you@email.com" autocomplete="email"
+              oninput="settCheckEmailAvail(this.value)">
+            <div class="sett-field-hint" id="sett-email-avail"></div>
+          </div>
+          <div class="sett-field">
+            <label for="sett-email2">Підтвердження email</label>
+            <input id="sett-email2" type="email" maxlength="100"
+              placeholder="повторіть email"
+              oninput="settCheckEmail2(this.value)">
+            <div class="sett-field-hint" id="hint-sett-email2"></div>
+          </div>
+        </div>
+
+        <div class="sett-card">
+          <div class="sett-card-title">Телефон</div>
+          <div class="sett-field">
+            <label for="sett-phone">Номер телефону</label>
+            <input id="sett-phone" type="tel" maxlength="18"
+              placeholder="0671234567 або +380671234567"
+              autocomplete="tel" inputmode="tel"
+              oninput="settCheckPhone(this)">
+            <div class="sett-field-hint" id="hint-sett-phone">Лише українські номери (+380)</div>
+          </div>
+        </div>
+
+        <div class="sett-card">
+          <div class="sett-card-title">Зміна пароля</div>
+          <div class="sett-field">
+            <label for="sett-oldpass">Поточний пароль</label>
+            <input id="sett-oldpass" type="password" maxlength="72"
+              placeholder="поточний пароль" autocomplete="current-password">
+          </div>
+          <div class="sett-field">
+            <label for="sett-newpass">Новий пароль</label>
+            <input id="sett-newpass" type="password" maxlength="72"
+              placeholder="мінімум 10 символів" autocomplete="new-password"
+              oninput="settPassStrength(this.value)">
+            <div class="sett-pass-bar"><div class="sett-pass-fill" id="sett-pass-fill"></div></div>
+            <div class="sett-field-hint" id="sett-pass-hint"></div>
+          </div>
+          <div class="sett-field">
+            <label for="sett-newpass2">Підтвердження пароля</label>
+            <input id="sett-newpass2" type="password" maxlength="72"
+              placeholder="повторіть пароль" autocomplete="new-password">
+          </div>
+        </div>
+
+        <div class="sett-actions">
+          <button class="sett-save-btn" onclick="settSave()">Зберегти зміни</button>
+          <div class="sett-save-msg" id="sett-save-msg"></div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── Спадщина ── -->
+    <div class="tab-panel" id="tab-legacy">
+      <div class="legacy-section" id="legacy-section">
+
+        <div class="legacy-inactive" id="legacy-inactive" style="display:none"></div>
+
+        <div class="legacy-invite-banner" id="legacy-invite-banner" style="display:none">
+          <div class="legacy-invite-inner">
+            <div class="legacy-invite-title">&#9733; Вас запрошено стати довіреною особою</div>
+            <div class="legacy-invite-desc" id="legacy-invite-desc"></div>
+            <div class="legacy-invite-btns">
+              <button class="btn-legacy-confirm" onclick="legacyRespondInvite('confirm')">Підтвердити</button>
+              <button class="btn-legacy-reject"  onclick="legacyRespondInvite('reject')">Відмовитись</button>
+            </div>
+            <div class="sett-save-msg" id="legacy-invite-msg"></div>
+          </div>
+        </div>
+
+        <div id="legacy-active-content" style="display:none">
+
+          <div class="sett-card">
+            <div class="sett-card-title">Довірена особа</div>
+            <div id="legacy-trusted-info" class="legacy-trusted-info"></div>
+            <div class="legacy-trusted-form" id="legacy-trusted-form" style="display:none">
+              <div class="sett-field">
+                <label for="legacy-trusted-nick">Нікнейм користувача</label>
+                <input id="legacy-trusted-nick" type="text" maxlength="50" placeholder="нік довіреної особи">
+              </div>
+              <div class="legacy-trusted-btns">
+                <button class="sett-save-btn" style="width:auto;padding:10px 22px" onclick="legacySetTrusted()">Надіслати запрошення</button>
+                <button class="btn-legacy-reject" onclick="document.getElementById('legacy-trusted-form').style.display='none'">Скасувати</button>
+              </div>
+            </div>
+            <div class="sett-save-msg" id="legacy-trusted-msg"></div>
+          </div>
+
+          <div class="sett-card">
+            <div class="sett-card-title">Фото пам'яті</div>
             <div class="sett-field">
-              <label for="legacy-trusted-nick">Нікнейм користувача</label>
-              <input id="legacy-trusted-nick" type="text" maxlength="50" placeholder="нік довіреної особи">
+              <label for="legacy-photo">URL фотографії</label>
+              <input id="legacy-photo" type="url" maxlength="500" placeholder="https://..." oninput="legacyPhotoPreview(this.value)">
             </div>
-            <div class="legacy-trusted-btns">
-              <button class="sett-save-btn" style="width:auto;padding:10px 22px" onclick="legacySetTrusted()">Надіслати запрошення</button>
-              <button class="btn-legacy-reject" onclick="document.getElementById('legacy-trusted-form').style.display='none'">Скасувати</button>
+            <div id="legacy-photo-preview" class="legacy-photo-preview"></div>
+          </div>
+
+          <div class="sett-card">
+            <div class="sett-card-title">Мій спадок</div>
+
+            <div class="sett-field">
+              <label for="legacy-epitaph">Епітафія <span class="legacy-counter" id="legacy-epitaph-cnt">0/300</span></label>
+              <textarea id="legacy-epitaph" maxlength="300" rows="2" placeholder="Коротке прощальне слово…" oninput="legacyCount(this,'legacy-epitaph-cnt',300)"></textarea>
+            </div>
+            <div class="sett-field">
+              <label for="legacy-bio">Біографія</label>
+              <textarea id="legacy-bio" rows="5" placeholder="Розкажіть про своє життя…"></textarea>
+            </div>
+            <div class="sett-field">
+              <label for="legacy-final">Останнє звернення</label>
+              <textarea id="legacy-final" rows="4" placeholder="Слова до близьких…"></textarea>
+            </div>
+            <div class="sett-field">
+              <label for="legacy-video">Відеозвернення (YouTube URL)</label>
+              <input id="legacy-video" type="url" maxlength="500" placeholder="https://youtube.com/...">
+            </div>
+            <div class="sett-field">
+              <label for="legacy-wishes">Побажання рідним</label>
+              <textarea id="legacy-wishes" rows="3" placeholder="Побажання та настанови…"></textarea>
+            </div>
+            <div class="sett-field">
+              <label for="legacy-advice">Поради нащадкам</label>
+              <textarea id="legacy-advice" rows="3" placeholder="Що передати наступним поколінням…"></textarea>
+            </div>
+            <div class="sett-field">
+              <label for="legacy-achieve">Досягнення</label>
+              <textarea id="legacy-achieve" rows="3" placeholder="Важливі події та здобутки…"></textarea>
+            </div>
+            <div class="sett-field">
+              <label for="legacy-instr">
+                &#128274; Інструкції для довіреної особи
+                <span class="legacy-private-badge">Приватно</span>
+              </label>
+              <textarea id="legacy-instr" rows="4" placeholder="Інструкції, що стануть доступні довіреній особі після підтвердження вашого відходу…"></textarea>
+            </div>
+            <div class="sett-actions">
+              <button class="sett-save-btn" id="legacy-save-btn" onclick="legacySaveContent()">Зберегти спадок</button>
+              <div class="sett-save-msg" id="legacy-save-msg"></div>
             </div>
           </div>
-          <div class="sett-save-msg" id="legacy-trusted-msg"></div>
-        </div>
 
-        <!-- Блок: фото пам'яті -->
-        <div class="sett-card">
-          <div class="sett-card-title">Фото пам'яті</div>
-          <div class="sett-field">
-            <label for="legacy-photo">URL фотографії</label>
-            <input id="legacy-photo" type="url" maxlength="500" placeholder="https://..." oninput="legacyPhotoPreview(this.value)">
-          </div>
-          <div id="legacy-photo-preview" class="legacy-photo-preview"></div>
-        </div>
-
-        <!-- Блок: мій спадок -->
-        <div class="sett-card">
-          <div class="sett-card-title">Мій спадок</div>
-
-          <div class="sett-field">
-            <label for="legacy-epitaph">Епітафія <span class="legacy-counter" id="legacy-epitaph-cnt">0/300</span></label>
-            <textarea id="legacy-epitaph" maxlength="300" rows="2" placeholder="Коротке прощальне слово…" oninput="legacyCount(this,'legacy-epitaph-cnt',300)"></textarea>
-          </div>
-
-          <div class="sett-field">
-            <label for="legacy-bio">Біографія</label>
-            <textarea id="legacy-bio" rows="5" placeholder="Розкажіть про своє життя…"></textarea>
-          </div>
-
-          <div class="sett-field">
-            <label for="legacy-final">Останнє звернення</label>
-            <textarea id="legacy-final" rows="4" placeholder="Слова до близьких…"></textarea>
-          </div>
-
-          <div class="sett-field">
-            <label for="legacy-video">Відеозвернення (YouTube URL)</label>
-            <input id="legacy-video" type="url" maxlength="500" placeholder="https://youtube.com/...">
-          </div>
-
-          <div class="sett-field">
-            <label for="legacy-wishes">Побажання рідним</label>
-            <textarea id="legacy-wishes" rows="3" placeholder="Побажання та настанови…"></textarea>
-          </div>
-
-          <div class="sett-field">
-            <label for="legacy-advice">Поради нащадкам</label>
-            <textarea id="legacy-advice" rows="3" placeholder="Що передати наступним поколінням…"></textarea>
-          </div>
-
-          <div class="sett-field">
-            <label for="legacy-achieve">Досягнення</label>
-            <textarea id="legacy-achieve" rows="3" placeholder="Важливі події та здобутки…"></textarea>
-          </div>
-
-          <div class="sett-field">
-            <label for="legacy-instr">
-              &#128274; Інструкції для довіреної особи
-              <span class="legacy-private-badge">Приватно</span>
+          <div class="sett-card">
+            <div class="sett-card-title">Налаштування публікації</div>
+            <label class="legacy-toggle-row">
+              <span class="legacy-toggle-label">Публікувати всі матеріали автоматично</span>
+              <input type="checkbox" id="leg-pub-all" class="legacy-toggle-cb">
+              <span class="legacy-toggle-slider"></span>
             </label>
-            <textarea id="legacy-instr" rows="4" placeholder="Інструкції, що стануть доступні довіреній особі після підтвердження вашого відходу…"></textarea>
+            <label class="legacy-toggle-row">
+              <span class="legacy-toggle-label">Дозволити доповнення біографії</span>
+              <input type="checkbox" id="leg-bio-edit" class="legacy-toggle-cb">
+              <span class="legacy-toggle-slider"></span>
+            </label>
+            <label class="legacy-toggle-row">
+              <span class="legacy-toggle-label">Дозволити публікацію спогадів</span>
+              <input type="checkbox" id="leg-memories" class="legacy-toggle-cb">
+              <span class="legacy-toggle-slider"></span>
+            </label>
+            <label class="legacy-toggle-row">
+              <span class="legacy-toggle-label">Дозволити нові фотографії</span>
+              <input type="checkbox" id="leg-photos" class="legacy-toggle-cb">
+              <span class="legacy-toggle-slider"></span>
+            </label>
+            <label class="legacy-toggle-row">
+              <span class="legacy-toggle-label">Заблокувати будь-які зміни після активації меморіалу</span>
+              <input type="checkbox" id="leg-lock-after" class="legacy-toggle-cb">
+              <span class="legacy-toggle-slider"></span>
+            </label>
           </div>
 
-          <div class="sett-actions">
-            <button class="sett-save-btn" id="legacy-save-btn" onclick="legacySaveContent()">Зберегти спадок</button>
-            <div class="sett-save-msg" id="legacy-save-msg"></div>
+          <div class="sett-card">
+            <div class="sett-card-title">Зафіксувати волю</div>
+            <div id="legacy-will-status" class="legacy-will-status"></div>
+            <div id="legacy-will-form">
+              <p class="sett-hint" style="margin-bottom:14px">Після фіксації редагування буде заблоковано. Для розблокування потрібен пароль.</p>
+              <div class="sett-field">
+                <label for="legacy-will-pass">Підтвердіть паролем</label>
+                <input id="legacy-will-pass" type="password" maxlength="72" placeholder="ваш пароль" autocomplete="current-password">
+              </div>
+              <div class="legacy-will-btns">
+                <button class="btn-legacy-lock" onclick="legacyLockWill(false)">&#128274; Зафіксувати волю</button>
+              </div>
+            </div>
+            <div id="legacy-unlock-form" style="display:none">
+              <div class="sett-field">
+                <label for="legacy-unlock-pass">Пароль для розблокування</label>
+                <input id="legacy-unlock-pass" type="password" maxlength="72" placeholder="ваш пароль" autocomplete="current-password">
+              </div>
+              <div class="legacy-will-btns">
+                <button class="btn-legacy-reject" onclick="legacyLockWill(true)">Розблокувати</button>
+              </div>
+            </div>
+            <div class="sett-save-msg" id="legacy-will-msg"></div>
           </div>
-        </div>
 
-        <!-- Блок: налаштування публікації -->
-        <div class="sett-card">
-          <div class="sett-card-title">Налаштування публікації</div>
+          <div class="sett-card" id="legacy-pay-status"></div>
 
-          <label class="legacy-toggle-row">
-            <span class="legacy-toggle-label">Публікувати всі матеріали автоматично</span>
-            <input type="checkbox" id="leg-pub-all" class="legacy-toggle-cb">
-            <span class="legacy-toggle-slider"></span>
-          </label>
-          <label class="legacy-toggle-row">
-            <span class="legacy-toggle-label">Дозволити доповнення біографії</span>
-            <input type="checkbox" id="leg-bio-edit" class="legacy-toggle-cb">
-            <span class="legacy-toggle-slider"></span>
-          </label>
-          <label class="legacy-toggle-row">
-            <span class="legacy-toggle-label">Дозволити публікацію спогадів</span>
-            <input type="checkbox" id="leg-memories" class="legacy-toggle-cb">
-            <span class="legacy-toggle-slider"></span>
-          </label>
-          <label class="legacy-toggle-row">
-            <span class="legacy-toggle-label">Дозволити нові фотографії</span>
-            <input type="checkbox" id="leg-photos" class="legacy-toggle-cb">
-            <span class="legacy-toggle-slider"></span>
-          </label>
-          <label class="legacy-toggle-row">
-            <span class="legacy-toggle-label">Заблокувати будь-які зміни після активації меморіалу</span>
-            <input type="checkbox" id="leg-lock-after" class="legacy-toggle-cb">
-            <span class="legacy-toggle-slider"></span>
-          </label>
-        </div>
-
-        <!-- Блок: зафіксувати волю -->
-        <div class="sett-card">
-          <div class="sett-card-title">Зафіксувати волю</div>
-          <div id="legacy-will-status" class="legacy-will-status"></div>
-          <div id="legacy-will-form">
-            <p class="sett-hint" style="margin-bottom:14px">Після фіксації редагування буде заблоковано. Для розблокування потрібен пароль.</p>
+          <div class="sett-card" id="legacy-death-card" style="display:none">
+            <div class="sett-card-title">Повідомити про відхід</div>
+            <p class="sett-hint" style="margin-bottom:14px">Як підтверджена довірена особа ви можете подати заявку про відхід власника. Модератор розгляне її та підтвердить.</p>
             <div class="sett-field">
-              <label for="legacy-will-pass">Підтвердіть паролем</label>
-              <input id="legacy-will-pass" type="password" maxlength="72" placeholder="ваш пароль" autocomplete="current-password">
+              <label for="legacy-death-date">Дата відходу</label>
+              <input id="legacy-death-date" type="date">
             </div>
-            <div class="legacy-will-btns">
-              <button class="btn-legacy-lock" onclick="legacyLockWill(false)">&#128274; Зафіксувати волю</button>
-            </div>
-          </div>
-          <div id="legacy-unlock-form" style="display:none">
             <div class="sett-field">
-              <label for="legacy-unlock-pass">Пароль для розблокування</label>
-              <input id="legacy-unlock-pass" type="password" maxlength="72" placeholder="ваш пароль" autocomplete="current-password">
+              <label for="legacy-death-comment">Коментар</label>
+              <textarea id="legacy-death-comment" rows="3" placeholder="Будь-яка додаткова інформація…"></textarea>
             </div>
-            <div class="legacy-will-btns">
-              <button class="btn-legacy-reject" onclick="legacyLockWill(true)">Розблокувати</button>
-            </div>
+            <button class="sett-save-btn" style="max-width:280px" onclick="legacyReportDeath()">Подати заявку</button>
+            <div class="sett-save-msg" id="legacy-death-msg"></div>
           </div>
-          <div class="sett-save-msg" id="legacy-will-msg"></div>
-        </div>
 
-        <!-- Блок: повідомити про смерть (тільки для підтвердженої довіреної особи) -->
-        <div class="sett-card" id="legacy-death-card" style="display:none">
-          <div class="sett-card-title">Повідомити про відхід</div>
-          <p class="sett-hint" style="margin-bottom:14px">Як підтверджена довірена особа ви можете подати заявку про відхід власника. Модератор розгляне її та підтвердить.</p>
-          <div class="sett-field">
-            <label for="legacy-death-date">Дата відходу</label>
-            <input id="legacy-death-date" type="date">
-          </div>
-          <div class="sett-field">
-            <label for="legacy-death-comment">Коментар</label>
-            <textarea id="legacy-death-comment" rows="3" placeholder="Будь-яка додаткова інформація…"></textarea>
-          </div>
-          <button class="sett-save-btn" style="max-width:280px" onclick="legacyReportDeath()">Подати заявку</button>
-          <div class="sett-save-msg" id="legacy-death-msg"></div>
-        </div>
+        </div><!-- /legacy-active-content -->
+      </div>
+    </div>
 
-      </div><!-- /legacy-active-content -->
+    <!-- ── Інформація ── -->
+    <div class="tab-panel" id="tab-info">
+      <div class="info-section" id="info-section"></div>
+    </div>
+
+  </main>
+
+  <!-- ── Чат — третя колонка ── -->
+  <div id="prof-chat-col" class="prof-chat-col">
+    <div id="mc-header" class="prof-chat-header">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+      Чат
+      <span id="mc-badge" class="prof-chat-badge"></span>
+      <button id="mc-toggle" class="prof-chat-toggle" title="Згорнути/розгорнути">−</button>
+    </div>
+    <div id="micro-chat" class="mc-hidden mc-embedded">
+      <div id="mc-body">
+        <div id="mc-messages"></div>
+        <div id="mc-input-row">
+          <input id="mc-input" type="text" maxlength="100" placeholder="Написати повідомлення…" autocomplete="off">
+          <button id="mc-send" title="Надіслати">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
+        </div>
+        <div id="mc-chars" class="prof-chat-chars" style="display:none">0/100</div>
+        <div id="mc-auth-hint" class="prof-chat-hint" style="display:none">
+          Гість: 1 повідомлення кожні 10 хв
+        </div>
+      </div>
     </div>
   </div>
 
-  <!-- Info tab -->
-  <div class="tab-panel" id="tab-info">
-    <div class="info-section" id="info-section"></div>
-  </div>
-
-  <footer class="prof-footer">
-    <a href="/">← Зоряна Памʼять</a>
-  </footer>
-
+</div><!-- /x-layout -->
 </div><!-- /page-content -->
 
+<script src="/js/chat.js"></script>
 <script src="/js/profile.js"></script>
 </body>
 </html>
