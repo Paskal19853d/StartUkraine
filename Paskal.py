@@ -2312,6 +2312,11 @@ def _sanitize_text(s: str, maxlen: int = 200) -> str:
         return ''
     return _html.escape(str(s).strip())[:maxlen]
 
+_USER_HIDDEN_FIELDS = frozenset({'password', 'ban_until', 'notes'})
+def _safe_user(row: dict) -> dict:
+    """Видаляє чутливі поля перед поверненням у відповідь API."""
+    return {k: v for k, v in row.items() if k not in _USER_HIDDEN_FIELDS}
+
 # Межі України для конвертації lat/lng → SVG 0..1
 _UA_LAT_MIN, _UA_LAT_MAX = 43.95, 52.37
 _UA_LNG_MIN, _UA_LNG_MAX = 22.15, 41.03
@@ -3450,7 +3455,7 @@ def login(u: UserLogin, request: Request):
                       (hash_pass(u.password), u.email.lower()))
     db.commit()
     db.close()
-    row.pop("password", None)  # не повертаємо хеш у відповіді
+    row = _safe_user(row)
     token = _session_create(row["id"])
     resp = JSONResponse({"ok": True, "user": row})
     resp.set_cookie(
@@ -4067,22 +4072,33 @@ def adm_legacy_trusted(request: Request, page: int = 1, limit: int = 50,
     db = get_db()
     try:
         with db.cursor() as c:
-            where = "WHERE 1=1"
-            params: list = []
             if status:
-                where += " AND lt.status=%s"
-                params.append(status)
-            c.execute(f"SELECT COUNT(*) as cnt FROM legacy_trusted lt {where}", params)
-            total = c.fetchone()["cnt"]
-            c.execute(
-                f"SELECT lt.id, lt.owner_id, lt.trusted_id, lt.status, lt.created_at,"
-                f" u1.nickname as owner_nick, u2.nickname as trusted_nick"
-                f" FROM legacy_trusted lt"
-                f" LEFT JOIN users u1 ON u1.id=lt.owner_id"
-                f" LEFT JOIN users u2 ON u2.id=lt.trusted_id"
-                f" {where} ORDER BY lt.created_at DESC LIMIT %s OFFSET %s",
-                params + [limit, offset]
-            )
+                c.execute(
+                    "SELECT COUNT(*) as cnt FROM legacy_trusted lt WHERE lt.status=%s",
+                    (status,)
+                )
+                total = c.fetchone()["cnt"]
+                c.execute(
+                    "SELECT lt.id, lt.owner_id, lt.trusted_id, lt.status, lt.created_at,"
+                    " u1.nickname as owner_nick, u2.nickname as trusted_nick"
+                    " FROM legacy_trusted lt"
+                    " LEFT JOIN users u1 ON u1.id=lt.owner_id"
+                    " LEFT JOIN users u2 ON u2.id=lt.trusted_id"
+                    " WHERE lt.status=%s ORDER BY lt.created_at DESC LIMIT %s OFFSET %s",
+                    (status, limit, offset)
+                )
+            else:
+                c.execute("SELECT COUNT(*) as cnt FROM legacy_trusted lt")
+                total = c.fetchone()["cnt"]
+                c.execute(
+                    "SELECT lt.id, lt.owner_id, lt.trusted_id, lt.status, lt.created_at,"
+                    " u1.nickname as owner_nick, u2.nickname as trusted_nick"
+                    " FROM legacy_trusted lt"
+                    " LEFT JOIN users u1 ON u1.id=lt.owner_id"
+                    " LEFT JOIN users u2 ON u2.id=lt.trusted_id"
+                    " ORDER BY lt.created_at DESC LIMIT %s OFFSET %s",
+                    (limit, offset)
+                )
             rows = c.fetchall()
     finally:
         db.close()
@@ -4100,23 +4116,35 @@ def adm_legacy_requests(request: Request, page: int = 1, limit: int = 50,
     db = get_db()
     try:
         with db.cursor() as c:
-            where = "WHERE 1=1"
-            params: list = []
             if status:
-                where += " AND lr.status=%s"
-                params.append(status)
-            c.execute(f"SELECT COUNT(*) as cnt FROM legacy_requests lr {where}", params)
-            total = c.fetchone()["cnt"]
-            c.execute(
-                f"SELECT lr.id, lr.owner_id, lr.trusted_id, lr.first_name, lr.last_name,"
-                f" lr.death_date, lr.status, lr.mod_comment, lr.created_at,"
-                f" u1.nickname as owner_nick, u2.nickname as trusted_nick"
-                f" FROM legacy_requests lr"
-                f" LEFT JOIN users u1 ON u1.id=lr.owner_id"
-                f" LEFT JOIN users u2 ON u2.id=lr.trusted_id"
-                f" {where} ORDER BY lr.created_at DESC LIMIT %s OFFSET %s",
-                params + [limit, offset]
-            )
+                c.execute(
+                    "SELECT COUNT(*) as cnt FROM legacy_requests lr WHERE lr.status=%s",
+                    (status,)
+                )
+                total = c.fetchone()["cnt"]
+                c.execute(
+                    "SELECT lr.id, lr.owner_id, lr.trusted_id, lr.first_name, lr.last_name,"
+                    " lr.death_date, lr.status, lr.mod_comment, lr.created_at,"
+                    " u1.nickname as owner_nick, u2.nickname as trusted_nick"
+                    " FROM legacy_requests lr"
+                    " LEFT JOIN users u1 ON u1.id=lr.owner_id"
+                    " LEFT JOIN users u2 ON u2.id=lr.trusted_id"
+                    " WHERE lr.status=%s ORDER BY lr.created_at DESC LIMIT %s OFFSET %s",
+                    (status, limit, offset)
+                )
+            else:
+                c.execute("SELECT COUNT(*) as cnt FROM legacy_requests lr")
+                total = c.fetchone()["cnt"]
+                c.execute(
+                    "SELECT lr.id, lr.owner_id, lr.trusted_id, lr.first_name, lr.last_name,"
+                    " lr.death_date, lr.status, lr.mod_comment, lr.created_at,"
+                    " u1.nickname as owner_nick, u2.nickname as trusted_nick"
+                    " FROM legacy_requests lr"
+                    " LEFT JOIN users u1 ON u1.id=lr.owner_id"
+                    " LEFT JOIN users u2 ON u2.id=lr.trusted_id"
+                    " ORDER BY lr.created_at DESC LIMIT %s OFFSET %s",
+                    (limit, offset)
+                )
             rows = c.fetchall()
     finally:
         db.close()
@@ -4156,23 +4184,53 @@ def adm_legacy_logs(request: Request, page: int = 1, limit: int = 100,
     db = get_db()
     try:
         with db.cursor() as c:
-            where = "WHERE 1=1"
-            params: list = []
-            if user_id:
-                where += " AND ll.user_id=%s"
-                params.append(user_id)
-            if action:
-                where += " AND ll.action=%s"
-                params.append(action)
-            c.execute(f"SELECT COUNT(*) as cnt FROM legacy_logs ll {where}", params)
-            total = c.fetchone()["cnt"]
-            c.execute(
-                f"SELECT ll.*, u.nickname"
-                f" FROM legacy_logs ll"
-                f" LEFT JOIN users u ON u.id=ll.user_id"
-                f" {where} ORDER BY ll.created_at DESC LIMIT %s OFFSET %s",
-                params + [limit, offset]
-            )
+            if user_id and action:
+                c.execute(
+                    "SELECT COUNT(*) as cnt FROM legacy_logs ll"
+                    " WHERE ll.user_id=%s AND ll.action=%s",
+                    (user_id, action)
+                )
+                total = c.fetchone()["cnt"]
+                c.execute(
+                    "SELECT ll.*, u.nickname FROM legacy_logs ll"
+                    " LEFT JOIN users u ON u.id=ll.user_id"
+                    " WHERE ll.user_id=%s AND ll.action=%s"
+                    " ORDER BY ll.created_at DESC LIMIT %s OFFSET %s",
+                    (user_id, action, limit, offset)
+                )
+            elif user_id:
+                c.execute(
+                    "SELECT COUNT(*) as cnt FROM legacy_logs ll WHERE ll.user_id=%s",
+                    (user_id,)
+                )
+                total = c.fetchone()["cnt"]
+                c.execute(
+                    "SELECT ll.*, u.nickname FROM legacy_logs ll"
+                    " LEFT JOIN users u ON u.id=ll.user_id"
+                    " WHERE ll.user_id=%s ORDER BY ll.created_at DESC LIMIT %s OFFSET %s",
+                    (user_id, limit, offset)
+                )
+            elif action:
+                c.execute(
+                    "SELECT COUNT(*) as cnt FROM legacy_logs ll WHERE ll.action=%s",
+                    (action,)
+                )
+                total = c.fetchone()["cnt"]
+                c.execute(
+                    "SELECT ll.*, u.nickname FROM legacy_logs ll"
+                    " LEFT JOIN users u ON u.id=ll.user_id"
+                    " WHERE ll.action=%s ORDER BY ll.created_at DESC LIMIT %s OFFSET %s",
+                    (action, limit, offset)
+                )
+            else:
+                c.execute("SELECT COUNT(*) as cnt FROM legacy_logs ll")
+                total = c.fetchone()["cnt"]
+                c.execute(
+                    "SELECT ll.*, u.nickname FROM legacy_logs ll"
+                    " LEFT JOIN users u ON u.id=ll.user_id"
+                    " ORDER BY ll.created_at DESC LIMIT %s OFFSET %s",
+                    (limit, offset)
+                )
             rows = c.fetchall()
     finally:
         db.close()
@@ -4450,7 +4508,7 @@ def chat_messages(since: int = 0, request: Request = None):
                     c.execute(
                         "SELECT * FROM ("
                         " SELECT m.id, m.user_id, m.message, m.created_at, m.is_guest, m.is_bot, m.bot_name,"
-                        " u.nickname, u.name, u.email, u.role"
+                        " u.nickname, u.role"
                         " FROM chat_messages m"
                         " LEFT JOIN users u ON m.user_id=u.id"
                         " WHERE m.is_deleted=0"
@@ -4462,7 +4520,7 @@ def chat_messages(since: int = 0, request: Request = None):
                     c.execute(
                         "SELECT * FROM ("
                         " SELECT m.id, m.user_id, m.message, m.created_at, m.is_guest, m.is_bot, m.bot_name,"
-                        " u.nickname, u.name, u.email, u.role"
+                        " u.nickname, u.role"
                         " FROM chat_messages m"
                         " LEFT JOIN users u ON m.user_id=u.id"
                         " WHERE m.is_deleted=0"
@@ -4475,7 +4533,7 @@ def chat_messages(since: int = 0, request: Request = None):
                 if is_admin:
                     c.execute(
                         "SELECT m.id, m.user_id, m.message, m.created_at, m.is_guest, m.is_bot, m.bot_name,"
-                        " u.nickname, u.name, u.email, u.role"
+                        " u.nickname, u.role"
                         " FROM chat_messages m"
                         " LEFT JOIN users u ON m.user_id=u.id"
                         " WHERE m.is_deleted=0 AND m.created_at>%s"
@@ -4485,7 +4543,7 @@ def chat_messages(since: int = 0, request: Request = None):
                 else:
                     c.execute(
                         "SELECT m.id, m.user_id, m.message, m.created_at, m.is_guest, m.is_bot, m.bot_name,"
-                        " u.nickname, u.name, u.email, u.role"
+                        " u.nickname, u.role"
                         " FROM chat_messages m"
                         " LEFT JOIN users u ON m.user_id=u.id"
                         " WHERE m.is_deleted=0 AND m.created_at>%s"
@@ -4501,14 +4559,14 @@ def chat_messages(since: int = 0, request: Request = None):
             m = dict(m)
             if m.get('is_bot'):
                 m['nickname'] = None
-                m['name'] = m.get('bot_name') or 'Гість'
-                m['email'] = None
                 m['role'] = 'user'
             elif m.get('is_guest'):
                 m['nickname'] = None
-                m['name'] = 'Гість'
-                m['email'] = None
                 m['role'] = 'guest'
+            # Ніколи не повертати email/name/password у публічному chat API
+            m.pop('email', None)
+            m.pop('name', None)
+            m.pop('password', None)
             msgs.append(m)
         return {"ok": True, "messages": msgs}
     except Exception as e:
@@ -4601,8 +4659,7 @@ async def chat_send(body: ChatSendBody, request: Request):
         msg_data = {
             "id": msg_id, "user_id": user['id'], "is_guest": 0,
             "message": result, "created_at": ts,
-            "nickname": user.get('nickname'), "name": user.get('name'),
-            "email": user.get('email'), "role": user.get('role', 'user')
+            "nickname": user.get('nickname'), "role": user.get('role', 'user')
         }
         await broadcast({"event": "chat_msg", "msg": msg_data})
         return {"ok": True, "msg": msg_data}
@@ -5099,6 +5156,9 @@ def portfolio_thanks_delete(item_id: int, request: Request):
 @app.get("/api/admin/export/csv")
 def export_csv(request: Request):
     require_moder(request)
+    ip = _get_ip(request)
+    if not _rl.check(f"adm_export:{ip}", 5, 60):
+        raise HTTPException(429, "Занадто багато запитів на експорт")
     db = get_db()
     with db.cursor() as c:
         c.execute(
@@ -5128,6 +5188,9 @@ def export_csv(request: Request):
 def export_json(request: Request):
     """Повний список записів у JSON — для XLSX-експорту на клієнті."""
     require_moder(request)
+    ip = _get_ip(request)
+    if not _rl.check(f"adm_export:{ip}", 5, 60):
+        raise HTTPException(429, "Занадто багато запитів на експорт")
     db = get_db()
     with db.cursor() as c:
         c.execute(
@@ -5190,7 +5253,7 @@ async def import_csv(request: Request, file: UploadFile = File(...)):
                     _sanitize_text((row.get('loc')       or '')[:300],  300),
                     _sanitize_text((row.get('bury')      or '')[:300],  300),
                     _sanitize_text((row.get('circ')      or '')[:500],  500),
-                    (row.get('descr')     or '')[:5000],
+                    _sanitize_text((row.get('descr')     or '')[:5000], 5000),
                     _validate_photo_url((row.get('photo') or '')[:500]),
                     _validate_color(row.get('color') or ''),
                     pos_x, pos_y,
@@ -5293,6 +5356,8 @@ async def import_csv_preview(request: Request, file: UploadFile = File(...)):
 async def import_csv_apply(request: Request):
     me = require_moder(request)
     ip = _get_ip(request)
+    if not _rl.check(f"adm_import:{ip}", 3, 60):
+        raise HTTPException(429, "Занадто часто. Зачекайте хвилину.")
     rows = await request.json()
     if not isinstance(rows, list):
         rows = rows.get('rows', [])
@@ -5326,7 +5391,7 @@ async def import_csv_apply(request: Request):
                         _sanitize_text((row.get('loc')       or '')[:300], 300),
                         _sanitize_text((row.get('bury')      or '')[:300], 300),
                         _sanitize_text((row.get('circ')      or '')[:500], 500),
-                        (row.get('descr')     or '')[:5000],
+                        _sanitize_text((row.get('descr')     or '')[:5000], 5000),
                         _validate_photo_url((row.get('photo') or '')[:500]),
                         _validate_color(row.get('color') or ''),
                         px, py,
@@ -6831,6 +6896,9 @@ def seo_analyze_memorial(mid: int, request: Request):
 def seo_scores_all(request: Request, limit: int = Query(default=50, le=500), grade: str = ""):
     """Return memorials sorted by SEO score ascending (worst first)."""
     require_moder(request)
+    ip = _get_ip(request)
+    if not _rl.check(f"adm_seo_scores:{ip}", 10, 60):
+        raise HTTPException(429, "Занадто багато запитів")
     db = get_db()
     with db.cursor() as c:
         c.execute(

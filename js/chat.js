@@ -21,29 +21,14 @@
     return h + ':' + m;
   }
 
-  // Маскує email: "treetex.g.ads@gmail.com" → "@treet***"
-  function _maskEmail(email) {
-    if (!email || email.indexOf('@') === -1) return email || '?';
-    var local = email.split('@')[0].replace(/[^a-zA-Z0-9]/g, ''); // видаляємо крапки/дефіси
-    var visible = local.slice(0, Math.min(5, local.length));
-    return '@' + visible + '***';
-  }
-
   // Повертає відображуване ім'я
   function _mcDisplayName(m) {
     if (m.role === 'guest') {
       var guestNum = m.id ? String(m.id).slice(-3).replace(/^0+/, '') || m.id : '?';
       return 'Гість#' + guestNum;
     }
-    if (m.is_bot) return m.name || 'Бот';
+    if (m.is_bot) return 'Бот';
     if (m.nickname) return '@' + m.nickname;
-    if (m.email) return _maskEmail(m.email);
-    // Технічне ім'я (name з email-prefix) — маскуємо щоб не показувати сирий логін
-    if (m.name) {
-      var n = String(m.name);
-      var visible = n.slice(0, Math.min(3, n.length));
-      return '@' + visible + '***';
-    }
     return '?';
   }
 
