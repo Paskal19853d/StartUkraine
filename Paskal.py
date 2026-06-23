@@ -4176,16 +4176,40 @@ def adm_legacy_logs(request: Request, page: int = 1, limit: int = 100,
 def _oauth_login_or_create(email: str, name: str) -> dict:
     db = get_db()
     with db.cursor() as c:
-        c.execute("SELECT id,name,email,is_admin,role FROM users WHERE email=%s", (email,))
+        c.execute("SELECT id,name,email,is_admin,role,nickname FROM users WHERE email=%s", (email,))
         row = c.fetchone()
         if not row:
+            # Генерація унікального нікнейму з імені
+            base = re.sub(r'[^a-zA-Z0-9_]', '', name.replace(' ', '_'))[:20] or 'user'
+            nick = base
+            suffix = 1
+            while True:
+                c.execute("SELECT id FROM users WHERE nickname=%s", (nick,))
+                if not c.fetchone():
+                    break
+                nick = f"{base}{suffix}"
+                suffix += 1
             c.execute(
-                "INSERT INTO users (name,email,password) VALUES (%s,%s,%s)",
-                (name, email, hash_pass(secrets.token_hex(16)))
+                "INSERT INTO users (name,email,password,nickname) VALUES (%s,%s,%s,%s)",
+                (name, email, hash_pass(secrets.token_hex(16)), nick)
             )
             db.commit()
-            c.execute("SELECT id,name,email,is_admin,role FROM users WHERE email=%s", (email,))
+            c.execute("SELECT id,name,email,is_admin,role,nickname FROM users WHERE email=%s", (email,))
             row = c.fetchone()
+        elif not row.get("nickname"):
+            # Існуючий юзер без нікнейму — присвоюємо
+            base = re.sub(r'[^a-zA-Z0-9_]', '', (name or email.split('@')[0]).replace(' ', '_'))[:20] or 'user'
+            nick = base
+            suffix = 1
+            while True:
+                c.execute("SELECT id FROM users WHERE nickname=%s AND id!=%s", (nick, row["id"]))
+                if not c.fetchone():
+                    break
+                nick = f"{base}{suffix}"
+                suffix += 1
+            c.execute("UPDATE users SET nickname=%s WHERE id=%s", (nick, row["id"]))
+            db.commit()
+            row["nickname"] = nick
     db.close()
     return row
 
