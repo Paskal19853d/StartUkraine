@@ -1976,17 +1976,25 @@ def user_profile_page(nickname: str):
     return FileResponse("profile.html")
 
 @app.get("/api/user/{nickname}")
-def get_user_profile(nickname: str):
+def get_user_profile(nickname: str, request: Request):
+    # Власник може бачити свій профіль навіть якщо is_banned
+    token = request.cookies.get("admin_session")
+    sess = _session_get(token) if token else None
+    caller_id = sess["user_id"] if sess else None
+
     db = get_db()
     try:
         with db.cursor() as c:
             c.execute(
-                "SELECT id, name, first_name, last_name, nickname, role, created "
-                "FROM users WHERE nickname=%s AND is_banned=0",
+                "SELECT id, name, first_name, last_name, nickname, role, created, is_banned "
+                "FROM users WHERE nickname=%s",
                 (nickname,)
             )
             user = c.fetchone()
             if not user:
+                raise HTTPException(404, "Користувача не знайдено")
+            # Забанений — доступ тільки самому власнику
+            if user["is_banned"] and caller_id != user["id"]:
                 raise HTTPException(404, "Користувача не знайдено")
             c.execute(
                 "SELECT id, last, first, mid, slug, photo, likes, rating, color, death "
@@ -4245,8 +4253,7 @@ def auth_google_callback(code: str = None, error: str = None):
         return RedirectResponse("/?oauth_error=google_no_email", status_code=302)
     name = info.get("name") or email.split("@")[0]
     user = _oauth_login_or_create(email, name)
-    target = "/admin" if user.get("role") in ("admin", "moder") else "/"
-    resp = RedirectResponse(f"{target}?oauth=success", status_code=302)
+    resp = RedirectResponse("/?oauth=success", status_code=302)
     return _oauth_set_session(resp, user["id"])
 
 
@@ -4303,8 +4310,7 @@ def auth_diia_callback(code: str = None, error: str = None):
         return RedirectResponse("/?oauth_error=diia_no_email", status_code=302)
     name = info.get("name") or info.get("rnokpp") or email.split("@")[0]
     user = _oauth_login_or_create(email, name)
-    target = "/admin" if user.get("role") in ("admin", "moder") else "/"
-    resp = RedirectResponse(f"{target}?oauth=success", status_code=302)
+    resp = RedirectResponse("/?oauth=success", status_code=302)
     return _oauth_set_session(resp, user["id"])
 
 

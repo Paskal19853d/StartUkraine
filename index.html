@@ -5115,9 +5115,15 @@ async function checkOAuthCallback(){
   const p=new URLSearchParams(location.search);
   if(p.get('oauth')==='success'){
     try{
-      const r=await fetch(API+'/api/auth/me');
+      const r=await fetch(API+'/api/auth/me',{credentials:'include'});
       const d=await r.json();
-      if(d.ok&&d.user){curUser=d.user;localStorage.setItem('mu',JSON.stringify(curUser));updateAuthUI();showN("Ласкаво просимо, "+curUser.name+"!");}
+      if(d.ok&&d.user){
+        curUser=d.user;
+        localStorage.setItem('mu',JSON.stringify(curUser));
+        updateAuthUI();
+        const greet=curUser.nickname?('@'+curUser.nickname):(curUser.name||'');
+        showN("Ласкаво просимо, "+greet+"!");
+      }
     }catch(e){}
     history.replaceState({},'','/');
   }else if(p.has('oauth_error')){
@@ -5213,9 +5219,9 @@ async function checkDeviceAccess() {
   _setPL(97);
   initSVGBorders();
   _setPL(100, 'Готово');
+  await checkOAuthCallback();
   updateAuthUI();
   connectWS();
-  checkOAuthCallback();
   startPanelLikesRefresh();
   document.body.style.visibility = 'visible';
   const pl=document.getElementById('preloader');
