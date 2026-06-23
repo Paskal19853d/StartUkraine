@@ -5188,20 +5188,7 @@ p{font-size:14px;color:#8a9cb0;line-height:1.6}
 </div></body></html>`;
 }
 async function checkDeviceAccess() {
-  try {
-    const ctrl = new AbortController();
-    const tid = setTimeout(() => ctrl.abort(), 3000);
-    const r = await fetch('/api/device-status', { signal: ctrl.signal });
-    clearTimeout(tid);
-    if (!r.ok) return;
-    const d = await r.json();
-    const ua = navigator.userAgent;
-    let type = 'desktop';
-    if (/iPad|Tablet/i.test(ua)) type = 'tablet';
-    else if (/Mobile|Android|iPhone|iPod|BlackBerry|IEMobile|Opera Mini|webOS/i.test(ua)) type = 'mobile';
-    if (!d[type] && type === 'desktop') { document.open(); document.write(_deviceBlockPage(d.block_msg||'Версія сайту для вашого пристрою тимчасово недоступна.')); document.close(); }
-    if (!d.mobile) { const vs = document.getElementById('view-switcher'); if (vs) vs.style.display = 'none'; }
-  } catch { /* timeout або мережева помилка — не блокуємо */ }
+  // Блокування за типом пристрою вимкнено
 }
 
 /* ── INIT ── */

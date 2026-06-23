@@ -1583,11 +1583,7 @@ input.f-err { border-color:#e53935 !important; }
   color: rgba(255,255,255,.7);
   line-height: 1.8;
 }
-/* Тільки якщо екран СПРАВДІ малий навіть у landscape */
-@media (orientation: landscape) and (max-width: 609px),
-       (orientation: landscape) and (max-height: 299px) {
-  #too-small-overlay { display: flex; }
-}
+/* Overlay за розміром екрану вимкнено */
 
 /* ── Copyright — по центру знизу на мобільних та планшетах ── */
 @media (pointer: coarse) {
