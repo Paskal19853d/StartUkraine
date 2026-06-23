@@ -27,7 +27,7 @@
       var guestNum = m.id ? String(m.id).slice(-3).replace(/^0+/, '') || m.id : '?';
       return 'Гість#' + guestNum;
     }
-    if (m.is_bot) return 'Бот';
+    if (m.is_bot) return m.bot_name || 'Бот';
     if (m.nickname) return '@' + m.nickname;
     return '?';
   }

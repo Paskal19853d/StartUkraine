@@ -185,7 +185,7 @@ body{visibility:hidden}
         </div>
       </div>
     </div>
-    <button id="view-switcher" onclick="vsSwitchTo('mobile')" title="Мобільна версія">
+    <button id="view-switcher" onclick="vsSwitchTo('mobile')" title="Мобільна версія" style="display:none">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><circle cx="12" cy="17" r="1" fill="currentColor" stroke="none"/></svg>
       Мобільна
     </button>
@@ -197,8 +197,7 @@ body{visibility:hidden}
     </div>
   </div>
   <div class="tb-break"></div>
-  <span id="un" onclick="openProfile()" style="cursor:pointer" title="Мій профіль"></span>
-  <button id="btn-profile" onclick="openProfile()" style="display:none">Профіль</button>
+  <button id="btn-profile" onclick="openProfile()" style="display:none;align-items:center;gap:5px;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:11px;font-family:inherit;padding:6px 12px;cursor:pointer;white-space:nowrap;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg> Профіль</button>
   <button id="btn-logout" onclick="doLogout()">Вийти</button>
   <button id="btn-auth" onclick="openAuth()" title="Увійти"><i class="fi fi-rr-sign-in-alt auth-ico"></i><span class="auth-txt"> Увійти</span></button>
   <button id="btn-add" onclick="onAdd()"><i class="fi fi-rr-plus add-ico"></i><span class="add-txt"> Додати</span></button>
@@ -4436,12 +4435,11 @@ si.addEventListener('focus', () => {
 });
 /* ── Auth ── */
 function updateAuthUI(){
-  const un=document.getElementById('un'),ba=document.getElementById('btn-auth'),bl=document.getElementById('btn-logout'),bp=document.getElementById('btn-profile');
+  const ba=document.getElementById('btn-auth'),bl=document.getElementById('btn-logout'),bp=document.getElementById('btn-profile');
   if(curUser){
-    const nick=curUser.nickname?('@'+curUser.nickname):(curUser.name||'');
-    un.textContent=nick;un.style.display='block';bl.style.display='block';ba.style.display='none';
-    if(bp)bp.style.display='none';
-  }else{un.style.display='none';bl.style.display='none';ba.style.display='block';if(bp)bp.style.display='none';}
+    bl.style.display='block';ba.style.display='none';
+    if(bp){bp.style.display='inline-flex';}
+  }else{bl.style.display='none';ba.style.display='block';if(bp)bp.style.display='none';}
   // Повідомити WS про зміну стану користувача
   if(window._onlineWS&&window._onlineWS.readyState===1){
     if(curUser)window._onlineWS.send('user:'+(curUser.name||'')+'|'+(curUser.role||'user'));

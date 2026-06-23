@@ -404,7 +404,7 @@ mark.shl {
 #smoke-ctrl:hover .smoke-toggle { opacity: .85; }
 
 /* ── View switcher button ── */
-#view-switcher {
+#view-switcher, .view-switcher {
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -420,12 +420,12 @@ mark.shl {
   white-space: nowrap;
   transition: background .2s, color .2s, border-color .2s, transform .1s;
 }
-#view-switcher:hover {
+#view-switcher:hover, .view-switcher:hover {
   background: rgba(255,255,255,.09);
   color: var(--text);
   border-color: var(--border2);
 }
-#view-switcher:active { transform: scale(.96); }
+#view-switcher:active, .view-switcher:active { transform: scale(.96); }
 
 /* Coffee button — патріотичний жовтий */
 #btn-coffee {

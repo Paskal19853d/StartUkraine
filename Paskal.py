@@ -1658,7 +1658,7 @@ _SITE_BASE_URL = os.getenv("SITE_BASE_URL", "http://127.0.0.1:8000").rstrip("/")
 _bot_online_count: int = 0
 _bots_enabled: bool = True
 _bot_lock = threading.Lock()
-_BOT_NAMES = ["Оксана В.", "Михайло К.", "Тетяна Л.", "Андрій П.", "Наталія С."]
+_BOT_NAMES = ["LoS002", "TohaX", "Mriya77", "UkrHawk", "SkyWolf13", "Sokil_UA", "DimaN88", "Lesya_K"]
 
 def _bot_loop():
     """Фонова задача: боти пишуть повідомлення кожні 2-4 хвилини."""
