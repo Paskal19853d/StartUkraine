@@ -641,6 +641,19 @@ def init_db():
         ("reg_require_phone_verify", "0",          "Реєстрація — підтвердження телефону SMS (1=так, 0=ні) [потребує SMS API]"),
         ("reg_min_pass_len",         "10",         "Реєстрація — мінімальна довжина пароля (8–20)"),
         ("reg_welcome_msg",          "Вітаємо на Зоряна Пам'ять!", "Реєстрація — повідомлення після успішної реєстрації"),
+        # ── Керування доступом за пристроєм ──────────────────────────────────
+        ("device_desktop_enabled", "1", "Доступ — ПК/ноутбук (1=так, 0=ні)"),
+        ("device_tablet_enabled",  "1", "Доступ — Планшет (1=так, 0=ні)"),
+        ("device_mobile_enabled",  "1", "Доступ — Смартфон (1=так, 0=ні)"),
+        ("device_block_msg",       "Версія сайту для вашого пристрою тимчасово недоступна.", "Повідомлення при блокуванні пристрою"),
+        ("show_coffee",            "1", "Кнопка «Кава адміну» на головній (1=показати, 0=сховати)"),
+        ("worldmap_enabled",       "1", "Карта світу активна (1=так, 0=ні)"),
+        ("worldmap_default",       "0", "Карта за замовчуванням (0=Україна, 1=Світ)"),
+        ("worldmap_tile_url",      "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", "URL тайлів карти світу"),
+        # ── Мікро-чат ────────────────────────────────────────────────────────
+        ("chat_enabled",       "1",    "Мікро-чат активний (1=так, 0=ні)"),
+        ("chat_history_count", "50",   "Кількість повідомлень в чаті"),
+        ("chat_poll_interval", "4000", "Інтервал оновлення чату (мс)"),
         # ── Картка меморіалу (card.html) ─────────────────────────────────────
         ("card_accent",        "#f0b54a",                       "Картка: колір акценту"),
         ("card_bg",            "#050507",                       "Картка: колір фону"),
@@ -1093,66 +1106,6 @@ def init_db():
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
         """)
 
-        # ── legacy_accounts ───────────────────────────────────
-        c.execute("""
-            CREATE TABLE IF NOT EXISTS legacy_accounts (
-                id                 INT PRIMARY KEY AUTO_INCREMENT,
-                user_id            INT NOT NULL,
-                payment_amount     DECIMAL(10,2) DEFAULT NULL,
-                payment_currency   VARCHAR(10)   DEFAULT 'UAH',
-                activated_at       INT           DEFAULT NULL,
-                activated_by_admin TINYINT       DEFAULT 0,
-                notes              VARCHAR(500)  DEFAULT '',
-                INDEX idx_leg_acc_user (user_id)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-        """)
-
-        # ── legacy_trusted ────────────────────────────────────
-        c.execute("""
-            CREATE TABLE IF NOT EXISTS legacy_trusted (
-                id         INT PRIMARY KEY AUTO_INCREMENT,
-                owner_id   INT NOT NULL,
-                trusted_id INT NOT NULL,
-                status     VARCHAR(20) DEFAULT 'pending',
-                created_at INT DEFAULT (UNIX_TIMESTAMP()),
-                INDEX idx_leg_tr_owner   (owner_id),
-                INDEX idx_leg_tr_trusted (trusted_id),
-                INDEX idx_leg_tr_status  (status)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-        """)
-
-        # ── legacy_requests ───────────────────────────────────
-        c.execute("""
-            CREATE TABLE IF NOT EXISTS legacy_requests (
-                id          INT PRIMARY KEY AUTO_INCREMENT,
-                owner_id    INT NOT NULL,
-                trusted_id  INT NOT NULL,
-                first_name  VARCHAR(100) DEFAULT '',
-                last_name   VARCHAR(100) DEFAULT '',
-                death_date  VARCHAR(20)  DEFAULT NULL,
-                status      VARCHAR(20)  DEFAULT 'new',
-                mod_comment VARCHAR(500) DEFAULT '',
-                created_at  INT DEFAULT (UNIX_TIMESTAMP()),
-                INDEX idx_leg_req_owner  (owner_id),
-                INDEX idx_leg_req_status (status)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-        """)
-
-        # ── legacy_logs ───────────────────────────────────────
-        c.execute("""
-            CREATE TABLE IF NOT EXISTS legacy_logs (
-                id         INT PRIMARY KEY AUTO_INCREMENT,
-                user_id    INT          DEFAULT NULL,
-                action     VARCHAR(100) NOT NULL,
-                ip         VARCHAR(45)  DEFAULT '',
-                metadata   VARCHAR(500) DEFAULT '',
-                created_at INT DEFAULT (UNIX_TIMESTAMP()),
-                INDEX idx_leg_log_user   (user_id),
-                INDEX idx_leg_log_action (action),
-                INDEX idx_leg_log_time   (created_at)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-        """)
-
     # ── Backfill slugs for existing records ─────────────────
     from seo_utils import make_slug as _make_slug
     with db.cursor() as c:
@@ -1166,6 +1119,90 @@ def init_db():
                     c.execute("UPDATE memorials SET slug=%s WHERE id=%s", (_sl, r['id']))
                 except Exception:
                     pass
+
+    # ── Мікро-чат ────────────────────────────────────────
+    with db.cursor() as c:
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS chat_messages (
+                id         INT AUTO_INCREMENT PRIMARY KEY,
+                user_id    INT NULL,
+                message    TEXT NOT NULL,
+                created_at BIGINT NOT NULL,
+                is_deleted TINYINT DEFAULT 0,
+                guest_fp   VARCHAR(64) NULL,
+                guest_ip   VARCHAR(45) NULL,
+                is_guest   TINYINT DEFAULT 0,
+                INDEX idx_chat_created (created_at),
+                INDEX idx_chat_user (user_id),
+                INDEX idx_chat_guest_fp (guest_fp)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        """)
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS chat_reports (
+                id          INT AUTO_INCREMENT PRIMARY KEY,
+                msg_id      INT NOT NULL,
+                reporter_id INT NOT NULL,
+                reason      VARCHAR(200),
+                created_at  BIGINT NOT NULL,
+                UNIQUE KEY uq_report (msg_id, reporter_id)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        """)
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS chat_banned_words (
+                id       INT AUTO_INCREMENT PRIMARY KEY,
+                word     VARCHAR(200) NOT NULL,
+                category VARCHAR(50) DEFAULT 'profanity',
+                UNIQUE KEY uq_word (word)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        """)
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS chat_bot_phrases (
+                id        INT AUTO_INCREMENT PRIMARY KEY,
+                phrase    TEXT NOT NULL,
+                category  VARCHAR(50) DEFAULT 'general',
+                is_active TINYINT DEFAULT 1
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        """)
+        # Додати колонки ботів якщо ще не існують
+        try:
+            c.execute("ALTER TABLE chat_messages ADD COLUMN is_bot TINYINT DEFAULT 0")
+        except Exception:
+            pass
+        try:
+            c.execute("ALTER TABLE chat_messages ADD COLUMN bot_name VARCHAR(100) NULL")
+        except Exception:
+            pass
+        # Заповнити початкові фрази якщо таблиця порожня
+        c.execute("SELECT COUNT(*) as cnt FROM chat_bot_phrases")
+        if c.fetchone()['cnt'] == 0:
+            _BOT_INITIAL_PHRASES = [
+                ("Дуже важливий проєкт, дякую що зберігаєте пам'ять про героїв 🙏", "positive"),
+                ("Нещодавно знайшла тут запис про свого дядька. Дякую вам.", "personal"),
+                ("Чи можна додати фільтр за областю?", "suggestion"),
+                ("Зіркова карта виглядає дуже красиво ✨", "positive"),
+                ("Показав друзям — всі були вражені. Чудова робота!", "positive"),
+                ("Я б додав можливість завантажити фото з телефону простіше.", "suggestion"),
+                ("Дякую за цей проєкт. Моя родина шукала інформацію тут.", "personal"),
+                ("Чи планується мобільний додаток?", "suggestion"),
+                ("Яскраві зірки на карті — дуже символічно 💫", "positive"),
+                ("Знайшов тут свого однокласника. Вічна пам'ять.", "personal"),
+                ("Сайт дуже швидкий, приємно користуватись.", "positive"),
+                ("Може додати можливість поділитись записом у Telegram?", "suggestion"),
+                ("Ромашки б гарно виглядали як символ на карті 🌼", "suggestion"),
+                ("Дуже зворушливий проєкт. Слава Україні!", "positive"),
+                ("Чи є спосіб повідомити якщо знайшов помилку в записі?", "suggestion"),
+                ("Карта завантажується миттєво, молодці розробники!", "positive"),
+                ("Додав свого брата. Дякую що є такий сайт.", "personal"),
+                ("Пам'ять про героїв живе завдяки таким проєктам ❤️", "positive"),
+                ("Чи можна переглянути записи за роком загибелі?", "suggestion"),
+                ("Нехай кожна зірка світить вічно 🌟", "positive"),
+            ]
+            c.executemany(
+                "INSERT INTO chat_bot_phrases (phrase, category) VALUES (%s, %s)",
+                _BOT_INITIAL_PHRASES
+            )
+        # Додати ключ chat_bots_enabled якщо відсутній
+        c.execute("INSERT IGNORE INTO colors (`key`, value, label) VALUES ('chat_bots_enabled', '1', 'Чат-боти увімкнені')")
 
     db.commit()
     db.close()
@@ -1599,21 +1636,81 @@ async def security_headers(request, call_next):
 # Статичні файли (img)
 app.mount("/img",   StaticFiles(directory="img"),   name="img")
 app.mount("/js",    StaticFiles(directory="js"),    name="js")
+app.mount("/css",   StaticFiles(directory="css"),   name="css")
 app.mount("/fonts", StaticFiles(directory="fonts"), name="fonts")
 os.makedirs("img/audio", exist_ok=True)
 app.mount("/audio", StaticFiles(directory="img/audio"), name="audio")
-os.makedirs("promo", exist_ok=True)
-app.mount("/promo", StaticFiles(directory="promo", html=True), name="promo")
+os.makedirs("promo",     exist_ok=True)
 os.makedirs("portfolio", exist_ok=True)
+app.mount("/promo",     StaticFiles(directory="promo",     html=True), name="promo")
 app.mount("/portfolio", StaticFiles(directory="portfolio", html=True), name="portfolio")
 
 # Jinja2 templates (for SEO SSR pages)
 _TEMPLATES = Jinja2Templates(directory="templates")
 _SITE_BASE_URL = os.getenv("SITE_BASE_URL", "http://127.0.0.1:8000").rstrip("/")
 
+# ── Чат-боти ─────────────────────────────────────────────────
+_bot_online_count: int = 0
+_bots_enabled: bool = True
+_bot_lock = threading.Lock()
+_BOT_NAMES = ["Оксана В.", "Михайло К.", "Тетяна Л.", "Андрій П.", "Наталія С."]
+
+def _bot_loop():
+    """Фонова задача: боти пишуть повідомлення кожні 2-4 хвилини."""
+    import random as _rnd
+    global _bot_online_count, _bots_enabled
+    # Початкова затримка щоб сервер встиг запуститись
+    time.sleep(30)
+    _last_online_update = 0.0
+    while True:
+        try:
+            # Оновлювати кількість ботів онлайн кожні 60 секунд
+            now = time.time()
+            if now - _last_online_update >= 60:
+                with _bot_lock:
+                    _bot_online_count = _rnd.randint(3, 8)
+                _last_online_update = now
+
+            delay = _rnd.uniform(120, 240)
+            time.sleep(delay)
+
+            if not _bots_enabled:
+                continue
+
+            # Вибираємо фразу і ім'я бота
+            try:
+                db = get_db()
+                with db.cursor() as c:
+                    c.execute("SELECT id, phrase FROM chat_bot_phrases WHERE is_active=1 ORDER BY RAND() LIMIT 1")
+                    row = c.fetchone()
+                db.close()
+            except Exception:
+                continue
+            if not row:
+                continue
+
+            bot_name = _rnd.choice(_BOT_NAMES)
+            phrase = row['phrase']
+            now_ms = int(time.time() * 1000)
+            try:
+                db = get_db()
+                with db.cursor() as c:
+                    c.execute(
+                        "INSERT INTO chat_messages (user_id, message, created_at, is_guest, is_bot, bot_name)"
+                        " VALUES (NULL, %s, %s, 0, 1, %s)",
+                        (phrase, now_ms, bot_name)
+                    )
+                db.commit()
+                db.close()
+            except Exception:
+                pass
+        except Exception:
+            time.sleep(60)
+
+
 @app.on_event("startup")
 def startup():
-    global _maintenance_mode
+    global _maintenance_mode, _bots_enabled
     init_db()
     _init_pool()
     _init_redis()
@@ -1622,11 +1719,20 @@ def startup():
         _maintenance_mode = _get_color_val("maintenance_mode", "0") == "1"
     except Exception:
         pass
+    try:
+        _bots_enabled = _get_color_val("chat_bots_enabled", "1") == "1"
+    except Exception:
+        pass
+    # Початковий випадковий лічильник ботів онлайн
+    import random as _rnd
+    with _bot_lock:
+        _bot_online_count = _rnd.randint(3, 8)
     def _cpu_ram_loop():
         while True:
             _snapshot_cpu_ram()
             time.sleep(60)
     threading.Thread(target=_cpu_ram_loop, daemon=True).start()
+    threading.Thread(target=_bot_loop, daemon=True).start()
 
 @app.on_event("shutdown")
 def shutdown():
@@ -1741,10 +1847,84 @@ def metrics(request: Request):
 
 
 # ── Static routes ─────────────────────────────────────────
-@app.get("/")
-def index():
+_TABLET_UA = re.compile(r'(iPad|Tablet)', re.IGNORECASE)
+_MOB_UA    = re.compile(r'(Mobile|Android|iPhone|iPod|BlackBerry|IEMobile|Opera Mini|webOS)', re.IGNORECASE)
+
+def _detect_device(ua: str) -> str:
+    if _TABLET_UA.search(ua):
+        return "tablet"
+    if _MOB_UA.search(ua):
+        return "mobile"
+    return "desktop"
+
+def _is_mobile(request: Request) -> bool:
+    ua = request.headers.get("user-agent", "")
+    return _detect_device(ua) in ("mobile", "tablet")
+
+def _get_device_settings(db) -> dict:
+    with db.cursor() as c:
+        c.execute(
+            "SELECT `key`, value FROM colors WHERE `key` IN "
+            "('device_desktop_enabled','device_tablet_enabled','device_mobile_enabled','device_block_msg')"
+        )
+        rows = {r["key"]: r["value"] for r in c.fetchall()}
+    return {
+        "desktop": rows.get("device_desktop_enabled", "1") != "0",
+        "tablet":  rows.get("device_tablet_enabled",  "1") != "0",
+        "mobile":  rows.get("device_mobile_enabled",  "1") != "0",
+        "block_msg": rows.get("device_block_msg", "Версія сайту для вашого пристрою тимчасово недоступна."),
+    }
+
+def _device_block_html(msg: str) -> str:
+    return f"""<!DOCTYPE html><html lang="uk"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Зоряна Пам'ять</title>
+<style>
+*{{margin:0;padding:0;box-sizing:border-box}}
+body{{background:#03070e;color:#d0dce8;font-family:sans-serif;
+  display:flex;align-items:center;justify-content:center;min-height:100vh;text-align:center;padding:24px}}
+.wrap{{max-width:480px}}
+.star{{font-size:52px;margin-bottom:20px;opacity:.7}}
+h1{{font-size:18px;font-weight:600;margin-bottom:12px;color:#f0c030}}
+p{{font-size:14px;color:#8a9cb0;line-height:1.6}}
+</style></head><body>
+<div class="wrap">
+  <div class="star">&#9733;</div>
+  <h1>Зоряна Памʼять</h1>
+  <p>{msg}</p>
+</div>
+</body></html>"""
+
+@app.get("/api/device-status")
+def device_status():
     db = get_db()
     try:
+        settings = _get_device_settings(db)
+    finally:
+        db.close()
+    return JSONResponse(settings)
+
+@app.get("/index")
+@app.get("/index.html")
+def index_redirect(): return RedirectResponse(url="/", status_code=301)
+
+@app.get("/")
+def index(request: Request):
+    preferred = request.cookies.get("preferred_view", "")
+    db = get_db()
+    try:
+        _ds = _get_device_settings(db)
+        if preferred == "mobile":
+            return RedirectResponse(url="/mobile", status_code=302)
+        if preferred != "desktop" and _is_mobile(request):
+            _dev = _detect_device(request.headers.get("user-agent", ""))
+            _mob_ok = (_dev == "mobile" and _ds.get("mobile", True)) \
+                   or (_dev == "tablet" and _ds.get("tablet", True))
+            if _mob_ok:
+                return RedirectResponse(url="/mobile", status_code=302)
+            # мобільна/планшетна вимкнена → завантажити desktop без блоку
+        if not _ds.get("desktop", True):
+            return HTMLResponse(content=_device_block_html(_ds["block_msg"]), status_code=200)
         with db.cursor() as c:
             c.execute("SELECT value FROM colors WHERE `key`='sea_enabled'")
             row = c.fetchone()
@@ -1756,6 +1936,22 @@ def index():
     script = f'<script>window.SEA_ENABLED={str(sea_on).lower()};</script>'
     html = html.replace("</head>", f"{script}\n</head>", 1)
     return HTMLResponse(content=html, headers={"Cache-Control": "no-store"})
+
+@app.get("/mobile")
+def mobile_page(request: Request):
+    if request.cookies.get("preferred_view") == "desktop":
+        return RedirectResponse(url="/", status_code=302)
+    db = get_db()
+    try:
+        _ds = _get_device_settings(db)
+    finally:
+        db.close()
+    _dev = _detect_device(request.headers.get("user-agent", ""))
+    if _dev == "tablet" and not _ds.get("tablet", True):
+        return RedirectResponse(url="/", status_code=302)
+    if _dev == "mobile" and not _ds.get("mobile", True):
+        return RedirectResponse(url="/", status_code=302)
+    return FileResponse("mobile.html", headers={"Cache-Control": "no-store"})
 
 @app.get("/admin")
 def admin_page(): return FileResponse("admin.html")
@@ -1972,7 +2168,13 @@ async def broadcast(data: dict):
 async def ws_online(ws: WebSocket):
     await ws.accept()
     connected.add(ws)
-    await broadcast({"online": len(connected), "users": _online_users_list()})
+    # Видаляємо HTTP-ping записи для цього IP — клієнт тепер через WS
+    ip = ws.client.host if ws.client else None
+    if ip:
+        for k in list(_online_pings.keys()):
+            if k == ip or k.startswith(ip + "|"):
+                del _online_pings[k]
+    await broadcast({"event": "join", "online": len(connected), "users": _online_users_list()})
     try:
         while True:
             msg = await asyncio.wait_for(ws.receive_text(), timeout=60)
@@ -1983,29 +2185,39 @@ async def ws_online(ws: WebSocket):
                 if role not in ("admin", "moder"):
                     role = "user"
                 online_users[id(ws)] = {"name": name, "role": role}
-                await broadcast({"online": len(connected), "users": _online_users_list()})
+                await broadcast({"event": "update", "online": len(connected), "users": _online_users_list()})
     except Exception:
         pass
     finally:
         connected.discard(ws)
         online_users.pop(id(ws), None)
-        await broadcast({"online": len(connected), "users": _online_users_list()})
+        await broadcast({"event": "leave", "online": len(connected), "users": _online_users_list()})
 
 @app.post("/api/online/ping")
 async def online_ping(request: Request):
-    key = request.client.host
+    # Ключ = IP + tab_id з тіла або заголовка — один IP може мати N вкладок
+    body = {}
+    try:
+        body = await request.json()
+    except Exception:
+        pass
+    tab_id = str(body.get("tab_id", ""))[:64]
+    ip = request.client.host
+    key = f"{ip}|{tab_id}" if tab_id else ip
     now = time.time()
     _online_pings[key] = now
-    stale = [k for k, v in _online_pings.items() if now - v > 120]
+    stale = [k for k, v in _online_pings.items() if now - v > 180]
     for k in stale:
         del _online_pings[k]
-    return {"online": len(_online_pings)}
+    # HTTP ping рахуємо окремо; WS клієнти самі отримують total через broadcast
+    # Total = WS (кожна вкладка = окремий WS) + HTTP-only (ті що без WS)
+    return {"online": len(connected) + len(_online_pings)}
 
 @app.get("/api/online/count")
 async def online_count_http():
     now = time.time()
-    active = sum(1 for v in _online_pings.values() if now - v <= 120)
-    return {"online": active}
+    active = sum(1 for v in _online_pings.values() if now - v <= 180)
+    return {"online": len(connected) + active}
 
 
 # ── Magic bytes MIME validation (без зовнішніх залежностей) ─────
@@ -2086,6 +2298,16 @@ def _sanitize_text(s: str, maxlen: int = 200) -> str:
     if not s:
         return ''
     return _html.escape(str(s).strip())[:maxlen]
+
+# Межі України для конвертації lat/lng → SVG 0..1
+_UA_LAT_MIN, _UA_LAT_MAX = 43.95, 52.37
+_UA_LNG_MIN, _UA_LNG_MAX = 22.15, 41.03
+
+def _latLngToSvg(lat: float, lng: float):
+    """Конвертує географічні координати в нормалізовані 0..1 для SVG-карти України."""
+    x = round((lng - _UA_LNG_MIN) / (_UA_LNG_MAX - _UA_LNG_MIN), 4)
+    y = round(1.0 - (lat - _UA_LAT_MIN) / (_UA_LAT_MAX - _UA_LAT_MIN), 4)
+    return x, y
 
 _DATE_RE = re.compile(r'^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$')
 
@@ -2231,6 +2453,11 @@ def _validate_yt_url(url: str) -> str:
     return url
 
 # ── Schemas ───────────────────────────────────────────────
+class AwardSimple(BaseModel):
+    name:     str = Field(..., max_length=200)
+    img_file: str = Field("", max_length=300)
+    category: str = Field("", max_length=30)
+
 class PersonIn(BaseModel):
     last:  str = Field(..., min_length=1, max_length=100)
     first: str = Field(..., min_length=1, max_length=100)
@@ -2247,10 +2474,13 @@ class PersonIn(BaseModel):
     rank:     Optional[str] = Field("", max_length=100)
     position: Optional[str] = Field("", max_length=100)
     unit:     Optional[str] = Field("", max_length=200)
-    pos_x: float = Field(0.0, ge=0.0, le=1.0)
-    pos_y: float = Field(0.0, ge=0.0, le=1.0)
+    pos_x: float = Field(0.0)
+    pos_y: float = Field(0.0)
+    world_lat: Optional[float] = None
+    world_lng: Optional[float] = None
     grp:      Optional[str] = Field("", max_length=100)
     added_by: Optional[str] = Field("", max_length=100)
+    awards:   List[AwardSimple] = []
 
 class PersonUpdate(BaseModel):
     last: Optional[str] = None; first: Optional[str] = None
@@ -2262,7 +2492,8 @@ class PersonUpdate(BaseModel):
     pos_y: Optional[float] = None; approved: Optional[int] = None
     grp: Optional[str] = None; video_url: Optional[str] = None
     rank: Optional[str] = None; position: Optional[str] = None
-    unit: Optional[str] = None
+    unit: Optional[str] = None; world_lat: Optional[float] = None
+    world_lng: Optional[float] = None
 
 class SendCodeReq(BaseModel):
     last_name: str
@@ -2342,19 +2573,6 @@ class UserUpdate(BaseModel):
     notes:    Optional[str] = None
     tier: Optional[int] = 0
     color: Optional[str] = '#a0d7ff'
-
-class LegacySettingsUpdate(BaseModel):
-    legacy_enabled:  str = '0'
-    legacy_refund:   str = '0'
-    legacy_price:    str = '0'
-    legacy_currency: str = 'UAH'
-
-class LegacyActivate(BaseModel):
-    notes: Optional[str] = ''
-
-class LegacyReqUpdate(BaseModel):
-    status:      str
-    mod_comment: Optional[str] = ''
 
 
 # ── AUTH helpers ──────────────────────────────────────────
@@ -2531,7 +2749,8 @@ def get_people(page: int = 1, limit: int = 50, request: Request = None):
             total = c.fetchone()["cnt"]
             c.execute(
                 "SELECT id,last,first,mid,birth,death,bury,loc,photo,color,pos_x,pos_y,"
-                "grp,`rank`,`position`,unit,likes,rating,video_url,approved,added_by,slug "
+                "grp,`rank`,`position`,unit,likes,rating,video_url,approved,added_by,slug,"
+                "world_lat,world_lng "
                 "FROM memorials WHERE approved=1 ORDER BY rating DESC, likes DESC "
                 "LIMIT %s OFFSET %s",
                 (limit, offset)
@@ -2927,17 +3146,32 @@ def add_person(p: PersonIn, request: Request):
     pos   = _sanitize_text(p.position or '', 100)
     unit  = _sanitize_text(p.unit or '', 200)
     descr = (p.descr or '')[:5000]
+    # Якщо передано world_lat/lng — автообчислити pos_x/pos_y
+    pos_x, pos_y = p.pos_x, p.pos_y
+    world_lat = p.world_lat
+    world_lng = p.world_lng
+    if world_lat is not None and world_lng is not None:
+        pos_x, pos_y = _latLngToSvg(world_lat, world_lng)
     db = get_db()
     with db.cursor() as c:
         c.execute("""
             INSERT INTO memorials
-            (last,first,mid,birth,death,loc,bury,circ,descr,photo,color,video_url,`rank`,`position`,`unit`,pos_x,pos_y,grp,added_by,approved)
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,0)
+            (last,first,mid,birth,death,loc,bury,circ,descr,photo,color,video_url,`rank`,`position`,`unit`,pos_x,pos_y,world_lat,world_lng,grp,added_by,approved)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,0)
         """, (last, first, mid, birth, death, loc, bury,
               circ, descr, photo, color, video_url,
               rank, pos, unit,
-              p.pos_x, p.pos_y, grp, p.added_by))
+              pos_x, pos_y, world_lat, world_lng, grp, p.added_by))
         new_id = c.lastrowid
+        for aw in p.awards[:10]:
+            aw_name = _sanitize_text(aw.name, 200)
+            aw_file = (aw.img_file or '')[:300]
+            aw_cat  = (aw.category or '')[:30]
+            if aw_name:
+                c.execute(
+                    "INSERT INTO memorial_awards (memorial_id,name,img_file,category,sort_order) VALUES (%s,%s,%s,%s,0)",
+                    (new_id, aw_name, aw_file, aw_cat)
+                )
     db.commit()
     db.close()
     return {"ok": True, "id": new_id, "message": "Надіслано на модерацію. Дякуємо!"}
@@ -3319,6 +3553,19 @@ def update_profile(u: UserProfileUpdate, request: Request):
     if not updates:
         db.close()
         return {"ok": True, "user": cur}
+    # При зміні ніку — зберегти старий в aliases
+    if "nickname" in updates:
+        old_nick = cur.get("nickname")
+        new_nick = updates["nickname"]
+        if old_nick and old_nick != new_nick:
+            with db.cursor() as c:
+                c.execute(
+                    "INSERT IGNORE INTO user_nickname_aliases (user_id, old_nickname, created_at)"
+                    " VALUES (%s, %s, UNIX_TIMESTAMP())",
+                    (user_id, old_nick)
+                )
+                # Новий нік звільняємо з aliases (якщо хтось раніше мав його як старий)
+                c.execute("DELETE FROM user_nickname_aliases WHERE old_nickname=%s", (new_nick,))
     cols = ", ".join(f"`{k}`=%s" for k in updates)
     vals = list(updates.values()) + [user_id]
     with db.cursor() as c:
@@ -3332,6 +3579,590 @@ def update_profile(u: UserProfileUpdate, request: Request):
         row = c.fetchone()
     db.close()
     return {"ok": True, "user": row}
+
+
+# ══════════════════════════════════════════════════════════════
+# МОДУЛЬ «СПАДЩИНА ПАМ'ЯТІ» — Legacy Module
+# ══════════════════════════════════════════════════════════════
+
+# ── Pydantic моделі ──────────────────────────────────────────
+
+class LegacyContentBody(BaseModel):
+    memory_photo:       Optional[str] = None
+    epitaph:            Optional[str] = None
+    biography:          Optional[str] = None
+    final_message:      Optional[str] = None
+    video_url:          Optional[str] = None
+    wishes:             Optional[str] = None
+    family_advice:      Optional[str] = None
+    instructions:       Optional[str] = None
+    achievements:       Optional[str] = None
+    publish_all:        Optional[int] = None
+    allow_bio_edit:     Optional[int] = None
+    allow_memories:     Optional[int] = None
+    allow_new_photos:   Optional[int] = None
+    lock_after_memorial:Optional[int] = None
+
+class LegacyTrustedBody(BaseModel):
+    nickname: str
+
+class LegacyTrustedRespondBody(BaseModel):
+    action: str  # 'confirm' | 'reject'
+
+class LegacyLockWillBody(BaseModel):
+    password: str
+
+class LegacyReportDeathBody(BaseModel):
+    death_date: Optional[str] = None
+    comment:    Optional[str] = None
+
+class LegacySettingsBody(BaseModel):
+    legacy_enabled:  Optional[str] = None
+    legacy_price:    Optional[str] = None
+    legacy_currency: Optional[str] = None
+    legacy_refund:   Optional[str] = None
+
+class LegacyActivateBody(BaseModel):
+    notes: Optional[str] = None
+
+class LegacyRequestUpdateBody(BaseModel):
+    status:      str          # 'review' | 'confirmed' | 'rejected'
+    mod_comment: Optional[str] = None
+
+# ── Допоміжні функції ────────────────────────────────────────
+
+def _legacy_log(user_id, action: str, request: Request, metadata=None):
+    db = get_db()
+    try:
+        ip = request.client.host if request.client else ""
+        ua = request.headers.get("user-agent", "")[:300]
+        meta_str = json.dumps(metadata, ensure_ascii=False) if metadata else None
+        ts = int(time.time())
+        with db.cursor() as c:
+            c.execute(
+                "INSERT INTO legacy_logs (user_id,action,ip,browser,metadata,created_at)"
+                " VALUES (%s,%s,%s,%s,%s,%s)",
+                (user_id, action, ip, ua, meta_str, ts)
+            )
+        db.commit()
+    finally:
+        db.close()
+
+def _is_legacy_active(user_id: int, c) -> bool:
+    c.execute("SELECT activated FROM legacy_accounts WHERE user_id=%s AND activated=1", (user_id,))
+    return bool(c.fetchone())
+
+def _get_legacy_session(request: Request):
+    token = request.cookies.get("admin_session")
+    if not token:
+        raise HTTPException(401, "Потрібна авторизація")
+    sess = _session_get(token)
+    if not sess:
+        raise HTTPException(401, "Сесія закінчилась")
+    return sess
+
+# ── ПУБЛІЧНІ ЕНДПОІНТИ (для власника) ───────────────────────
+
+@app.get("/api/legacy/status")
+def legacy_status(request: Request):
+    sess = _get_legacy_session(request)
+    uid = sess["user_id"]
+    price    = _get_color_val("legacy_price", "82")
+    currency = _get_color_val("legacy_currency", "USD")
+    enabled  = _get_color_val("legacy_enabled", "1")
+    db = get_db()
+    try:
+        with db.cursor() as c:
+            published = _is_legacy_active(uid, c)  # чи сплачено публікацію
+            c.execute("SELECT * FROM legacy_accounts WHERE user_id=%s", (uid,))
+            acc = c.fetchone()
+            # Перевіряємо чи є незвітований запит для довіреної особи
+            c.execute(
+                "SELECT ltc.id, u.nickname as owner_nick, u.first_name, u.last_name"
+                " FROM legacy_trusted_contacts ltc"
+                " JOIN users u ON u.id=ltc.user_id"
+                " WHERE ltc.trusted_user_id=%s AND ltc.status='pending'",
+                (uid,)
+            )
+            pending_invite = c.fetchone()
+    finally:
+        db.close()
+    return {
+        "enabled":        enabled == "1",
+        "active":         True,       # форма завжди доступна
+        "published":      published,  # чи сплачена публікація картки
+        "price":          price,
+        "currency":       currency,
+        "account":        acc,
+        "pending_invite": pending_invite,
+    }
+
+
+@app.get("/api/legacy/content")
+def legacy_get_content(request: Request):
+    sess = _get_legacy_session(request)
+    uid = sess["user_id"]
+    db = get_db()
+    try:
+        with db.cursor() as c:
+            c.execute("SELECT * FROM legacy_content WHERE user_id=%s", (uid,))
+            row = c.fetchone()
+    finally:
+        db.close()
+    return row or {}
+
+
+@app.put("/api/legacy/content")
+def legacy_save_content(body: LegacyContentBody, request: Request):
+    sess = _get_legacy_session(request)
+    uid = sess["user_id"]
+    db = get_db()
+    try:
+        with db.cursor() as c:
+            c.execute("SELECT id, will_locked FROM legacy_content WHERE user_id=%s", (uid,))
+            existing = c.fetchone()
+            if existing and existing.get("will_locked"):
+                raise HTTPException(403, "Воля зафіксована — редагування заблоковано")
+        ts = int(time.time())
+        fields = {k: v for k, v in body.dict().items() if v is not None}
+        if not fields:
+            return {"ok": True}
+        # Валідація
+        if "epitaph" in fields and len(fields["epitaph"]) > 300:
+            raise HTTPException(400, "Епітафія — максимум 300 символів")
+        if "memory_photo" in fields:
+            fields["memory_photo"] = _html.escape(fields["memory_photo"])
+        if "video_url" in fields:
+            fields["video_url"] = _html.escape(fields["video_url"])
+        for tf in ("biography","final_message","wishes","family_advice","instructions","achievements","epitaph"):
+            if tf in fields:
+                fields[tf] = _sanitize_text(fields[tf])
+        with db.cursor() as c:
+            c.execute("SELECT id FROM legacy_content WHERE user_id=%s", (uid,))
+            ex = c.fetchone()
+            if ex:
+                cols = ", ".join(f"`{k}`=%s" for k in fields)
+                vals = list(fields.values())
+                c.execute(f"UPDATE legacy_content SET {cols}, updated_at=%s WHERE user_id=%s",
+                          vals + [ts, uid])
+            else:
+                fields["user_id"] = uid
+                fields["created_at"] = ts
+                fields["updated_at"] = ts
+                cols = ", ".join(f"`{k}`" for k in fields)
+                phs  = ", ".join(["%s"] * len(fields))
+                c.execute(f"INSERT INTO legacy_content ({cols}) VALUES ({phs})",
+                          list(fields.values()))
+        db.commit()
+    finally:
+        db.close()
+    _legacy_log(uid, "content_saved", request)
+    return {"ok": True}
+
+
+@app.get("/api/legacy/trusted")
+def legacy_get_trusted(request: Request):
+    sess = _get_legacy_session(request)
+    uid = sess["user_id"]
+    db = get_db()
+    try:
+        with db.cursor() as c:
+            c.execute(
+                "SELECT ltc.*, u.nickname, u.first_name, u.last_name"
+                " FROM legacy_trusted_contacts ltc"
+                " JOIN users u ON u.id=ltc.trusted_user_id"
+                " WHERE ltc.user_id=%s",
+                (uid,)
+            )
+            row = c.fetchone()
+    finally:
+        db.close()
+    return row or {}
+
+
+@app.post("/api/legacy/trusted")
+def legacy_set_trusted(body: LegacyTrustedBody, request: Request):
+    sess = _get_legacy_session(request)
+    uid = sess["user_id"]
+    nick = _sanitize_text(body.nickname.strip())
+    if not nick:
+        raise HTTPException(400, "Нікнейм не вказано")
+    db = get_db()
+    try:
+        with db.cursor() as c:
+            # Знаходимо довірену особу за ніком
+            c.execute("SELECT id, nickname FROM users WHERE nickname=%s AND is_banned=0", (nick,))
+            trusted_user = c.fetchone()
+            if not trusted_user:
+                raise HTTPException(404, f"Користувача «{nick}» не знайдено")
+            if trusted_user["id"] == uid:
+                raise HTTPException(400, "Не можна призначити себе довіреною особою")
+            ts = int(time.time())
+            c.execute(
+                "INSERT INTO legacy_trusted_contacts (user_id, trusted_user_id, status, created_at, updated_at)"
+                " VALUES (%s,%s,'pending',%s,%s)"
+                " ON DUPLICATE KEY UPDATE trusted_user_id=%s, status='pending', updated_at=%s",
+                (uid, trusted_user["id"], ts, ts, trusted_user["id"], ts)
+            )
+        db.commit()
+    finally:
+        db.close()
+    _legacy_log(uid, "trusted_invited", request, {"trusted_nick": nick})
+    return {"ok": True}
+
+
+@app.delete("/api/legacy/trusted")
+def legacy_remove_trusted(request: Request):
+    sess = _get_legacy_session(request)
+    uid = sess["user_id"]
+    db = get_db()
+    try:
+        with db.cursor() as c:
+            c.execute("DELETE FROM legacy_trusted_contacts WHERE user_id=%s", (uid,))
+        db.commit()
+    finally:
+        db.close()
+    _legacy_log(uid, "trusted_removed", request)
+    return {"ok": True}
+
+
+@app.post("/api/legacy/trusted/respond")
+def legacy_trusted_respond(body: LegacyTrustedRespondBody, request: Request):
+    sess = _get_legacy_session(request)
+    uid = sess["user_id"]
+    if body.action not in ("confirm", "reject"):
+        raise HTTPException(400, "action має бути confirm або reject")
+    db = get_db()
+    try:
+        with db.cursor() as c:
+            c.execute(
+                "SELECT id FROM legacy_trusted_contacts WHERE trusted_user_id=%s AND status='pending'",
+                (uid,)
+            )
+            row = c.fetchone()
+            if not row:
+                raise HTTPException(404, "Запрошення не знайдено")
+            ts = int(time.time())
+            if body.action == "confirm":
+                c.execute(
+                    "UPDATE legacy_trusted_contacts SET status='confirmed', confirmed_at=%s, updated_at=%s"
+                    " WHERE id=%s",
+                    (ts, ts, row["id"])
+                )
+            else:
+                c.execute(
+                    "UPDATE legacy_trusted_contacts SET status='rejected', updated_at=%s WHERE id=%s",
+                    (ts, row["id"])
+                )
+        db.commit()
+    finally:
+        db.close()
+    _legacy_log(uid, f"trusted_{body.action}ed", request)
+    return {"ok": True}
+
+
+@app.post("/api/legacy/lock-will")
+def legacy_lock_will(body: LegacyLockWillBody, request: Request):
+    sess = _get_legacy_session(request)
+    uid = sess["user_id"]
+    db = get_db()
+    try:
+        with db.cursor() as c:
+            # Перевіряємо пароль
+            c.execute("SELECT password FROM users WHERE id=%s", (uid,))
+            u = c.fetchone()
+            if not u or not verify_pass(body.password, u["password"]):
+                raise HTTPException(400, "Невірний пароль")
+            ts = int(time.time())
+            c.execute("SELECT id FROM legacy_content WHERE user_id=%s", (uid,))
+            ex = c.fetchone()
+            if ex:
+                c.execute(
+                    "UPDATE legacy_content SET will_locked=1, will_locked_at=%s, updated_at=%s WHERE user_id=%s",
+                    (ts, ts, uid)
+                )
+            else:
+                c.execute(
+                    "INSERT INTO legacy_content (user_id,will_locked,will_locked_at,created_at,updated_at)"
+                    " VALUES (%s,1,%s,%s,%s)",
+                    (uid, ts, ts, ts)
+                )
+        db.commit()
+    finally:
+        db.close()
+    _legacy_log(uid, "will_locked", request)
+    return {"ok": True}
+
+
+@app.post("/api/legacy/unlock-will")
+def legacy_unlock_will(body: LegacyLockWillBody, request: Request):
+    sess = _get_legacy_session(request)
+    uid = sess["user_id"]
+    db = get_db()
+    try:
+        with db.cursor() as c:
+            c.execute("SELECT password FROM users WHERE id=%s", (uid,))
+            u = c.fetchone()
+            if not u or not verify_pass(body.password, u["password"]):
+                raise HTTPException(400, "Невірний пароль")
+            ts = int(time.time())
+            c.execute(
+                "UPDATE legacy_content SET will_locked=0, updated_at=%s WHERE user_id=%s",
+                (ts, uid)
+            )
+        db.commit()
+    finally:
+        db.close()
+    _legacy_log(uid, "will_unlocked", request)
+    return {"ok": True}
+
+
+@app.post("/api/legacy/report-death")
+def legacy_report_death(body: LegacyReportDeathBody, request: Request):
+    sess = _get_legacy_session(request)
+    trusted_uid = sess["user_id"]
+    db = get_db()
+    try:
+        with db.cursor() as c:
+            # Перевіряємо чи ця людина є підтвердженою довіреною особою
+            c.execute(
+                "SELECT user_id FROM legacy_trusted_contacts"
+                " WHERE trusted_user_id=%s AND status='confirmed'",
+                (trusted_uid,)
+            )
+            tc = c.fetchone()
+            if not tc:
+                raise HTTPException(403, "Ви не є підтвердженою довіреною особою")
+            owner_id = tc["user_id"]
+            # Перевіряємо чи немає вже активної заявки
+            c.execute(
+                "SELECT id FROM legacy_requests WHERE user_id=%s AND status IN ('new','review')",
+                (owner_id,)
+            )
+            if c.fetchone():
+                raise HTTPException(400, "Заявка вже подана і розглядається")
+            ts = int(time.time())
+            comment = _sanitize_text(body.comment or "")[:1000]
+            c.execute(
+                "INSERT INTO legacy_requests"
+                " (user_id, trusted_user_id, status, death_date, comment, created_at, updated_at)"
+                " VALUES (%s,%s,'new',%s,%s,%s,%s)",
+                (owner_id, trusted_uid, body.death_date, comment, ts, ts)
+            )
+        db.commit()
+    finally:
+        db.close()
+    _legacy_log(trusted_uid, "death_reported", request, {"owner_id": owner_id})
+    return {"ok": True}
+
+
+# ── АДМІН ЕНДПОІНТИ ─────────────────────────────────────────
+
+@app.get("/api/admin/legacy/settings")
+def adm_legacy_settings(request: Request):
+    require_admin(request)
+    return {
+        "legacy_enabled":  _get_color_val("legacy_enabled", "1"),
+        "legacy_price":    _get_color_val("legacy_price", "82"),
+        "legacy_currency": _get_color_val("legacy_currency", "USD"),
+        "legacy_refund":   _get_color_val("legacy_refund", "0"),
+    }
+
+
+@app.put("/api/admin/legacy/settings")
+def adm_legacy_save_settings(body: LegacySettingsBody, request: Request):
+    require_admin(request)
+    updates = {k: v for k, v in body.dict().items() if v is not None}
+    if not updates:
+        return {"ok": True}
+    db = get_db()
+    try:
+        with db.cursor() as c:
+            for k, v in updates.items():
+                c.execute(
+                    "INSERT INTO colors (`key`,value) VALUES (%s,%s)"
+                    " ON DUPLICATE KEY UPDATE value=%s",
+                    (k, v, v)
+                )
+        db.commit()
+    finally:
+        db.close()
+    return {"ok": True}
+
+
+@app.get("/api/admin/legacy/accounts")
+def adm_legacy_accounts(request: Request, page: int = 1, limit: int = 50):
+    require_admin(request)
+    offset = (page - 1) * max(1, min(limit, 200))
+    db = get_db()
+    try:
+        with db.cursor() as c:
+            c.execute("SELECT COUNT(*) as cnt FROM legacy_accounts WHERE activated=1")
+            total = c.fetchone()["cnt"]
+            c.execute(
+                "SELECT la.*, u.nickname, u.first_name, u.last_name, u.email"
+                " FROM legacy_accounts la"
+                " JOIN users u ON u.id=la.user_id"
+                " WHERE la.activated=1"
+                " ORDER BY la.activated_at DESC LIMIT %s OFFSET %s",
+                (limit, offset)
+            )
+            rows = c.fetchall()
+    finally:
+        db.close()
+    return {"total": total, "items": rows}
+
+
+@app.post("/api/admin/legacy/activate/{uid}")
+def adm_legacy_activate(uid: int, body: LegacyActivateBody, request: Request):
+    require_admin(request)
+    sess = _get_legacy_session(request)
+    admin_id = sess["user_id"]
+    db = get_db()
+    try:
+        with db.cursor() as c:
+            c.execute("SELECT id FROM users WHERE id=%s", (uid,))
+            if not c.fetchone():
+                raise HTTPException(404, "Користувача не знайдено")
+            ts = int(time.time())
+            c.execute(
+                "INSERT INTO legacy_accounts"
+                " (user_id,activated,activated_at,activated_by_admin,notes,created_at,updated_at)"
+                " VALUES (%s,1,%s,1,%s,%s,%s)"
+                " ON DUPLICATE KEY UPDATE activated=1,activated_at=%s,activated_by_admin=1,notes=%s,updated_at=%s",
+                (uid, ts, body.notes, ts, ts, ts, body.notes, ts)
+            )
+        db.commit()
+    finally:
+        db.close()
+    _legacy_log(admin_id, "admin_activated", request, {"target_user": uid})
+    return {"ok": True}
+
+
+@app.get("/api/admin/legacy/trusted")
+def adm_legacy_trusted(request: Request, page: int = 1, limit: int = 50,
+                        status: str = ""):
+    require_admin(request)
+    offset = (page - 1) * max(1, min(limit, 200))
+    db = get_db()
+    try:
+        with db.cursor() as c:
+            where = "WHERE 1=1"
+            params: list = []
+            if status:
+                where += " AND ltc.status=%s"
+                params.append(status)
+            c.execute(
+                f"SELECT COUNT(*) as cnt FROM legacy_trusted_contacts ltc {where}", params
+            )
+            total = c.fetchone()["cnt"]
+            c.execute(
+                f"SELECT ltc.*, u1.nickname as owner_nick, u2.nickname as trusted_nick"
+                f" FROM legacy_trusted_contacts ltc"
+                f" JOIN users u1 ON u1.id=ltc.user_id"
+                f" JOIN users u2 ON u2.id=ltc.trusted_user_id"
+                f" {where} ORDER BY ltc.created_at DESC LIMIT %s OFFSET %s",
+                params + [limit, offset]
+            )
+            rows = c.fetchall()
+    finally:
+        db.close()
+    return {"total": total, "items": rows}
+
+
+@app.get("/api/admin/legacy/requests")
+def adm_legacy_requests(request: Request, page: int = 1, limit: int = 50,
+                         status: str = ""):
+    require_admin(request)
+    offset = (page - 1) * max(1, min(limit, 200))
+    db = get_db()
+    try:
+        with db.cursor() as c:
+            where = "WHERE 1=1"
+            params: list = []
+            if status:
+                where += " AND lr.status=%s"
+                params.append(status)
+            c.execute(
+                f"SELECT COUNT(*) as cnt FROM legacy_requests lr {where}", params
+            )
+            total = c.fetchone()["cnt"]
+            c.execute(
+                f"SELECT lr.*, u1.nickname as owner_nick, u1.first_name, u1.last_name,"
+                f" u2.nickname as trusted_nick"
+                f" FROM legacy_requests lr"
+                f" JOIN users u1 ON u1.id=lr.user_id"
+                f" JOIN users u2 ON u2.id=lr.trusted_user_id"
+                f" {where} ORDER BY lr.created_at DESC LIMIT %s OFFSET %s",
+                params + [limit, offset]
+            )
+            rows = c.fetchall()
+    finally:
+        db.close()
+    return {"total": total, "items": rows}
+
+
+@app.put("/api/admin/legacy/requests/{rid}")
+def adm_legacy_request_update(rid: int, body: LegacyRequestUpdateBody, request: Request):
+    require_admin(request)
+    if body.status not in ("review", "confirmed", "rejected"):
+        raise HTTPException(400, "Невірний статус")
+    sess = _get_legacy_session(request)
+    admin_id = sess["user_id"]
+    db = get_db()
+    try:
+        with db.cursor() as c:
+            c.execute("SELECT id, user_id FROM legacy_requests WHERE id=%s", (rid,))
+            row = c.fetchone()
+            if not row:
+                raise HTTPException(404, "Заявку не знайдено")
+            ts = int(time.time())
+            c.execute(
+                "UPDATE legacy_requests SET status=%s, moderator_id=%s, mod_comment=%s, updated_at=%s"
+                " WHERE id=%s",
+                (body.status, admin_id, body.mod_comment, ts, rid)
+            )
+        db.commit()
+    finally:
+        db.close()
+    _legacy_log(admin_id, f"request_{body.status}", request, {"request_id": rid})
+    return {"ok": True}
+
+
+@app.get("/api/admin/legacy/logs")
+def adm_legacy_logs(request: Request, page: int = 1, limit: int = 100,
+                     user_id: int = 0, action: str = ""):
+    require_admin(request)
+    offset = (page - 1) * max(1, min(limit, 500))
+    db = get_db()
+    try:
+        with db.cursor() as c:
+            where = "WHERE 1=1"
+            params: list = []
+            if user_id:
+                where += " AND ll.user_id=%s"
+                params.append(user_id)
+            if action:
+                where += " AND ll.action=%s"
+                params.append(action)
+            c.execute(f"SELECT COUNT(*) as cnt FROM legacy_logs ll {where}", params)
+            total = c.fetchone()["cnt"]
+            c.execute(
+                f"SELECT ll.*, u.nickname"
+                f" FROM legacy_logs ll"
+                f" LEFT JOIN users u ON u.id=ll.user_id"
+                f" {where} ORDER BY ll.created_at DESC LIMIT %s OFFSET %s",
+                params + [limit, offset]
+            )
+            rows = c.fetchall()
+    finally:
+        db.close()
+    return {"total": total, "items": rows}
+
+
+# ══════════════════════════════════════════════════════════════
+# END LEGACY MODULE
+# ══════════════════════════════════════════════════════════════
 
 
 def _oauth_login_or_create(email: str, name: str) -> dict:
@@ -3483,6 +4314,544 @@ def admin_me(request: Request):
     return u
 
 
+@app.get("/api/banned-words")
+def public_banned_words():
+    words = _get_banned_words_cached()
+    return {"words": words}
+
+# ── МІКРО-ЧАТ ────────────────────────────────────────────
+
+_banned_words_cache: list = []
+_banned_words_ts: float = 0.0
+_CHAT_URL_RE = re.compile(r'https?://|www\.|\.(com|ua|org|net|io|ru)\b', re.I)
+_CHAT_HTML_RE = re.compile(r'<[^>]{1,100}>')
+
+def _get_banned_words_cached() -> list:
+    global _banned_words_cache, _banned_words_ts
+    if time.time() - _banned_words_ts > 60:
+        try:
+            db = get_db()
+            with db.cursor() as c:
+                c.execute("SELECT word FROM chat_banned_words")
+                _banned_words_cache = [r['word'].lower() for r in c.fetchall()]
+            db.close()
+        except Exception:
+            pass
+        _banned_words_ts = time.time()
+    return _banned_words_cache
+
+def _chat_filter(text: str):
+    """Повертає (ok: bool, cleaned_text | reason: str)."""
+    text = _sanitize_text(text, 100)
+    if not text:
+        return False, "Порожнє повідомлення"
+    if len(text) > 100:
+        return False, "Повідомлення не може перевищувати 100 символів"
+    if _CHAT_URL_RE.search(text):
+        return False, "Посилання заборонені в чаті"
+    if _CHAT_HTML_RE.search(text):
+        return False, "HTML заборонено в чаті"
+    lower = text.lower()
+    for w in _get_banned_words_cached():
+        if w and w in lower:
+            return False, "Повідомлення містить заборонені слова"
+    if re.search(r'\b(здох|умри|вбий|щоб\s+ти\s+здох|смерть\s+тоб[іи]|kill\s+you|die)\b', lower):
+        return False, "Погрози заборонені в чаті"
+    return True, text
+
+class ChatSendBody(BaseModel):
+    message: str
+    fp: Optional[str] = None
+
+def _chat_get_user(request: Request):
+    """Повертає dict з user або None."""
+    token = request.cookies.get("admin_session")
+    if not token:
+        return None
+    sess = _session_get(token)
+    if not sess:
+        return None
+    try:
+        db = get_db()
+        with db.cursor() as c:
+            c.execute("SELECT id, name, email, nickname, role, is_banned, ban_until FROM users WHERE id=%s", (sess["user_id"],))
+            row = c.fetchone()
+        db.close()
+        return row
+    except Exception:
+        return None
+
+@app.get("/api/chat/messages")
+def chat_messages(since: int = 0, request: Request = None):
+    ip = (request.client.host if request else "0")
+    if not _rl.check(f"{ip}|chat_read", 60, 60):
+        raise HTTPException(429, "Занадто багато запитів")
+    # Адміни бачать всі повідомлення включно з гостьовими старіше 2 хв
+    caller = _chat_get_user(request) if request else None
+    is_admin = caller and caller.get('role') in ('admin', 'moder')
+    now_ms = int(time.time() * 1000)
+    guest_cutoff_ms = now_ms - 120_000  # 2 хвилини
+    try:
+        db = get_db()
+        with db.cursor() as c:
+            c.execute("SELECT value FROM colors WHERE `key`='chat_enabled'")
+            row = c.fetchone()
+            if row and row.get('value', '1') == '0':
+                db.close()
+                return {"ok": True, "messages": [], "disabled": True}
+            c.execute("SELECT value FROM colors WHERE `key`='chat_history_count'")
+            row2 = c.fetchone()
+            limit = int(row2['value']) if row2 else 50
+            # Для не-адмінів фільтруємо гостьові старіше 2 хвилин
+            guest_filter = "" if is_admin else f" AND NOT (m.is_guest=1 AND m.created_at<%s)"
+            if since == 0:
+                if is_admin:
+                    c.execute(
+                        "SELECT * FROM ("
+                        " SELECT m.id, m.user_id, m.message, m.created_at, m.is_guest, m.is_bot, m.bot_name,"
+                        " u.nickname, u.name, u.email, u.role"
+                        " FROM chat_messages m"
+                        " LEFT JOIN users u ON m.user_id=u.id"
+                        " WHERE m.is_deleted=0"
+                        " ORDER BY m.created_at DESC LIMIT %s"
+                        ") sub ORDER BY created_at ASC",
+                        (limit,)
+                    )
+                else:
+                    c.execute(
+                        "SELECT * FROM ("
+                        " SELECT m.id, m.user_id, m.message, m.created_at, m.is_guest, m.is_bot, m.bot_name,"
+                        " u.nickname, u.name, u.email, u.role"
+                        " FROM chat_messages m"
+                        " LEFT JOIN users u ON m.user_id=u.id"
+                        " WHERE m.is_deleted=0"
+                        " AND NOT (m.is_guest=1 AND m.created_at<%s)"
+                        " ORDER BY m.created_at DESC LIMIT %s"
+                        ") sub ORDER BY created_at ASC",
+                        (guest_cutoff_ms, limit)
+                    )
+            else:
+                if is_admin:
+                    c.execute(
+                        "SELECT m.id, m.user_id, m.message, m.created_at, m.is_guest, m.is_bot, m.bot_name,"
+                        " u.nickname, u.name, u.email, u.role"
+                        " FROM chat_messages m"
+                        " LEFT JOIN users u ON m.user_id=u.id"
+                        " WHERE m.is_deleted=0 AND m.created_at>%s"
+                        " ORDER BY m.created_at ASC LIMIT %s",
+                        (since, limit)
+                    )
+                else:
+                    c.execute(
+                        "SELECT m.id, m.user_id, m.message, m.created_at, m.is_guest, m.is_bot, m.bot_name,"
+                        " u.nickname, u.name, u.email, u.role"
+                        " FROM chat_messages m"
+                        " LEFT JOIN users u ON m.user_id=u.id"
+                        " WHERE m.is_deleted=0 AND m.created_at>%s"
+                        " AND NOT (m.is_guest=1 AND m.created_at<%s)"
+                        " ORDER BY m.created_at ASC LIMIT %s",
+                        (since, guest_cutoff_ms, limit)
+                    )
+            raw = c.fetchall()
+        db.close()
+        # Підставляємо дані для гостей і ботів
+        msgs = []
+        for m in raw:
+            m = dict(m)
+            if m.get('is_bot'):
+                m['nickname'] = None
+                m['name'] = m.get('bot_name') or 'Гість'
+                m['email'] = None
+                m['role'] = 'user'
+            elif m.get('is_guest'):
+                m['nickname'] = None
+                m['name'] = 'Гість'
+                m['email'] = None
+                m['role'] = 'guest'
+            msgs.append(m)
+        return {"ok": True, "messages": msgs}
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+@app.post("/api/chat/send")
+async def chat_send(body: ChatSendBody, request: Request):
+    # Перевірка чи чат увімкнений
+    try:
+        _db_c = get_db()
+        with _db_c.cursor() as _cc:
+            _cc.execute("SELECT value FROM colors WHERE `key`='chat_enabled'")
+            _cr = _cc.fetchone()
+        _db_c.close()
+        if _cr and _cr.get('value', '1') == '0':
+            raise HTTPException(403, "Чат тимчасово вимкнений")
+    except HTTPException:
+        raise
+    except Exception:
+        pass
+
+    user = _chat_get_user(request)
+    ip = _get_ip(request)
+
+    if not user:
+        # ── Анонімний режим: 1 повідомлення / 10 хв ──
+        fp = re.sub(r'[^a-z0-9]', '', (body.fp or "").strip().lower())[:64]
+        if len(fp) < 4:
+            raise HTTPException(400, "Для гостей потрібен fingerprint")
+        # IP rate limit
+        if not _rl.check(f"{ip}|anon_chat", 1, 600):
+            raise HTTPException(429, "Гості можуть писати 1 раз на 10 хвилин")
+        ok, result = _chat_filter(body.message)
+        if not ok:
+            raise HTTPException(400, result)
+        ts = int(time.time() * 1000)
+        cutoff_ms = ts - 600_000
+        try:
+            db = get_db()
+            with db.cursor() as c:
+                # Fingerprint cooldown: перевіряємо в БД
+                c.execute(
+                    "SELECT id FROM chat_messages WHERE guest_fp=%s AND created_at>%s LIMIT 1",
+                    (fp, cutoff_ms)
+                )
+                if c.fetchone():
+                    db.close()
+                    raise HTTPException(429, "Ви вже писали нещодавно. Зачекайте 10 хвилин")
+                c.execute(
+                    "INSERT INTO chat_messages (user_id, message, created_at, guest_fp, guest_ip, is_guest)"
+                    " VALUES (NULL,%s,%s,%s,%s,1)",
+                    (result, ts, fp, ip[:45])
+                )
+                msg_id = c.lastrowid
+            db.commit()
+            db.close()
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(500, str(e))
+        msg_data = {
+            "id": msg_id, "user_id": None, "is_guest": 1,
+            "message": result, "created_at": ts,
+            "nickname": None, "name": "Гість", "email": None, "role": "guest"
+        }
+        await broadcast({"event": "chat_msg", "msg": msg_data})
+        return {"ok": True, "msg": msg_data}
+
+    # ── Авторизований режим ──
+    if user.get('is_banned'):
+        ban_until = user.get('ban_until')
+        if ban_until is None or (isinstance(ban_until, str) and ban_until > time.strftime('%Y-%m-%d %H:%M:%S')):
+            raise HTTPException(403, "Ваш акаунт заблоковано")
+    if not _rl.check(f"{user['id']}|chat_send", 5, 60):
+        raise HTTPException(429, "Ви надсилаєте повідомлення занадто часто")
+    ok, result = _chat_filter(body.message)
+    if not ok:
+        raise HTTPException(400, result)
+    ts = int(time.time() * 1000)
+    try:
+        db = get_db()
+        with db.cursor() as c:
+            c.execute(
+                "INSERT INTO chat_messages (user_id, message, created_at) VALUES (%s,%s,%s)",
+                (user['id'], result, ts)
+            )
+            msg_id = c.lastrowid
+        db.commit()
+        db.close()
+        msg_data = {
+            "id": msg_id, "user_id": user['id'], "is_guest": 0,
+            "message": result, "created_at": ts,
+            "nickname": user.get('nickname'), "name": user.get('name'),
+            "email": user.get('email'), "role": user.get('role', 'user')
+        }
+        await broadcast({"event": "chat_msg", "msg": msg_data})
+        return {"ok": True, "msg": msg_data}
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+@app.post("/api/chat/report/{msg_id}")
+def chat_report(msg_id: int, request: Request):
+    user = _chat_get_user(request)
+    if not user:
+        raise HTTPException(401, "Потрібна авторизація")
+    ts = int(time.time() * 1000)
+    try:
+        db = get_db()
+        with db.cursor() as c:
+            c.execute(
+                "INSERT IGNORE INTO chat_reports (msg_id, reporter_id, reason, created_at)"
+                " VALUES (%s,%s,%s,%s)",
+                (msg_id, user['id'], "user_report", ts)
+            )
+            c.execute("SELECT COUNT(*) as cnt FROM chat_reports WHERE msg_id=%s", (msg_id,))
+            cnt = (c.fetchone() or {}).get('cnt', 0)
+            if cnt >= 3:
+                c.execute("UPDATE chat_messages SET is_deleted=1 WHERE id=%s", (msg_id,))
+        db.commit()
+        db.close()
+        return {"ok": True}
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+# Адмінські ендпоінти чату
+@app.get("/api/admin/chat/messages")
+def adm_chat_messages(request: Request, page: int = 1, limit: int = 100, deleted: int = 0):
+    require_moder(request)
+    offset = (page - 1) * limit
+    try:
+        db = get_db()
+        with db.cursor() as c:
+            c.execute(
+                "SELECT m.id, m.user_id, m.message, m.created_at, m.is_deleted, m.is_guest, m.is_bot, m.bot_name,"
+                " u.nickname, u.name, u.role,"
+                " (SELECT COUNT(*) FROM chat_reports r WHERE r.msg_id=m.id) as reports"
+                " FROM chat_messages m LEFT JOIN users u ON m.user_id=u.id"
+                " WHERE m.is_deleted=%s"
+                " ORDER BY m.created_at DESC LIMIT %s OFFSET %s",
+                (deleted, limit, offset)
+            )
+            raw = c.fetchall()
+            msgs = []
+            for row in raw:
+                row = dict(row)
+                if row.get('is_bot'):
+                    row['name'] = row.get('bot_name') or 'Бот'
+                    row['nickname'] = None
+                    row['role'] = 'user'
+                elif row.get('is_guest'):
+                    row['name'] = 'Гість'
+                    row['nickname'] = None
+                    row['role'] = 'guest'
+                msgs.append(row)
+            c.execute("SELECT COUNT(*) as cnt FROM chat_messages WHERE is_deleted=%s", (deleted,))
+            total = (c.fetchone() or {}).get('cnt', 0)
+        db.close()
+        return {"ok": True, "messages": msgs, "total": total}
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+@app.delete("/api/admin/chat/{msg_id}")
+async def adm_chat_delete(msg_id: int, request: Request):
+    require_moder(request)
+    try:
+        db = get_db()
+        with db.cursor() as c:
+            c.execute("UPDATE chat_messages SET is_deleted=1 WHERE id=%s", (msg_id,))
+        db.commit()
+        db.close()
+        await broadcast({"event": "chat_delete", "id": msg_id})
+        return {"ok": True}
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+@app.get("/api/admin/chat/reports")
+def adm_chat_reports(request: Request):
+    require_moder(request)
+    try:
+        db = get_db()
+        with db.cursor() as c:
+            c.execute(
+                "SELECT r.id, r.msg_id, r.reason, r.created_at,"
+                " m.message, m.is_deleted,"
+                " u.nickname as reporter_nick, u.name as reporter_name,"
+                " mu.nickname as author_nick, mu.name as author_name"
+                " FROM chat_reports r"
+                " JOIN chat_messages m ON r.msg_id=m.id"
+                " JOIN users u ON r.reporter_id=u.id"
+                " JOIN users mu ON m.user_id=mu.id"
+                " ORDER BY r.created_at DESC LIMIT 200"
+            )
+            rows = c.fetchall()
+        db.close()
+        return {"ok": True, "reports": rows}
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+@app.get("/api/admin/chat/banned-words")
+def adm_banned_words_get(request: Request):
+    require_moder(request)
+    try:
+        db = get_db()
+        with db.cursor() as c:
+            c.execute("SELECT id, word, category FROM chat_banned_words ORDER BY category, word")
+            rows = c.fetchall()
+        db.close()
+        return {"ok": True, "words": rows}
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+class BannedWordBody(BaseModel):
+    word: str
+    category: str = "profanity"
+
+@app.post("/api/admin/chat/banned-words")
+def adm_banned_words_add(body: BannedWordBody, request: Request):
+    require_moder(request)
+    word = _sanitize_text(body.word, 200).lower().strip()
+    if not word:
+        raise HTTPException(400, "Слово не може бути порожнім")
+    cat = body.category if body.category in ("profanity", "threat", "spam") else "profanity"
+    try:
+        db = get_db()
+        with db.cursor() as c:
+            c.execute(
+                "INSERT IGNORE INTO chat_banned_words (word, category) VALUES (%s,%s)",
+                (word, cat)
+            )
+        db.commit()
+        db.close()
+        global _banned_words_ts
+        _banned_words_ts = 0  # інвалідуємо кеш
+        return {"ok": True}
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+class BannedWordsImportBody(BaseModel):
+    text: str
+    category: str = "profanity"
+
+@app.post("/api/admin/chat/banned-words/import")
+def adm_banned_words_import(body: BannedWordsImportBody, request: Request):
+    require_moder(request)
+    cat = body.category if body.category in ("profanity", "threat", "spam") else "profanity"
+    # Розбиваємо по комах і переносах рядків, чистимо кожне слово
+    raw = body.text.replace("\n", ",").replace(";", ",")
+    words = [_sanitize_text(w, 200).lower().strip() for w in raw.split(",")]
+    words = [w for w in words if w and len(w) >= 2]
+    if not words:
+        raise HTTPException(400, "Не знайдено жодного слова")
+    if len(words) > 1000:
+        raise HTTPException(400, "Максимум 1000 слів за один імпорт")
+    try:
+        db = get_db()
+        added = 0
+        with db.cursor() as c:
+            for w in words:
+                res = c.execute(
+                    "INSERT IGNORE INTO chat_banned_words (word, category) VALUES (%s,%s)",
+                    (w, cat)
+                )
+                added += res
+        db.commit()
+        db.close()
+        global _banned_words_ts
+        _banned_words_ts = 0
+        return {"ok": True, "added": added, "total": len(words)}
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+@app.delete("/api/admin/chat/banned-words/{word_id}")
+def adm_banned_words_del(word_id: int, request: Request):
+    require_moder(request)
+    try:
+        db = get_db()
+        with db.cursor() as c:
+            c.execute("DELETE FROM chat_banned_words WHERE id=%s", (word_id,))
+        db.commit()
+        db.close()
+        global _banned_words_ts
+        _banned_words_ts = 0
+        return {"ok": True}
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+
+# ── Чат-боти: адмін endpoints ────────────────────────────
+
+class BotPhraseBody(BaseModel):
+    phrase: str
+    category: str = "general"
+
+class BotConfigBody(BaseModel):
+    enabled: bool
+
+@app.get("/api/admin/chat/bots")
+def adm_bots_get(request: Request):
+    require_moder(request)
+    try:
+        db = get_db()
+        with db.cursor() as c:
+            c.execute("SELECT id, phrase, category, is_active FROM chat_bot_phrases ORDER BY id")
+            phrases = c.fetchall()
+        db.close()
+        with _bot_lock:
+            cnt = _bot_online_count
+        return {
+            "ok": True,
+            "enabled": _bots_enabled,
+            "bot_online_count": cnt,
+            "bot_names": _BOT_NAMES,
+            "phrases": [dict(p) for p in phrases],
+        }
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+@app.put("/api/admin/chat/bots/config")
+def adm_bots_config(body: BotConfigBody, request: Request):
+    require_admin(request)
+    global _bots_enabled
+    try:
+        db = get_db()
+        with db.cursor() as c:
+            val = '1' if body.enabled else '0'
+            c.execute(
+                "INSERT INTO colors (`key`, value, label) VALUES ('chat_bots_enabled', %s, 'Чат-боти увімкнені')"
+                " ON DUPLICATE KEY UPDATE value=%s",
+                (val, val)
+            )
+        db.commit()
+        db.close()
+        _bots_enabled = body.enabled
+        return {"ok": True, "enabled": _bots_enabled}
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+@app.post("/api/admin/chat/bots/phrase")
+def adm_bots_phrase_add(body: BotPhraseBody, request: Request):
+    require_admin(request)
+    phrase = _sanitize_text(body.phrase.strip())[:500]
+    if not phrase:
+        raise HTTPException(400, "Фраза порожня")
+    try:
+        db = get_db()
+        with db.cursor() as c:
+            c.execute(
+                "INSERT INTO chat_bot_phrases (phrase, category) VALUES (%s, %s)",
+                (phrase, body.category[:50])
+            )
+            new_id = c.lastrowid
+        db.commit()
+        db.close()
+        return {"ok": True, "id": new_id}
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+@app.delete("/api/admin/chat/bots/phrase/{phrase_id}")
+def adm_bots_phrase_del(phrase_id: int, request: Request):
+    require_admin(request)
+    try:
+        db = get_db()
+        with db.cursor() as c:
+            c.execute("DELETE FROM chat_bot_phrases WHERE id=%s", (phrase_id,))
+        db.commit()
+        db.close()
+        return {"ok": True}
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+@app.put("/api/admin/chat/bots/phrase/{phrase_id}/toggle")
+def adm_bots_phrase_toggle(phrase_id: int, request: Request):
+    require_admin(request)
+    try:
+        db = get_db()
+        with db.cursor() as c:
+            c.execute("UPDATE chat_bot_phrases SET is_active = 1 - is_active WHERE id=%s", (phrase_id,))
+        db.commit()
+        db.close()
+        return {"ok": True}
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+
 # ── ADMIN API ─────────────────────────────────────────────
 
 @app.get("/api/admin/pending")
@@ -3542,19 +4911,36 @@ def approve(mid: int, request: Request):
     cache_delete("sitemap")
     return {"ok": True}
 
+@app.post("/api/admin/unapprove/{mid}")
+def unapprove(mid: int, request: Request):
+    require_moder(request)
+    db = get_db()
+    try:
+        with db.cursor() as c:
+            c.execute("UPDATE memorials SET approved=0 WHERE id=%s", (mid,))
+        db.commit()
+    finally:
+        db.close()
+    cache_flush_memorials()
+    return {"ok": True}
+
 @app.post("/api/admin/memorial")
 def admin_add_person(p: PersonIn, request: Request):
     require_moder(request)
+    # Якщо передано world_lat/lng — автообчислити pos_x/pos_y
+    pos_x, pos_y = p.pos_x, p.pos_y
+    if p.world_lat is not None and p.world_lng is not None:
+        pos_x, pos_y = _latLngToSvg(p.world_lat, p.world_lng)
     db = get_db()
     with db.cursor() as c:
         c.execute("""
             INSERT INTO memorials
-            (last,first,mid,birth,death,loc,bury,circ,descr,photo,color,`rank`,`position`,`unit`,pos_x,pos_y,grp,added_by,approved)
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,1)
+            (last,first,mid,birth,death,loc,bury,circ,descr,photo,color,`rank`,`position`,`unit`,pos_x,pos_y,world_lat,world_lng,grp,added_by,approved)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,1)
         """, (p.last.strip(), p.first.strip(), p.mid or '', p.birth or None, p.death or None,
               p.loc or '', p.bury or '', p.circ or '', p.descr or '', p.photo or '',
               p.color or '#4fc3f7', p.rank or '', p.position or '', p.unit or '',
-              p.pos_x, p.pos_y, p.grp or '', 'admin'))
+              pos_x, pos_y, p.world_lat, p.world_lng, p.grp or '', 'admin'))
         new_id = c.lastrowid
         sl = make_slug(p.first.strip(), p.last.strip(), new_id)
         try:
@@ -3590,6 +4976,84 @@ def delete_memorial(mid: int, request: Request):
 _CSV_COLS = ['id','last','first','mid','birth','death','loc','bury','circ',
              'descr','photo','color','pos_x','pos_y','grp','rank','position','unit',
              'video_url','added_by','approved','likes','rating']
+
+# ── Portfolio: Thanks block ────────────────────────────────
+class ThanksItem(BaseModel):
+    name: str
+    sort_order: Optional[int] = 0
+    is_visible: Optional[int] = 1
+
+@app.get("/api/portfolio/thanks")
+def portfolio_thanks_get():
+    db = get_db()
+    try:
+        with db.cursor() as c:
+            c.execute("CREATE TABLE IF NOT EXISTS portfolio_thanks ("
+                      "id INT PRIMARY KEY AUTO_INCREMENT, "
+                      "name VARCHAR(200) NOT NULL, "
+                      "sort_order INT NOT NULL DEFAULT 0, "
+                      "is_visible TINYINT NOT NULL DEFAULT 1"
+                      ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4")
+            db.commit()
+            c.execute("SELECT id, name, sort_order, is_visible FROM portfolio_thanks ORDER BY sort_order, id")
+            rows = c.fetchall()
+    finally:
+        db.close()
+    return [dict(r) for r in rows]
+
+@app.post("/api/admin/portfolio/thanks")
+def portfolio_thanks_add(item: ThanksItem, request: Request):
+    require_admin(request)
+    db = get_db()
+    try:
+        with db.cursor() as c:
+            c.execute("INSERT INTO portfolio_thanks (name, sort_order, is_visible) VALUES (%s,%s,%s)",
+                      (_sanitize_text(item.name), item.sort_order, item.is_visible))
+            new_id = c.lastrowid
+        db.commit()
+    finally:
+        db.close()
+    return {"id": new_id}
+
+# reorder МУСИТЬ бути перед /{item_id} — інакше FastAPI намагається парсити "reorder" як int
+@app.put("/api/admin/portfolio/thanks/reorder")
+def portfolio_thanks_reorder(items: List[dict], request: Request):
+    require_admin(request)
+    db = get_db()
+    try:
+        with db.cursor() as c:
+            for it in items:
+                c.execute("UPDATE portfolio_thanks SET sort_order=%s WHERE id=%s",
+                          (it.get("sort_order", 0), it["id"]))
+        db.commit()
+    finally:
+        db.close()
+    return {"ok": True}
+
+@app.put("/api/admin/portfolio/thanks/{item_id}")
+def portfolio_thanks_update(item_id: int, item: ThanksItem, request: Request):
+    require_admin(request)
+    db = get_db()
+    try:
+        with db.cursor() as c:
+            c.execute("UPDATE portfolio_thanks SET name=%s, sort_order=%s, is_visible=%s WHERE id=%s",
+                      (_sanitize_text(item.name), item.sort_order, item.is_visible, item_id))
+        db.commit()
+    finally:
+        db.close()
+    return {"ok": True}
+
+@app.delete("/api/admin/portfolio/thanks/{item_id}")
+def portfolio_thanks_delete(item_id: int, request: Request):
+    require_admin(request)
+    db = get_db()
+    try:
+        with db.cursor() as c:
+            c.execute("DELETE FROM portfolio_thanks WHERE id=%s", (item_id,))
+        db.commit()
+    finally:
+        db.close()
+    return {"ok": True}
 
 @app.get("/api/admin/export/csv")
 def export_csv(request: Request):
@@ -3869,6 +5333,8 @@ _MEMORIAL_COL_MAP = {
     'rank':      '`rank`=%s',
     'position':  '`position`=%s',
     'unit':      '`unit`=%s',
+    'world_lat': '`world_lat`=%s',
+    'world_lng': '`world_lng`=%s',
 }
 _MEMORIAL_ALLOWED_FIELDS = set(_MEMORIAL_COL_MAP)
 
@@ -3897,14 +5363,23 @@ def update_memorial(mid: int, p: PersonUpdate, request: Request):
         elif f in ('birth', 'death'):
             v = _validate_date(v)
         elif f in ('pos_x', 'pos_y') and v is not None:
-            v = max(0.0, min(1.0, float(v)))
+            v = float(v)
+        elif f in ('world_lat', 'world_lng') and v is not None:
+            v = float(v)
         fields.append(_MEMORIAL_COL_MAP[f])
         vals.append(v)
     if not fields:
         db.close()
         return {"ok": False}
-    vals.append(mid)
+    # Якщо передано world_lat/lng — автообчислити pos_x/pos_y
     update_data = p.model_dump(exclude_none=True)
+    if p.world_lat is not None and p.world_lng is not None:
+        svx, svy = _latLngToSvg(p.world_lat, p.world_lng)
+        for fname, fval in [('pos_x', svx), ('pos_y', svy)]:
+            if fname not in update_data:
+                fields.append(_MEMORIAL_COL_MAP[fname])
+                vals.append(fval)
+    vals.append(mid)
     old_slug = None
     with db.cursor() as c:
         c.execute("SELECT slug FROM memorials WHERE id=%s", (mid,))
@@ -3935,7 +5410,7 @@ def get_awards(mid: int):
     db = get_db()
     with db.cursor() as c:
         c.execute(
-            "SELECT id,name,img_file,award_date,descr,sort_order FROM memorial_awards "
+            "SELECT id,name,img_file,category,award_date,descr,sort_order FROM memorial_awards "
             "WHERE memorial_id=%s ORDER BY sort_order,id",
             (mid,)
         )
@@ -3949,6 +5424,7 @@ def get_awards(mid: int):
 class AwardIn(BaseModel):
     name:       str
     img_file:   Optional[str] = ""
+    category:   Optional[str] = ""
     award_date: Optional[str] = None
     descr:      Optional[str] = ""
     sort_order: Optional[int] = 0
@@ -3959,9 +5435,9 @@ def add_award(mid: int, a: AwardIn, request: Request):
     db = get_db()
     with db.cursor() as c:
         c.execute(
-            "INSERT INTO memorial_awards (memorial_id,name,img_file,award_date,descr,sort_order) "
-            "VALUES (%s,%s,%s,%s,%s,%s)",
-            (mid, a.name.strip(), a.img_file or '', a.award_date or None, a.descr or '', a.sort_order or 0)
+            "INSERT INTO memorial_awards (memorial_id,name,img_file,category,award_date,descr,sort_order) "
+            "VALUES (%s,%s,%s,%s,%s,%s,%s)",
+            (mid, a.name.strip(), a.img_file or '', a.category or '', a.award_date or None, a.descr or '', a.sort_order or 0)
         )
         db.commit()
         new_id = c.lastrowid
@@ -4445,9 +5921,16 @@ def admin_stats(request: Request):
         )
         users = c.fetchone()["cnt"]
     db.close()
+    online_real = len(connected) + len(_online_pings)
+    with _bot_lock:
+        online_bots = _bot_online_count
     return {
         "total": total, "approved": approved, "pending": pend,
-        "users": users, "likes": likes, "online": len(connected),
+        "users": users, "likes": likes,
+        "online": online_real + online_bots,
+        "online_real": online_real,
+        "online_bots": online_bots,
+        "online_users": _online_users_list(),
     }
 
 
@@ -5021,15 +6504,13 @@ def memorial_seo_page(slug: str, request: Request):
         raise HTTPException(404, "Меморіал не знайдено")
 
     ctx = _build_memorial_seo(row)
-    resp = _TEMPLATES.TemplateResponse(request=request, name="memorial.html", context=ctx)
     try:
-        html_str = resp.body.decode()
-    except Exception:
-        html_str = ""
-    if html_str:
-        cache_set(cache_key, html_str, ttl=300)
-    resp.headers["Cache-Control"] = "public, max-age=300"
-    return resp
+        tmpl = _TEMPLATES.env.get_template("memorial.html")
+        html_str = tmpl.render(**ctx)
+    except Exception as e:
+        raise HTTPException(500, f"Template error: {e}")
+    cache_set(cache_key, html_str, ttl=300)
+    return HTMLResponse(content=html_str, headers={"Cache-Control": "public, max-age=300"})
 
 
 @app.get("/api/memorial/by-slug/{slug}")
@@ -5565,301 +7046,3 @@ def seo_score_history(request: Request, days: int = 30):
             for r in rows
         ],
     }
-
-
-# ══════════════════════════════════════════════════════════════
-#  LEGACY MODULE — Спадщина пам'яті
-# ══════════════════════════════════════════════════════════════
-
-_LEGACY_CURRENCY_WHITELIST = {'USD', 'EUR', 'UAH'}
-_LEGACY_TRUSTED_STATUS     = {'', 'pending', 'confirmed', 'rejected'}
-_LEGACY_REQ_STATUS_READ    = {'', 'new', 'review', 'confirmed', 'rejected'}
-_LEGACY_REQ_STATUS_WRITE   = {'review', 'confirmed', 'rejected'}
-
-
-def _legacy_log(db, user_id, action: str, ip: str, metadata: str = ''):
-    """Записує подію в legacy_logs."""
-    with db.cursor() as c:
-        c.execute(
-            "INSERT INTO legacy_logs (user_id, action, ip, metadata) VALUES (%s,%s,%s,%s)",
-            (user_id, action[:100], ip[:45], _sanitize_text(metadata, 500))
-        )
-
-
-def _legacy_rate_limit(request: Request):
-    ip = request.client.host if request.client else '0.0.0.0'
-    if not _rl.check(f"adm_legacy:{ip}", 60, 60):
-        raise HTTPException(429, "Забагато запитів. Зачекайте хвилину.")
-    return ip
-
-
-@app.get("/api/admin/legacy/settings")
-def legacy_get_settings(request: Request):
-    require_admin(request)
-    _legacy_rate_limit(request)
-    db = get_db()
-    with db.cursor() as c:
-        c.execute(
-            "SELECT `key`, value FROM colors WHERE `key` IN "
-            "('legacy_enabled','legacy_refund','legacy_price','legacy_currency')"
-        )
-        rows = {r['key']: r['value'] for r in c.fetchall()}
-    db.close()
-    return {
-        "legacy_enabled":  rows.get('legacy_enabled',  '0'),
-        "legacy_refund":   rows.get('legacy_refund',   '0'),
-        "legacy_price":    rows.get('legacy_price',    '0'),
-        "legacy_currency": rows.get('legacy_currency', 'UAH'),
-    }
-
-
-@app.put("/api/admin/legacy/settings")
-def legacy_put_settings(p: LegacySettingsUpdate, request: Request):
-    require_admin(request)
-    ip = _legacy_rate_limit(request)
-
-    enabled  = '1' if p.legacy_enabled  == '1' else '0'
-    refund   = '1' if p.legacy_refund   == '1' else '0'
-    currency = p.legacy_currency if p.legacy_currency in _LEGACY_CURRENCY_WHITELIST else 'UAH'
-    try:
-        price = str(max(0.0, min(99999.0, float(p.legacy_price))))
-    except (ValueError, TypeError):
-        raise HTTPException(400, "Невалідна ціна")
-
-    pairs = [
-        ('legacy_enabled',  enabled,  'Спадщина: модуль увімкнено'),
-        ('legacy_refund',   refund,   'Спадщина: повернення коштів'),
-        ('legacy_price',    price,    'Спадщина: ціна підключення'),
-        ('legacy_currency', currency, 'Спадщина: валюта'),
-    ]
-    db = get_db()
-    with db.cursor() as c:
-        for key, val, label in pairs:
-            c.execute(
-                "INSERT INTO colors (`key`, value, label) VALUES (%s,%s,%s) "
-                "ON DUPLICATE KEY UPDATE value=%s",
-                (key, val, label, val)
-            )
-    _legacy_log(db, None, 'admin_settings_update', ip)
-    db.commit()
-    db.close()
-    return {"ok": True}
-
-
-@app.get("/api/admin/legacy/accounts")
-def legacy_get_accounts(request: Request, page: int = 1, limit: int = 50):
-    require_admin(request)
-    _legacy_rate_limit(request)
-    page  = max(1, page)
-    limit = max(1, min(200, limit))
-    offset = (page - 1) * limit
-    db = get_db()
-    with db.cursor() as c:
-        c.execute("SELECT COUNT(*) AS cnt FROM legacy_accounts")
-        total = c.fetchone()['cnt']
-        c.execute(
-            "SELECT a.id, a.user_id, u.nickname, u.email, "
-            "       a.payment_amount, a.payment_currency, "
-            "       a.activated_at, a.activated_by_admin, a.notes "
-            "FROM legacy_accounts a "
-            "LEFT JOIN users u ON u.id = a.user_id "
-            "ORDER BY a.activated_at DESC "
-            "LIMIT %s OFFSET %s",
-            (limit, offset)
-        )
-        rows = c.fetchall()
-    db.close()
-    items = []
-    for r in rows:
-        items.append({
-            "id":                r['id'],
-            "user_id":           r['user_id'],
-            "nickname":          r['nickname'] or '',
-            "email":             r['email'] or '',
-            "payment_amount":    str(r['payment_amount']) if r['payment_amount'] is not None else None,
-            "payment_currency":  r['payment_currency'] or 'UAH',
-            "activated_at":      r['activated_at'],
-            "activated_by_admin": int(r['activated_by_admin'] or 0),
-            "notes":             r['notes'] or '',
-        })
-    return {"items": items, "total": total}
-
-
-@app.post("/api/admin/legacy/activate/{uid}")
-def legacy_activate_user(uid: int, p: LegacyActivate, request: Request):
-    require_admin(request)
-    ip = _legacy_rate_limit(request)
-    notes = _sanitize_text(p.notes or '', 200)
-    import time as _time
-    now = int(_time.time())
-    db = get_db()
-    with db.cursor() as c:
-        c.execute("SELECT id FROM users WHERE id=%s AND is_banned=0", (uid,))
-        if not c.fetchone():
-            db.close()
-            raise HTTPException(404, "Користувача не знайдено")
-        c.execute("SELECT id FROM legacy_accounts WHERE user_id=%s", (uid,))
-        existing = c.fetchone()
-        if existing:
-            c.execute(
-                "UPDATE legacy_accounts SET activated_by_admin=1, notes=%s, activated_at=%s "
-                "WHERE user_id=%s",
-                (notes, now, uid)
-            )
-        else:
-            c.execute(
-                "INSERT INTO legacy_accounts (user_id, activated_at, activated_by_admin, notes) "
-                "VALUES (%s,%s,1,%s)",
-                (uid, now, notes)
-            )
-    _legacy_log(db, None, 'admin_activate', ip, str(uid))
-    db.commit()
-    db.close()
-    return {"ok": True}
-
-
-@app.get("/api/admin/legacy/trusted")
-def legacy_get_trusted(request: Request, status: str = '', limit: int = 100):
-    require_admin(request)
-    _legacy_rate_limit(request)
-    if status not in _LEGACY_TRUSTED_STATUS:
-        raise HTTPException(400, "Невалідний статус")
-    limit = max(1, min(500, limit))
-    db = get_db()
-    with db.cursor() as c:
-        if status:
-            c.execute("SELECT COUNT(*) AS cnt FROM legacy_trusted WHERE status=%s", (status,))
-        else:
-            c.execute("SELECT COUNT(*) AS cnt FROM legacy_trusted")
-        total = c.fetchone()['cnt']
-        sql = (
-            "SELECT t.id, t.owner_id, t.trusted_id, t.status, t.created_at, "
-            "       o.nickname AS owner_nick, tr.nickname AS trusted_nick "
-            "FROM legacy_trusted t "
-            "LEFT JOIN users o  ON o.id  = t.owner_id "
-            "LEFT JOIN users tr ON tr.id = t.trusted_id "
-        )
-        if status:
-            c.execute(sql + "WHERE t.status=%s ORDER BY t.created_at DESC LIMIT %s", (status, limit))
-        else:
-            c.execute(sql + "ORDER BY t.created_at DESC LIMIT %s", (limit,))
-        rows = c.fetchall()
-    db.close()
-    items = [
-        {
-            "id":          r['id'],
-            "owner_id":    r['owner_id'],
-            "owner_nick":  r['owner_nick'] or '',
-            "trusted_id":  r['trusted_id'],
-            "trusted_nick": r['trusted_nick'] or '',
-            "status":      r['status'],
-            "created_at":  r['created_at'],
-        }
-        for r in rows
-    ]
-    return {"items": items, "total": total}
-
-
-@app.get("/api/admin/legacy/requests")
-def legacy_get_requests(request: Request, status: str = '', limit: int = 100):
-    require_admin(request)
-    _legacy_rate_limit(request)
-    if status not in _LEGACY_REQ_STATUS_READ:
-        raise HTTPException(400, "Невалідний статус")
-    limit = max(1, min(500, limit))
-    db = get_db()
-    with db.cursor() as c:
-        if status:
-            c.execute("SELECT COUNT(*) AS cnt FROM legacy_requests WHERE status=%s", (status,))
-        else:
-            c.execute("SELECT COUNT(*) AS cnt FROM legacy_requests")
-        total = c.fetchone()['cnt']
-        sql = (
-            "SELECT r.id, r.owner_id, r.trusted_id, r.first_name, r.last_name, "
-            "       r.death_date, r.status, r.mod_comment, r.created_at, "
-            "       o.nickname AS owner_nick, "
-            "       tr.nickname AS trusted_nick "
-            "FROM legacy_requests r "
-            "LEFT JOIN users o  ON o.id  = r.owner_id "
-            "LEFT JOIN users tr ON tr.id = r.trusted_id "
-        )
-        if status:
-            c.execute(sql + "WHERE r.status=%s ORDER BY r.created_at DESC LIMIT %s", (status, limit))
-        else:
-            c.execute(sql + "ORDER BY r.created_at DESC LIMIT %s", (limit,))
-        rows = c.fetchall()
-    db.close()
-    items = [
-        {
-            "id":          r['id'],
-            "owner_id":    r['owner_id'],
-            "owner_nick":  r['owner_nick'] or '',
-            "trusted_id":  r['trusted_id'],
-            "trusted_nick": r['trusted_nick'] or '',
-            "first_name":  r['first_name'] or '',
-            "last_name":   r['last_name'] or '',
-            "death_date":  r['death_date'] or '',
-            "status":      r['status'],
-            "mod_comment": r['mod_comment'] or '',
-            "created_at":  r['created_at'],
-        }
-        for r in rows
-    ]
-    return {"items": items, "total": total}
-
-
-@app.put("/api/admin/legacy/requests/{rid}")
-def legacy_update_request(rid: int, p: LegacyReqUpdate, request: Request):
-    require_admin(request)
-    ip = _legacy_rate_limit(request)
-    if p.status not in _LEGACY_REQ_STATUS_WRITE:
-        raise HTTPException(400, "Невалідний статус")
-    comment = _sanitize_text(p.mod_comment or '', 300)
-    db = get_db()
-    with db.cursor() as c:
-        c.execute("SELECT id FROM legacy_requests WHERE id=%s", (rid,))
-        if not c.fetchone():
-            db.close()
-            raise HTTPException(404, "Заявку не знайдено")
-        c.execute(
-            "UPDATE legacy_requests SET status=%s, mod_comment=%s WHERE id=%s",
-            (p.status, comment, rid)
-        )
-    _legacy_log(db, None, f'admin_req_{p.status}', ip, str(rid))
-    db.commit()
-    db.close()
-    return {"ok": True}
-
-
-@app.get("/api/admin/legacy/logs")
-def legacy_get_logs(request: Request, limit: int = 100):
-    require_admin(request)
-    _legacy_rate_limit(request)
-    limit = max(1, min(500, limit))
-    db = get_db()
-    with db.cursor() as c:
-        c.execute("SELECT COUNT(*) AS cnt FROM legacy_logs")
-        total = c.fetchone()['cnt']
-        c.execute(
-            "SELECT l.id, l.user_id, l.action, l.ip, l.metadata, l.created_at, "
-            "       u.nickname "
-            "FROM legacy_logs l "
-            "LEFT JOIN users u ON u.id = l.user_id "
-            "ORDER BY l.created_at DESC LIMIT %s",
-            (limit,)
-        )
-        rows = c.fetchall()
-    db.close()
-    items = [
-        {
-            "id":         r['id'],
-            "user_id":    r['user_id'],
-            "nickname":   r['nickname'] or '',
-            "action":     r['action'],
-            "ip":         r['ip'] or '',
-            "metadata":   r['metadata'] or '',
-            "created_at": r['created_at'],
-        }
-        for r in rows
-    ]
-    return {"items": items, "total": total}
