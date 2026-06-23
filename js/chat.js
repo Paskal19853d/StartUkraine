@@ -108,9 +108,9 @@
       var displayName = _mcDisplayName(m);
       var nickColor;
       if (m.role === 'admin') {
-        nickColor = '#ffd700';
+        nickColor = '#ff4444';
       } else if (m.role === 'moder') {
-        nickColor = '#a78bfa';
+        nickColor = '#4caf50';
       } else if (m.role === 'guest') {
         nickColor = '#778899';
       } else {

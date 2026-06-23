@@ -670,6 +670,11 @@ def init_db():
         ("google_analytics_id",      "",   "Google Analytics 4: Measurement ID (G-XXXXXXXXXX)"),
         ("google_analytics_enabled", "0",  "Google Analytics 4: вмикач (1=так, 0=ні)"),
         ("density_config", '{"weights":{"likes":0.45,"rating":0.35,"views":0.15,"activity":0.05},"zoomLevels":[{"zoom":0.4,"minScore":200},{"zoom":1.0,"minScore":50},{"zoom":3.0,"minScore":10},{"zoom":8.0,"minScore":0}],"decay":{"enabled":false,"rate":0.95,"hours":24}}', "Алгоритм щільності зірок на карті: ваги, zoom-рівні, decay"),
+        # ── Спадщина пам'яті ─────────────────────────────────────────────────
+        ("legacy_enabled",  "0",   "Спадщина — модуль увімкнено (1=так, 0=ні)"),
+        ("legacy_refund",   "0",   "Спадщина — дозволити повернення коштів (1=так, 0=ні)"),
+        ("legacy_price",    "0",   "Спадщина — ціна підключення"),
+        ("legacy_currency", "USD", "Спадщина — валюта (USD/EUR/UAH)"),
     ]
     with db.cursor() as c:
         for key, val, label in defaults:
@@ -4001,17 +4006,19 @@ def adm_legacy_save_settings(body: LegacySettingsBody, request: Request):
 @app.get("/api/admin/legacy/accounts")
 def adm_legacy_accounts(request: Request, page: int = 1, limit: int = 50):
     require_admin(request)
-    offset = (page - 1) * max(1, min(limit, 200))
+    limit = max(1, min(limit, 200))
+    offset = (page - 1) * limit
     db = get_db()
     try:
         with db.cursor() as c:
-            c.execute("SELECT COUNT(*) as cnt FROM legacy_accounts WHERE activated=1")
+            c.execute("SELECT COUNT(*) as cnt FROM legacy_accounts")
             total = c.fetchone()["cnt"]
             c.execute(
-                "SELECT la.*, u.nickname, u.first_name, u.last_name, u.email"
+                "SELECT la.id, la.user_id, la.payment_amount, la.payment_currency,"
+                " la.activated_at, la.activated_by_admin, la.notes,"
+                " u.nickname, u.first_name, u.last_name, u.email"
                 " FROM legacy_accounts la"
                 " JOIN users u ON u.id=la.user_id"
-                " WHERE la.activated=1"
                 " ORDER BY la.activated_at DESC LIMIT %s OFFSET %s",
                 (limit, offset)
             )
@@ -4026,6 +4033,7 @@ def adm_legacy_activate(uid: int, body: LegacyActivateBody, request: Request):
     require_admin(request)
     sess = _get_legacy_session(request)
     admin_id = sess["user_id"]
+    notes = _sanitize_text(body.notes or "", 200)
     db = get_db()
     try:
         with db.cursor() as c:
@@ -4035,10 +4043,11 @@ def adm_legacy_activate(uid: int, body: LegacyActivateBody, request: Request):
             ts = int(time.time())
             c.execute(
                 "INSERT INTO legacy_accounts"
-                " (user_id,activated,activated_at,activated_by_admin,notes,created_at,updated_at)"
-                " VALUES (%s,1,%s,1,%s,%s,%s)"
-                " ON DUPLICATE KEY UPDATE activated=1,activated_at=%s,activated_by_admin=1,notes=%s,updated_at=%s",
-                (uid, ts, body.notes, ts, ts, ts, body.notes, ts)
+                " (user_id, activated_at, activated_by_admin, notes)"
+                " VALUES (%s, %s, 1, %s)"
+                " ON DUPLICATE KEY UPDATE"
+                " activated_at=%s, activated_by_admin=1, notes=%s",
+                (uid, ts, notes, ts, notes)
             )
         db.commit()
     finally:
@@ -4051,25 +4060,27 @@ def adm_legacy_activate(uid: int, body: LegacyActivateBody, request: Request):
 def adm_legacy_trusted(request: Request, page: int = 1, limit: int = 50,
                         status: str = ""):
     require_admin(request)
-    offset = (page - 1) * max(1, min(limit, 200))
+    if status not in ("", "pending", "confirmed", "rejected"):
+        status = ""
+    limit = max(1, min(limit, 500))
+    offset = (page - 1) * limit
     db = get_db()
     try:
         with db.cursor() as c:
             where = "WHERE 1=1"
             params: list = []
             if status:
-                where += " AND ltc.status=%s"
+                where += " AND lt.status=%s"
                 params.append(status)
-            c.execute(
-                f"SELECT COUNT(*) as cnt FROM legacy_trusted_contacts ltc {where}", params
-            )
+            c.execute(f"SELECT COUNT(*) as cnt FROM legacy_trusted lt {where}", params)
             total = c.fetchone()["cnt"]
             c.execute(
-                f"SELECT ltc.*, u1.nickname as owner_nick, u2.nickname as trusted_nick"
-                f" FROM legacy_trusted_contacts ltc"
-                f" JOIN users u1 ON u1.id=ltc.user_id"
-                f" JOIN users u2 ON u2.id=ltc.trusted_user_id"
-                f" {where} ORDER BY ltc.created_at DESC LIMIT %s OFFSET %s",
+                f"SELECT lt.id, lt.owner_id, lt.trusted_id, lt.status, lt.created_at,"
+                f" u1.nickname as owner_nick, u2.nickname as trusted_nick"
+                f" FROM legacy_trusted lt"
+                f" LEFT JOIN users u1 ON u1.id=lt.owner_id"
+                f" LEFT JOIN users u2 ON u2.id=lt.trusted_id"
+                f" {where} ORDER BY lt.created_at DESC LIMIT %s OFFSET %s",
                 params + [limit, offset]
             )
             rows = c.fetchall()
@@ -4082,7 +4093,10 @@ def adm_legacy_trusted(request: Request, page: int = 1, limit: int = 50,
 def adm_legacy_requests(request: Request, page: int = 1, limit: int = 50,
                          status: str = ""):
     require_admin(request)
-    offset = (page - 1) * max(1, min(limit, 200))
+    if status not in ("", "new", "review", "confirmed", "rejected"):
+        status = ""
+    limit = max(1, min(limit, 500))
+    offset = (page - 1) * limit
     db = get_db()
     try:
         with db.cursor() as c:
@@ -4091,16 +4105,15 @@ def adm_legacy_requests(request: Request, page: int = 1, limit: int = 50,
             if status:
                 where += " AND lr.status=%s"
                 params.append(status)
-            c.execute(
-                f"SELECT COUNT(*) as cnt FROM legacy_requests lr {where}", params
-            )
+            c.execute(f"SELECT COUNT(*) as cnt FROM legacy_requests lr {where}", params)
             total = c.fetchone()["cnt"]
             c.execute(
-                f"SELECT lr.*, u1.nickname as owner_nick, u1.first_name, u1.last_name,"
-                f" u2.nickname as trusted_nick"
+                f"SELECT lr.id, lr.owner_id, lr.trusted_id, lr.first_name, lr.last_name,"
+                f" lr.death_date, lr.status, lr.mod_comment, lr.created_at,"
+                f" u1.nickname as owner_nick, u2.nickname as trusted_nick"
                 f" FROM legacy_requests lr"
-                f" JOIN users u1 ON u1.id=lr.user_id"
-                f" JOIN users u2 ON u2.id=lr.trusted_user_id"
+                f" LEFT JOIN users u1 ON u1.id=lr.owner_id"
+                f" LEFT JOIN users u2 ON u2.id=lr.trusted_id"
                 f" {where} ORDER BY lr.created_at DESC LIMIT %s OFFSET %s",
                 params + [limit, offset]
             )
@@ -4117,18 +4130,16 @@ def adm_legacy_request_update(rid: int, body: LegacyRequestUpdateBody, request: 
         raise HTTPException(400, "Невірний статус")
     sess = _get_legacy_session(request)
     admin_id = sess["user_id"]
+    comment = _sanitize_text(body.mod_comment or "", 300)
     db = get_db()
     try:
         with db.cursor() as c:
-            c.execute("SELECT id, user_id FROM legacy_requests WHERE id=%s", (rid,))
-            row = c.fetchone()
-            if not row:
+            c.execute("SELECT id FROM legacy_requests WHERE id=%s", (rid,))
+            if not c.fetchone():
                 raise HTTPException(404, "Заявку не знайдено")
-            ts = int(time.time())
             c.execute(
-                "UPDATE legacy_requests SET status=%s, moderator_id=%s, mod_comment=%s, updated_at=%s"
-                " WHERE id=%s",
-                (body.status, admin_id, body.mod_comment, ts, rid)
+                "UPDATE legacy_requests SET status=%s, mod_comment=%s WHERE id=%s",
+                (body.status, comment, rid)
             )
         db.commit()
     finally:

@@ -4993,6 +4993,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
       p.style.display = p.id === 'ltab-'+t ? 'block' : 'none';
     });
     var loaders = {
+      settings: window.legacyLoadSettings,
       trusted:  legacyLoadTrusted,
       requests: legacyLoadRequests,
       accounts: legacyLoadAccounts,
@@ -5911,8 +5912,11 @@ async function loadStats() {
     if(r.status===401||r.status===403){_handleAuthFail();return;}
     const d=await r.json();
     ['total','appr','pend','users','likes'].forEach(k=>{
-      const el=document.getElementById('st-'+k); if(el) el.textContent=d[k==='appr'?'approved':k==='pend'?'pending':k]??'—';
+      const val=d[k==='appr'?'approved':k==='pend'?'pending':k]??'—';
+      const el=document.getElementById('st-'+k); if(el) el.textContent=val;
     });
+    const _tb={total:d.total,pend:d.pending,users:d.users};
+    Object.entries(_tb).forEach(([k,v])=>{const e=document.getElementById('tb-'+k);if(e)e.textContent=v??'—';});
     // Розділений лічильник онлайн
     const onlineReal = d.online_real ?? d.online ?? 0;
     const onlineBots = d.online_bots ?? 0;
