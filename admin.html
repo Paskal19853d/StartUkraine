@@ -613,6 +613,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
     <div class="nav-item"        draggable="true" onclick="showSec('device')"    data-s="device">   <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-device"/></svg></span>Пристрої</div>
     <div class="nav-item"        draggable="true" onclick="showSec('chat')"      data-s="chat">      <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-candle"/></svg></span>Чат<span class="nb" id="chat-nb" style="display:none">0</span></div>
     <div class="nav-item"        draggable="true" onclick="showSec('legacy')" data-s="legacy"><span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-hourglass"/></svg></span>Спадщина</div>
+    <div class="nav-item"        draggable="true" onclick="showSec('devmode')" data-s="devmode"><span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-doc"/></svg></span>Режим розробки</div>
     <div class="nav-group" id="navg-admin" draggable="true">
       <div class="nav-group-hdr" onclick="_toggleNavGroup('navg-admin')">
         <span class="nav-drag">⠿</span>
@@ -5310,6 +5311,85 @@ tr:hover td{background:rgba(255,255,255,.02)}
 
 </div><!-- /sec-legacy -->
 
+      <!-- DEV MODE SECTION -->
+      <div id="sec-devmode" class="section">
+        <div class="sec-title"><svg class="adm-ico"><use href="#ico-doc"/></svg> Режим розробки</div>
+
+        <!-- Toggle + Save -->
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap">
+          <label class="toggle-switch" title="Увімкнути/вимкнути модальне вікно на сайті">
+            <input type="checkbox" id="dm-enabled" onchange="dmToggle(this.checked)">
+            <span class="toggle-slider"></span>
+          </label>
+          <span id="dm-status-label" style="font-size:12px;color:var(--muted)">Вимкнено</span>
+          <div style="margin-left:auto;display:flex;gap:8px">
+            <button class="btn btn-p" onclick="dmSave()"><svg class="adm-ico"><use href="#ico-check"/></svg> Зберегти</button>
+            <button class="btn" onclick="dmLoad()"><svg class="adm-ico"><use href="#ico-cross"/></svg> Скасувати</button>
+          </div>
+        </div>
+
+        <!-- Preview -->
+        <div id="dm-preview" style="background:rgba(0,0,0,.35);border:1px solid var(--border);border-radius:10px;padding:18px 20px;margin-bottom:20px;display:none">
+          <div style="font-size:10px;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.08em">Попередній перегляд</div>
+          <div style="background:#0d1526;border-radius:10px;padding:22px 24px;max-width:460px;text-align:center">
+            <div id="dm-prev-icon" style="font-size:28px;margin-bottom:8px">🚧</div>
+            <div id="dm-prev-title" style="font-size:14px;font-weight:700;margin-bottom:12px;color:#f5a623"></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;text-align:left;margin-bottom:16px">
+              <div id="dm-prev-col1" style="font-size:11px;line-height:1.6;color:#a0b0c8"></div>
+              <div id="dm-prev-col2" style="font-size:11px;line-height:1.6;color:#a0b0c8;border-left:1px solid rgba(255,255,255,.07);padding-left:14px"></div>
+            </div>
+            <button id="dm-prev-btn" style="border-radius:7px;font-size:12px;font-weight:600;padding:8px 28px;cursor:default;border:1px solid;transition:none"></button>
+          </div>
+        </div>
+
+        <!-- Fields grid: 2 columns -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px">
+          <!-- Col 1 -->
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <div style="display:grid;grid-template-columns:80px 1fr;gap:10px">
+              <div>
+                <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">Іконка</label>
+                <input type="text" id="dm-icon" maxlength="8" oninput="dmPreviewUpdate()"
+                       style="width:100%;padding:8px 10px;background:var(--panel);border:1px solid var(--border);color:var(--text);border-radius:6px;font-size:18px;outline:none;text-align:center">
+              </div>
+              <div>
+                <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">Заголовок вікна</label>
+                <input type="text" id="dm-title" maxlength="80" oninput="dmPreviewUpdate()"
+                       style="width:100%;padding:8px 10px;background:var(--panel);border:1px solid var(--border);color:var(--text);border-radius:6px;font-size:13px;outline:none">
+              </div>
+            </div>
+            <div>
+              <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">Текст лівої колонки</label>
+              <textarea id="dm-text1" rows="6" maxlength="600" oninput="dmPreviewUpdate()"
+                        style="width:100%;padding:8px 10px;background:var(--panel);border:1px solid var(--border);color:var(--text);border-radius:6px;font-size:12px;outline:none;resize:vertical;line-height:1.5"></textarea>
+            </div>
+          </div>
+          <!-- Col 2 -->
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <div>
+              <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">Текст кнопки</label>
+              <input type="text" id="dm-btn-text" maxlength="40" oninput="dmPreviewUpdate()"
+                     style="width:100%;padding:8px 10px;background:var(--panel);border:1px solid var(--border);color:var(--text);border-radius:6px;font-size:13px;outline:none">
+            </div>
+            <div>
+              <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">Текст правої колонки</label>
+              <textarea id="dm-text2" rows="6" maxlength="600" oninput="dmPreviewUpdate()"
+                        style="width:100%;padding:8px 10px;background:var(--panel);border:1px solid var(--border);color:var(--text);border-radius:6px;font-size:12px;outline:none;resize:vertical;line-height:1.5"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Color picker for button -->
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:6px">
+          <label style="font-size:11px;color:var(--muted);white-space:nowrap">Колір кнопки</label>
+          <input type="color" id="dm-btn-color" oninput="dmPreviewUpdate()"
+                 style="width:40px;height:32px;padding:2px;border:1px solid var(--border);border-radius:6px;background:var(--panel);cursor:pointer">
+          <input type="text" id="dm-btn-color-hex" maxlength="9" placeholder="#f5a623" oninput="dmSyncColor(this.value)"
+                 style="width:90px;padding:7px 10px;background:var(--panel);border:1px solid var(--border);color:var(--text);border-radius:6px;font-size:12px;outline:none;font-family:monospace">
+          <span style="font-size:11px;color:var(--muted)">— колір тексту і рамки кнопки «Зрозуміло»</span>
+        </div>
+      </div><!-- /sec-devmode -->
+
     </div><!-- /content-area -->
   </div><!-- /main -->
 </div><!-- /layout -->
@@ -5679,6 +5759,7 @@ function showSec(id) {
   if(id==='google')  _loadGoogleSettings();
   if(id==='density') _densityLoad();
   if(id==='legacy')  { if(typeof legacyOpen==='function') legacyOpen(); }
+  if(id==='devmode') dmLoad();
 }
 
 /* ══════════ ХВИЛИНА МОВЧАННЯ ══════════ */
@@ -11255,6 +11336,96 @@ function _applyDevModeTogUI(){
   const chk = document.getElementById('dev-mode-tog');
   if(!chk) return;
   chk.checked = COLORS['dev_mode']?.value === '1';
+}
+
+/* ══════════ DEV MODE MODULE ══════════ */
+function dmLoad(){
+  const C = COLORS;
+  const enabled = C['dev_mode']?.value === '1';
+  const el = id => document.getElementById(id);
+  el('dm-enabled').checked = enabled;
+  el('dm-status-label').textContent = enabled ? 'Увімкнено' : 'Вимкнено';
+  el('dm-status-label').style.color = enabled ? '#f5a623' : 'var(--muted)';
+  el('dm-icon').value     = C['dev_icon']?.value     ?? '🚧';
+  el('dm-title').value    = C['dev_title']?.value    ?? 'Режим розробки';
+  el('dm-text1').value    = C['dev_text1']?.value    ?? '';
+  el('dm-text2').value    = C['dev_text2']?.value    ?? '';
+  el('dm-btn-text').value = C['dev_btn_text']?.value ?? 'Зрозуміло';
+  const color = C['dev_btn_color']?.value ?? '#f5a623';
+  el('dm-btn-color').value     = color;
+  el('dm-btn-color-hex').value = color;
+  el('dm-preview').style.display = enabled ? 'block' : 'none';
+  dmPreviewUpdate();
+}
+function dmToggle(on){
+  document.getElementById('dm-status-label').textContent = on ? 'Увімкнено' : 'Вимкнено';
+  document.getElementById('dm-status-label').style.color = on ? '#f5a623' : 'var(--muted)';
+  document.getElementById('dm-preview').style.display = on ? 'block' : 'none';
+  // Синхронізуємо малий toggle в хедері
+  const hdrChk = document.getElementById('dev-mode-tog');
+  if(hdrChk) hdrChk.checked = on;
+}
+function dmSyncColor(hex){
+  hex = hex.trim();
+  document.getElementById('dm-btn-color-hex').value = hex;
+  if(/^#[0-9a-fA-F]{3}$|^#[0-9a-fA-F]{6}$/.test(hex)){
+    document.getElementById('dm-btn-color').value = hex;
+    dmPreviewUpdate();
+  }
+}
+function dmPreviewUpdate(){
+  const el = id => document.getElementById(id);
+  const icon   = el('dm-icon')?.value     || '🚧';
+  const title  = el('dm-title')?.value    || '';
+  const text1  = el('dm-text1')?.value    || '';
+  const text2  = el('dm-text2')?.value    || '';
+  const btnTxt = el('dm-btn-text')?.value || 'Зрозуміло';
+  const color  = el('dm-btn-color')?.value || '#f5a623';
+  el('dm-btn-color-hex').value = color;
+  if(el('dm-prev-icon'))   el('dm-prev-icon').textContent   = icon;
+  if(el('dm-prev-title'))  el('dm-prev-title').textContent  = title;
+  const escLinks = s => {
+    let safe = h(s).replace(/\n/g,'<br>');
+    safe = safe.replace(/&lt;a\s+href=&quot;(https?:\/\/[^&"]{1,300})&quot;&gt;(.*?)&lt;\/a&gt;/gi,
+      (_,url,label) => `<a href="${url}" target="_blank" rel="noopener noreferrer" style="color:inherit;text-decoration:underline">${label}</a>`);
+    return safe;
+  };
+  if(el('dm-prev-col1'))   el('dm-prev-col1').innerHTML     = h(text1).replace(/\n/g,'<br>');
+  if(el('dm-prev-col2'))   el('dm-prev-col2').innerHTML     = escLinks(text2);
+  const btn = el('dm-prev-btn');
+  if(btn){
+    btn.textContent = btnTxt;
+    btn.style.color       = color;
+    btn.style.borderColor = color;
+    btn.style.background  = color + '28';
+  }
+}
+async function dmSave(){
+  const el = id => document.getElementById(id);
+  const enabled = el('dm-enabled').checked ? '1' : '0';
+  const pairs = [
+    {key:'dev_mode',      value: enabled},
+    {key:'dev_icon',      value: el('dm-icon').value.trim() || '🚧'},
+    {key:'dev_title',     value: el('dm-title').value.trim()},
+    {key:'dev_text1',     value: el('dm-text1').value.trim()},
+    {key:'dev_text2',     value: el('dm-text2').value.trim()},
+    {key:'dev_btn_text',  value: el('dm-btn-text').value.trim()},
+    {key:'dev_btn_color', value: el('dm-btn-color').value},
+  ];
+  try {
+    await fetch(`${API}/api/admin/colors/batch`, {
+      method:'PUT', headers: authH({'Content-Type':'application/json'}),
+      body: JSON.stringify(pairs)
+    });
+    pairs.forEach(p => {
+      if(!COLORS[p.key]) COLORS[p.key] = {value: p.value};
+      else COLORS[p.key].value = p.value;
+    });
+    // Синхронізуємо хедер-toggle
+    const hdrChk = document.getElementById('dev-mode-tog');
+    if(hdrChk) hdrChk.checked = enabled === '1';
+    showN('Режим розробки збережено');
+  } catch(_){ showN('Помилка збереження', true); }
 }
 function _renderOnlineList(users){
   const el=document.getElementById('online-users-list');

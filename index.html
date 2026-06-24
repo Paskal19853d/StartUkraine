@@ -5517,30 +5517,63 @@ function closeInfo(id){document.getElementById('m-'+id).classList.remove('open')
 
 <!-- Dev Mode Warning Modal -->
 <div id="dev-modal" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.75);backdrop-filter:blur(4px);align-items:center;justify-content:center">
-  <div style="background:#0d1526;border:1px solid rgba(245,166,35,.45);border-radius:14px;padding:32px 36px;max-width:420px;width:calc(100% - 40px);text-align:center;box-shadow:0 0 40px rgba(245,166,35,.15)">
-    <div style="font-size:36px;margin-bottom:12px">🚧</div>
-    <div style="font-family:'Unbounded',sans-serif;font-size:16px;font-weight:700;color:#f5a623;margin-bottom:14px;letter-spacing:.02em">Режим розробки</div>
-    <div style="font-size:13px;line-height:1.65;color:#a0b0c8;margin-bottom:24px">
-      Сайт працює в тестовому режимі.<br>
-      Усі імена, прізвища, дані та записи є <strong style="color:#f5a623">вигаданими</strong> і використовуються виключно для перевірки функціоналу проєкту.<br><br>
-      <span style="display:block;margin:10px 0;font-size:13px;color:#8ab0c8">💻 Сайт оптимізовано для <strong style="color:#d8e8f8">ПК та планшетів</strong>. Мобільна версія наразі в розробці — рекомендуємо використовувати ПК або планшет.</span>
-      <span style="color:#6a7a99;font-size:11px">Будь-яка схожість із реальними особами є випадковою.</span>
+  <div style="background:#0d1526;border-radius:14px;padding:32px 36px;max-width:480px;width:calc(100% - 40px);text-align:center;box-shadow:0 0 40px rgba(245,166,35,.15)" id="dev-modal-box">
+    <div id="dev-modal-icon" style="font-size:36px;margin-bottom:10px">🚧</div>
+    <div id="dev-modal-title" style="font-family:'Unbounded',sans-serif;font-size:16px;font-weight:700;color:#f5a623;margin-bottom:16px;letter-spacing:.02em">Режим розробки</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;text-align:left;margin-bottom:22px">
+      <div id="dev-modal-col1" style="font-size:12px;line-height:1.65;color:#a0b0c8"></div>
+      <div id="dev-modal-col2" style="font-size:12px;line-height:1.65;color:#a0b0c8;border-left:1px solid rgba(255,255,255,.07);padding-left:14px"></div>
     </div>
-    <button onclick="document.getElementById('dev-modal').style.display='none';event.stopPropagation();event.preventDefault()"
-            style="background:rgba(245,166,35,.18);border:1px solid rgba(245,166,35,.5);border-radius:8px;color:#f5a623;font-size:13px;font-weight:600;padding:10px 36px;cursor:pointer;transition:background .2s;font-family:inherit"
-            onmouseover="this.style.background='rgba(245,166,35,.28)'"
-            onmouseout="this.style.background='rgba(245,166,35,.18)'">
+    <button id="dev-modal-btn"
+            onclick="document.getElementById('dev-modal').style.display='none';event.stopPropagation();event.preventDefault()"
+            style="border-radius:8px;font-size:13px;font-weight:600;padding:10px 36px;cursor:pointer;transition:background .2s;font-family:inherit;border:1px solid">
       Зрозуміло
     </button>
   </div>
 </div>
 <script>
 (function(){
-  // Показуємо після завантаження COLORS (dev_mode перевіряється в loadColors)
   window._showDevModalIfNeeded = function(){
-    if(window.COLORS && COLORS['dev_mode']?.value === '1'){
-      document.getElementById('dev-modal').style.display = 'flex';
+    if(!window.COLORS || COLORS['dev_mode']?.value !== '1') return;
+    var C = COLORS;
+    var color   = C['dev_btn_color']?.value  || '#f5a623';
+    var colAlpha = color + '28';
+    var colHover = color + '44';
+    var icon    = C['dev_icon']?.value       || '🚧';
+    var title   = C['dev_title']?.value     || 'Режим розробки';
+    var text1   = C['dev_text1']?.value     || '';
+    var text2   = C['dev_text2']?.value     || '';
+    var btnText = C['dev_btn_text']?.value  || 'Зрозуміло';
+    var esc = function(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>'); };
+    // Дозволяє <a href="..."> але блокує js: та інші теги
+    var escLinks = function(s){
+      var safe = String(s||'').replace(/&/g,'&amp;').replace(/\n/g,'<br>');
+      // Знаходимо <a href="...">...</a> і відновлюємо тільки їх (href тільки http/https)
+      safe = safe.replace(/&lt;a\s+href=&quot;(https?:\/\/[^&"]{1,300})&quot;&gt;(.*?)&lt;\/a&gt;/gi, function(_,url,label){
+        return '<a href="'+url+'" target="_blank" rel="noopener noreferrer" style="color:inherit;text-decoration:underline">'+label+'</a>';
+      });
+      return safe;
+    };
+    var box = document.getElementById('dev-modal-box');
+    if(box) box.style.border = '1px solid ' + color + '70';
+    var iEl = document.getElementById('dev-modal-icon');
+    if(iEl) iEl.textContent = icon;
+    var tEl = document.getElementById('dev-modal-title');
+    if(tEl){ tEl.textContent = title; tEl.style.color = color; }
+    var c1 = document.getElementById('dev-modal-col1');
+    if(c1) c1.innerHTML = esc(text1);
+    var c2 = document.getElementById('dev-modal-col2');
+    if(c2) c2.innerHTML = escLinks(text2);
+    var btn = document.getElementById('dev-modal-btn');
+    if(btn){
+      btn.textContent       = btnText;
+      btn.style.color       = color;
+      btn.style.borderColor = color;
+      btn.style.background  = colAlpha;
+      btn.onmouseover = function(){ btn.style.background = colHover; };
+      btn.onmouseout  = function(){ btn.style.background = colAlpha; };
     }
+    document.getElementById('dev-modal').style.display = 'flex';
   };
 })();
 </script>
