@@ -4734,6 +4734,22 @@ def adm_chat_messages(request: Request, page: int = 1, limit: int = 100, deleted
     except Exception as e:
         raise HTTPException(500, str(e))
 
+@app.delete("/api/admin/chat/history")
+async def adm_chat_clear_history(request: Request):
+    require_admin(request)
+    ip = _get_ip(request)
+    if not _rl.check(f"chat_clear:{ip}", 3, 60):
+        raise HTTPException(429, "Забагато запитів")
+    db = get_db()
+    try:
+        with db.cursor() as c:
+            c.execute("DELETE FROM chat_messages")
+        db.commit()
+        sec_log("CHAT_CLEAR", ip, "all chat history deleted")
+    finally:
+        db.close()
+    return {"ok": True}
+
 @app.delete("/api/admin/chat/{msg_id}")
 async def adm_chat_delete(msg_id: int, request: Request):
     require_moder(request)

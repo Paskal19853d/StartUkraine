@@ -392,4 +392,21 @@
       + d.getMinutes().toString().padStart(2, '0');
   }
 
+  window.chatClearHistory = function () {
+    if (!confirm('Очистити всю історію чату?\nЦю дію неможливо скасувати.')) return;
+    fetch('/api/admin/chat/history', { method: 'DELETE', headers: window.authH ? window.authH({}) : {} })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (d.ok) {
+          if (window.showN) window.showN('Історію чату очищено');
+          chatLoadMsgs();
+        } else {
+          if (window.showN) window.showN(d.detail || 'Помилка', true);
+        }
+      })
+      .catch(function () {
+        if (window.showN) window.showN('Помилка мережі', true);
+      });
+  };
+
 })();
