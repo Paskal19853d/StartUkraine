@@ -35,6 +35,14 @@ body{visibility:hidden}
 #preloader-bar-wrap{width:180px;height:2px;background:rgba(255,255,255,.1);border-radius:2px;overflow:hidden}
 #preloader-bar{height:100%;width:0%;background:#4fc3f7;border-radius:2px;transition:width .35s ease}
 </style>
+<link rel="preload" href="img/social/facebook.png"  as="image">
+<link rel="preload" href="img/social/twitter.png"   as="image">
+<link rel="preload" href="img/social/instagram.png" as="image">
+<link rel="preload" href="img/social/youtube.png"   as="image">
+<link rel="preload" href="img/social/telegram.png"  as="image">
+<link rel="preload" href="img/social/tiktok.png"    as="image">
+<link rel="preload" href="img/social/linkedin.png"  as="image">
+<link rel="preload" href="img/social/viber.png"     as="image">
 </head>
 <body>
 <!-------->
@@ -5086,6 +5094,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 window.addEventListener('load', () => {
   _applySmokeState();
   setupMapPhotoClip();
+  // Гарантований повторний рендер соцмереж після повного завантаження сторінки
+  if (window.COLORS && Object.keys(COLORS).length > 0) applySocialLinks();
 });
 
 /* ── LIVE COLOR UPDATES FROM ADMIN ── */
@@ -5099,6 +5109,9 @@ function _onColorsBC(data) {
   if ('density_config' in data.colors) _DENSITY_CFG_CACHE = null;
   applyColors();
   if (needCityRerender) renderCityLabels();
+  // Якщо змінились соцмережі — одразу перемалювати бар
+  const _socialKeys = /^social_/;
+  if (Object.keys(data.colors).some(k => _socialKeys.test(k))) applySocialLinks();
 }
 try {
   const _colorBC = new BroadcastChannel('zoryana_colors');
@@ -5315,31 +5328,29 @@ function closeInfo(id){document.getElementById('m-'+id).classList.remove('open')
 <div id="social-bar">
   <div class="soc-row">
     <a href="#" class="soc-link facebook" style="display:none" target="_blank" rel="noopener noreferrer" title="Facebook">
-      <img src="img/social/facebook.png" alt="Facebook">
+      <img src="img/social/facebook.png" alt="Facebook" loading="eager" decoding="async" width="21" height="21">
     </a>
     <a href="#" class="soc-link twitter" style="display:none" target="_blank" rel="noopener noreferrer" title="Twitter / X">
-      <img src="img/social/twitter.png" alt="Twitter">
+      <img src="img/social/twitter.png" alt="Twitter" loading="eager" decoding="async" width="21" height="21">
     </a>
     <a href="#" class="soc-link instagram" style="display:none" target="_blank" rel="noopener noreferrer" title="Instagram">
-      <img src="img/social/instagram.png" alt="Instagram">
+      <img src="img/social/instagram.png" alt="Instagram" loading="eager" decoding="async" width="21" height="21">
     </a>
     <a href="#" class="soc-link youtube" style="display:none" target="_blank" rel="noopener noreferrer" title="YouTube">
-      <img src="img/social/youtube.png" alt="YouTube">
+      <img src="img/social/youtube.png" alt="YouTube" loading="eager" decoding="async" width="21" height="21">
     </a>
     <a href="#" class="soc-link telegram" style="display:none" target="_blank" rel="noopener noreferrer" title="Telegram">
-      <img src="img/social/telegram.png" alt="Telegram">
+      <img src="img/social/telegram.png" alt="Telegram" loading="eager" decoding="async" width="21" height="21">
     </a>
     <a href="#" class="soc-link tiktok" style="display:none" target="_blank" rel="noopener noreferrer" title="TikTok">
-      <img src="img/social/tiktok.png" alt="TikTok">
+      <img src="img/social/tiktok.png" alt="TikTok" loading="eager" decoding="async" width="21" height="21">
     </a>
     <a href="#" class="soc-link linkedin" style="display:none" target="_blank" rel="noopener noreferrer" title="LinkedIn">
-      <img src="img/social/linkedin.png" alt="LinkedIn">
+      <img src="img/social/linkedin.png" alt="LinkedIn" loading="eager" decoding="async" width="21" height="21">
     </a>
     <a href="#" class="soc-link viber" style="display:none" target="_blank" rel="noopener noreferrer" title="Viber">
-      <img src="img/social/viber.png" alt="Viber">
+      <img src="img/social/viber.png" alt="Viber" loading="eager" decoding="async" width="21" height="21">
     </a>
-
-
   </div>
 </div>
 

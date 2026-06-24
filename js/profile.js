@@ -340,15 +340,17 @@
     var inviteBanner = document.getElementById('legacy-invite-banner');
     var deathCard    = document.getElementById('legacy-death-card');
 
-    // Модуль вимкнено адміністратором
+    // Модуль вимкнено адміністратором — не показувати вкладку взагалі
     if (!status.enabled) {
-      if (inactive) {
-        inactive.innerHTML = '<div class="legacy-promo"><div class="legacy-promo-icon">&#9733;</div><p class="sett-hint" style="text-align:center">Модуль «Спадщина пам\'яті» тимчасово недоступний.</p></div>';
-        inactive.style.display = 'block';
-      }
       if (activeBlock) activeBlock.style.display = 'none';
       return;
     }
+
+    // Модуль увімкнено — показуємо кнопки вкладки
+    var navLeg = document.getElementById('nav-legacy');
+    var xtLeg  = document.getElementById('xtab-legacy');
+    if (navLeg) navLeg.style.display = 'flex';
+    if (xtLeg)  xtLeg.style.display  = 'block';
 
     // Запрошення стати довіреною особою (для поточного юзера як trusted)
     if (status.pending_invite) {
@@ -639,15 +641,12 @@
 
     document.getElementById('info-section').innerHTML = buildInfoTab(d);
 
-    // Показати кнопки Settings і Legacy (профіль завжди власний)
+    // Показати кнопки Settings (профіль завжди власний)
     var navSett = document.getElementById('nav-settings');
-    var navLeg  = document.getElementById('nav-legacy');
     var xtSett  = document.getElementById('xtab-settings');
-    var xtLeg   = document.getElementById('xtab-legacy');
     if (navSett) navSett.style.display = 'flex';
-    if (navLeg)  navLeg.style.display  = 'flex';
     if (xtSett)  xtSett.style.display  = 'block';
-    if (xtLeg)   xtLeg.style.display   = 'block';
+    // Legacy-кнопки показуються тільки з initLegacyTab (якщо модуль увімкнено)
 
     fillSettingsTab(d);
     loadLegacyStatus();
