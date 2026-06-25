@@ -166,6 +166,7 @@ def cache_flush_all():
     cache_delete("colors")
     cache_delete("labels")
     cache_delete("cities")
+    cache_delete("map_points")
     for k in range(1, 100):
         cache_delete(f"people:p{k}:l50")
         cache_delete(f"people:p{k}:l100")
@@ -174,6 +175,7 @@ def cache_flush_memorials():
     """Invalidate memorial-related caches (stats, labels, people pages)."""
     cache_delete("stats")
     cache_delete("labels")
+    cache_delete("map_points")
     for k in range(1, 100):
         cache_delete(f"people:p{k}:l50")
         cache_delete(f"people:p{k}:l100")
@@ -2785,6 +2787,30 @@ def get_people(page: int = 1, limit: int = 50, request: Request = None):
         db.close()
     result = {"items": rows, "total": total, "page": page, "limit": limit, "pages": (total + limit - 1) // limit}
     cache_set(cache_key, json.dumps(result, ensure_ascii=False), ttl=60)
+    return result
+
+@app.get("/api/map-points")
+def get_map_points(request: Request = None):
+    """Легкий endpoint тільки для карти — мінімум полів, один запит, Redis TTL 90с."""
+    ip = _get_ip(request) if request else "unknown"
+    if not _rl.check(f"pub:{ip}", 60, 60):
+        raise HTTPException(429, "Забагато запитів. Зачекайте.")
+    cached = cache_get("map_points")
+    if cached:
+        return json.loads(cached)
+    db = get_db()
+    try:
+        with db.cursor() as c:
+            c.execute(
+                "SELECT id, last, first, mid, birth, death, bury, loc, pos_x, pos_y, "
+                "color, likes, rating, grp, slug, world_lat, world_lng "
+                "FROM memorials WHERE approved=1 ORDER BY rating DESC, likes DESC"
+            )
+            rows = c.fetchall()
+    finally:
+        db.close()
+    result = {"items": rows, "total": len(rows)}
+    cache_set("map_points", json.dumps(result, ensure_ascii=False), ttl=90)
     return result
 
 @app.get("/api/memorial/{mid}")

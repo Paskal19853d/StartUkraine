@@ -3831,24 +3831,11 @@ async function loadData() {
     // Передобчислюємо нормалізовані назви для пошуку
     cities.forEach(c=>{ c._nameNorm=(c.name||'').toLowerCase(); c._nameLat=_cityTranslit(c.name); });
     _setPL(20, 'Список захисників...');
-    // Пагіноване завантаження всіх записів (по 100 за раз)
-    let allPeople=[];
-    let page=1;
-    let totalPages=null;
-    while(true){
-      const rp=await fetch(API+`/api/people?page=${page}&limit=100`);
-      const pd=await rp.json();
-      const items=pd.items||pd; // fallback для старого формату
-      allPeople=allPeople.concat(items);
-      if(pd.pages) totalPages=pd.pages;
-      const pct=totalPages ? 20 + Math.round((page/totalPages)*65) : 20;
-      _setPL(pct);
-      if(pd.pages && page>=pd.pages) break;
-      if(!pd.items && !Array.isArray(pd)) break; // старий формат — масив
-      if(!pd.items || pd.items.length===0) break;
-      page++;
-    }
-    const raw=allPeople;
+    // Один запит — тільки поля для карти (швидко навіть при 10k+ записів)
+    const rp = await fetch(API+'/api/map-points');
+    const pd = await rp.json();
+    _setPL(75);
+    const raw = pd.items || pd;
     people=raw.map(p=>({...p,x:parseFloat(p.pos_x??p.x??0.5),y:parseFloat(p.pos_y??p.y??0.5),grp:p.grp||''}));
     if (_mapMode === 'world') _renderWorldMarkers();
     // Ключ зв'язку: ПІБ + дата нар. + дата смерті (незалежно від поля grp)
