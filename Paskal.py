@@ -1638,12 +1638,12 @@ async def security_headers(request, call_next):
         response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
-        "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+        "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://www.googletagmanager.com; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "font-src 'self' https://fonts.gstatic.com; "
         "img-src 'self' data: https: blob:; "
         "frame-src https://www.youtube.com https://www.youtube-nocookie.com; "
-        "connect-src 'self' ws: wss: https://www.youtube.com;"
+        "connect-src 'self' ws: wss: data: https://www.youtube.com https://analytics.google.com https://www.google.com/g/collect;"
     )
     return response
 
@@ -2197,9 +2197,19 @@ async def ws_online(ws: WebSocket):
             if k == ip or k.startswith(ip + "|"):
                 del _online_pings[k]
     await broadcast({"event": "join", "online": len(connected), "users": _online_users_list()})
+
+    async def _ping_loop():
+        while ws in connected:
+            try:
+                await asyncio.sleep(30)
+                await ws.send_json({"event": "ping"})
+            except Exception:
+                break
+
+    ping_task = asyncio.create_task(_ping_loop())
     try:
         while True:
-            msg = await asyncio.wait_for(ws.receive_text(), timeout=60)
+            msg = await ws.receive_text()
             if msg.startswith("user:"):
                 parts = msg[5:].split("|", 1)
                 name = _html.escape(parts[0][:50])
@@ -2211,6 +2221,7 @@ async def ws_online(ws: WebSocket):
     except Exception:
         pass
     finally:
+        ping_task.cancel()
         connected.discard(ws)
         online_users.pop(id(ws), None)
         await broadcast({"event": "leave", "online": len(connected), "users": _online_users_list()})

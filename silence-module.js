@@ -135,7 +135,7 @@ const SilenceModule = (function () {
 
   /* Перша взаємодія → прайм */
   function _setupInteractionPrime() {
-    var evs = ['click','touchstart','touchend','keydown','pointerdown','scroll','mousemove'];
+    var evs = ['click','touchstart','touchend','keydown','pointerdown'];
     function handler() {
       _interacted = true;
       _unlockCtx();

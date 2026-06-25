@@ -5014,16 +5014,17 @@ function connectWS(){
   function startFallback(){if(pingTimer)return;httpPing();pingTimer=setInterval(httpPing,25000);}
   function stopFallback(){if(pingTimer){clearInterval(pingTimer);pingTimer=null;}}
 
+  let _wsDelay=3000;
   function openWS(){
     if(ws){try{ws.close();}catch{}}
     const proto=location.protocol==='https:'?'wss':'ws';
     ws=new WebSocket(`${proto}://${location.host}/ws/online`);
     ws.onopen=()=>{
-      wsOk=true;stopFallback();window._onlineWS=ws;
+      wsOk=true;_wsDelay=3000;stopFallback();window._onlineWS=ws;
       if(curUser){ws.send('user:'+(curUser.name||'')+'|'+(curUser.role||'user'));}
     };
-    ws.onmessage=e=>{try{const d=JSON.parse(e.data);if(d.online!==undefined)el.textContent=d.online;if(d.event==='chat_delete'&&window._mcOnDelete)window._mcOnDelete(d.id);}catch{}};
-    ws.onclose=()=>{wsOk=false;startFallback();if(reconnTimer)clearTimeout(reconnTimer);reconnTimer=setTimeout(openWS,5000);};
+    ws.onmessage=e=>{try{const d=JSON.parse(e.data);if(d.event==='ping'){ws.send('pong');return;}if(d.online!==undefined)el.textContent=d.online;if(d.event==='chat_delete'&&window._mcOnDelete)window._mcOnDelete(d.id);}catch{}};
+    ws.onclose=()=>{wsOk=false;startFallback();if(reconnTimer)clearTimeout(reconnTimer);reconnTimer=setTimeout(openWS,_wsDelay);_wsDelay=Math.min(_wsDelay*1.5,30000);};
     ws.onerror=()=>{ws.close();};
   }
 
