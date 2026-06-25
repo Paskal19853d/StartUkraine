@@ -168,31 +168,32 @@ body{visibility:hidden}
 <canvas width="1365" height="953"></canvas>
 <header id="topbar">
   <a id="logo" href="/promo/" title="Про проєкт" style="text-decoration:none;color:inherit;cursor:pointer"><span id="logo-star">&#9733;</span> <em id="logo-em">Зоряна</em> Памʼять<span id="app-version" style="font-size:9px;color:#4a5a6a;margin-left:7px;font-weight:400;letter-spacing:.04em;vertical-align:middle">v2.42 beta</span></a>
-  <div class="tstat"><span id="icon-people">👥</span> <strong id="sttotal">0</strong>&nbsp;людей</div>
-  <div class="tstat"><span id="icon-likes">⭐</span> <strong id="stlikes">0</strong>&nbsp;зірок</div>
-  <div class="tstat"><span class="tdot"></span><strong id="stonline">—</strong>&nbsp;онлайн</div>
+  <div class="tstat"><span id="icon-people">👥</span> <strong id="sttotal">0</strong><span class="tstat-word">&nbsp;людей</span></div>
+  <div class="tstat"><span id="icon-likes">⭐</span> <strong id="stlikes">0</strong><span class="tstat-word">&nbsp;зірок</span></div>
+  <div class="tstat"><span class="tdot"></span><strong id="stonline">—</strong><span class="tstat-word">&nbsp;онлайн</span></div>
   <div class="tb-break"></div>
   <div id="smoke-ctrl" onclick="toggleSmoke()" title="Ефект диму вкл/викл">
-    <span id="smoke-lbl">Дим увімкнено</span>
+    <span id="smoke-lbl">Дим<span class="smoke-lbl-full"> увімкнено</span></span>
     <div id="btn-smoke" class="smoke-toggle active"><div class="smoke-thumb"></div></div>
   </div>
-  <div id="sw">
-    <div id="map-mode-bar" style="display:none">
-      <div id="map-mode-toggle" onclick="setMapMode(_mapMode==='ukraine'?'world':'ukraine')" title="Перемкнути карту">
-        <div id="mmt-track"><div id="mmt-thumb"></div></div>
-        <div id="mmt-labels">
-          <span id="mmt-ua">
-            <svg width="14" height="10" viewBox="0 0 28 20" style="border-radius:2px;flex-shrink:0"><rect width="28" height="10" fill="#005BBB"/><rect y="10" width="28" height="10" fill="#FFD500"/></svg>
-            UA
-          </span>
-          <span id="mmt-sep">|</span>
-          <span id="mmt-world">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-            World
-          </span>
-        </div>
+  <div id="topbar-spacer"></div>
+  <div id="map-mode-bar" style="display:none">
+    <div id="map-mode-toggle" onclick="setMapMode(_mapMode==='ukraine'?'world':'ukraine')" title="Перемкнути карту">
+      <div id="mmt-track"><div id="mmt-thumb"></div></div>
+      <div id="mmt-labels">
+        <span id="mmt-ua">
+          <svg width="14" height="10" viewBox="0 0 28 20" style="border-radius:2px;flex-shrink:0"><rect width="28" height="10" fill="#005BBB"/><rect y="10" width="28" height="10" fill="#FFD500"/></svg>
+          UA
+        </span>
+        <span id="mmt-sep">|</span>
+        <span id="mmt-world">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          World
+        </span>
       </div>
     </div>
+  </div>
+  <div id="sw">
     <button id="view-switcher" onclick="vsSwitchTo('mobile')" title="Мобільна версія" style="display:none">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><circle cx="12" cy="17" r="1" fill="currentColor" stroke="none"/></svg>
       Мобільна
@@ -205,12 +206,22 @@ body{visibility:hidden}
     </div>
   </div>
   <div class="tb-break"></div>
-  <button id="btn-profile" onclick="openProfile()" style="display:none;align-items:center;gap:5px;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:11px;font-family:inherit;padding:6px 12px;cursor:pointer;white-space:nowrap;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg> Профіль</button>
-  <button id="btn-logout" onclick="doLogout()">Вийти</button>
+  <button id="btn-search-mob" onclick="_mobSearchOpen()" title="Пошук"><i class="fi fi-rr-search"></i></button>
+  <button id="btn-profile" onclick="openProfile()" style="display:none;align-items:center;gap:5px;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:11px;font-family:inherit;padding:6px 12px;cursor:pointer;white-space:nowrap;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg><span class="prof-txt"> Профіль</span></button>
+  <button id="btn-logout" onclick="doLogout()"><i class="fi fi-rr-sign-out-alt logout-ico"></i><span class="logout-txt"> Вийти</span></button>
   <button id="btn-auth" onclick="openAuth()" title="Увійти"><i class="fi fi-rr-sign-in-alt auth-ico"></i><span class="auth-txt"> Увійти</span></button>
   <button id="btn-add" onclick="onAdd()"><i class="fi fi-rr-plus add-ico"></i><span class="add-txt"> Додати</span></button>
   <a id="btn-coffee" href="https://send.monobank.ua/jar/3Q5N8FwVvY" target="_blank" rel="noopener noreferrer" title="Підтримати розробника"><span class="cf-ico">☕</span><span class="cf-txt">Кава адміну</span></a>
 </header>
+
+<div id="mob-search-overlay">
+  <button id="mob-search-back" onclick="_mobSearchClose()"><i class="fi fi-rr-angle-left"></i></button>
+  <div id="mob-sw-input">
+    <span class="sico"><i class="fi fi-rr-search"></i></span>
+    <input type="text" id="mob-search" placeholder="Пошук за іменем, позивним, місцем…" autocomplete="off">
+    <button id="mob-search-clear" onclick="document.getElementById('mob-search').value='';closeDrop();this.style.display='none';">✕</button>
+  </div>
+</div>
 
 <div id="map-wrap">
   <div id="svg-layer">
@@ -4428,6 +4439,39 @@ si.addEventListener('focus', () => {
   if (q.length >= 2 && !sResults.length) doSearch(q);
   else if (sResults.length) renderDrop(sResults, q);
 });
+
+/* ── Мобільний пошук (overlay) ── */
+function _mobSearchOpen(){
+  const ov=document.getElementById('mob-search-overlay');
+  if(!ov)return;
+  ov.style.display='flex';
+  const inp=document.getElementById('mob-search');
+  const msi=document.getElementById('mob-sw-input');
+  if(msi&&sd)msi.appendChild(sd);
+  if(inp){inp.value=si.value;setTimeout(()=>inp.focus(),100);}
+  inp.oninput=function(){
+    const q=this.value.trim();
+    const clr=document.getElementById('mob-search-clear');
+    if(clr)clr.style.display=q.length?'flex':'none';
+    clearTimeout(window._mobST);
+    if(q.length<2){closeDrop();return;}
+    window._mobST=setTimeout(()=>doSearch(q),300);
+  };
+}
+function _mobSearchClose(){
+  const ov=document.getElementById('mob-search-overlay');
+  if(ov)ov.style.display='none';
+  closeDrop();
+  const swi=document.getElementById('sw-input');
+  if(swi&&sd)swi.appendChild(sd);
+}
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){
+    const ov=document.getElementById('mob-search-overlay');
+    if(ov&&ov.style.display==='flex')_mobSearchClose();
+  }
+});
+
 /* ── Auth ── */
 function updateAuthUI(){
   const ba=document.getElementById('btn-auth'),bl=document.getElementById('btn-logout'),bp=document.getElementById('btn-profile');
@@ -5038,7 +5082,7 @@ function _applySmokeState() {
   }
   if (window._fluidConfig) window._fluidConfig.PAUSED = !actuallyOn;
   if (btn) btn.classList.toggle('active', actuallyOn);
-  if (lbl) lbl.textContent = actuallyOn ? 'Дим увімкнено' : 'Дим вимкнено';
+  if (lbl) { const f=lbl.querySelector('.smoke-lbl-full'); if(f) f.textContent=' '+(actuallyOn?'увімкнено':'вимкнено'); }
   if (_cookiesOk) _setCookie('zp_smoke', _smokeOn ? '1' : '0');
 }
 
@@ -5052,7 +5096,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const btn = document.getElementById('btn-smoke');
   const lbl = document.getElementById('smoke-lbl');
   if (btn) btn.classList.add('active');
-  if (lbl) lbl.textContent = 'Дим увімкнено';
+  if (lbl) { const f=lbl.querySelector('.smoke-lbl-full'); if(f) f.textContent=' увімкнено'; }
 });
 
 // Open card from SEO redirect: /?open=ivan-petrenko-42

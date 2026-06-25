@@ -306,17 +306,19 @@ mark.shl {
 @keyframes fadeIn { from{opacity:0;transform:scale(.95)} to{opacity:1;transform:scale(1)} }
 
 #btn-logout {
-  background: none;
-  border: none;
-  color: var(--muted);
+  background: rgba(255,255,255,.05);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text2);
   font-size: 11px;
   cursor: pointer;
   display: none;
-  padding: 4px 8px;
-  border-radius: 6px;
-  transition: background .2s, color .2s;
+  padding: 6px 12px;
+  white-space: nowrap;
+  transition: background .2s, color .2s, border-color .2s, transform .1s;
 }
-#btn-logout:hover { background: rgba(255,255,255,.06); color: var(--text); }
+#btn-logout:hover { background: rgba(255,255,255,.09); color: var(--text); border-color: var(--border2); }
+#btn-logout:active { transform: scale(.96); }
 
 #btn-auth {
   background: rgba(255,255,255,.05);
@@ -454,17 +456,90 @@ mark.shl {
 }
 #btn-coffee:active { transform: scale(.96); }
 
-/* Планшет/телефон ≤768px: тільки символи, компактний топбар */
+/* Spacer між лівою і правою групою топбару */
+#topbar-spacer { display: none; }
+
+/* ── Мобільний пошук (overlay) — базові стилі ── */
+#btn-search-mob { display: none; }
+
+#mob-search-overlay {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: var(--bar);
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px;
+  background: rgba(3,7,14,.98);
+  border-bottom: 1px solid var(--border);
+  z-index: 800;
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+}
+
+#mob-search-back {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 5px 8px;
+  flex-shrink: 0;
+  border-radius: 6px;
+  transition: background .2s, color .2s;
+}
+#mob-search-back:hover { background: rgba(255,255,255,.06); color: var(--text); }
+
+#mob-sw-input {
+  flex: 1;
+  position: relative;
+  min-width: 0;
+}
+
+#mob-search {
+  width: 100%;
+  background: rgba(255,255,255,.04);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 7px 32px 7px 32px;
+  color: var(--text);
+  font-size: 16px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color .25s, background .25s;
+}
+#mob-search:focus {
+  border-color: rgba(0,200,255,.35);
+  background: rgba(0,200,255,.04);
+}
+
+#mob-search-clear {
+  position: absolute;
+  right: 8px; top: 50%;
+  transform: translateY(-50%);
+  background: none; border: none;
+  color: var(--muted); font-size: 13px;
+  cursor: pointer; display: none;
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  transition: background .15s;
+}
+#mob-search-clear:hover { background: rgba(255,255,255,.08); color: var(--text); }
+
+/* Планшет/телефон ≤768px: тільки іконки, компактний топбар */
 @media (max-width: 768px) {
   #topbar { gap: 8px; padding: 0 8px; }
 
-  /* Ховаємо лейбл диму — залишаємо тільки тогл */
-  #smoke-lbl { display: none; }
+  /* Ховаємо текст кнопок — тільки іконки */
+  .prof-txt, .logout-txt, .auth-txt, .add-txt, .cf-txt { display: none !important; }
+  .logout-ico, .auth-ico, .add-ico { margin-right: 0; font-size: 14px; }
 
-  /* Кнопки — однаковий розмір тексту */
-  #btn-add    { padding: 5px 10px; font-size: 10px; font-weight: normal; letter-spacing: 0; }
-  #btn-coffee { padding: 5px 9px;  font-size: 10px; gap: 4px; }
-  #btn-auth, #btn-logout { padding: 5px 8px; font-size: 10px; }
+  /* Кнопки — компактний розмір під іконку */
+  #btn-profile  { padding: 6px 9px !important; min-width: 0; }
+  #btn-logout   { padding: 6px 9px !important; min-width: 0; }
+  #btn-add      { padding: 6px 9px !important; min-width: 0; }
+  #btn-auth     { padding: 6px 9px !important; min-width: 0; }
+  #btn-coffee   { padding: 6px 8px !important; min-width: 0; }
 
   /* Пошук не розтягується занадто */
   #sw { max-width: 160px; }
@@ -1370,14 +1445,68 @@ input.f-err { border-color:#e53935 !important; }
 /* ── Row break (invisible on desktop, full-width on mobile) ── */
 .tb-break { display: none; }
 
-/* ── Touch пристрої (планшети + телефони): компактні кнопки ── */
+/* ── Touch пристрої (планшети + телефони): один рядок, компактно ── */
 @media (pointer: coarse) {
-  #smoke-lbl  { display: none; }
-  #app-version { display: none; }
-  #btn-add    { padding: 6px 10px; font-size: 11px; }
-  #btn-coffee { padding: 6px 8px;  font-size: 11px; gap: 4px; }
-  #un { max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .auth-ico, .add-ico { font-size: 13px; margin-right: 4px; }
+  :root { --bar: 54px; }
+  #topbar {
+    height: var(--bar);
+    flex-wrap: nowrap;
+    gap: 6px;
+    padding: 0 8px;
+    align-items: center;
+    overflow: visible;
+  }
+
+  /* Ховаємо тільки зайві підписи — НЕ чіпаємо лого */
+  #app-version    { display: none; }
+  .tstat-word     { display: none !important; }
+  .smoke-lbl-full { display: none !important; }
+  .tb-break       { display: none; }
+  #btn-coffee     { display: none !important; }
+
+  /* Лого — не скорочуємо */
+  #logo { flex-shrink: 0; font-size: 13px; white-space: nowrap; }
+
+  /* Статистика — не стискається */
+  .tstat { font-size: 11px; white-space: nowrap; flex-shrink: 0; }
+
+  /* Smoke — не стискається */
+  #smoke-ctrl { flex-shrink: 0; }
+
+  /* Spacer — розштовхує ліву і праву групи */
+  #topbar-spacer { display: block; flex: 1 1 auto; }
+
+  /* На мобільних margin-left:auto вже на spacer-і */
+  #map-mode-bar { margin-left: 0; }
+
+  /* Ховаємо звичайний пошук — замість нього іконка */
+  #sw { display: none !important; }
+
+  /* Показуємо кнопку-лупу */
+  #btn-search-mob {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 5px 9px;
+    flex-shrink: 0;
+    background: rgba(255,255,255,.05);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text2);
+    font-size: 14px;
+    cursor: pointer;
+    transition: background .2s, color .2s;
+  }
+
+  /* Кнопки — не стискаються, тільки іконка */
+  .prof-txt, .logout-txt, .auth-txt, .add-txt { display: none !important; }
+  #btn-profile { padding: 5px 8px !important; min-width: 0; flex-shrink: 0; }
+  #btn-logout  { padding: 5px 8px !important; min-width: 0; flex-shrink: 0; }
+  #btn-auth    { padding: 5px 8px !important; min-width: 0; flex-shrink: 0; }
+  #btn-add     { padding: 5px 8px !important; min-width: 0; flex-shrink: 0; }
+  .logout-ico, .auth-ico, .add-ico { font-size: 14px; margin-right: 0; }
+
+  #un { max-width: 60px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 }
 
 /* ── RESPONSIVE — телефони у landscape (висота ≤480px) ── */
@@ -1386,6 +1515,7 @@ input.f-err { border-color:#e53935 !important; }
 
   #topbar {
     height: var(--bar);
+    min-height: unset;
     flex-wrap: nowrap;
     padding: 0 8px;
     gap: 6px;
@@ -1395,7 +1525,6 @@ input.f-err { border-color:#e53935 !important; }
   #logo { font-size: 11px; white-space: nowrap; }
   #app-version { display: none; }
   .tstat { font-size: 10px; white-space: nowrap; }
-  #smoke-lbl { display: none; }
 
   #sw { flex: 0 1 140px; min-width: 80px; }
   #sdrop { left: 0; right: 0; border-radius: 0 0 8px 8px; }
@@ -1493,6 +1622,24 @@ input.f-err { border-color:#e53935 !important; }
   :root { --panel: 320px; }
   #topbar { gap: 10px; }
 }
+
+/* ── Малі телефони ≤768px: кнопки тільки з іконкою (дублює медіа-запит через JS клас) ── */
+
+/* Клас .mobile-icons — JS додає при ширині ≤480px для надійності */
+body.mobile-icons .prof-txt,
+body.mobile-icons .logout-txt,
+body.mobile-icons .auth-txt,
+body.mobile-icons .add-txt,
+body.mobile-icons .cf-txt { display: none !important; }
+
+body.mobile-icons #btn-profile { padding: 6px 9px !important; min-width: 0; }
+body.mobile-icons #btn-logout  { padding: 6px 9px !important; min-width: 0; }
+body.mobile-icons #btn-auth    { padding: 6px 9px !important; min-width: 0; }
+body.mobile-icons #btn-add     { padding: 6px 9px !important; min-width: 0; }
+body.mobile-icons #btn-coffee  { padding: 6px 8px !important; min-width: 0; }
+body.mobile-icons .logout-ico,
+body.mobile-icons .auth-ico,
+body.mobile-icons .add-ico { margin-right: 0; font-size: 14px; }
 
 /* ── Дуже малі телефони у landscape (iPhone SE, висота ≤400px) ── */
 @media (orientation: landscape) and (max-height: 400px) {
@@ -1616,6 +1763,7 @@ input.f-err { border-color:#e53935 !important; }
 #map-mode-bar {
   align-items: center;
   flex-shrink: 0;
+  margin-left: auto;
 }
 #map-mode-toggle {
   display: inline-flex;
@@ -1624,11 +1772,12 @@ input.f-err { border-color:#e53935 !important; }
   background: rgba(255,255,255,.05);
   border: 1px solid var(--border);
   border-radius: 20px;
-  padding: 3px;
+  padding: 4px;
   cursor: pointer;
   user-select: none;
   transition: border-color .2s, box-shadow .2s;
-  height: 28px;
+  height: 34px;
+  font-size: 13px;
   box-sizing: border-box;
   flex-shrink: 0;
 }
