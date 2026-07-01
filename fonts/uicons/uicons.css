@@ -10,8 +10,7 @@
 */
 @font-face {
     font-family: "uicons-regular-rounded";
-    src: url("uicons-regular-rounded.woff2") format("woff2"),
-    url("uicons-regular-rounded.woff") format("woff");
+    src: url("uicons-regular-rounded.woff") format("woff");
     font-display: swap;
 }
     i[class^="fi-rr-"]:before, i[class*=" fi-rr-"]:before, span[class^="fi-rr-"]:before, span[class*="fi-rr-"]:before {

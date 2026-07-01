@@ -902,6 +902,12 @@ tr:hover td{background:rgba(255,255,255,.02)}
       <!-- PENDING -->
       <div id="sec-pend" class="section">
         <div class="sec-title"><svg class="adm-ico"><use href="#ico-hourglass"/></svg> На модерації</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <button class="btn btn-g" id="pend-approve-all-btn" onclick="approveAllPend()" style="font-size:12px;font-weight:600">
+            <svg class="adm-ico"><use href="#ico-check"/></svg> Схвалити всі
+          </button>
+          <span id="pend-approve-all-status" style="font-size:11px;color:var(--muted)"></span>
+        </div>
         <div class="tbl-wrap"><table>
           <thead><tr><th>ID</th><th>ПІБ</th><th>Місце заг./пох.</th><th>Хто додав</th><th>Дії</th></tr></thead>
           <tbody id="pend-tb"></tbody>
@@ -7487,11 +7493,10 @@ async function applyImport() {
   const rows = _impRows.filter(r => r._selected);
   if (!rows.length) { showN('Немає вибраних рядків', true); return; }
   const noCoords = rows.filter(r => !(parseFloat(r.pos_x) > 0 && parseFloat(r.pos_y) > 0));
-  if (noCoords.length) {
-    showN(`${noCoords.length} запис(ів) без координат. Відкрийте кожен → Вибрати місце Зірки.`, true);
-    return;
-  }
-  if (!confirm(`Імпортувати ${rows.length} записів? Вони потраплять на модерацію.`)) return;
+  const confirmMsg = noCoords.length
+    ? `Імпортувати ${rows.length} записів?\n⚠ ${noCoords.length} з них без координат — їх можна вказати пізніше в редакторі.\nВсі записи потраплять на модерацію.`
+    : `Імпортувати ${rows.length} записів? Вони потраплять на модерацію.`;
+  if (!confirm(confirmMsg)) return;
   const btn = document.getElementById('imp-apply-btn');
   if (btn) btn.disabled = true;
   showN(`Імпортування ${rows.length} записів…`);
@@ -7594,6 +7599,30 @@ function _initPendMap(id) {
 }
 
 async function approveMem(id){try{const r=await fetch(`${API}/api/admin/approve/${id}`,{method:'POST',headers:authH()});if(!r.ok)throw new Error(r.status);showN('Схвалено');loadPend();loadStats();}catch{showN('Помилка схвалення',true);}}
+
+async function approveAllPend() {
+  const rows = [...document.querySelectorAll('#pend-tb tr[id^="pend-row-"]')];
+  if (!rows.length) { showN('Немає записів на модерації', true); return; }
+  const ids = rows.map(r => parseInt(r.id.replace('pend-row-', ''))).filter(Boolean);
+  if (!ids.length) { showN('Немає записів на модерації', true); return; }
+  if (!confirm(`Схвалити всі ${ids.length} записів на модерації?`)) return;
+  const btn = document.getElementById('pend-approve-all-btn');
+  const status = document.getElementById('pend-approve-all-status');
+  if (btn) btn.disabled = true;
+  let done = 0, failed = 0;
+  if (status) status.textContent = `0 / ${ids.length}…`;
+  for (const id of ids) {
+    try {
+      const r = await fetch(`${API}/api/admin/approve/${id}`, {method:'POST', headers: authH()});
+      if (r.ok) done++; else failed++;
+    } catch { failed++; }
+    if (status) status.textContent = `${done + failed} / ${ids.length}…`;
+  }
+  if (btn) btn.disabled = false;
+  if (status) status.textContent = `Схвалено: ${done}${failed ? `, помилок: ${failed}` : ''}`;
+  showN(`Схвалено ${done} записів${failed ? `, помилок: ${failed}` : ''}`);
+  loadPend(); loadMem(); loadStats();
+}
 async function delMem(id, name=''){
   const msg = `ВИДАЛЕННЯ ЗАПИСУ\n\n${name ? '"'+name+'"' : 'ID: '+id}\n\nЦю дію неможливо скасувати.\nВсі дані про цього героя будуть втрачені назавжди.\n\nПродовжити?`;
   if(!confirm(msg)) return;
