@@ -590,6 +590,30 @@ footer .div{ height:1px; background:var(--line); margin:28px 0 }
     startAnim([...document.querySelectorAll('.thx .nm')]);
   }
 })();
+
+// ── Статистика проєкту (оновлення кожні 30 хв) ──────────
+(function() {
+  function fmtN(n) {
+    if (n >= 1000) return (n/1000).toFixed(1).replace('.0','') + ' тис';
+    return String(n);
+  }
+  function loadStats() {
+    fetch('/api/stats')
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(d) {
+        if (!d) return;
+        var ns = document.querySelectorAll('.stats .n');
+        // «у памʼяті» — кількість схвалених меморіалів
+        if (ns[0] && d.total > 0) ns[0].textContent = fmtN(d.total);
+        // «зірок засвічено» — сума лайків
+        if (ns[1] && d.likes > 0) ns[1].textContent = fmtN(d.likes);
+        // «спільнота щодня» — залишаємо ∞
+      })
+      .catch(function(){});
+  }
+  loadStats();
+  setInterval(loadStats, 30 * 60 * 1000);
+})();
 </script>
 
 <audio id="bg-audio" src="/img/audio/war.mp3" preload="auto"></audio>

@@ -401,6 +401,7 @@ html, body {
   height: 80px;
   border: 2px solid var(--doc-accent);
   border-radius: 50%;
+  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -413,7 +414,7 @@ html, body {
   line-height: 1.3;
   margin-left: auto;
   margin-bottom: 8px;
-  opacity: .5;
+  opacity: .8;
 }
 
 .doc-footer {
@@ -651,18 +652,34 @@ html, body {
             З питань, що стосуються цих Правил, персональних даних або скарг на контент, звертайтеся до Адміністрації:
           </p>
           <ul class="doc-list">
-            <li>Електронна пошта: <a href="mailto:admin@zoryana.ua" style="color:var(--doc-accent);">admin@zoryana.ua</a></li>
+            <li>Електронна пошта: <a href="mailto:treetex.g.ads@gmail.com" style="color:var(--doc-accent);">treetex.g.ads@gmail.com</a></li>
             <li>Термін розгляду звернення: до 14 робочих днів.</li>
           </ul>
+        </div>
+
+        <!-- PROJECT COST -->
+        <div class="doc-section" style="display:none;margin-top:32px;padding:20px 24px;background:rgba(180,140,60,.07);border:1px solid rgba(180,140,60,.25);border-radius:10px;">
+          <div class="doc-section-title" style="margin-bottom:14px">Мінімальна ціна проєкту</div>
+          <table style="width:100%;border-collapse:collapse;font-size:13px;">
+            <tr style="border-bottom:1px solid rgba(180,140,60,.2)">
+              <td style="padding:8px 4px;color:var(--doc-muted)">Мінімальна оцінка (ринок)</td>
+              <td style="padding:8px 4px;text-align:right;font-weight:600">$30,000</td>
+              <td style="padding:8px 4px;text-align:right;font-weight:600;color:var(--doc-accent)" id="terms-price-uah">— ₴</td>
+            </tr>
+            <tr>
+              <td style="padding:8px 4px;color:var(--doc-muted)" colspan="2">Курс НБУ (USD/UAH)</td>
+              <td style="padding:8px 4px;text-align:right;color:var(--doc-muted);font-size:11px" id="terms-rate-val">оновлення…</td>
+            </tr>
+          </table>
         </div>
 
         <div class="doc-sign">
           <div class="doc-sign__left">
             Адміністрація Порталу «Зоряна Памʼять»<br>
-            Контакт: <a href="mailto:admin@zoryana.ua" style="color:var(--doc-accent);">admin@zoryana.ua</a>
+            Контакт: <a href="mailto:treetex.g.ads@gmail.com" style="color:var(--doc-accent);">treetex.g.ads@gmail.com</a>
           </div>
           <div class="doc-sign__right">
-            <div class="doc-sign__stamp">ЗОРЯНА<br>ПАМʼЯТЬ<br>ПОРТАЛ</div>
+            <div class="doc-sign__stamp"><img src="/img/bgda.png" alt="Печатка" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;"></div>
             <div>Документ підписано<br>електронним підписом</div>
           </div>
         </div>
@@ -684,6 +701,24 @@ html, body {
 
   </div>
 </div>
+
+<script>
+(function() {
+  const MIN_USD = 30000;
+  fetch('/api/colors').then(r => r.json()).then(d => {
+    const rate = parseFloat((d.proj_usd_rate || {}).value) || 0;
+    const uahEl = document.getElementById('terms-price-uah');
+    const rateEl = document.getElementById('terms-rate-val');
+    if (rate > 0) {
+      if (uahEl) uahEl.textContent = (MIN_USD * rate).toLocaleString('uk-UA', {maximumFractionDigits:0}) + ' ₴';
+      if (rateEl) rateEl.textContent = rate.toFixed(2) + ' ₴';
+    } else {
+      if (uahEl) uahEl.textContent = '— ₴';
+      if (rateEl) rateEl.textContent = 'курс невідомий';
+    }
+  }).catch(() => {});
+})();
+</script>
 
 </body>
 </html>

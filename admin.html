@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="uk">
 <head>
 <meta charset="UTF-8">
@@ -627,6 +627,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
       </div>
     </div>
     <div class="nav-item"        draggable="true" onclick="showSec('google')"  data-s="google">  <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-auth"/></svg></span>Google</div>
+    <div class="nav-item"        draggable="true" onclick="showSec('projcost')" data-s="projcost"><span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-stats"/></svg></span>Вартість</div>
     </div>
     <div class="sb-bottom">
       <p>Адмін: <strong id="adm-name">—</strong> <span id="adm-role-badge" style="font-size:9px;margin-left:4px"></span></p>
@@ -5399,6 +5400,99 @@ tr:hover td{background:rgba(255,255,255,.02)}
         </div>
       </div><!-- /sec-devmode -->
 
+      <!-- ═══════════════ ВАРТІСТЬ ПРОЕКТУ ═══════════════ -->
+      <div id="sec-projcost" class="section">
+        <div class="sec-title"><svg class="adm-ico"><use href="#ico-stats"/></svg> Вартість проекту</div>
+
+        <!-- Курс USD/UAH -->
+        <div class="rg-group" style="margin-bottom:20px">
+          <div class="rg-group-title">Курс USD/UAH — НБУ (оновлюється автоматично)</div>
+          <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:12px 0">
+            <div>
+              <span style="font-size:28px;font-weight:700;color:var(--accent)" id="pc-rate-val">—</span>
+              <span style="font-size:13px;color:var(--muted);margin-left:6px">грн за $1</span>
+            </div>
+            <div style="font-size:11px;color:var(--muted)" id="pc-rate-time">оновлення: —</div>
+            <button class="btn btn-p" onclick="projCostRefreshRate()" id="pc-refresh-btn" style="font-size:11px">
+              <svg class="adm-ico"><use href="#ico-star"/></svg> Оновити курс
+            </button>
+            <span id="pc-rate-msg" class="adm-msg" style="font-size:11px"></span>
+          </div>
+        </div>
+
+        <!-- Витрати -->
+        <div class="rg-group" style="margin-bottom:20px">
+          <div class="rg-group-title">Щомісячні витрати на проект</div>
+          <div class="rg-row">
+            <div class="rg-row-info"><div class="rg-row-label">Сервер / хостинг</div><div class="rg-row-desc">$/місяць</div></div>
+            <input type="number" id="pc-server" min="0" step="0.01" style="width:110px;padding:7px 10px;background:var(--bg);border:1px solid var(--border-2);border-radius:7px;color:var(--text);font-size:13px" oninput="projCostCalc()">
+          </div>
+          <div class="rg-row">
+            <div class="rg-row-info"><div class="rg-row-label">Домени</div><div class="rg-row-desc">$/рік (загальна сума)</div></div>
+            <input type="number" id="pc-domains" min="0" step="0.01" style="width:110px;padding:7px 10px;background:var(--bg);border:1px solid var(--border-2);border-radius:7px;color:var(--text);font-size:13px" oninput="projCostCalc()">
+          </div>
+          <div class="rg-row">
+            <div class="rg-row-info"><div class="rg-row-label">Claude Code / AI</div><div class="rg-row-desc">$/місяць</div></div>
+            <input type="number" id="pc-ai" min="0" step="0.01" style="width:110px;padding:7px 10px;background:var(--bg);border:1px solid var(--border-2);border-radius:7px;color:var(--text);font-size:13px" oninput="projCostCalc()">
+          </div>
+          <div class="rg-row">
+            <div class="rg-row-info"><div class="rg-row-label">Інші витрати</div><div class="rg-row-desc">$/місяць</div></div>
+            <input type="number" id="pc-other" min="0" step="0.01" style="width:110px;padding:7px 10px;background:var(--bg);border:1px solid var(--border-2);border-radius:7px;color:var(--text);font-size:13px" oninput="projCostCalc()">
+          </div>
+          <div class="rg-row" style="border-bottom:none">
+            <div class="rg-row-info"><div class="rg-row-label">Місяців розробки</div><div class="rg-row-desc">Скільки місяців тривала робота</div></div>
+            <input type="number" id="pc-months" min="1" step="1" style="width:80px;padding:7px 10px;background:var(--bg);border:1px solid var(--border-2);border-radius:7px;color:var(--text);font-size:13px" oninput="projCostCalc()">
+          </div>
+          <div class="rg-row" style="border-bottom:none;margin-top:4px">
+            <div class="rg-row-info"><div class="rg-row-label">CPM — ціна 1 користувача</div><div class="rg-row-desc">$/користувача (як Google Ads UA)</div></div>
+            <input type="number" id="pc-per-user" min="0.01" step="0.01" style="width:80px;padding:7px 10px;background:var(--bg);border:1px solid var(--border-2);border-radius:7px;color:var(--text);font-size:13px" oninput="projCostCalc()">
+          </div>
+          <div style="margin-top:14px;display:flex;align-items:center;gap:12px">
+            <button class="btn btn-g" onclick="projCostSave()"><svg class="adm-ico"><use href="#ico-check"/></svg> Зберегти</button>
+            <span id="pc-save-msg" class="adm-msg" style="font-size:11px"></span>
+          </div>
+        </div>
+
+        <!-- Статистика аудиторії -->
+        <div class="rg-group" style="margin-bottom:20px">
+          <div class="rg-group-title">Аудиторія (live)</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;padding:10px 0">
+            <div style="background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:12px 14px">
+              <div style="font-size:22px;font-weight:700;color:var(--accent)" id="pc-stat-users">—</div>
+              <div style="font-size:11px;color:var(--muted);margin-top:2px">Користувачів всього</div>
+              <div style="font-size:11px;color:#4ade80;margin-top:2px" id="pc-stat-u24h"></div>
+            </div>
+            <div style="background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:12px 14px">
+              <div style="font-size:22px;font-weight:700;color:var(--accent)" id="pc-stat-views">—</div>
+              <div style="font-size:11px;color:var(--muted);margin-top:2px">Переглядів сьогодні</div>
+              <div style="font-size:11px;color:var(--muted);margin-top:2px" id="pc-stat-views-yd"></div>
+            </div>
+            <div style="background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:12px 14px">
+              <div style="font-size:22px;font-weight:700;color:#60a5fa" id="pc-stat-bots">—</div>
+              <div style="font-size:11px;color:var(--muted);margin-top:2px">Краулів пошук. ботів (24г)</div>
+              <div style="font-size:11px;color:var(--muted);margin-top:2px" id="pc-stat-bots-u"></div>
+            </div>
+            <div style="background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:12px 14px">
+              <div style="font-size:22px;font-weight:700;color:#f0b54a" id="pc-stat-mems">—</div>
+              <div style="font-size:11px;color:var(--muted);margin-top:2px">Схвалених меморіалів</div>
+            </div>
+          </div>
+          <div style="font-size:11px;color:var(--muted);padding:4px 0 0">
+            Топ боти (24г): <span id="pc-top-bots">—</span>
+          </div>
+        </div>
+
+        <!-- Підсумок -->
+        <div class="rg-group">
+          <div class="rg-group-title">Підсумок вартості</div>
+          <div id="pc-summary" style="padding:8px 0">
+            <table style="width:100%;border-collapse:collapse;font-size:13px">
+              <tbody id="pc-summary-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div><!-- /sec-projcost -->
+
     </div><!-- /content-area -->
   </div><!-- /main -->
 </div><!-- /layout -->
@@ -5768,7 +5862,8 @@ function showSec(id) {
   if(id==='google')  _loadGoogleSettings();
   if(id==='density') _densityLoad();
   if(id==='legacy')  { if(typeof legacyOpen==='function') legacyOpen(); }
-  if(id==='devmode') dmLoad();
+  if(id==='devmode')   dmLoad();
+  if(id==='projcost')  projCostLoad();
 }
 
 /* ══════════ ХВИЛИНА МОВЧАННЯ ══════════ */
@@ -13263,28 +13358,171 @@ function _wmPreset(name) {
   <img id="imp-photo-lb-img" src="" style="max-width:90vw;max-height:90vh;border-radius:8px;box-shadow:0 4px 40px rgba(0,0,0,.8)">
 </div>
 
-<script src="/js/chat-admin.js"></script>
-<script src="/js/admin-sounds.js"></script>
-<script src="/js/admin-mem.js"></script>
+<script>
+/* ── МОДУЛЬ: ВАРТІСТЬ ПРОЕКТУ ─────────────────────────── */
+(function() {
+  var MKT = { devMin:45000, devMax:80000, saleMin:30000, saleMax:70000 };
+  var _pcData = {};
 
-<script src="/js/chat-admin.js"></script>
-<script src="/js/admin-sounds.js"></script>
-<script src="/js/admin-mem.js"></script>
-</body>
-</html
+  function gv(id) { var e=document.getElementById(id); return e ? parseFloat(e.value)||0 : 0; }
+  function sv(id,v){ var e=document.getElementById(id); if(e) e.value=v; }
+  function st(id,v){ var e=document.getElementById(id); if(e) e.textContent=v; }
+  function fmt(n)  { return Number(n).toLocaleString('uk-UA',{maximumFractionDigits:0}); }
+  function fmtU(n) { return '$'+Number(n).toLocaleString('en-US',{maximumFractionDigits:0}); }
+  function msg(id,text,ok){
+    var e=document.getElementById(id);
+    if(!e)return;
+    e.textContent=text; e.className='adm-msg '+(ok?'ok':'err');
+    setTimeout(function(){e.textContent='';e.className='adm-msg';},3000);
+  }
 
+  window.projCostLoad = function() {
+    fetch(API+'/api/admin/project-cost',{credentials:'include',headers:authH()})
+      .then(function(r){return r.json();})
+      .then(function(d){
+        _pcData = d;
+        sv('pc-server',   parseFloat(d.proj_cost_server_usd)   || 0);
+        sv('pc-domains',  parseFloat(d.proj_cost_domains_usd)  || 0);
+        sv('pc-ai',       parseFloat(d.proj_cost_ai_usd)       || 0);
+        sv('pc-other',    parseFloat(d.proj_cost_other_usd)    || 0);
+        sv('pc-months',   parseFloat(d.proj_cost_months)       || 5);
+        sv('pc-per-user', parseFloat(d.proj_cost_per_user_usd) || 1);
+        var rate = parseFloat(d.proj_usd_rate)||0;
+        st('pc-rate-val',  rate ? rate.toFixed(2) : '—');
+        var ts = parseInt(d.proj_usd_rate_updated)||0;
+        st('pc-rate-time', ts ? 'оновлено: '+new Date(ts*1000).toLocaleString('uk-UA') : 'ще не оновлювалось');
+        st('pc-stat-users',   d.users_total   || 0);
+        st('pc-stat-u24h',   '+'+(d.users_24h || 0)+' за добу');
+        st('pc-stat-views',   d.views_today   || 0);
+        st('pc-stat-views-yd','вчора: '+(d.views_yesterday || 0));
+        st('pc-stat-bots',    d.bots_24h      || 0);
+        st('pc-stat-bots-u', (d.bots_24h_uniq||0)+' пошук. систем');
+        st('pc-stat-mems',    d.mem_approved  || 0);
+        var botsEl = document.getElementById('pc-top-bots');
+        if(botsEl && d.top_bots && d.top_bots.length){
+          botsEl.innerHTML = d.top_bots.map(function(b){
+            return '<span style="display:inline-block;margin:2px 6px 2px 0;font-size:11px;color:var(--muted)">'+
+              b.bot+' <b style="color:var(--text)">'+b.cnt+'</b></span>';
+          }).join('');
+        }
+        projCostCalc();
+      }).catch(function(e){ console.error('projCostLoad error', e); });
+  };
 
-<script src="/js/chat-admin.js"></script>
-<script src="/js/admin-sounds.js"></script>
-<script src="/js/admin-mem.js"></script>
-</body>
-</html
-<script src="/js/chat-admin.js"></script>
-<script src="/js/admin-sounds.js"></script>
-<script src="/js/admin-mem.js"></script>
-</body>
-</html
+  window.projCostSave = function() {
+    var data = [
+      {key:'proj_cost_server_usd',   value:String(gv('pc-server'))},
+      {key:'proj_cost_domains_usd',  value:String(gv('pc-domains'))},
+      {key:'proj_cost_ai_usd',       value:String(gv('pc-ai'))},
+      {key:'proj_cost_other_usd',    value:String(gv('pc-other'))},
+      {key:'proj_cost_months',       value:String(gv('pc-months'))},
+      {key:'proj_cost_per_user_usd', value:String(gv('pc-per-user'))},
+    ];
+    fetch(API+'/api/admin/colors/batch',{
+      method:'PUT', credentials:'include', headers:authH({'Content-Type':'application/json'}),
+      body: JSON.stringify(data)
+    }).then(function(r){
+        if(!r.ok){ return r.text().then(function(t){ throw new Error('HTTP '+r.status+': '+t); }); }
+        return r.json();
+      })
+      .then(function(r2){
+        msg('pc-save-msg', r2.ok?'Збережено!':'Помилка збереження', r2.ok);
+        if(r2.ok) projCostLoad();
+      })
+      .catch(function(e){ console.error('projCostSave error',e); msg('pc-save-msg', String(e).substring(0,80), false); });
+  };
 
+  window.projCostRefreshRate = function() {
+    var btn = document.getElementById('pc-refresh-btn');
+    if(btn) btn.disabled = true;
+    fetch(API+'/api/admin/project-cost/refresh-rate',{method:'POST',credentials:'include',headers:authH()})
+      .then(function(r){return r.json();})
+      .then(function(d){
+        if(d.ok){
+          st('pc-rate-val',  parseFloat(d.rate).toFixed(2));
+          st('pc-rate-time', 'оновлено: '+new Date().toLocaleString('uk-UA'));
+          msg('pc-rate-msg','Курс оновлено!',true);
+          projCostCalc();
+        } else {
+          msg('pc-rate-msg','Помилка отримання курсу',false);
+        }
+      })
+      .catch(function(){ msg('pc-rate-msg','Помилка',false); })
+      .finally(function(){ if(btn) btn.disabled=false; });
+  };
+
+  window.projCostCalc = function() {
+    var server  = gv('pc-server');
+    var domains = gv('pc-domains');
+    var ai      = gv('pc-ai');
+    var other   = gv('pc-other');
+    var months  = Math.max(gv('pc-months'), 1);
+    var perUser = gv('pc-per-user') || 1;
+    var rateEl  = document.getElementById('pc-rate-val');
+    var rate    = rateEl ? parseFloat(rateEl.textContent)||0 : 0;
+    var users   = parseInt((_pcData.users_total)||0);
+    var views   = parseInt((_pcData.views_today)||0);
+    var bots    = parseInt((_pcData.bots_24h)||0);
+
+    var costUsd  = (server + ai + other) * months + (domains / 12) * months;
+    var costUah  = costUsd * rate;
+    var audUsd   = users * perUser + (views / 1000) * perUser;
+    var botUsd   = bots * 0.05;
+    var bonusUsd = audUsd + botUsd;
+    var saleMinAdj = MKT.saleMin + bonusUsd;
+    var saleMaxAdj = MKT.saleMax + bonusUsd;
+
+    var body = document.getElementById('pc-summary-body');
+    if(!body) return;
+
+    function row(label, usd, uah, bold, color, sub) {
+      var s = bold ? 'font-weight:700;' : '';
+      var cl = color ? 'color:'+color+';' : '';
+      var usdStr = usd ? fmtU(usd) : '—';
+      var uahStr = (uah && rate) ? fmt(uah)+' ₴' : (rate && usd ? '—' : 'курс невідомий');
+      return '<tr style="border-bottom:1px solid var(--border)">'
+        +'<td style="padding:9px 6px;'+s+cl+'">'+(sub?'  ':'')+label+'</td>'
+        +'<td style="padding:9px 6px;text-align:right;'+s+cl+(usd?'':'color:var(--muted)')+'">'+usdStr+'</td>'
+        +'<td style="padding:9px 6px;text-align:right;'+s+cl+'">'+uahStr+'</td>'
+        +'</tr>';
+    }
+    function section(label) {
+      return '<tr><td colspan="3" style="padding:6px 6px 2px;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">'+label+'</td></tr>';
+    }
+
+    var rows = '<tr style="border-bottom:2px solid var(--border-2)">'
+      +'<th style="padding:6px;font-size:11px;color:var(--muted);text-align:left">Показник</th>'
+      +'<th style="padding:6px;font-size:11px;color:var(--muted);text-align:right">USD</th>'
+      +'<th style="padding:6px;font-size:11px;color:var(--muted);text-align:right">UAH</th>'
+      +'</tr>';
+
+    rows += section('Витрати');
+    rows += row('Собівартість проекту ('+months+' міс.)', costUsd, costUah, true, '#f0b54a', false);
+    rows += section('Вартість аудиторії');
+    rows += row('Користувачі ('+users+' × $'+perUser.toFixed(2)+')', audUsd, audUsd*rate, false, '', true);
+    rows += row('Краули пошук. систем ('+bots+' за добу)', botUsd, botUsd*rate, false, '', true);
+    rows += row('Разом надбавка за аудиторію', bonusUsd, bonusUsd*rate, true, '#60a5fa', false);
+    rows += section('Ринкова оцінка (з аудиторією)');
+    rows += row('Розробка з нуля — мін.', MKT.devMin, MKT.devMin*rate, false, '', true);
+    rows += row('Розробка з нуля — макс.', MKT.devMax, MKT.devMax*rate, false, '', true);
+    rows += row('Готовий проект — мін.', saleMinAdj, saleMinAdj*rate, false, '', true);
+    rows += row('Готовий проект — макс.', saleMaxAdj, saleMaxAdj*rate, true, '#4ade80', true);
+
+    if(costUsd > 0) {
+      var roiMin = (saleMinAdj / costUsd).toFixed(1);
+      var roiMax = (saleMaxAdj / costUsd).toFixed(1);
+      rows += '<tr style="border-top:2px solid var(--border-2)">'
+        +'<td style="padding:9px 6px;font-weight:700;color:#4ade80">Прибутковість (ROI)</td>'
+        +'<td colspan="2" style="padding:9px 6px;text-align:right;font-weight:700;color:#4ade80">'
+        +roiMin+'× — '+roiMax+'× від вкладень'
+        +'</td></tr>';
+    }
+
+    body.innerHTML = rows;
+  };
+
+})();
+</script>
 
 <script src="/js/chat-admin.js"></script>
 <script src="/js/admin-sounds.js"></script>

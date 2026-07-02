@@ -684,6 +684,15 @@ def init_db():
         ("legacy_refund",   "0",   "Спадщина — дозволити повернення коштів (1=так, 0=ні)"),
         ("legacy_price",    "0",   "Спадщина — ціна підключення"),
         ("legacy_currency", "USD", "Спадщина — валюта (USD/EUR/UAH)"),
+        # ── Вартість проекту ──────────────────────────────────────────────────
+        ("proj_cost_server_usd",   "0",   "Вартість проекту — сервер, $/міс"),
+        ("proj_cost_domains_usd",  "0",   "Вартість проекту — домени, $/рік"),
+        ("proj_cost_ai_usd",       "0",   "Вартість проекту — Claude Code, $/міс"),
+        ("proj_cost_other_usd",    "0",   "Вартість проекту — інші витрати, $/міс"),
+        ("proj_cost_months",       "5",   "Вартість проекту — місяців розробки"),
+        ("proj_usd_rate",          "0",   "Вартість проекту — курс USD/UAH (НБУ, авто)"),
+        ("proj_usd_rate_updated",  "0",   "Вартість проекту — timestamp оновлення курсу"),
+        ("proj_cost_per_user_usd", "1.0", "Вартість проекту — CPM ціна одного користувача, $"),
     ]
     with db.cursor() as c:
         for key, val, label in defaults:
@@ -691,6 +700,11 @@ def init_db():
                 "INSERT IGNORE INTO colors (`key`,value,label) VALUES (%s,%s,%s)",
                 (key, val, label)
             )
+        # Гарантуємо наявність proj_cost_per_user_usd (доданий пізніше — INSERT IGNORE міг пропустити)
+        c.execute(
+            "INSERT INTO colors (`key`,value,label) VALUES ('proj_cost_per_user_usd','1.0','Вартість проекту — CPM ціна одного користувача, $')"
+            " ON DUPLICATE KEY UPDATE label=VALUES(label)"
+        )
         # Мігруємо порожні social-ключі (старий формат URL) → '1' (показати)
         for _sk in ('social_facebook','social_twitter','social_instagram','social_youtube'):
             c.execute("UPDATE colors SET value='1' WHERE `key`=%s AND value=''", (_sk,))
@@ -1747,6 +1761,28 @@ def startup():
             time.sleep(60)
     threading.Thread(target=_cpu_ram_loop, daemon=True).start()
     threading.Thread(target=_bot_loop, daemon=True).start()
+
+    def _currency_rate_loop():
+        while True:
+            try:
+                now = time.time()
+                last = float(_get_color_val("proj_usd_rate_updated", "0") or 0)
+                if now - last > 82800:  # оновлювати не частіше ніж раз на 23 год
+                    url = "https://bank.gov.ua/NBUStatService/v1/statdirectory/exchange?valcode=USD&json"
+                    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+                    with urllib.request.urlopen(req, timeout=10) as resp:
+                        data = json.loads(resp.read().decode())
+                    rate = str(round(float(data[0]["rate"]), 2))
+                    db = get_db()
+                    with db.cursor() as c:
+                        for k, v in [("proj_usd_rate", rate), ("proj_usd_rate_updated", str(int(now)))]:
+                            c.execute("INSERT INTO colors (`key`,value,label) VALUES (%s,%s,'') ON DUPLICATE KEY UPDATE value=%s", (k, v, v))
+                    db.commit()
+                    db.close()
+            except Exception:
+                pass
+            time.sleep(3600)
+    threading.Thread(target=_currency_rate_loop, daemon=True).start()
 
 @app.on_event("shutdown")
 def shutdown():
@@ -7184,6 +7220,87 @@ def seo_snapshot(request: Request):
         "count_c":     grade_dist['C'],
         "count_d":     grade_dist['D'],
     }
+
+
+@app.get("/api/admin/project-cost")
+def get_project_cost(request: Request):
+    require_admin(request)
+    keys = ["proj_cost_server_usd","proj_cost_domains_usd","proj_cost_ai_usd",
+            "proj_cost_other_usd","proj_cost_months","proj_usd_rate","proj_usd_rate_updated",
+            "proj_cost_per_user_usd"]
+    now = int(time.time())
+    today_str = time.strftime("%Y-%m-%d")
+    ts_24h = now - 86400
+    db = get_db()
+    with db.cursor() as c:
+        ph = ",".join(["%s"] * len(keys))
+        c.execute(f"SELECT `key`,value FROM colors WHERE `key` IN ({ph})", keys)
+        rows = {r["key"]: r["value"] for r in c.fetchall()}
+        # Зареєстровані користувачі (активні, не забанені)
+        c.execute("SELECT COUNT(*) AS cnt FROM users WHERE is_banned=0")
+        users_total = c.fetchone()["cnt"]
+        # Нові користувачі за добу
+        c.execute("SELECT COUNT(*) AS cnt FROM users WHERE created_at >= %s AND is_banned=0",
+                  (ts_24h,))
+        users_24h = c.fetchone()["cnt"]
+        # Переглядів за сьогодні (daily_stats + in-memory)
+        c.execute("SELECT views FROM daily_stats WHERE date=%s", (today_str,))
+        r = c.fetchone()
+        views_today_db = r["views"] if r else 0
+        views_today = max(views_today_db, _visits_daily.get(today_str, 0))
+        # Переглядів за вчора
+        yesterday = time.strftime("%Y-%m-%d", time.localtime(now - 86400))
+        c.execute("SELECT views FROM daily_stats WHERE date=%s", (yesterday,))
+        r = c.fetchone()
+        views_yesterday = r["views"] if r else 0
+        # Боти за добу (пошукові павуки)
+        c.execute("SELECT COUNT(*) AS cnt, COUNT(DISTINCT bot_name) AS bots"
+                  " FROM bot_visits WHERE created_at >= %s", (ts_24h,))
+        bot_row = c.fetchone()
+        bots_24h       = bot_row["cnt"]
+        bots_24h_uniq  = bot_row["bots"]
+        # Топ-боти за добу
+        c.execute("SELECT bot_name, COUNT(*) AS cnt FROM bot_visits"
+                  " WHERE created_at >= %s GROUP BY bot_name ORDER BY cnt DESC LIMIT 5",
+                  (ts_24h,))
+        top_bots = [{"bot": r["bot_name"], "cnt": r["cnt"]} for r in c.fetchall()]
+        # Схвалених меморіалів
+        c.execute("SELECT COUNT(*) AS cnt FROM memorials WHERE approved=1")
+        mem_approved = c.fetchone()["cnt"]
+    db.close()
+    result = {k: rows.get(k, "0") for k in keys}
+    result.update({
+        "users_total":    users_total,
+        "users_24h":      users_24h,
+        "views_today":    views_today,
+        "views_yesterday":views_yesterday,
+        "bots_24h":       bots_24h,
+        "bots_24h_uniq":  bots_24h_uniq,
+        "top_bots":       top_bots,
+        "mem_approved":   mem_approved,
+    })
+    return result
+
+
+@app.post("/api/admin/project-cost/refresh-rate")
+def refresh_usd_rate(request: Request):
+    require_admin(request)
+    try:
+        url = "https://bank.gov.ua/NBUStatService/v1/statdirectory/exchange?valcode=USD&json"
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.loads(resp.read().decode())
+        rate = str(round(float(data[0]["rate"]), 2))
+        now = str(int(time.time()))
+        db = get_db()
+        with db.cursor() as c:
+            for k, v in [("proj_usd_rate", rate), ("proj_usd_rate_updated", now)]:
+                c.execute("INSERT INTO colors (`key`,value,label) VALUES (%s,%s,'') ON DUPLICATE KEY UPDATE value=%s", (k, v, v))
+        db.commit()
+        db.close()
+        return {"ok": True, "rate": rate}
+    except Exception as e:
+        raise HTTPException(500, f"Помилка отримання курсу НБУ: {str(e)[:120]}")
 
 
 @app.get("/api/admin/seo/score-history")
