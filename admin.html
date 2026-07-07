@@ -649,6 +649,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
       <div class="adm-stat">Модерація: <strong id="tb-pend">—</strong></div>
       <div class="adm-stat">Юзерів: <strong id="tb-users">—</strong></div>
       <div class="adm-stat"><span class="dot"></span>Реальних: <strong id="tb-online-real">—</strong> <span style="color:var(--border2)">|</span> <span style="color:#7a7ab0">Ботів: <strong id="tb-online-bots" style="color:#7a7ab0">—</strong></span></div>
+      <div class="adm-stat" title="Унікальних переглядів сторінок людьми за 24 год (без ботів)">Людей за 24г: <strong id="tb-visitors-24h" style="color:#4ab8a0">—</strong></div>
       <div class="adm-stat" style="display:none"><strong id="tb-online">—</strong></div>
       <div class="spacer"></div>
       <button id="btn-theme" onclick="toggleAdminTheme()" title="Змінити тему" style="display:flex;align-items:center;gap:6px;background:var(--surface3);border:1px solid var(--border2);border-radius:20px;padding:5px 13px;cursor:pointer;font-size:11px;color:var(--text2);transition:all .2s">
@@ -6113,6 +6114,8 @@ async function loadStats() {
     if(elTbReal) elTbReal.textContent = onlineReal;
     const elTbBots = document.getElementById('tb-online-bots');
     if(elTbBots) elTbBots.textContent = onlineBots;
+    const elTbV24 = document.getElementById('tb-visitors-24h');
+    if(elTbV24) elTbV24.textContent = d.visitors_24h ?? '—';
     document.getElementById('tb-online').textContent=d.online;
     document.getElementById('adm-online').textContent=d.online;
     if(d.online_users!==undefined)_renderOnlineList(d.online_users);

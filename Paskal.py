@@ -1244,6 +1244,8 @@ _server_start: float = time.time()
 _db_queries_hourly: dict = {}   # {hour_ts: count} — кількість звернень до БД
 _cpu_ram_snapshots: list = []   # [{ts, cpu, ram}] — знімки щохвилини
 _pageviews_hourly:  dict = {}   # {hour_ts: count} — лише HTML-сторінки (не API/статика)
+_human_pv_hourly:   dict = {}   # {hour_ts: count} — HTML-сторінки БЕЗ ботів
+_unique_visitors:   dict = {}   # {ip_hash: hour_ts} — унікальні люди, TTL 24г
 
 # ── Bot detection ─────────────────────────────────────────
 _BOT_PATTERNS: list = [
@@ -1609,6 +1611,13 @@ async def track_visits(request, call_next):
     cutoff = hour - 48 * 3600
     for k in [k for k in _visits_hourly if k < cutoff]:
         del _visits_hourly[k]
+    # Bot detection (раніше — щоб використати результат нижче)
+    ua = request.headers.get("user-agent", "")
+    bot = _detect_bot(ua) if ua else None
+    if bot:
+        path = str(request.url.path)
+        with _bot_log_lock:
+            _bot_log_queue.append((bot, path, ua, int(now)))
     # Pageviews — тільки реальні HTML-сторінки (без API і статики)
     _path = request.url.path
     if (
@@ -1620,17 +1629,21 @@ async def track_visits(request, call_next):
         _pageviews_hourly[hour] = _pageviews_hourly.get(hour, 0) + 1
         for k in [k for k in _pageviews_hourly if k < cutoff]:
             del _pageviews_hourly[k]
+        if not bot:
+            # Унікальний відвідувач: рахуємо IP один раз за 24г
+            ip = _get_ip(request)
+            ip_hash = hashlib.md5(ip.encode()).hexdigest()
+            cutoff_24h = now - 86400
+            last_seen = _unique_visitors.get(ip_hash, 0)
+            if last_seen < cutoff_24h:
+                _unique_visitors[ip_hash] = now
+                _human_pv_hourly[hour] = _human_pv_hourly.get(hour, 0) + 1
+            # Чистимо старі записи рідко (раз на ~1000 req через _request_count)
+            for k in [k for k in _human_pv_hourly if k < cutoff]:
+                del _human_pv_hourly[k]
     # Daily counter (persisted to DB every 1000 req)
     today = time.strftime("%Y-%m-%d")
     _visits_daily[today] = _visits_daily.get(today, 0) + 1
-    # Bot detection — queue for async DB write
-    ua = request.headers.get("user-agent", "")
-    if ua:
-        bot = _detect_bot(ua)
-        if bot:
-            path = str(request.url.path)
-            with _bot_log_lock:
-                _bot_log_queue.append((bot, path, ua, int(now)))
     # Periodic maintenance every ~1000 requests
     if _request_count % 1000 == 0:
         _rl.purge(3600)
@@ -1638,6 +1651,10 @@ async def track_visits(request, call_next):
         _flush_daily_visits()
         _flush_hourly_visits()
         _flush_bot_queue()
+        # Чистимо _unique_visitors старше 24г
+        _uv_cutoff = time.time() - 86400
+        for _k in [_k for _k, _v in _unique_visitors.items() if _v < _uv_cutoff]:
+            del _unique_visitors[_k]
     return await call_next(request)
 
 @app.middleware("http")
@@ -6126,6 +6143,9 @@ def admin_stats(request: Request):
     online_real = len(connected) + len(_online_pings)
     with _bot_lock:
         online_bots = _bot_online_count
+    now_hour = int(time.time() // 3600) * 3600
+    # тільки люди: HTML-сторінки без ботів (_human_pv_hourly)
+    visitors_24h = sum(_human_pv_hourly.get(now_hour - i * 3600, 0) for i in range(24))
     return {
         "total": total, "approved": approved, "pending": pend,
         "users": users, "likes": likes,
@@ -6133,6 +6153,7 @@ def admin_stats(request: Request):
         "online_real": online_real,
         "online_bots": online_bots,
         "online_users": _online_users_list(),
+        "visitors_24h": visitors_24h,
     }
 
 

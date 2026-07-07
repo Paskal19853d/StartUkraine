@@ -528,7 +528,8 @@ mark.shl {
 
 /* Планшет/телефон ≤768px: тільки іконки, компактний топбар */
 @media (max-width: 768px) {
-  #topbar { gap: 8px; padding: 0 8px; }
+  #topbar { gap: 8px; padding: 0 8px; overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  #topbar::-webkit-scrollbar { display: none; }
 
   /* Ховаємо текст кнопок — тільки іконки */
   .prof-txt, .logout-txt, .auth-txt, .add-txt, .cf-txt { display: none !important; }
@@ -812,7 +813,6 @@ mark.shl {
 
 /* Мобільна адаптація блоків */
 @media (max-width: 480px) {
-  #bottom-blocks { gap: 5px; }
   #count strong  { font-size: 14px; }
   #count span,
   .sr-link       { font-size: 8px; }
@@ -826,6 +826,45 @@ mark.shl {
 
   /* Search box — займає весь вільний простір */
   #sw { flex: 1; max-width: calc(100vw - 120px); }
+}
+
+/* ── bottom-blocks: адаптація ── */
+
+/* Планшет ≤ 900px */
+@media (max-width: 900px) {
+  #bottom-blocks { width: 210px; }
+}
+
+/* Телефон ≤ 600px — горизонтально, знизу по центру */
+@media (max-width: 600px) {
+  #bottom-blocks {
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: clamp(56px, 12vw, 72px); /* вище social-bar */
+    width: calc(100vw - 16px);
+    max-width: 420px;
+    flex-direction: row;
+    gap: 6px;
+  }
+  #count, #site-rules {
+    flex: 1;
+    padding: 7px 10px;
+  }
+  #count strong   { font-size: 15px; }
+  #count span     { font-size: 9px; }
+  .sr-title       { font-size: 8px; margin-bottom: 2px; }
+  .sr-link        { font-size: 9px; }
+}
+
+/* Маленький телефон ≤ 400px */
+@media (max-width: 400px) {
+  #bottom-blocks  { max-width: 100%; gap: 5px; }
+  #count          { padding: 6px 8px; }
+  #count strong   { font-size: 13px; }
+  #count span     { font-size: 8px; }
+  .sr-link        { font-size: 8px; }
+  /* Довгі посилання — обрізаємо */
+  .sr-link        { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 }
 
 
@@ -1454,8 +1493,12 @@ input.f-err { border-color:#e53935 !important; }
     gap: 6px;
     padding: 0 8px;
     align-items: center;
-    overflow: visible;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
   }
+  #topbar::-webkit-scrollbar { display: none; }
 
   /* Ховаємо тільки зайві підписи — НЕ чіпаємо лого */
   #app-version    { display: none; }
@@ -1473,8 +1516,8 @@ input.f-err { border-color:#e53935 !important; }
   /* Smoke — не стискається */
   #smoke-ctrl { flex-shrink: 0; }
 
-  /* Spacer — розштовхує ліву і праву групи */
-  #topbar-spacer { display: block; flex: 1 1 auto; }
+  /* Spacer — мінімальний відступ між групами (при overflow-x scroll flex:1 не працює) */
+  #topbar-spacer { display: block; flex: 0 0 12px; min-width: 12px; }
 
   /* На мобільних margin-left:auto вже на spacer-і */
   #map-mode-bar { margin-left: 0; }
@@ -1520,7 +1563,12 @@ input.f-err { border-color:#e53935 !important; }
     padding: 0 8px;
     gap: 6px;
     align-items: center;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
   }
+  #topbar::-webkit-scrollbar { display: none; }
 
   #logo { font-size: 11px; white-space: nowrap; }
   #app-version { display: none; }

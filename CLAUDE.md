@@ -37,7 +37,7 @@
 
 ```
 treetex/
-├── Paskal.py            # Весь backend (FastAPI, ~5900+ рядків)
+├── Paskal.py            # Весь backend (FastAPI, ~6100+ рядків)
 ├── seo_utils.py         # Транслітерація KMU 2010, make_slug(), gen_seo_*()
 ├── templates/
 │   └── memorial.html    # Jinja2 шаблон SSR-сторінки для Googlebot
@@ -73,6 +73,7 @@ treetex/
 ├── Doc/                 # SVG діаграми архітектури
 ├── logs/security.log    # Лог безпеки
 ├── CLAUDE.md            # Цей файл (читати ПЕРШИМ!)
+├── SKILL.md             # Постійні навички: безпека + адаптивний дизайн (читати ЗАВЖДИ)
 ├── DATABASE.md          # Детальна схема БД (всі таблиці, колонки, індекси)
 ├── MASTER_GUIDE.md      # Гайд розгортання
 ├── SECURITY_RULES.md    # Політики безпеки
@@ -222,6 +223,8 @@ id, query, results_count, created_at
 | POST | `/api/admin/import/apply` | Імпорт CSV |
 | GET | `/api/admin/stats` | Статистика адмін |
 | GET | `/api/admin/server-stats` | CPU/RAM |
+| GET | `/api/admin/project-cost` | Дані модуля вартості: proj_* ключі + live stats (users, views, bots, mems) |
+| POST | `/api/admin/project-cost/refresh-rate` | Примусово оновити курс USD/UAH з НБУ API |
 
 ### Каталог нагород (публічний)
 | Метод | Endpoint | Опис |
@@ -370,7 +373,7 @@ SECRET_KEY=...
 
 ### admin.html (адмін)
 - SVG іконки (inline sprite, `#ico-*`) — **без зовнішніх шрифтів**
-- Секції: stats, mem, pend, users, mapeditor, social, colors, smoke, photo, sea, icons, cities
+- Секції: stats, mem, pend, users, mapeditor, social, colors, smoke, photo, sea, icons, cities, **projcost**
 - Drag-and-drop: nav order, social networks order
 - Chart.js: запити за 24 год
 - BroadcastChannel: синхронізація між вкладками
@@ -402,13 +405,14 @@ SECRET_KEY=...
 - **Admin**: `admin_theme`, `admin_nav_order`, `admin_logo_url`
 - **Фото на карті**: `map_photo_url`, `map_photo_opacity`, `map_photo_blend`
 - **Пристрої**: `device_desktop_enabled`, `device_tablet_enabled`, `device_mobile_enabled` (1=так, 0=ні), `device_block_msg` (текст заглушки)
+- **Вартість проекту**: `proj_cost_server_usd`, `proj_cost_domains_usd`, `proj_cost_ai_usd`, `proj_cost_other_usd`, `proj_cost_months`, `proj_usd_rate` (НБУ, авто), `proj_usd_rate_updated` (timestamp), `proj_cost_per_user_usd` (CPM, default 1.0)
 
 ---
 
 ## 11. ПРАВИЛА РОБОТИ ДЛЯ CLAUDE
 
 ### При старті нової задачі — ОБОВ'ЯЗКОВО
-1. Прочитати **всі MD файли** проекту: `CLAUDE.md`, `DATABASE.md`, `MASTER_GUIDE.md`, `SECURITY_RULES.md`, `PRODUCTION.md`
+1. Прочитати **всі MD файли** проекту: `CLAUDE.md`, `SKILL.md`, `DATABASE.md`, `MASTER_GUIDE.md`, `SECURITY_RULES.md`, `PRODUCTION.md`
 2. Під час роботи **оновлювати MD файли** при зміні архітектури, нових ендпоінтів, таблиць, файлів
 3. Перевірити актуальність через читання `Paskal.py` / HTML файлів перед правками
 
@@ -447,6 +451,16 @@ SECRET_KEY=...
 - `MASTER_GUIDE.md` — деталі деплою та налаштування
 - `SECURITY_RULES.md` — аудит безпеки
 
+### Модуль "Вартість проекту" (sec-projcost)
+- **Endpoint**: `GET /api/admin/project-cost` — повертає `proj_*` ключі + live stats (users_total, users_24h, views_today, views_yesterday, bots_24h, bots_24h_uniq, top_bots, mem_approved)
+- **Збереження**: через стандартний `PUT /api/admin/colors/batch`
+- **Курс USD/UAH**: daemon thread `_currency_rate_loop()` оновлює кожні 23г через НБУ API (`bank.gov.ua`)
+- **JS функції**: `projCostLoad()`, `projCostSave()`, `projCostCalc()`, `projCostRefreshRate()`
+- **Ринкова вартість** (фіксовані константи в JS): розробка з нуля $45k–$80k, готовий проект з кодом $30k–$70k
+- **CPM метрика**: `proj_cost_per_user_usd` — вартість одного користувача в $, враховується в оцінці аудиторії
+- **КРИТИЧНО — SQL IN з Python list**: `c.execute("...IN (%s,%s)", keys)` де keys — list НЕКОРЕКТНО (PyMySQL передає весь list як 1 параметр). Правильно: `ph = ",".join(["%s"]*len(keys)); c.execute(f"...IN ({ph})", keys)`
+- **КРИТИЧНО — fetch в адмінці**: ЗАВЖДИ додавати `credentials:'include'` при cookie-автентифікації (AP=''), інакше 403
+
 ### Нагороди та зображення
 - Зображення нагород: `img/awards/*.png` — локальні, завантажені через `setup_awards.py`
 - Погони звань: `img/ranks/*.png` — локальні PNG (UA_shoulder_mark_01..17 + 4 генеральські)
@@ -467,6 +481,9 @@ SECRET_KEY=...
 | `colors` таблиця | Використовується для ВСІХ налаштувань (не тільки кольорів) |
 | Fingerprint likes | Ненадійний (VPN обходить), але достатній для базового захисту |
 | Google OAuth | Redirect URI має бути точним (в Google Console) |
+| `portfolio/index.html` | Статистика (total/likes) оновлюється з `/api/stats` кожні 30 хв через `setInterval` |
+| faq/terms/rules | Є прихований блок "Мінімальна ціна проєкту" (`display:none`) — отримує курс з `/api/colors` → `proj_usd_rate` → $30,000 × rate |
+| admin.html showSec | Кожна секція реєструє свою функцію завантаження прямо в `showSec(id)` через `if(id==='X') Xload()` |
 
 ---
 
@@ -497,4 +514,22 @@ sudo systemctl reload nginx
 
 ---
 
-*Оновлено: 2026-05-08. Версія проекту: v2.1*
+*Оновлено: 2026-07-02. Версія проекту: v2.2*
+
+---
+
+## 15. ЖУРНАЛ ЗМІН
+
+### v2.2 (2026-07-02)
+- Додано модуль **"Вартість проекту"** (sec-projcost) в адмін-панелі
+- Нові ключі в `colors`: `proj_cost_*`, `proj_usd_rate`, `proj_usd_rate_updated`, `proj_cost_per_user_usd`
+- Нові endpoints: `GET /api/admin/project-cost`, `POST /api/admin/project-cost/refresh-rate`
+- Daemon thread `_currency_rate_loop()` — авто-оновлення курсу НБУ кожні 23г
+- `portfolio/index.html`: статистика оновлюється кожні 30 хв через `/api/stats`
+- `faq.html`, `terms.html`, `rules.html`: прихований блок ціни проекту (`display:none`)
+- Виправлено баг SQL `IN` з Python list у PyMySQL
+- Виправлено: `credentials:'include'` обов'язковий у всіх admin fetch
+- Зображення `img/bgda.png` вставлено в `.doc-sign__stamp` на faq/terms/rules
+- Email виправлено на `treetex.g.ads@gmail.com` скрізь (не `admin@zoryana.ua`)
+- Фото в `card.html` / `cphoto` — виправлено обрізання (object-fit: contain)
+- Кнопка "Схвалити всі" у секції "На модерації" (пакетне схвалення)
