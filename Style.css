@@ -470,11 +470,21 @@ mark.shl {
   align-items: center;
   gap: 8px;
   padding: 0 8px;
-  background: rgba(3,7,14,.98);
+  background: rgba(3,7,14,.99);
   border-bottom: 1px solid var(--border);
-  z-index: 800;
-  -webkit-backdrop-filter: blur(16px);
-  backdrop-filter: blur(16px);
+  z-index: 9500;
+  /* без backdrop-filter — щоб не створювати stacking context що обрізає #sdrop */
+  overflow: visible;
+}
+/* #sdrop у мобільному пошуку — fixed щоб виходив за межі overlay */
+#mob-sw-input #sdrop {
+  position: fixed;
+  top: var(--bar);
+  left: 0; right: 0;
+  width: 100%;
+  border-radius: 0 0 var(--radius) var(--radius);
+  max-height: calc(100vh - var(--bar) - 16px);
+  z-index: 9501;
 }
 
 #mob-search-back {
