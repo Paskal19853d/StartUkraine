@@ -2420,6 +2420,7 @@ body{visibility:hidden}
     </button>
   </div>
 </aside>
+<div id="card-shield"></div>
 
 <!-- AWARDS MODAL -->
 <div class="mov" id="mawards">
@@ -3988,6 +3989,12 @@ async function openCard(p){
   _renderCardDetails(p);
 
   document.getElementById('card').classList.add('open');
+  window._cardOpen = true;
+  if (typeof window._partnersHide === 'function') window._partnersHide();
+  var _svgL = document.getElementById('svg-layer');
+  var _cvs  = document.querySelector('#map-wrap canvas');
+  if (_svgL) _svgL.style.pointerEvents = 'none';
+  if (_cvs)  _cvs.style.pointerEvents  = 'none';
 
   // Update URL for sharing / SEO back-link
   const _slug = p.slug || String(p.id);
@@ -4007,6 +4014,12 @@ async function openCard(p){
 }
 function closeCard(){
   document.getElementById('card').classList.remove('open');
+  window._cardOpen = false;
+  if (typeof window._partnersShow === 'function') window._partnersShow();
+  var _svgL = document.getElementById('svg-layer');
+  var _cvs  = document.querySelector('#map-wrap canvas');
+  if (_svgL) _svgL.style.pointerEvents = '';
+  if (_cvs)  _cvs.style.pointerEvents  = '';
   selId=null; activePerson=null;
   _clearYtErrHandler();
   const cvCont=document.getElementById('cvideo-container');
@@ -5279,33 +5292,56 @@ async function checkDeviceAccess() {
   if(typeof _tourStart==='function') _tourStart();
   if(typeof _mcInit==='function') _mcInit();
 
+  // ── Керування partners-layer (глобально, доступно з openCard/closeCard) ──
+  var _pLayer = document.getElementById('partners-layer');
+  var _sBar   = document.getElementById('social-bar');
+  // Ховати лише якщо #card розкривається на весь екран (телефони ≤700px touch)
+  function _cardIsFullscreen() {
+    return window.matchMedia('(pointer: coarse) and (max-width: 700px)').matches;
+  }
+  window._cardOpen = false;
+  window._partnersHide = function() {
+    if (!_cardIsFullscreen()) return; // бокова панель — нічого не ховаємо
+    if (_pLayer) { _pLayer.style.visibility = 'hidden'; _pLayer.style.pointerEvents = 'none'; }
+    if (_sBar)   { _sBar.style.visibility = 'hidden';   _sBar.style.pointerEvents = 'none'; }
+  };
+  window._partnersShow = function() {
+    if (window._cardOpen || window._mcOpen || window._bbOpen) return;
+    if (_pLayer) { _pLayer.style.visibility = ''; _pLayer.style.pointerEvents = ''; }
+    if (_sBar)   { _sBar.style.visibility = '';  _sBar.style.pointerEvents = ''; }
+  };
+
   // ── FAB кнопки для мобільного ──
   (function() {
-    var isMob = window.matchMedia('(max-width: 768px)');
+    var isMob = window.matchMedia('(pointer: coarse)');
 
     // ── FAB чату ──
     var mcFab    = document.getElementById('mc-fab');
     var mcFabBadge = document.getElementById('mc-fab-badge');
     var mcChat   = document.getElementById('micro-chat');
-    var mcOpen   = false;
+    window._mcOpen = false;
 
     function mcFabToggle() {
-      mcOpen = !mcOpen;
-      if (mcChat) mcChat.classList.toggle('mc-mob-open', mcOpen);
-      if (mcFab)  mcFab.classList.toggle('mc-fab-open',  mcOpen);
-      if (mcOpen && mcChat) {
-        // скролимо вниз повідомлення
+      window._mcOpen = !window._mcOpen;
+      if (mcChat) mcChat.classList.toggle('mc-mob-open', window._mcOpen);
+      if (mcFab)  mcFab.classList.toggle('mc-fab-open',  window._mcOpen);
+      if (window._mcOpen) {
+        window._partnersHide();
         var msgs = document.getElementById('mc-messages');
         if (msgs) msgs.scrollTop = msgs.scrollHeight;
-        // ховаємо бейдж
         if (mcFabBadge) { mcFabBadge.textContent=''; mcFabBadge.classList.remove('show'); }
+        if (window._bbOpen) bbToggle();
+        if (bbFab) bbFab.style.opacity = '0.35';
+      } else {
+        if (bbFab) bbFab.style.opacity = '';
+        window._partnersShow();
       }
     }
     if (mcFab) mcFab.addEventListener('click', function(e){ e.stopPropagation(); mcFabToggle(); });
 
     // Показати бейдж при новому повідомленні (хук для chat.js)
     window._mcFabNotify = function(count) {
-      if (!isMob.matches || mcOpen) return;
+      if (!isMob.matches || window._mcOpen) return;
       if (mcFabBadge) {
         mcFabBadge.textContent = count > 9 ? '9+' : count;
         mcFabBadge.classList.add('show');
@@ -5316,7 +5352,7 @@ async function checkDeviceAccess() {
     var bbFab   = document.getElementById('bb-fab');
     var bbPopup = document.getElementById('bb-popup');
     var bbTotal = document.getElementById('bb-total');
-    var bbOpen  = false;
+    window._bbOpen = false;
 
     // Синхронізуємо число з основним лічильником
     var mainTotal = document.getElementById('btotal');
@@ -5327,19 +5363,31 @@ async function checkDeviceAccess() {
     }
 
     function bbToggle() {
-      bbOpen = !bbOpen;
-      if (bbPopup) bbPopup.classList.toggle('bb-open', bbOpen);
-      if (bbFab)   bbFab.classList.toggle('bb-fab-open', bbOpen);
-      // Закриваємо чат якщо відкритий
-      if (bbOpen && mcOpen) mcFabToggle();
+      window._bbOpen = !window._bbOpen;
+      if (bbPopup) bbPopup.classList.toggle('bb-open', window._bbOpen);
+      if (bbFab)   bbFab.classList.toggle('bb-fab-open', window._bbOpen);
+      if (window._bbOpen) {
+        window._partnersHide();
+        if (window._mcOpen) mcFabToggle();
+        if (mcFab) mcFab.style.opacity = '0.35';
+      } else {
+        if (mcFab) mcFab.style.opacity = '';
+        window._partnersShow();
+      }
     }
     if (bbFab) bbFab.addEventListener('click', function(e){ e.stopPropagation(); bbToggle(); });
 
-    // Клік за межами — закрити обидва
+    // Клік за межами — закрити обидва і відновити opacity
     document.addEventListener('click', function(e) {
       if (!isMob.matches) return;
-      if (mcOpen && mcChat && !mcChat.contains(e.target) && e.target !== mcFab) mcFabToggle();
-      if (bbOpen && bbPopup && !bbPopup.contains(e.target) && e.target !== bbFab) bbToggle();
+      if (window._mcOpen && mcChat && !mcChat.contains(e.target) && e.target !== mcFab) mcFabToggle();
+      if (window._bbOpen && bbPopup && !bbPopup.contains(e.target) && e.target !== bbFab) bbToggle();
+      // Якщо обидва закриті — відновити opacity і partners-layer
+      if (!window._mcOpen && !window._bbOpen) {
+        if (mcFab) mcFab.style.opacity = '';
+        if (bbFab) bbFab.style.opacity = '';
+        window._partnersShow();
+      }
     });
   })();
 })();
@@ -5539,7 +5587,7 @@ function closeInfo(id){document.getElementById('m-'+id).classList.remove('open')
       box.style.cssText =
         'position:fixed;left:' + p.pos_x + 'px;top:' + p.pos_y + 'px;' +
         'display:inline-flex;flex-direction:column;align-items:center;gap:3px;' +
-        'z-index:9990;text-decoration:none;width:fit-content;' +
+        'z-index:' + (window.matchMedia('(pointer:coarse)').matches ? 1580 : 9990) + ';text-decoration:none;width:fit-content;' +
         'background:rgba(8,10,14,.82);border:1px solid rgba(255,255,255,.1);' +
         'border-radius:8px;padding:3px;box-sizing:border-box;' +
         'backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);' +
@@ -5583,7 +5631,23 @@ function closeInfo(id){document.getElementById('m-'+id).classList.remove('open')
 
       layer.appendChild(box);
     });
+
+    _checkPartnersFit();
   }
+
+  function _checkPartnersFit() {
+    var layer = document.getElementById('partners-layer');
+    if (!layer) return;
+    var W = window.innerWidth, H = window.innerHeight;
+    Array.prototype.forEach.call(layer.children, function(box) {
+      var x = parseFloat(box.style.left) || 0;
+      var y = parseFloat(box.style.top)  || 0;
+      // Мінімальний розмір box ~80x80, перевіряємо чи координата вміщується
+      box.style.display = (x + 80 <= W && y + 80 <= H) ? '' : 'none';
+    });
+  }
+
+  window.addEventListener('resize', _checkPartnersFit);
 
   function load() {
     fetch('/api/partners')
@@ -5796,8 +5860,57 @@ var _TOUR_STEPS = [
 
 function _tourStart() {
   if (localStorage.getItem('zp_tour_done') === '1') return;
-  if (window.innerWidth < 768) return;
+  if (window.matchMedia('(pointer: coarse)').matches) {
+    // Мобільний: показати тільки підказку про topbar scroll
+    setTimeout(_tourMobileTopbar, 1800);
+    return;
+  }
   setTimeout(function(){ _tourShow(0); }, 1800);
+}
+
+function _tourMobileTopbar() {
+  if (localStorage.getItem('zp_mob_topbar_hint') === '1') return;
+  var bubble = document.getElementById('zp-tour-bubble');
+  var overlay = document.getElementById('zp-tour-overlay');
+  if (!bubble || !overlay) return;
+
+  overlay.classList.add('active');
+  document.getElementById('zp-tour-title').textContent = 'Панель керування';
+  document.getElementById('zp-tour-text').innerHTML =
+    '← Панель зверху можна гортати пальцем вліво і вправо →<br><br>' +
+    '<span style="font-size:18px;letter-spacing:6px">← ◈ →</span><br><br>' +
+    'Проведіть пальцем по верхній панелі щоб побачити всі кнопки.';
+  document.getElementById('zp-tour-next').textContent = 'Зрозуміло ✓';
+
+  // Одна точка прогресу
+  var dotsEl = document.getElementById('zp-tour-dots');
+  dotsEl.innerHTML = '<div class="zp-tour-dot on"></div>';
+
+  // Підсвітити topbar
+  var tb = document.getElementById('topbar');
+  if (tb) tb.classList.add('zp-tour-hl');
+
+  bubble.className = '';
+  bubble.style.cssText = '';
+  void bubble.offsetWidth;
+  bubble.classList.add('visible', 'arr-top');
+
+  // Позиція — під topbar по центру
+  var barH = tb ? tb.getBoundingClientRect().height : 54;
+  bubble.style.top = (barH + 14) + 'px';
+  bubble.style.left = '50%';
+  bubble.style.transform = 'translateX(-50%)';
+  bubble.style.setProperty('--arr-top', '18px');
+
+  // Перевизначаємо next для мобільного тур
+  window._tourNext = function() {
+    localStorage.setItem('zp_mob_topbar_hint', '1');
+    if (tb) tb.classList.remove('zp-tour-hl');
+    bubble.classList.remove('visible');
+    overlay.classList.remove('active');
+    // Відновлюємо стандартний _tourNext
+    window._tourNext = function() { _tourShow(_tourStep + 1); };
+  };
 }
 
 function _tourShow(idx) {

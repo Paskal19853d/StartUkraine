@@ -9,7 +9,7 @@
   background: rgba(36, 38, 42, 0.95);
   border: 1px solid rgba(120, 120, 130, 0.35);
   border-radius: 12px;
-  z-index: 1500;
+  z-index: 9995;
   display: flex;
   flex-direction: column;
   backdrop-filter: blur(10px);
@@ -24,6 +24,9 @@
 #micro-chat.mc-collapsed {
   max-height: 36px;
   overflow: hidden;
+}
+#micro-chat.mc-collapsed #mc-body {
+  pointer-events: none;
 }
 
 /* Заголовок */
@@ -216,7 +219,7 @@
 /* Видимість керується класом .mc-hidden — не ховаємо за розміром екрану */
 
 /* ── Мобільний чат: стилі вікна що спливає над FAB ── */
-@media (max-width: 768px) {
+@media (pointer: coarse) {
   #mc-input    { font-size: 16px; } /* iOS: no auto-zoom */
   .mc-msg      { font-size: 11px; }
   .mc-msg-nick { font-size: 10px; }

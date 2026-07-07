@@ -1977,19 +1977,9 @@ def index_redirect(): return RedirectResponse(url="/", status_code=301)
 
 @app.get("/")
 def index(request: Request):
-    preferred = request.cookies.get("preferred_view", "")
     db = get_db()
     try:
         _ds = _get_device_settings(db)
-        if preferred == "mobile":
-            return RedirectResponse(url="/mobile", status_code=302)
-        if preferred != "desktop" and _is_mobile(request):
-            _dev = _detect_device(request.headers.get("user-agent", ""))
-            _mob_ok = (_dev == "mobile" and _ds.get("mobile", True)) \
-                   or (_dev == "tablet" and _ds.get("tablet", True))
-            if _mob_ok:
-                return RedirectResponse(url="/mobile", status_code=302)
-            # мобільна/планшетна вимкнена → завантажити desktop без блоку
         if not _ds.get("desktop", True):
             return HTMLResponse(content=_device_block_html(_ds["block_msg"]), status_code=200)
         with db.cursor() as c:

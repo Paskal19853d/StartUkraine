@@ -526,6 +526,19 @@ mark.shl {
 }
 #mob-search-clear:hover { background: rgba(255,255,255,.08); color: var(--text); }
 
+/* Планшет ≤1000px: горизонтальний скрол топбару — резерв коли pointer:coarse не спрацював (DevTools) */
+@media (max-width: 1000px) {
+  #topbar { flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  #topbar::-webkit-scrollbar { display: none; }
+  #topbar > * { flex-shrink: 0; }
+  #topbar-spacer { flex: 0 0 12px; min-width: 12px; }
+  #sw { display: none !important; }
+  #btn-search-mob { display: inline-flex !important; align-items: center; justify-content: center; padding: 5px 9px; flex-shrink: 0; background: rgba(255,255,255,.05); border: 1px solid var(--border); border-radius: 8px; color: var(--text2); font-size: 14px; cursor: pointer; }
+  .tstat-word { display: none !important; }
+  .smoke-lbl-full { display: none !important; }
+  #app-version { display: none; }
+}
+
 /* Планшет/телефон ≤768px: тільки іконки, компактний топбар */
 @media (max-width: 768px) {
   #topbar { gap: 8px; padding: 0 8px; overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
@@ -846,8 +859,8 @@ mark.shl {
   display: none;
 }
 
-@media (max-width: 768px) {
-  /* Ховаємо оригінальні блоки */
+@media (pointer: coarse) {
+  /* Ховаємо оригінальні блоки — на будь-якому touch-пристрої (portrait і landscape) */
   #micro-chat   { display: none !important; }
   #bottom-blocks { display: none !important; }
 
@@ -869,7 +882,7 @@ mark.shl {
     cursor: pointer;
     z-index: 1600;
     box-shadow: 0 4px 16px rgba(0,0,0,.5);
-    transition: transform .18s, box-shadow .18s, border-color .18s;
+    transition: transform .18s, box-shadow .18s, border-color .18s, opacity .22s;
     -webkit-tap-highlight-color: transparent;
   }
   #mc-fab:active { transform: scale(.92); }
@@ -933,7 +946,7 @@ mark.shl {
     cursor: pointer;
     z-index: 1590;
     box-shadow: 0 4px 16px rgba(0,0,0,.5);
-    transition: transform .18s, box-shadow .18s, border-color .18s;
+    transition: transform .18s, box-shadow .18s, border-color .18s, opacity .22s;
     -webkit-tap-highlight-color: transparent;
   }
   #bb-fab:active { transform: scale(.92); }
@@ -953,7 +966,7 @@ mark.shl {
     border: 1px solid rgba(0,200,255,.25);
     border-radius: 12px;
     padding: 12px 14px;
-    z-index: 1589;
+    z-index: 9995;
     box-shadow: 0 4px 24px rgba(0,0,0,.6);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
@@ -1004,7 +1017,23 @@ mark.shl {
     transition: color .18s;
   }
   #bb-popup .bb-link:hover { color: #00e5ff; }
+
+  /* partners-layer — нижче за FAB щоб не перекривав кнопки */
+  #partners-layer { z-index: 1580 !important; }
 }
+
+/* ── Landscape телефон/планшет: FAB горизонтально, не накладаються ── */
+@media (pointer: coarse) and (orientation: landscape) {
+  /* mc-fab (чат) — нижній лівий кут */
+  #mc-fab { bottom: 10px; left: 12px; width: 40px; height: 40px; font-size: 18px; }
+  /* bb-fab (інфо) — поряд з mc-fab по горизонталі */
+  #bb-fab { bottom: 10px; left: 62px; width: 40px; height: 40px; font-size: 16px; }
+  /* чат-попап — спливає вгору над mc-fab */
+  #micro-chat { bottom: 58px; left: 12px; max-height: min(220px, calc(100vh - 80px)); }
+  /* bb-popup — спливає вгору над bb-fab */
+  #bb-popup   { bottom: 58px; left: 12px; }
+}
+
 
 
 /* ── Social bar ─────────────────────────────────────── */
@@ -1125,6 +1154,7 @@ mark.shl {
   overflow: hidden;
 }
 #card.open { transform: translateX(0); visibility: visible; transition: transform .38s var(--ease), visibility 0s 0s; }
+#card-shield { display: none; }
 
 #cclose {
   position: absolute;
@@ -1646,6 +1676,9 @@ input.f-err { border-color:#e53935 !important; }
   .tb-break       { display: none; }
   #btn-coffee     { display: none !important; }
 
+  /* Всі елементи — не стискаються (інакше overflow-x:auto не дає скрол) */
+  #topbar > * { flex-shrink: 0; }
+
   /* Лого — не скорочуємо */
   #logo { flex-shrink: 0; font-size: 13px; white-space: nowrap; }
 
@@ -1736,11 +1769,15 @@ input.f-err { border-color:#e53935 !important; }
   #zrst { font-size: 18px !important; }
 
 
+  #btn-fs { width: 44px; height: 44px; bottom: clamp(12px, 2.2vw, 22px); right: 60px; }
+  #zoom   { width: 44px; height: auto; bottom: clamp(12px, 2.2vw, 22px); right: 12px; }
+}
+
+/* Touch + вузький екран (телефони): картка на весь екран */
+@media (pointer: coarse) and (max-width: 700px) {
   #card { width: 100%; }
   .fr   { grid-template-columns: 1fr; }
   .mo   { padding: 18px 14px; }
-  #btn-fs { width: 44px; height: 44px; bottom: clamp(12px, 2.2vw, 22px); right: 60px; }
-  #zoom   { width: 44px; height: auto; bottom: clamp(12px, 2.2vw, 22px); right: 12px; }
 }
 
 /* ── UTILITY ANIMATIONS ────────────────────────────── */
@@ -1919,31 +1956,49 @@ body.mobile-icons .add-ico { margin-right: 0; font-size: 14px; }
 }
 /* Overlay за розміром екрану вимкнено */
 
-/* ── Copyright — по центру знизу на мобільних та планшетах ── */
+/* ── Мобільні: social-bar на рівні btn-fs, copyright під ним ── */
 @media (pointer: coarse) {
+  /* social-bar — по центру, bottom: 22px = рівень #btn-fs */
+  #social-bar {
+    left: 50% !important;
+    translate: -50% 0 !important;
+    bottom: 22px !important;
+    opacity: 0.85;
+  }
+  #social-bar:hover {
+    translate: -50% -2px !important;
+    opacity: 1;
+  }
+
+  /* copyright — по центру, під social-bar */
   #copyright-bar {
     right: auto !important;
     left: 50% !important;
     transform: translateX(-50%);
-    text-align: center !important;
     bottom: 6px !important;
+    text-align: center !important;
     white-space: nowrap;
+    font-size: 9px !important;
   }
 }
 
-/* ── Соцмережі — праворуч від блоку Інформація (left встановлює JS) ── */
-@media (orientation: landscape) and (max-height: 480px) {
+/* ── Landscape телефон (висота ≤480px): social горизонтально, copyright поряд ── */
+@media (pointer: coarse) and (orientation: landscape) and (max-height: 480px) {
   #social-bar {
-    translate: 0 0;
-    left: auto;
-    bottom: clamp(12px, 2.2vw, 22px);
+    left: 50% !important;
+    translate: -50% 0 !important;
+    bottom: 32px !important;
     flex-direction: row;
-    opacity: 0.85;
     gap: 4px;
-    padding: 4px 6px;
+    padding: 4px 8px;
   }
   #social-bar .soc-link { width: 20px; height: 20px; }
   #social-bar .soc-row  { gap: 4px; }
+
+  #copyright-bar {
+    bottom: 4px !important;
+    font-size: 8px !important;
+  }
 }
 
 /* ── Карта світу: перемикач режимів (точна копія #view-switcher) ── */
