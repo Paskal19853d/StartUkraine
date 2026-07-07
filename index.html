@@ -2345,6 +2345,26 @@ body{visibility:hidden}
       <a class="sr-link" href="/faq.html" target="_blank" rel="noopener noreferrer">❓ Питання — відповідь</a>
     </div>
   </div>
+
+  <!-- FAB кнопка чату (тільки мобільний) -->
+  <button id="mc-fab" aria-label="Відкрити чат" title="Чат">
+    💬
+    <span id="mc-fab-badge"></span>
+  </button>
+
+  <!-- FAB кнопка bottom-blocks (тільки мобільний) -->
+  <button id="bb-fab" aria-label="Інформація" title="Інформація">★</button>
+
+  <!-- Попап bottom-blocks (тільки мобільний) -->
+  <div id="bb-popup">
+    <div class="bb-count-num" id="bb-total">0</div>
+    <div class="bb-count-lbl">у памʼяті</div>
+    <hr class="bb-divider">
+    <div class="bb-info-title">Інформація</div>
+    <a class="bb-link" href="/rules.html" target="_blank" rel="noopener noreferrer">📋 Правила сайту</a>
+    <a class="bb-link" href="/terms.html" target="_blank" rel="noopener noreferrer">📄 Правила використання</a>
+    <a class="bb-link" href="/faq.html" target="_blank" rel="noopener noreferrer">❓ Питання — відповідь</a>
+  </div>
   <div id="tip"></div>
 </div>
 
@@ -5258,6 +5278,70 @@ async function checkDeviceAccess() {
   if(pl) pl.classList.add('hidden');
   if(typeof _tourStart==='function') _tourStart();
   if(typeof _mcInit==='function') _mcInit();
+
+  // ── FAB кнопки для мобільного ──
+  (function() {
+    var isMob = window.matchMedia('(max-width: 768px)');
+
+    // ── FAB чату ──
+    var mcFab    = document.getElementById('mc-fab');
+    var mcFabBadge = document.getElementById('mc-fab-badge');
+    var mcChat   = document.getElementById('micro-chat');
+    var mcOpen   = false;
+
+    function mcFabToggle() {
+      mcOpen = !mcOpen;
+      if (mcChat) mcChat.classList.toggle('mc-mob-open', mcOpen);
+      if (mcFab)  mcFab.classList.toggle('mc-fab-open',  mcOpen);
+      if (mcOpen && mcChat) {
+        // скролимо вниз повідомлення
+        var msgs = document.getElementById('mc-messages');
+        if (msgs) msgs.scrollTop = msgs.scrollHeight;
+        // ховаємо бейдж
+        if (mcFabBadge) { mcFabBadge.textContent=''; mcFabBadge.classList.remove('show'); }
+      }
+    }
+    if (mcFab) mcFab.addEventListener('click', function(e){ e.stopPropagation(); mcFabToggle(); });
+
+    // Показати бейдж при новому повідомленні (хук для chat.js)
+    window._mcFabNotify = function(count) {
+      if (!isMob.matches || mcOpen) return;
+      if (mcFabBadge) {
+        mcFabBadge.textContent = count > 9 ? '9+' : count;
+        mcFabBadge.classList.add('show');
+      }
+    };
+
+    // ── FAB bottom-blocks ──
+    var bbFab   = document.getElementById('bb-fab');
+    var bbPopup = document.getElementById('bb-popup');
+    var bbTotal = document.getElementById('bb-total');
+    var bbOpen  = false;
+
+    // Синхронізуємо число з основним лічильником
+    var mainTotal = document.getElementById('btotal');
+    if (mainTotal && bbTotal) {
+      var obs = new MutationObserver(function() { bbTotal.textContent = mainTotal.textContent; });
+      obs.observe(mainTotal, { childList: true, characterData: true, subtree: true });
+      bbTotal.textContent = mainTotal.textContent;
+    }
+
+    function bbToggle() {
+      bbOpen = !bbOpen;
+      if (bbPopup) bbPopup.classList.toggle('bb-open', bbOpen);
+      if (bbFab)   bbFab.classList.toggle('bb-fab-open', bbOpen);
+      // Закриваємо чат якщо відкритий
+      if (bbOpen && mcOpen) mcFabToggle();
+    }
+    if (bbFab) bbFab.addEventListener('click', function(e){ e.stopPropagation(); bbToggle(); });
+
+    // Клік за межами — закрити обидва
+    document.addEventListener('click', function(e) {
+      if (!isMob.matches) return;
+      if (mcOpen && mcChat && !mcChat.contains(e.target) && e.target !== mcFab) mcFabToggle();
+      if (bbOpen && bbPopup && !bbPopup.contains(e.target) && e.target !== bbFab) bbToggle();
+    });
+  })();
 })();
 </script>
 

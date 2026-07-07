@@ -215,42 +215,11 @@
 
 /* Видимість керується класом .mc-hidden — не ховаємо за розміром екрану */
 
-/* ── Адаптація для малих екранів ── */
-
-/* Планшет ≤ 900px — трохи вужче */
-@media (max-width: 900px) {
-  #micro-chat {
-    width: 220px;
-    bottom: 110px;
-  }
-}
-
-/* Телефон ≤ 600px — компактний, не перекриває карту */
-@media (max-width: 600px) {
-  #micro-chat {
-    left: 8px;
-    bottom: auto;
-    top: calc(var(--bar, 54px) + 8px);
-    width: calc(100vw - 16px);
-    max-width: 320px;
-    max-height: min(220px, 35vh);
-    border-radius: 10px;
-  }
-  #micro-chat.mc-collapsed {
-    max-height: 34px;
-    width: 120px;
-  }
-  #mc-title   { font-size: 11px; }
-  #mc-input   { font-size: 16px; /* iOS no-zoom */ }
+/* ── Мобільний чат: стилі вікна що спливає над FAB ── */
+@media (max-width: 768px) {
+  #mc-input    { font-size: 16px; } /* iOS: no auto-zoom */
+  .mc-msg      { font-size: 11px; }
+  .mc-msg-nick { font-size: 10px; }
+  .mc-msg-text { font-size: 10.5px; }
   #mc-messages { padding: 4px 6px; }
-  .mc-msg     { font-size: 11px; padding: 3px 0; }
-}
-
-/* Маленький телефон ≤ 400px — ще компактніше */
-@media (max-width: 400px) {
-  #micro-chat {
-    max-height: min(180px, 30vh);
-    max-width: 280px;
-  }
-  #micro-chat.mc-collapsed { width: 100px; }
 }

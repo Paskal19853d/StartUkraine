@@ -813,6 +813,7 @@ mark.shl {
 
 /* Мобільна адаптація блоків */
 @media (max-width: 480px) {
+  #bottom-blocks { gap: 5px; }
   #count strong  { font-size: 14px; }
   #count span,
   .sr-link       { font-size: 8px; }
@@ -828,43 +829,181 @@ mark.shl {
   #sw { flex: 1; max-width: calc(100vw - 120px); }
 }
 
-/* ── bottom-blocks: адаптація ── */
+/* ── FAB кнопки для мобільних (≤768px) ── */
 
-/* Планшет ≤ 900px */
-@media (max-width: 900px) {
-  #bottom-blocks { width: 210px; }
+/* Кнопка чату — FAB */
+#mc-fab {
+  display: none;
 }
 
-/* Телефон ≤ 600px — горизонтально, знизу по центру */
-@media (max-width: 600px) {
-  #bottom-blocks {
-    left: 50%;
-    transform: translateX(-50%);
-    bottom: clamp(56px, 12vw, 72px); /* вище social-bar */
-    width: calc(100vw - 16px);
-    max-width: 420px;
-    flex-direction: row;
-    gap: 6px;
-  }
-  #count, #site-rules {
-    flex: 1;
-    padding: 7px 10px;
-  }
-  #count strong   { font-size: 15px; }
-  #count span     { font-size: 9px; }
-  .sr-title       { font-size: 8px; margin-bottom: 2px; }
-  .sr-link        { font-size: 9px; }
+/* Кнопка bottom-blocks — FAB */
+#bb-fab {
+  display: none;
 }
 
-/* Маленький телефон ≤ 400px */
-@media (max-width: 400px) {
-  #bottom-blocks  { max-width: 100%; gap: 5px; }
-  #count          { padding: 6px 8px; }
-  #count strong   { font-size: 13px; }
-  #count span     { font-size: 8px; }
-  .sr-link        { font-size: 8px; }
-  /* Довгі посилання — обрізаємо */
-  .sr-link        { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Попап bottom-blocks на мобільному */
+#bb-popup {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  /* Ховаємо оригінальні блоки */
+  #micro-chat   { display: none !important; }
+  #bottom-blocks { display: none !important; }
+
+  /* FAB кнопка чату */
+  #mc-fab {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    bottom: 20px;
+    left: 12px;
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    background: rgba(36,38,42,.96);
+    border: 1px solid rgba(79,195,247,.45);
+    color: #4fc3f7;
+    font-size: 20px;
+    cursor: pointer;
+    z-index: 1600;
+    box-shadow: 0 4px 16px rgba(0,0,0,.5);
+    transition: transform .18s, box-shadow .18s, border-color .18s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #mc-fab:active { transform: scale(.92); }
+  #mc-fab.mc-fab-open {
+    border-color: rgba(79,195,247,.85);
+    box-shadow: 0 0 18px rgba(79,195,247,.35), 0 4px 16px rgba(0,0,0,.5);
+  }
+  /* Бейдж непрочитаних */
+  #mc-fab-badge {
+    position: absolute;
+    top: -4px; right: -4px;
+    min-width: 16px; height: 16px;
+    background: #e05070;
+    border-radius: 8px;
+    font-size: 9px;
+    font-weight: 700;
+    color: #fff;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 0 3px;
+    line-height: 1;
+  }
+  #mc-fab-badge.show { display: flex; }
+
+  /* micro-chat — спливає над FAB */
+  #micro-chat {
+    display: flex !important;
+    left: 12px;
+    bottom: 74px;
+    width: min(300px, calc(100vw - 24px));
+    max-height: min(300px, 45vh);
+    transform: translateY(12px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .22s, transform .22s;
+  }
+  #micro-chat.mc-mob-open {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+  /* Ховаємо кнопку collapse всередині чату на мобільному — закриває FAB */
+  #mc-toggle { display: none; }
+
+  /* FAB кнопка bottom-blocks */
+  #bb-fab {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    bottom: 74px;
+    left: 12px;
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    background: rgba(7,13,26,.96);
+    border: 1px solid rgba(240,192,48,.4);
+    color: var(--yellow2);
+    font-size: 18px;
+    cursor: pointer;
+    z-index: 1590;
+    box-shadow: 0 4px 16px rgba(0,0,0,.5);
+    transition: transform .18s, box-shadow .18s, border-color .18s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #bb-fab:active { transform: scale(.92); }
+  #bb-fab.bb-fab-open {
+    border-color: rgba(240,192,48,.8);
+    box-shadow: 0 0 16px rgba(240,192,48,.3), 0 4px 16px rgba(0,0,0,.5);
+  }
+
+  /* Попап bottom-blocks — спливає над FAB */
+  #bb-popup {
+    display: block;
+    position: fixed;
+    left: 12px;
+    bottom: 128px;
+    width: min(220px, calc(100vw - 24px));
+    background: rgba(7,13,26,.97);
+    border: 1px solid rgba(0,200,255,.25);
+    border-radius: 12px;
+    padding: 12px 14px;
+    z-index: 1589;
+    box-shadow: 0 4px 24px rgba(0,0,0,.6);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    transform: translateY(10px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .22s, transform .22s;
+  }
+  #bb-popup.bb-open {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+  /* Вміст попапу */
+  #bb-popup .bb-count-num {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 22px;
+    color: var(--yellow2);
+    text-shadow: 0 0 14px rgba(212,168,0,.4);
+    line-height: 1;
+  }
+  #bb-popup .bb-count-lbl {
+    font-size: 10px;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+  #bb-popup .bb-divider {
+    border: none;
+    border-top: 1px solid rgba(255,255,255,.07);
+    margin: 8px 0;
+  }
+  #bb-popup .bb-info-title {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 8px;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    opacity: .7;
+    margin-bottom: 6px;
+  }
+  #bb-popup .bb-link {
+    display: block;
+    font-size: 11px;
+    color: var(--text2);
+    text-decoration: none;
+    line-height: 1.9;
+    transition: color .18s;
+  }
+  #bb-popup .bb-link:hover { color: #00e5ff; }
 }
 
 
