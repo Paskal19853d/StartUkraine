@@ -587,7 +587,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
         <img id="sb-logo-img" src="" alt="Logo">
       </div>
       <h1>★ Адмін-панель</h1>
-      <p>Зоряна Памʼять <span id="sb-app-version" style="color:#4a5a6a;font-size:9px;letter-spacing:.03em">v2.42 beta</span></p>
+      <p>Зоряна Памʼять <span id="sb-app-version" style="color:#4a5a6a;font-size:9px;letter-spacing:.03em"></span></p>
     </div>
     <div id="nav-list">
     <div class="nav-item active" draggable="true" onclick="showSec('stats')"     data-s="stats">     <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-stats"/></svg></span>Статистика</div>
@@ -4255,12 +4255,12 @@ tr:hover td{background:rgba(255,255,255,.02)}
           <div class="rg-group">
             <label class="rg-label">Номер версії</label>
             <input id="ver-input" type="text" maxlength="40"
-                   placeholder="2.42 beta"
+                   placeholder="3.0.3"
                    style="width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:6px;
                           color:var(--text);padding:9px 12px;font-size:14px;font-weight:600;box-sizing:border-box;
                           letter-spacing:.05em">
             <div style="font-size:11px;color:var(--muted);margin-top:6px">
-              Приклади: <code style="background:rgba(255,255,255,.05);padding:2px 5px;border-radius:3px">2.42 beta</code>
+              Приклади: <code style="background:rgba(255,255,255,.05);padding:2px 5px;border-radius:3px">3.0.3</code>
               &nbsp;·&nbsp; <code style="background:rgba(255,255,255,.05);padding:2px 5px;border-radius:3px">3.0</code>
               &nbsp;·&nbsp; <code style="background:rgba(255,255,255,.05);padding:2px 5px;border-radius:3px">2.43 beta</code>
             </div>
@@ -4272,16 +4272,16 @@ tr:hover td{background:rgba(255,255,255,.02)}
               <div>
                 <div style="font-size:10px;color:var(--muted);margin-bottom:4px">Шапка сайту</div>
                 <span style="font-size:13px;color:#d0dce8">Зоряна Памʼять</span>
-                <span id="ver-prev-main" style="font-size:9px;color:#4a5a6a;margin-left:7px">v2.42 beta</span>
+                <span id="ver-prev-main" style="font-size:9px;color:#4a5a6a;margin-left:7px"></span>
               </div>
               <div>
                 <div style="font-size:10px;color:var(--muted);margin-bottom:4px">Адмін-панель</div>
                 <span style="font-size:10px;color:var(--muted)">Зоряна Памʼять</span>
-                <span id="ver-prev-adm" style="font-size:9px;color:#4a5a6a;margin-left:4px">v2.42 beta</span>
+                <span id="ver-prev-adm" style="font-size:9px;color:#4a5a6a;margin-left:4px"></span>
               </div>
               <div>
                 <div style="font-size:10px;color:var(--muted);margin-bottom:4px">Картка / футер</div>
-                <span id="ver-prev-card" style="font-size:9px;color:#4a5a6a">v2.42 beta</span>
+                <span id="ver-prev-card" style="font-size:9px;color:#4a5a6a"></span>
               </div>
             </div>
           </div>
@@ -9362,7 +9362,7 @@ async function loadColors(){
   // Застосовуємо тему, логотип і версію
   applyAdminTheme(COLORS['admin_theme']?.value || 'dark');
   applyAdminLogo();
-  _applyVersionDisplay(COLORS['app_version']?.value || '2.42 beta');
+  _applyVersionDisplay(COLORS['app_version']?.value || '3.0.3');
   _applyDevModeTogUI();
 
   // Перевіряємо чорновик з куки
@@ -10991,7 +10991,7 @@ async function _saveGoogleBatch() {
 }
 
 function versionLoad() {
-  const v = pendColors['app_version'] ?? COLORS['app_version']?.value ?? '2.42 beta';
+  const v = pendColors['app_version'] ?? COLORS['app_version']?.value ?? '3.0.3';
   const inp = document.getElementById('ver-input');
   if (inp) inp.value = v;
   _versionUpdatePrev(v);
@@ -11041,10 +11041,11 @@ async function versionSave() {
 }
 
 function _applyVersionDisplay(v) {
-  const label = 'v' + v;
-  // Шапка адмінки (sidebar)
-  const sbVer = document.getElementById('sb-app-version');
-  if (sbVer) sbVer.textContent = label;
+  const label = v.startsWith('v') ? v : 'v' + v;
+  ['sb-app-version','ver-prev-main','ver-prev-adm','ver-prev-card'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = label;
+  });
 }
 
 // ── ЗАВАНТАЖЕННЯ ЛОГОТИПУ ──

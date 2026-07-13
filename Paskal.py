@@ -471,10 +471,16 @@ def init_db():
         # ── hourly_stats ──────────────────────────────────
         c.execute("""
             CREATE TABLE IF NOT EXISTS hourly_stats (
-                hour_ts INT PRIMARY KEY,
-                views   INT NOT NULL DEFAULT 0
+                hour_ts     INT PRIMARY KEY,
+                views       INT NOT NULL DEFAULT 0,
+                human_views INT NOT NULL DEFAULT 0
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
         """)
+        # міграція: додати human_views якщо таблиця вже існує без неї
+        try:
+            c.execute("ALTER TABLE hourly_stats ADD COLUMN human_views INT NOT NULL DEFAULT 0")
+        except Exception:
+            pass
 
         # ── minute_silence_settings ───────────────────────
         c.execute("""
@@ -590,7 +596,7 @@ def init_db():
         ("map_photo_blend",       "normal",   "Фото на карті — режим змішування (normal / screen / overlay / soft-light / luminosity)"),
         ("map_photo_feather",     "55",       "Фото на карті — розмитість країв % (20–80)"),
         ("map_photo_scale",       "100",      "Фото на карті — масштаб відображення % (10–100)"),
-        ("app_version",           "2.42 beta","Версія додатку — відображається на всіх сторінках"),
+        ("app_version",           "3.0.3","Версія додатку — відображається на всіх сторінках"),
         ("admin_theme",           "dark",     "Тема адмін-панелі (dark / light)"),
         ("admin_logo_url",        "",         "Логотип адмінки — URL для темної теми (порожньо = без логотипу)"),
         ("admin_logo_url_light",  "",         "Логотип адмінки — URL для світлої теми (порожньо = як темна)"),
@@ -1340,16 +1346,19 @@ def _snapshot_cpu_ram():
 
 def _flush_hourly_visits():
     """Persist in-memory hourly visit counters to hourly_stats table."""
-    if not _visits_hourly:
+    if not _visits_hourly and not _human_pv_hourly:
         return
     try:
         db = get_db()
         with db.cursor() as c:
-            for hour_ts, cnt in list(_visits_hourly.items()):
+            all_hours = set(_visits_hourly) | set(_human_pv_hourly)
+            for hour_ts in all_hours:
+                views = _visits_hourly.get(hour_ts, 0)
+                human = _human_pv_hourly.get(hour_ts, 0)
                 c.execute(
-                    "INSERT INTO hourly_stats (hour_ts, views) VALUES (%s,%s)"
-                    " ON DUPLICATE KEY UPDATE views=%s",
-                    (hour_ts, cnt, cnt)
+                    "INSERT INTO hourly_stats (hour_ts, views, human_views) VALUES (%s,%s,%s)"
+                    " ON DUPLICATE KEY UPDATE views=%s, human_views=%s",
+                    (hour_ts, views, human, views, human)
                 )
             cutoff = int(time.time() // 3600) * 3600 - 49 * 3600
             c.execute("DELETE FROM hourly_stats WHERE hour_ts < %s", (cutoff,))
@@ -1360,19 +1369,21 @@ def _flush_hourly_visits():
 
 
 def _load_hourly_visits():
-    """Load last 48h hourly visit counts from hourly_stats into _visits_hourly on startup."""
+    """Load last 48h hourly visit counts from hourly_stats into _visits_hourly/_human_pv_hourly on startup."""
     try:
         db = get_db()
         with db.cursor() as c:
             cutoff = int(time.time() // 3600) * 3600 - 48 * 3600
             c.execute(
-                "SELECT hour_ts, views FROM hourly_stats WHERE hour_ts >= %s",
+                "SELECT hour_ts, views, human_views FROM hourly_stats WHERE hour_ts >= %s",
                 (cutoff,)
             )
             rows = c.fetchall()
         db.close()
         for r in rows:
             _visits_hourly[r["hour_ts"]] = r["views"]
+            if r.get("human_views"):
+                _human_pv_hourly[r["hour_ts"]] = r["human_views"]
     except Exception:
         pass
 
@@ -3014,13 +3025,22 @@ def get_stats():
         return json.loads(cached)
     db = get_db()
     with db.cursor() as c:
-        # Один замість двох — оптимізація
         c.execute(
             "SELECT COUNT(*) AS total, COALESCE(SUM(likes),0) AS likes FROM memorials WHERE approved=1"
         )
         row = c.fetchone()
+        # visitors_24h: з БД (переживає рестарт) + поточна година з пам'яті
+        now_hour = int(time.time() // 3600) * 3600
+        cutoff = now_hour - 23 * 3600
+        c.execute(
+            "SELECT COALESCE(SUM(human_views),0) AS v FROM hourly_stats WHERE hour_ts >= %s AND hour_ts < %s",
+            (cutoff, now_hour)
+        )
+        db_visitors = int(c.fetchone()["v"])
     db.close()
-    result = {"total": int(row["total"]), "likes": int(row["likes"])}
+    cur_hour_visitors = _human_pv_hourly.get(now_hour, 0)
+    visitors_24h = db_visitors + cur_hour_visitors
+    result = {"total": int(row["total"]), "likes": int(row["likes"]), "visitors_24h": visitors_24h}
     cache_set("stats", json.dumps(result), ttl=30)
     return result
 
@@ -6134,8 +6154,20 @@ def admin_stats(request: Request):
     with _bot_lock:
         online_bots = _bot_online_count
     now_hour = int(time.time() // 3600) * 3600
-    # тільки люди: HTML-сторінки без ботів (_human_pv_hourly)
-    visitors_24h = sum(_human_pv_hourly.get(now_hour - i * 3600, 0) for i in range(24))
+    # visitors_24h: з БД (переживає рестарт) + поточна година з пам'яті
+    try:
+        db2 = get_db()
+        with db2.cursor() as c2:
+            cutoff = now_hour - 23 * 3600
+            c2.execute(
+                "SELECT COALESCE(SUM(human_views),0) AS v FROM hourly_stats WHERE hour_ts >= %s AND hour_ts < %s",
+                (cutoff, now_hour)
+            )
+            db_visitors = int(c2.fetchone()["v"])
+        db2.close()
+    except Exception:
+        db_visitors = 0
+    visitors_24h = db_visitors + _human_pv_hourly.get(now_hour, 0)
     return {
         "total": total, "approved": approved, "pending": pend,
         "users": users, "likes": likes,

@@ -167,18 +167,18 @@ body{visibility:hidden}
 </div>
 <canvas width="1365" height="953"></canvas>
 <header id="topbar">
-  <a id="logo" href="/promo/" title="Про проєкт" style="text-decoration:none;color:inherit;cursor:pointer"><span id="logo-star">&#9733;</span> <em id="logo-em">Зоряна</em> Памʼять<span id="app-version" style="font-size:9px;color:#4a5a6a;margin-left:7px;font-weight:400;letter-spacing:.04em;vertical-align:middle">v2.42 beta</span></a>
+  <a id="logo" href="/promo/" class="zp-hint zp-hint--down" data-hint="Про проєкт" style="text-decoration:none;color:inherit;cursor:pointer"><span id="logo-star">&#9733;</span> <em id="logo-em">Зоряна</em> Памʼять<span id="app-version" style="font-size:9px;color:#4a5a6a;margin-left:7px;font-weight:400;letter-spacing:.04em;vertical-align:middle">v2.42 beta</span></a>
   <div class="tstat"><span id="icon-people">👥</span> <strong id="sttotal">0</strong><span class="tstat-word">&nbsp;людей</span></div>
   <div class="tstat"><span id="icon-likes">⭐</span> <strong id="stlikes">0</strong><span class="tstat-word">&nbsp;зірок</span></div>
-  <div class="tstat"><span class="tdot"></span><strong id="stonline">—</strong><span class="tstat-word">&nbsp;онлайн</span></div>
+  <div class="tstat zp-hint zp-hint--down" data-hint="Відвідувачів за 24 години"><i class="fi fi-rr-user" style="opacity:.5;filter:grayscale(1)"></i> <strong id="stvisitors">—</strong></div>
   <div class="tb-break"></div>
-  <div id="smoke-ctrl" onclick="toggleSmoke()" title="Ефект диму вкл/викл">
+  <div id="smoke-ctrl" onclick="toggleSmoke()" class="zp-hint zp-hint--down" data-hint="Ефект диму вкл/викл">
     <span id="smoke-lbl">Дим<span class="smoke-lbl-full"> увімкнено</span></span>
     <div id="btn-smoke" class="smoke-toggle active"><div class="smoke-thumb"></div></div>
   </div>
   <div id="topbar-spacer"></div>
   <div id="map-mode-bar" style="display:none">
-    <div id="map-mode-toggle" onclick="setMapMode(_mapMode==='ukraine'?'world':'ukraine')" title="Перемкнути карту">
+    <div id="map-mode-toggle" onclick="setMapMode(_mapMode==='ukraine'?'world':'ukraine')" class="zp-hint zp-hint--down" data-hint="Перемкнути карту">
       <div id="mmt-track"><div id="mmt-thumb"></div></div>
       <div id="mmt-labels">
         <span id="mmt-ua">
@@ -206,12 +206,12 @@ body{visibility:hidden}
     </div>
   </div>
   <div class="tb-break"></div>
-  <button id="btn-search-mob" onclick="_mobSearchOpen()" title="Пошук"><i class="fi fi-rr-search"></i></button>
+  <button id="btn-search-mob" onclick="_mobSearchOpen()" class="zp-hint zp-hint--down" data-hint="Пошук"><i class="fi fi-rr-search"></i></button>
   <button id="btn-profile" onclick="openProfile()" style="display:none;align-items:center;gap:5px;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:11px;font-family:inherit;padding:6px 12px;cursor:pointer;white-space:nowrap;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg><span class="prof-txt"> Профіль</span></button>
   <button id="btn-logout" onclick="doLogout()"><i class="fi fi-rr-sign-out-alt logout-ico"></i><span class="logout-txt"> Вийти</span></button>
-  <button id="btn-auth" onclick="openAuth()" title="Увійти"><i class="fi fi-rr-sign-in-alt auth-ico"></i><span class="auth-txt"> Увійти</span></button>
+  <button id="btn-auth" onclick="openAuth()" class="zp-hint zp-hint--down" data-hint="Увійти"><i class="fi fi-rr-sign-in-alt auth-ico"></i><span class="auth-txt"> Увійти</span></button>
   <button id="btn-add" onclick="onAdd()"><i class="fi fi-rr-plus add-ico"></i><span class="add-txt"> Додати</span></button>
-  <a id="btn-coffee" href="https://send.monobank.ua/jar/3Q5N8FwVvY" target="_blank" rel="noopener noreferrer" title="Підтримати розробника"><span class="cf-ico">☕</span><span class="cf-txt">Кава адміну</span></a>
+  <a id="btn-coffee" href="https://send.monobank.ua/jar/3Q5N8FwVvY" target="_blank" rel="noopener noreferrer" class="zp-hint zp-hint--down" data-hint="Підтримати розробника"><span class="cf-ico">☕</span><span class="cf-txt">Кава адміну</span></a>
 </header>
 
 <div id="mob-search-overlay">
@@ -2288,7 +2288,7 @@ body{visibility:hidden}
   <!-- Контейнер для Leaflet (карта світу) -->
   <div id="world-map-container" style="position:absolute;top:0;left:0;width:100%;height:100%;z-index:10;display:none"></div>
 
-  <button class="zbtn" id="btn-fs" onclick="toggleFullscreen()" title="Повноекранний режим">
+  <button class="zbtn zp-hint" id="btn-fs" onclick="toggleFullscreen()" data-hint="Повноекранний режим">
     <svg id="fs-icon" viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
       <path d="M3 3h6v2H5v4H3V3zm12 0h6v6h-2V5h-4V3zM3 15h2v4h4v2H3v-6zm16 4h-4v2h6v-6h-2v4z"/>
     </svg>
@@ -3920,6 +3920,7 @@ async function loadData() {
     document.getElementById('sttotal').textContent=stats.total||people.length;
     document.getElementById('stlikes').textContent=stats.likes||0;
     document.getElementById('btotal').textContent=stats.total||people.length;
+    document.getElementById('stvisitors').textContent=stats.visitors_24h||0;
   } catch { console.warn('API недоступний'); document.getElementById('btotal').textContent=0; }
 }
 
@@ -5056,18 +5057,15 @@ async function submitAdd(){
   setTimeout(loadData,500);
 }
 
-/* ── Online counter: WebSocket + HTTP fallback ── */
+/* ── WebSocket (чат + ping) ── */
 function connectWS(){
-  const el=document.getElementById('stonline');
-  // Унікальний ID вкладки — різний для кожної вкладки браузера
   let tabId=sessionStorage.getItem('_tab_id');
   if(!tabId){tabId=Math.random().toString(36).slice(2)+Date.now().toString(36);sessionStorage.setItem('_tab_id',tabId);}
 
   let ws=null,wsOk=false,pingTimer=null,reconnTimer=null;
 
   function httpPing(){
-    fetch('/api/online/ping',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tab_id:tabId})})
-      .then(r=>r.json()).then(d=>{if(d.online!==undefined)el.textContent=d.online;}).catch(()=>{});
+    fetch('/api/online/ping',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tab_id:tabId})}).catch(()=>{});
   }
   function startFallback(){if(pingTimer)return;httpPing();pingTimer=setInterval(httpPing,25000);}
   function stopFallback(){if(pingTimer){clearInterval(pingTimer);pingTimer=null;}}
@@ -5077,11 +5075,8 @@ function connectWS(){
     if(ws){try{ws.close();}catch{}}
     const proto=location.protocol==='https:'?'wss':'ws';
     ws=new WebSocket(`${proto}://${location.host}/ws/online`);
-    ws.onopen=()=>{
-      wsOk=true;_wsDelay=3000;stopFallback();window._onlineWS=ws;
-      if(curUser){ws.send('user:'+(curUser.name||'')+'|'+(curUser.role||'user'));}
-    };
-    ws.onmessage=e=>{try{const d=JSON.parse(e.data);if(d.event==='ping'){ws.send('pong');return;}if(d.online!==undefined)el.textContent=d.online;if(d.event==='chat_delete'&&window._mcOnDelete)window._mcOnDelete(d.id);}catch{}};
+    ws.onopen=()=>{wsOk=true;_wsDelay=3000;stopFallback();window._onlineWS=ws;if(curUser){ws.send('user:'+(curUser.name||'')+'|'+(curUser.role||'user'));}};
+    ws.onmessage=e=>{try{const d=JSON.parse(e.data);if(d.event==='ping'){ws.send('pong');return;}if(d.event==='chat_delete'&&window._mcOnDelete)window._mcOnDelete(d.id);}catch{}};
     ws.onclose=()=>{wsOk=false;startFallback();if(reconnTimer)clearTimeout(reconnTimer);reconnTimer=setTimeout(openWS,_wsDelay);_wsDelay=Math.min(_wsDelay*1.5,30000);};
     ws.onerror=()=>{ws.close();};
   }

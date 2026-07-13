@@ -86,6 +86,62 @@ html, body {
 .tstat strong { color: var(--text); font-weight: 500; transition: color .3s; }
 .tstat:hover { color: var(--text2); }
 
+/* ── Кастомний tooltip в стилі туру — золота обводка ── */
+.zp-hint { position: relative; }
+
+/* балун — за замовчуванням ЗВЕРХУ */
+.zp-hint::after {
+  content: attr(data-hint);
+  position: absolute;
+  bottom: calc(100% + 10px);
+  top: auto;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #0b1627;
+  border: 1px solid rgba(255,215,0,.45);
+  border-radius: 10px;
+  padding: 7px 12px;
+  font-size: 11.5px;
+  font-weight: 400;
+  color: #a8c0d8;
+  white-space: nowrap;
+  box-shadow: 0 4px 18px rgba(0,0,0,.55), 0 0 0 1px rgba(255,215,0,.08);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .18s ease;
+  z-index: 9999;
+}
+/* стрілка — за замовчуванням вниз (балун вгорі) */
+.zp-hint::before {
+  content: '';
+  position: absolute;
+  bottom: calc(100% + 2px);
+  top: auto;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: rgba(255,215,0,.5);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .18s ease;
+  z-index: 9999;
+}
+
+/* модифікатор — підказка ЗНИЗУ */
+.zp-hint--down::after {
+  bottom: auto;
+  top: calc(100% + 10px);
+}
+.zp-hint--down::before {
+  bottom: auto;
+  top: calc(100% + 2px);
+  border-top-color: transparent;
+  border-bottom-color: rgba(255,215,0,.5);
+}
+
+.zp-hint:hover::after,
+.zp-hint:hover::before { opacity: 1; }
+
 .tdot {
   width: 7px; height: 7px;
   border-radius: 50%;
