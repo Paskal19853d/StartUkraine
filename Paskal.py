@@ -7375,3 +7375,174 @@ def seo_score_history(request: Request, days: int = 30):
             for r in rows
         ],
     }
+
+
+# ── i18n endpoints ────────────────────────────────────────
+
+@app.get("/api/langs")
+def api_langs():
+    """Список активних мов."""
+    from lang_engine import get_languages
+    return {"langs": get_languages()}
+
+
+@app.get("/api/i18n/{lang}")
+def api_i18n(lang: str, sections: str = ""):
+    """
+    Повертає словник перекладів для мови lang.
+    sections — опціонально, comma-separated список секцій (ui,map,card,admin,…).
+    Якщо sections не вказано — повертає всі ключі.
+    Fallback до uk якщо ключ відсутній у запитаній мові.
+    """
+    from lang_engine import get_all
+    lang = lang.strip().lower()[:5]
+    if not lang:
+        lang = "uk"
+    sec_list = [s.strip() for s in sections.split(",") if s.strip()] if sections else None
+    translations = get_all(lang, sec_list)
+    return {"lang": lang, "t": translations}
+
+
+@app.get("/api/admin/i18n/langs")
+def api_admin_langs(request: Request):
+    """Всі мови (включно з неактивними) для адмін-панелі."""
+    require_moder(request)
+    db = get_db()
+    with db.cursor() as c:
+        c.execute("SELECT * FROM languages ORDER BY sort_order, code")
+        rows = c.fetchall()
+    db.close()
+    return {"langs": [dict(r) for r in rows]}
+
+
+@app.post("/api/admin/i18n/lang")
+def api_admin_lang_save(request: Request, data: dict):
+    """Зберегти / оновити мову."""
+    require_admin(request)
+    code = str(data.get("code", "")).strip().lower()[:5]
+    if not code:
+        raise HTTPException(400, "code required")
+    db = get_db()
+    with db.cursor() as c:
+        c.execute(
+            "INSERT INTO languages (code,name,flag,direction,is_active,is_default,sort_order) "
+            "VALUES (%s,%s,%s,%s,%s,%s,%s) "
+            "ON DUPLICATE KEY UPDATE name=VALUES(name), flag=VALUES(flag), "
+            "direction=VALUES(direction), is_active=VALUES(is_active), "
+            "is_default=VALUES(is_default), sort_order=VALUES(sort_order)",
+            (
+                code,
+                str(data.get("name", code)),
+                str(data.get("flag", "")),
+                str(data.get("direction", "ltr")),
+                int(data.get("is_active", 1)),
+                int(data.get("is_default", 0)),
+                int(data.get("sort_order", 0)),
+            )
+        )
+    db.commit()
+    db.close()
+    from lang_engine import invalidate_cache
+    invalidate_cache()
+    return {"ok": True}
+
+
+@app.get("/api/admin/i18n/keys")
+def api_admin_i18n_keys(request: Request, lang: str = "uk", section: str = ""):
+    """Список ключів для редагування в адмін-панелі."""
+    require_moder(request)
+    db = get_db()
+    with db.cursor() as c:
+        if section:
+            c.execute(
+                "SELECT id, lang, section, `key`, value, updated_at "
+                "FROM i18n_translations WHERE lang=%s AND section=%s ORDER BY `key`",
+                (lang, section)
+            )
+        else:
+            c.execute(
+                "SELECT id, lang, section, `key`, value, updated_at "
+                "FROM i18n_translations WHERE lang=%s ORDER BY section, `key`",
+                (lang,)
+            )
+        rows = c.fetchall()
+    db.close()
+    return {"keys": [dict(r) for r in rows]}
+
+
+@app.put("/api/admin/i18n/key")
+def api_admin_i18n_key_save(request: Request, data: dict):
+    """Зберегти один ключ перекладу."""
+    require_moder(request)
+    lang    = str(data.get("lang", "uk")).strip()[:5]
+    section = str(data.get("section", "ui")).strip()[:50]
+    key     = str(data.get("key", "")).strip()[:100]
+    value   = str(data.get("value", ""))
+    if not key:
+        raise HTTPException(400, "key required")
+    db = get_db()
+    with db.cursor() as c:
+        c.execute(
+            "INSERT INTO i18n_translations (lang, section, `key`, value) VALUES (%s,%s,%s,%s) "
+            "ON DUPLICATE KEY UPDATE section=VALUES(section), value=VALUES(value)",
+            (lang, section, key, value)
+        )
+    db.commit()
+    db.close()
+    from lang_engine import invalidate_cache
+    invalidate_cache(lang, section)
+    return {"ok": True}
+
+
+@app.delete("/api/admin/i18n/key")
+def api_admin_i18n_key_delete(request: Request, data: dict):
+    """Видалити один ключ перекладу."""
+    require_moder(request)
+    lang = str(data.get("lang", "uk")).strip()[:5]
+    key  = str(data.get("key", "")).strip()[:100]
+    if not key:
+        raise HTTPException(400, "key required")
+    db = get_db()
+    with db.cursor() as c:
+        c.execute(
+            "DELETE FROM i18n_translations WHERE lang=%s AND `key`=%s",
+            (lang, key)
+        )
+    db.commit()
+    db.close()
+    from lang_engine import invalidate_cache
+    invalidate_cache(lang)
+    return {"ok": True}
+
+
+@app.put("/api/admin/i18n/batch")
+def api_admin_i18n_batch(request: Request, data: dict):
+    """
+    Пакетне збереження перекладів.
+    data = {"lang": "uk", "keys": [{"section":"ui","key":"btn.save","value":"Зберегти"}, ...]}
+    """
+    require_moder(request)
+    lang = str(data.get("lang", "uk")).strip()[:5]
+    keys = data.get("keys", [])
+    if not keys:
+        return {"ok": True, "saved": 0}
+    db = get_db()
+    saved = 0
+    with db.cursor() as c:
+        for item in keys:
+            sec = str(item.get("section", "ui")).strip()[:50]
+            k   = str(item.get("key", "")).strip()[:100]
+            v   = str(item.get("value", ""))
+            if not k:
+                continue
+            c.execute(
+                "INSERT INTO i18n_translations (lang, section, `key`, value) VALUES (%s,%s,%s,%s) "
+                "ON DUPLICATE KEY UPDATE section=VALUES(section), value=VALUES(value)",
+                (lang, sec, k, v)
+            )
+            saved += 1
+    db.commit()
+    db.close()
+    from lang_engine import invalidate_cache
+    invalidate_cache(lang)
+    return {"ok": True, "saved": saved}

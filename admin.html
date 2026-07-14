@@ -614,6 +614,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
     <div class="nav-item"        draggable="true" onclick="showSec('chat')"      data-s="chat">      <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-candle"/></svg></span>Чат<span class="nb" id="chat-nb" style="display:none">0</span></div>
     <div class="nav-item"        draggable="true" onclick="showSec('legacy')" data-s="legacy"><span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-hourglass"/></svg></span>Спадщина</div>
     <div class="nav-item"        draggable="true" onclick="showSec('devmode')" data-s="devmode"><span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-doc"/></svg></span>Режим розробки</div>
+    <div class="nav-item"        draggable="true" onclick="showSec('i18n')" data-s="i18n"><span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-edit"/></svg></span>Локалізація</div>
     <div class="nav-group" id="navg-admin" draggable="true">
       <div class="nav-group-hdr" onclick="_toggleNavGroup('navg-admin')">
         <span class="nav-drag">⠿</span>
@@ -5494,6 +5495,80 @@ tr:hover td{background:rgba(255,255,255,.02)}
         </div>
       </div><!-- /sec-projcost -->
 
+      <!-- ══ ЛОКАЛІЗАЦІЯ i18n ══ -->
+      <div id="sec-i18n" class="section">
+        <div class="sec-title"><svg class="adm-ico"><use href="#ico-edit"/></svg> Локалізація</div>
+
+        <!-- Фільтри -->
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:center">
+          <select id="i18n-lang-sel" onchange="i18nLoad()" style="background:#0d1a2d;border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:8px;font-size:13px">
+            <option value="uk">🇺🇦 Українська</option>
+            <option value="en">🇬🇧 English</option>
+          </select>
+          <select id="i18n-sec-sel" onchange="i18nLoad()" style="background:#0d1a2d;border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:8px;font-size:13px">
+            <option value="">— всі секції —</option>
+            <option value="ui">ui</option>
+            <option value="nav">nav</option>
+            <option value="map">map</option>
+            <option value="card">card</option>
+            <option value="form">form</option>
+            <option value="auth">auth</option>
+            <option value="chat">chat</option>
+            <option value="stats">stats</option>
+            <option value="errors">errors</option>
+            <option value="admin">admin</option>
+          </select>
+          <input id="i18n-search" type="text" placeholder="Пошук по ключу або тексту…" oninput="i18nFilter()" style="background:#0d1a2d;border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:8px;font-size:13px;flex:1;min-width:200px">
+          <button class="btn btn-p" onclick="i18nLoad()"><svg class="adm-ico"><use href="#ico-refresh"/></svg> Оновити</button>
+          <button class="btn btn-g" onclick="i18nSaveAll()" id="i18n-save-btn" disabled><svg class="adm-ico"><use href="#ico-check"/></svg> Зберегти зміни</button>
+        </div>
+
+        <div id="i18n-status" style="margin-bottom:8px;font-size:12px;color:var(--muted)"></div>
+
+        <!-- Таблиця ключів -->
+        <div style="overflow-x:auto">
+          <table style="width:100%;border-collapse:collapse;font-size:13px" id="i18n-table">
+            <thead>
+              <tr style="border-bottom:1px solid var(--border);color:var(--muted);font-size:11px;text-align:left">
+                <th style="padding:6px 8px;width:80px">Секція</th>
+                <th style="padding:6px 8px;width:200px">Ключ</th>
+                <th style="padding:6px 8px">Значення</th>
+                <th style="padding:6px 8px;width:40px"></th>
+              </tr>
+            </thead>
+            <tbody id="i18n-tbody"></tbody>
+          </table>
+        </div>
+        <div id="i18n-empty" style="display:none;text-align:center;color:var(--muted);padding:40px;font-size:13px">Ключів не знайдено</div>
+
+        <!-- Додати новий ключ -->
+        <div style="margin-top:20px;padding:16px;background:rgba(0,136,187,.06);border:1px solid rgba(0,136,187,.2);border-radius:10px">
+          <div style="font-size:12px;color:var(--muted);margin-bottom:10px;font-weight:600">ДОДАТИ КЛЮЧ</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+            <div style="display:flex;flex-direction:column;gap:4px">
+              <label style="font-size:11px;color:var(--muted)">Мова</label>
+              <select id="i18n-new-lang" style="background:#0d1a2d;border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:8px;font-size:13px">
+                <option value="uk">uk</option>
+                <option value="en">en</option>
+              </select>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:4px">
+              <label style="font-size:11px;color:var(--muted)">Секція</label>
+              <input id="i18n-new-sec" type="text" value="ui" style="background:#0d1a2d;border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:8px;font-size:13px;width:80px">
+            </div>
+            <div style="display:flex;flex-direction:column;gap:4px">
+              <label style="font-size:11px;color:var(--muted)">Ключ</label>
+              <input id="i18n-new-key" type="text" placeholder="btn.save" style="background:#0d1a2d;border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:8px;font-size:13px;width:160px">
+            </div>
+            <div style="display:flex;flex-direction:column;gap:4px;flex:1;min-width:200px">
+              <label style="font-size:11px;color:var(--muted)">Значення</label>
+              <input id="i18n-new-val" type="text" placeholder="Текст перекладу" style="background:#0d1a2d;border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:8px;font-size:13px;width:100%">
+            </div>
+            <button class="btn btn-p" onclick="i18nAddKey()"><svg class="adm-ico"><use href="#ico-plus"/></svg> Додати</button>
+          </div>
+        </div>
+      </div><!-- /sec-i18n -->
+
     </div><!-- /content-area -->
   </div><!-- /main -->
 </div><!-- /layout -->
@@ -5865,6 +5940,7 @@ function showSec(id) {
   if(id==='legacy')  { if(typeof legacyOpen==='function') legacyOpen(); }
   if(id==='devmode')   dmLoad();
   if(id==='projcost')  projCostLoad();
+  if(id==='i18n')      i18nLoad();
 }
 
 /* ══════════ ХВИЛИНА МОВЧАННЯ ══════════ */
@@ -13523,6 +13599,159 @@ function _wmPreset(name) {
     }
 
     body.innerHTML = rows;
+  };
+
+})();
+</script>
+
+<!-- ══ i18n admin JS ══ -->
+<script>
+(function(){
+  var _i18nData = [];      // всі завантажені ключі
+  var _i18nDirty = {};     // змінені: key → {lang,section,key,value}
+
+  function _api(){ return window.API || ''; }
+  function _h(){ return window.authH ? authH() : {}; }
+  function _st(id,v){ var e=document.getElementById(id); if(e) e.textContent=v; }
+  function _msg(txt,ok){
+    var el=document.getElementById('i18n-status');
+    if(!el) return;
+    el.textContent=txt;
+    el.style.color=ok?'#4caf50':'#f44336';
+    setTimeout(function(){ el.textContent=''; },3000);
+  }
+
+  window.i18nLoad = function(){
+    var lang = document.getElementById('i18n-lang-sel').value;
+    var sec  = document.getElementById('i18n-sec-sel').value;
+    _st('i18n-status','Завантаження...');
+    _i18nDirty = {};
+    var url = _api()+'/api/admin/i18n/keys?lang='+encodeURIComponent(lang)
+              +(sec?'&section='+encodeURIComponent(sec):'');
+    fetch(url,{credentials:'include',headers:_h()})
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        _i18nData = d.keys || [];
+        _i18nDirty = {};
+        document.getElementById('i18n-save-btn').disabled = true;
+        i18nRender(_i18nData);
+        _st('i18n-status', 'Завантажено: '+_i18nData.length+' ключів');
+      })
+      .catch(function(){ _msg('Помилка завантаження',false); });
+  };
+
+  window.i18nFilter = function(){
+    var q = (document.getElementById('i18n-search').value||'').toLowerCase();
+    if(!q){ i18nRender(_i18nData); return; }
+    var filtered = _i18nData.filter(function(r){
+      return r.key.toLowerCase().includes(q) || (r.value||'').toLowerCase().includes(q) || r.section.toLowerCase().includes(q);
+    });
+    i18nRender(filtered);
+  };
+
+  window.i18nRender = function(rows){
+    var tbody = document.getElementById('i18n-tbody');
+    var empty = document.getElementById('i18n-empty');
+    if(!rows.length){
+      tbody.innerHTML='';
+      empty.style.display='';
+      return;
+    }
+    empty.style.display='none';
+    tbody.innerHTML = rows.map(function(r){
+      var dirty = _i18nDirty[r.lang+':'+r.key] ? 'background:rgba(255,215,0,.06)' : '';
+      return '<tr style="border-bottom:1px solid rgba(255,255,255,.04);'+dirty+'" data-lang="'+_esc(r.lang)+'" data-key="'+_esc(r.key)+'">'
+        +'<td style="padding:5px 8px;color:var(--muted);font-size:11px">'+_esc(r.section)+'</td>'
+        +'<td style="padding:5px 8px;font-family:monospace;font-size:11px;color:var(--accent)">'+_esc(r.key)+'</td>'
+        +'<td style="padding:5px 8px"><input type="text" value="'+_esc(r.value||'')+'" '
+        +'oninput="i18nMarkDirty(this,\''+_esc(r.lang)+'\',\''+_esc(r.section)+'\',\''+_esc(r.key)+'\')" '
+        +'style="width:100%;background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,.1);'
+        +'color:var(--text);font-size:13px;padding:2px 0;outline:none;font-family:inherit"></td>'
+        +'<td style="padding:5px 4px;text-align:center">'
+        +'<button onclick="i18nDeleteKey(\''+_esc(r.lang)+'\',\''+_esc(r.key)+'\')" title="Видалити" '
+        +'style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:2px 4px" '
+        +'>✕</button></td>'
+        +'</tr>';
+    }).join('');
+  };
+
+  function _esc(s){ return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+
+  window.i18nMarkDirty = function(input, lang, section, key){
+    _i18nDirty[lang+':'+key] = {lang:lang, section:section, key:key, value:input.value};
+    input.closest('tr').style.background='rgba(255,215,0,.06)';
+    document.getElementById('i18n-save-btn').disabled = false;
+  };
+
+  window.i18nSaveAll = function(){
+    var keys = Object.values(_i18nDirty);
+    if(!keys.length) return;
+    var lang = keys[0].lang;
+    var btn = document.getElementById('i18n-save-btn');
+    btn.disabled = true;
+    fetch(_api()+'/api/admin/i18n/batch',{
+      method:'PUT',
+      credentials:'include',
+      headers:Object.assign({'Content-Type':'application/json'},_h()),
+      body:JSON.stringify({lang:lang, keys:keys})
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if(d.ok){
+        _msg('Збережено '+d.saved+' ключів!', true);
+        _i18nDirty = {};
+        document.querySelectorAll('#i18n-tbody tr').forEach(function(tr){
+          tr.style.background='';
+        });
+      } else {
+        _msg('Помилка збереження',false);
+        btn.disabled=false;
+      }
+    })
+    .catch(function(){ _msg('Помилка мережі',false); btn.disabled=false; });
+  };
+
+  window.i18nAddKey = function(){
+    var lang = document.getElementById('i18n-new-lang').value;
+    var sec  = document.getElementById('i18n-new-sec').value.trim();
+    var key  = document.getElementById('i18n-new-key').value.trim();
+    var val  = document.getElementById('i18n-new-val').value;
+    if(!key){ _msg('Введіть ключ',false); return; }
+    fetch(_api()+'/api/admin/i18n/key',{
+      method:'PUT',
+      credentials:'include',
+      headers:Object.assign({'Content-Type':'application/json'},_h()),
+      body:JSON.stringify({lang:lang, section:sec, key:key, value:val})
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if(d.ok){
+        _msg('Ключ додано!',true);
+        document.getElementById('i18n-new-key').value='';
+        document.getElementById('i18n-new-val').value='';
+        // перезавантажити поточну секцію якщо співпадає
+        var curLang = document.getElementById('i18n-lang-sel').value;
+        var curSec  = document.getElementById('i18n-sec-sel').value;
+        if(curLang===lang && (!curSec||curSec===sec)) i18nLoad();
+      } else { _msg('Помилка',false); }
+    })
+    .catch(function(){ _msg('Помилка мережі',false); });
+  };
+
+  window.i18nDeleteKey = function(lang, key){
+    if(!confirm('Видалити ключ "'+key+'" для мови "'+lang+'"?')) return;
+    fetch(_api()+'/api/admin/i18n/key',{
+      method:'DELETE',
+      credentials:'include',
+      headers:Object.assign({'Content-Type':'application/json'},_h()),
+      body:JSON.stringify({lang:lang, key:key})
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if(d.ok){ _msg('Видалено!',true); i18nLoad(); }
+      else { _msg('Помилка видалення',false); }
+    })
+    .catch(function(){ _msg('Помилка',false); });
   };
 
 })();

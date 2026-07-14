@@ -22,7 +22,22 @@
       "Bash(curl -s \"http://127.0.0.1:8000/admin\")",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"http://127.0.0.1:8000/admin\")",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"http://127.0.0.1:8000/\")",
-      "Bash(curl -s \"http://127.0.0.1:8000/\")"
+      "Bash(curl -s \"http://127.0.0.1:8000/\")",
+      "Bash(python -c ' *)",
+      "Bash(python)",
+      "Bash(python -c \"import uvicorn; print\\('has uvicorn'\\)\")",
+      "Bash(rm -f server_test.log)",
+      "Bash(pkill -f \"uvicorn Paskal\")",
+      "Bash(grep -noE \"\\\\`[^\\\\`]*[а-яА-ЯіІїЇєЄ][^\\\\`]*\\\\`\" index.html)",
+      "Bash(grep -noE \"'[^'\\\\`]*[а-яА-ЯіІїЇєЄ][^'\\\\`]*'\" index.html)",
+      "Bash(grep -noE \"'[^'\\\\`]{3,80}[а-яА-ЯіІїЇєЄ][^'\\\\`]{0,80}'\" index.html)",
+      "Bash(grep -n \"console\\\\.\\\\\\(warn\\\\|error\\\\|log\\\\\\)\\(['\\\\\"\\\\`][^'\\\\\"\\\\`]*[а-яА-ЯіІїЇєЄ]\" index.html)",
+      "Bash(grep -noE '\"[^\"]{3,80}[а-яА-ЯіІїЇєЄ][^\"]{0,80}\"' index.html)",
+      "Bash(sort -u -o \"C:/Users/Paskal/AppData/Local/Temp/claude/d--OSPanel-OpenServer-domains-localhost-treetex/be38064f-3cdf-4a68-8f21-6b7b34001005/scratchpad/all_langt_keys.txt\" \"C:/Users/Paskal/AppData/Local/Temp/claude/d--OSPanel-OpenServer-domains-localhost-treetex/be38064f-3cdf-4a68-8f21-6b7b34001005/scratchpad/all_langt_keys.txt\")",
+      "Bash(python new_keys_uk.py)",
+      "Bash(python new_keys2.py)",
+      "Bash(grep -noE '>[^<>{}$]*[а-яА-ЯіІїЇєЄ][^<>{}$]*<' index.html)",
+      "Bash(grep -nE '>[^<>{}$]*[а-яА-ЯіІїЇєЄ][^<>{}$]*<' index.html)"
     ]
   }
 }

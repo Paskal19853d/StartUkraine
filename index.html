@@ -48,6 +48,7 @@ body{visibility:hidden}
 <!-------->
 <canvas id="fluid"></canvas>
 <script src="js/dat.gui.min.js"></script>
+<script src="/js/i18n.js?v=1"></script>
 <script src="/js/chat.js?v=2"></script>
     <style>
       * {
@@ -162,23 +163,23 @@ body{visibility:hidden}
     <div id="preloader-spinner"></div>
     <div id="preloader-pct">0%</div>
     <div id="preloader-bar-wrap"><div id="preloader-bar"></div></div>
-    <div id="preloader-text">Завантаження...</div>
+    <div id="preloader-text" data-i18n="preload.loading">Завантаження...</div>
   </div>
 </div>
 <canvas width="1365" height="953"></canvas>
 <header id="topbar">
-  <a id="logo" href="/promo/" class="zp-hint zp-hint--down" data-hint="Про проєкт" style="text-decoration:none;color:inherit;cursor:pointer"><span id="logo-star">&#9733;</span> <em id="logo-em">Зоряна</em> Памʼять<span id="app-version" style="font-size:9px;color:#4a5a6a;margin-left:7px;font-weight:400;letter-spacing:.04em;vertical-align:middle">v2.42 beta</span></a>
-  <div class="tstat"><span id="icon-people">👥</span> <strong id="sttotal">0</strong><span class="tstat-word">&nbsp;людей</span></div>
-  <div class="tstat"><span id="icon-likes">⭐</span> <strong id="stlikes">0</strong><span class="tstat-word">&nbsp;зірок</span></div>
-  <div class="tstat zp-hint zp-hint--down" data-hint="Відвідувачів за 24 години"><i class="fi fi-rr-user" style="opacity:.5;filter:grayscale(1)"></i> <strong id="stvisitors">—</strong></div>
+  <a id="logo" href="/promo/" class="zp-hint zp-hint--down" data-i18n-hint="logo.hint" data-hint="Про проєкт" style="text-decoration:none;color:inherit;cursor:pointer"><span id="logo-star">&#9733;</span> <em id="logo-em">Зоряна</em> Памʼять<span id="app-version" style="font-size:9px;color:#4a5a6a;margin-left:7px;font-weight:400;letter-spacing:.04em;vertical-align:middle">v2.42 beta</span></a>
+  <div class="tstat"><span id="icon-people">👥</span> <strong id="sttotal">0</strong><span class="tstat-word" data-i18n="people">&nbsp;людей</span></div>
+  <div class="tstat"><span id="icon-likes">⭐</span> <strong id="stlikes">0</strong><span class="tstat-word" data-i18n="stars">&nbsp;зірок</span></div>
+  <div class="tstat zp-hint zp-hint--down" data-i18n-hint="visitors.hint" data-hint="Відвідувачів за 24 години"><i class="fi fi-rr-user" style="opacity:.5;filter:grayscale(1)"></i> <strong id="stvisitors">—</strong></div>
   <div class="tb-break"></div>
-  <div id="smoke-ctrl" onclick="toggleSmoke()" class="zp-hint zp-hint--down" data-hint="Ефект диму вкл/викл">
-    <span id="smoke-lbl">Дим<span class="smoke-lbl-full"> увімкнено</span></span>
+  <div id="smoke-ctrl" onclick="toggleSmoke()" class="zp-hint zp-hint--down" data-i18n-hint="smoke.hint" data-hint="Ефект диму вкл/викл">
+    <span id="smoke-lbl"><span data-i18n="smoke_label">Дим</span><span class="smoke-lbl-full" data-i18n="on"> увімкнено</span></span>
     <div id="btn-smoke" class="smoke-toggle active"><div class="smoke-thumb"></div></div>
   </div>
   <div id="topbar-spacer"></div>
   <div id="map-mode-bar" style="display:none">
-    <div id="map-mode-toggle" onclick="setMapMode(_mapMode==='ukraine'?'world':'ukraine')" class="zp-hint zp-hint--down" data-hint="Перемкнути карту">
+    <div id="map-mode-toggle" onclick="setMapMode(_mapMode==='ukraine'?'world':'ukraine')" class="zp-hint zp-hint--down" data-i18n-hint="mapmode.hint" data-hint="Перемкнути карту">
       <div id="mmt-track"><div id="mmt-thumb"></div></div>
       <div id="mmt-labels">
         <span id="mmt-ua">
@@ -194,31 +195,35 @@ body{visibility:hidden}
     </div>
   </div>
   <div id="sw">
-    <button id="view-switcher" onclick="vsSwitchTo('mobile')" title="Мобільна версія" style="display:none">
+    <button id="view-switcher" onclick="vsSwitchTo('mobile')" data-i18n-title="view.mobile.hint" title="Мобільна версія" style="display:none">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><circle cx="12" cy="17" r="1" fill="currentColor" stroke="none"/></svg>
-      Мобільна
+      <span data-i18n="view.mobile">Мобільна</span>
     </button>
     <div id="sw-input">
       <span class="sico"><i class="fi fi-rr-search"></i></span>
-      <input type="text" id="search" placeholder="Пошук за іменем, позивним, місцем…" autocomplete="off">
-      <button id="search-clear" onclick="si.value='';closeDrop();this.style.display='none';" title="Очистити">✕</button>
+      <input type="text" id="search" data-i18n-placeholder="search.placeholder" placeholder="Пошук за іменем, позивним, місцем…" autocomplete="off">
+      <button id="search-clear" onclick="si.value='';closeDrop();this.style.display='none';" data-i18n-title="btn.clear" title="Очистити">✕</button>
       <div id="sdrop"></div>
     </div>
   </div>
   <div class="tb-break"></div>
-  <button id="btn-search-mob" onclick="_mobSearchOpen()" class="zp-hint zp-hint--down" data-hint="Пошук"><i class="fi fi-rr-search"></i></button>
-  <button id="btn-profile" onclick="openProfile()" style="display:none;align-items:center;gap:5px;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:11px;font-family:inherit;padding:6px 12px;cursor:pointer;white-space:nowrap;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg><span class="prof-txt"> Профіль</span></button>
-  <button id="btn-logout" onclick="doLogout()"><i class="fi fi-rr-sign-out-alt logout-ico"></i><span class="logout-txt"> Вийти</span></button>
-  <button id="btn-auth" onclick="openAuth()" class="zp-hint zp-hint--down" data-hint="Увійти"><i class="fi fi-rr-sign-in-alt auth-ico"></i><span class="auth-txt"> Увійти</span></button>
-  <button id="btn-add" onclick="onAdd()"><i class="fi fi-rr-plus add-ico"></i><span class="add-txt"> Додати</span></button>
-  <a id="btn-coffee" href="https://send.monobank.ua/jar/3Q5N8FwVvY" target="_blank" rel="noopener noreferrer" class="zp-hint zp-hint--down" data-hint="Підтримати розробника"><span class="cf-ico">☕</span><span class="cf-txt">Кава адміну</span></a>
+  <button id="btn-search-mob" onclick="_mobSearchOpen()" class="zp-hint zp-hint--down" data-i18n-hint="search.hint" data-i18n-aria="search.hint" data-hint="Пошук"><i class="fi fi-rr-search"></i></button>
+  <button id="btn-profile" onclick="openProfile()" style="display:none;align-items:center;gap:5px;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:11px;font-family:inherit;padding:6px 12px;cursor:pointer;white-space:nowrap;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg><span class="prof-txt" data-i18n="profile.title"> Профіль</span></button>
+  <button id="btn-logout" onclick="doLogout()"><i class="fi fi-rr-sign-out-alt logout-ico"></i><span class="logout-txt" data-i18n="btn.logout"> Вийти</span></button>
+  <button id="btn-auth" onclick="openAuth()" class="zp-hint zp-hint--down" data-i18n-hint="auth.hint" data-hint="Увійти"><i class="fi fi-rr-sign-in-alt auth-ico"></i><span class="auth-txt" data-i18n="btn.login"> Увійти</span></button>
+  <button id="btn-add" onclick="onAdd()"><i class="fi fi-rr-plus add-ico"></i><span class="add-txt" data-i18n="title.add"> Додати</span></button>
+  <div id="lang-toggle" onclick="LANG.switchLang(LANG.current==='uk'?'en':'uk')" class="zp-hint zp-hint--down" data-hint="Змінити мову / Switch language">
+    <div id="lt-track"><div id="lt-thumb">🇺🇦</div></div>
+    <div id="lt-labels"><span id="lt-uk">UA</span><span id="lt-sep">|</span><span id="lt-en">EN</span></div>
+  </div>
+  <a id="btn-coffee" href="https://send.monobank.ua/jar/3Q5N8FwVvY" target="_blank" rel="noopener noreferrer" class="zp-hint zp-hint--down" data-i18n-hint="coffee.hint" data-hint="Підтримати розробника"><span class="cf-ico">☕</span><span class="cf-txt" data-i18n="coffee.label">Кава адміну</span></a>
 </header>
 
 <div id="mob-search-overlay">
   <button id="mob-search-back" onclick="_mobSearchClose()"><i class="fi fi-rr-angle-left"></i></button>
   <div id="mob-sw-input">
     <span class="sico"><i class="fi fi-rr-search"></i></span>
-    <input type="text" id="mob-search" placeholder="Пошук за іменем, позивним, місцем…" autocomplete="off">
+    <input type="text" id="mob-search" data-i18n-placeholder="search.placeholder" placeholder="Пошук за іменем, позивним, місцем…" autocomplete="off">
     <button id="mob-search-clear" onclick="document.getElementById('mob-search').value='';closeDrop();this.style.display='none';">✕</button>
   </div>
 </div>
@@ -2283,12 +2288,12 @@ body{visibility:hidden}
   <svg id="city-overlay" xmlns="http://www.w3.org/2000/svg"
        style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:visible;opacity:0;transition:opacity .5s ease"></svg>
   <canvas id="canvas-layer"></canvas>
-  <div id="pick-bar">&#128205; Клікніть на карті — місце поховання</div>
+  <div id="pick-bar">&#128205; <span data-i18n="map.pick_bury">Клікніть на карті — місце поховання</span></div>
 
   <!-- Контейнер для Leaflet (карта світу) -->
   <div id="world-map-container" style="position:absolute;top:0;left:0;width:100%;height:100%;z-index:10;display:none"></div>
 
-  <button class="zbtn zp-hint" id="btn-fs" onclick="toggleFullscreen()" data-hint="Повноекранний режим">
+  <button class="zbtn zp-hint" id="btn-fs" onclick="toggleFullscreen()" data-i18n-hint="fullscreen.hint" data-hint="Повноекранний режим">
     <svg id="fs-icon" viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
       <path d="M3 3h6v2H5v4H3V3zm12 0h6v6h-2V5h-4V3zM3 15h2v4h4v2H3v-6zm16 4h-4v2h6v-6h-2v4z"/>
     </svg>
@@ -2319,15 +2324,15 @@ body{visibility:hidden}
   <!-- ── Мікро-чат ── -->
   <div id="micro-chat" class="mc-hidden">
     <div id="mc-header">
-      <span id="mc-title">💬 Чат</span>
+      <span id="mc-title">💬 <span data-i18n="chat_title">Чат</span></span>
       <span id="mc-badge"></span>
-      <button id="mc-toggle" title="Згорнути/розгорнути">−</button>
+      <button id="mc-toggle" data-i18n-title="collapse" title="Згорнути/розгорнути">−</button>
     </div>
     <div id="mc-body">
       <div id="mc-messages"></div>
       <div id="mc-input-row" style="display:flex">
-        <input id="mc-input" type="text" maxlength="100" placeholder="Написати…" autocomplete="off">
-        <button id="mc-send" title="Надіслати">›</button>
+        <input id="mc-input" type="text" maxlength="100" data-i18n-placeholder="placeholder" placeholder="Написати…" autocomplete="off">
+        <button id="mc-send" data-i18n-title="send" title="Надіслати">›</button>
       </div>
       <div id="mc-chars" style="font-size:9px;color:#2a4a5a;text-align:right;padding:0 8px 3px;display:none">0/100</div>
       <div id="mc-auth-hint" style="display:none;font-size:9px;color:#4a7a8a;text-align:center;padding:2px 8px 4px">
@@ -2337,33 +2342,33 @@ body{visibility:hidden}
   </div>
 
   <div id="bottom-blocks">
-    <div id="count"><strong id="btotal">0</strong><span>у памʼяті</span></div>
+    <div id="count"><strong id="btotal">0</strong><span data-i18n="count_label">у памʼяті</span></div>
     <div id="site-rules">
-      <div class="sr-title">Інформація</div>
-      <a class="sr-link" href="/rules.html" target="_blank" rel="noopener noreferrer">📋 Правила сайту</a>
-      <a class="sr-link" href="/terms.html" target="_blank" rel="noopener noreferrer">📄 Правила використання</a>
-      <a class="sr-link" href="/faq.html" target="_blank" rel="noopener noreferrer">❓ Питання — відповідь</a>
+      <div class="sr-title" data-i18n="info_title">Інформація</div>
+      <a class="sr-link" href="/rules.html" target="_blank" rel="noopener noreferrer">📋 <span data-i18n="rules">Правила сайту</span></a>
+      <a class="sr-link" href="/terms.html" target="_blank" rel="noopener noreferrer">📄 <span data-i18n="terms">Правила використання</span></a>
+      <a class="sr-link" href="/faq.html" target="_blank" rel="noopener noreferrer">❓ <span data-i18n="faq">Питання — відповідь</span></a>
     </div>
   </div>
 
   <!-- FAB кнопка чату (тільки мобільний) -->
-  <button id="mc-fab" aria-label="Відкрити чат" title="Чат">
+  <button id="mc-fab" data-i18n-aria="open" aria-label="Відкрити чат" data-i18n-title="chat_title" title="Чат">
     💬
     <span id="mc-fab-badge"></span>
   </button>
 
   <!-- FAB кнопка bottom-blocks (тільки мобільний) -->
-  <button id="bb-fab" aria-label="Інформація" title="Інформація">★</button>
+  <button id="bb-fab" data-i18n-aria="info_title" aria-label="Інформація" data-i18n-title="info_title" title="Інформація">★</button>
 
   <!-- Попап bottom-blocks (тільки мобільний) -->
   <div id="bb-popup">
     <div class="bb-count-num" id="bb-total">0</div>
-    <div class="bb-count-lbl">у памʼяті</div>
+    <div class="bb-count-lbl" data-i18n="count_label">у памʼяті</div>
     <hr class="bb-divider">
-    <div class="bb-info-title">Інформація</div>
-    <a class="bb-link" href="/rules.html" target="_blank" rel="noopener noreferrer">📋 Правила сайту</a>
-    <a class="bb-link" href="/terms.html" target="_blank" rel="noopener noreferrer">📄 Правила використання</a>
-    <a class="bb-link" href="/faq.html" target="_blank" rel="noopener noreferrer">❓ Питання — відповідь</a>
+    <div class="bb-info-title" data-i18n="info_title">Інформація</div>
+    <a class="bb-link" href="/rules.html" target="_blank" rel="noopener noreferrer">📋 <span data-i18n="rules">Правила сайту</span></a>
+    <a class="bb-link" href="/terms.html" target="_blank" rel="noopener noreferrer">📄 <span data-i18n="terms">Правила використання</span></a>
+    <a class="bb-link" href="/faq.html" target="_blank" rel="noopener noreferrer">❓ <span data-i18n="faq">Питання — відповідь</span></a>
   </div>
   <div id="tip"></div>
 </div>
@@ -2378,45 +2383,45 @@ body{visibility:hidden}
     <hr>
   <!-- Стало — добавить строку с позывным ПОСЛЕ cdates и ПЕРЕД cbury: -->
 	<div class="cf" style="align-items:flex-start">
-	  <span class="cl" style="padding-top:2px">📍 Місця</span>
+	  <span class="cl" style="padding-top:2px">📍 <span data-i18n="locations">Місця</span></span>
 	  <span class="cv" style="display:flex;flex-direction:column;gap:3px">
-	    <span><span style="opacity:.55;font-size:10px">пох.&nbsp;</span><span id="cbury"></span></span>
-	    <span><span style="opacity:.55;font-size:10px">заг.&nbsp;</span><span id="cloc"></span></span>
+	    <span><span style="opacity:.55;font-size:10px" data-i18n="card.bury_short">пох.&nbsp;</span><span id="cbury"></span></span>
+	    <span><span style="opacity:.55;font-size:10px" data-i18n="card.loc_short">заг.&nbsp;</span><span id="cloc"></span></span>
 	  </span>
 	</div>
-	<div class="cf" id="cgrp-row" style="display:none"><span class="cl">📻 Позивний</span><span class="cv" id="cgrp"></span></div>
-	<div class="cf" id="cunit-row" style="display:none"><span class="cl">🪖 Підрозділ</span><span class="cv" id="cunit" style="font-size:11px"></span></div>
+	<div class="cf" id="cgrp-row" style="display:none"><span class="cl">📻 <span data-i18n="callsign">Позивний</span></span><span class="cv" id="cgrp"></span></div>
+	<div class="cf" id="cunit-row" style="display:none"><span class="cl">🪖 <span data-i18n="unit">Підрозділ</span></span><span class="cv" id="cunit" style="font-size:11px"></span></div>
 	<div class="cf" id="crank-row">
-	  <span class="cl">🎖 Звання</span>
+	  <span class="cl">🎖 <span data-i18n="rank">Звання</span></span>
 	  <span class="cv" style="display:flex;align-items:center;justify-content:center;gap:14px;width:100%">
 	    <span style="display:inline-flex;align-items:center;justify-content:center;width:120px;height:52px;flex-shrink:0;overflow:visible">
 	      <img id="crank-img" src="" alt="" style="height:120px;width:auto;display:none;transform:rotate(90deg);transform-origin:center">
 	    </span>
 	    <span style="display:flex;flex-direction:column;align-items:center;gap:7px">
 	      <span id="crank" style="font-size:12px;text-align:center"></span>
-	      <button id="awards-btn" onclick="openAwards()" style="display:flex;align-items:center;justify-content:center;width:100%;background:rgba(139,15,15,.82);border:1px solid rgba(190,30,30,.65);border-radius:10px;color:#f5d0d0;font-family:'Unbounded',sans-serif;font-size:10px;font-weight:600;padding:8px 14px;cursor:pointer;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;box-shadow:0 2px 8px rgba(139,0,0,.4);transition:background .2s,box-shadow .2s" onmouseover="this.style.background='rgba(30,0,0,1)';this.style.boxShadow='0 3px 14px rgba(139,0,0,.6)'" onmouseout="this.style.background='rgba(139,15,15,.82)';this.style.boxShadow='0 2px 8px rgba(139,0,0,.4)'">НАГОРОДИ</button>
+	      <button id="awards-btn" onclick="openAwards()" style="display:flex;align-items:center;justify-content:center;width:100%;background:rgba(139,15,15,.82);border:1px solid rgba(190,30,30,.65);border-radius:10px;color:#f5d0d0;font-family:'Unbounded',sans-serif;font-size:10px;font-weight:600;padding:8px 14px;cursor:pointer;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;box-shadow:0 2px 8px rgba(139,0,0,.4);transition:background .2s,box-shadow .2s" onmouseover="this.style.background='rgba(30,0,0,1)';this.style.boxShadow='0 3px 14px rgba(139,0,0,.6)'" onmouseout="this.style.background='rgba(139,15,15,.82)';this.style.boxShadow='0 2px 8px rgba(139,0,0,.4)'" data-i18n="awards">НАГОРОДИ</button>
 	    </span>
 	  </span>
 	</div>
-	<div class="cf" id="cpos-row"><span class="cl">💼 Посада</span><span class="cv" id="cpos"></span></div>
-	<div class="cf"><span class="cl">Обставини</span><span class="cv" id="ccirc"></span></div>
-	<div class="cf" id="cdesc-row" style="display:none;align-items:flex-start"><span class="cl">Опис</span><span class="cv" id="cdesc" style="font-size:11px;line-height:1.55;white-space:pre-wrap"></span></div>
+	<div class="cf" id="cpos-row"><span class="cl">💼 <span data-i18n="position">Посада</span></span><span class="cv" id="cpos"></span></div>
+	<div class="cf"><span class="cl" data-i18n="circumstances">Обставини</span><span class="cv" id="ccirc"></span></div>
+	<div class="cf" id="cdesc-row" style="display:none;align-items:flex-start"><span class="cl" data-i18n="description">Опис</span><span class="cv" id="cdesc" style="font-size:11px;line-height:1.55;white-space:pre-wrap"></span></div>
     <hr>
     <div class="cf" id="dupes-section" style="display:none">
-      <span class="cl">&#128279; Також додали</span>
+      <span class="cl">&#128279; <span data-i18n="card.also_added">Також додали</span></span>
       <div id="cdupes"></div>
     </div>
     <hr id="dupes-hr" style="display:none">
     <div id="cvideo-wrap" style="display:none;margin:10px 0">
       <div id="cvideo-container"></div>
-      <div id="cvideo-hint" style="font-size:9px;color:var(--muted);text-align:center;margin-top:4px;opacity:.6;display:none">ПРОБІЛ — звук вкл/викл</div>
+      <div id="cvideo-hint" style="font-size:9px;color:var(--muted);text-align:center;margin-top:4px;opacity:.6;display:none" data-i18n="sound.hint">ПРОБІЛ — звук вкл/викл</div>
     </div>
     <a id="detail-btn" href="#" target="_blank" rel="noopener" style="display:flex;align-items:center;justify-content:center;gap:7px;width:100%;margin-bottom:8px;padding:10px 16px;border-radius:10px;border:1px solid rgba(240,181,74,.45);background:rgba(240,181,74,.08);color:#f0b54a;font-family:'Unbounded',sans-serif;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;transition:background .2s,box-shadow .2s;text-decoration:none;box-sizing:border-box" onmouseover="this.style.background='rgba(240,181,74,.18)';this.style.boxShadow='0 3px 14px rgba(240,181,74,.25)'" onmouseout="this.style.background='rgba(240,181,74,.08)';this.style.boxShadow='none'">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-      Детальніше
+      <span data-i18n="detail">Детальніше</span>
     </a>
     <button id="lbtn" onclick="doLike()">
-      <span>&#11088;</span><span>Зірка памʼяті</span><span id="lcnt">0</span>
+      <span>&#11088;</span><span data-i18n="like_btn">Зірка памʼяті</span><span id="lcnt">0</span>
     </button>
   </div>
 </aside>
@@ -2426,7 +2431,7 @@ body{visibility:hidden}
 <div class="mov" id="mawards">
   <div class="mo" style="max-width:780px;width:96vw">
     <button class="moc" onclick="closeAwards()">&#10005;</button>
-    <h2 style="margin:0 0 14px">🏅 Нагороди</h2>
+    <h2 style="margin:0 0 14px">🏅 <span data-i18n="awards">Нагороди</span></h2>
     <div style="display:flex;gap:22px;align-items:flex-start">
       <div style="flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:8px;width:280px">
         <img id="awards-person-photo" src="/img/foto_false.png" alt="" style="width:280px;height:157px;object-fit:cover;border-radius:8px;border:1px solid rgba(255,255,255,0.15)">
@@ -2446,7 +2451,7 @@ body{visibility:hidden}
 <div class="mov" id="mauth">
   <div class="mo" style="max-width:420px">
     <button class="moc" onclick="closeAuth()">&#10005;</button>
-    <h2 style="text-align:center;margin-bottom:24px">&#128272; Вхід / Реєстрація</h2>
+    <h2 style="text-align:center;margin-bottom:24px">&#128272; <span data-i18n="auth.title">Вхід / Реєстрація</span></h2>
     <div class="oauth-btns" style="flex-direction:column;gap:12px">
       <a href="/api/auth/google" id="auth-google-btn" class="oauth-btn oauth-google">
         <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
@@ -2455,7 +2460,7 @@ body{visibility:hidden}
           <path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332Z"/>
           <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58Z"/>
         </svg>
-        Продовжити з Google
+        <span data-i18n="auth.continue_google">Продовжити з Google</span>
       </a>
       <a href="/api/auth/diia" class="oauth-btn oauth-diia">
         <span class="diia-row">
@@ -2463,9 +2468,9 @@ body{visibility:hidden}
             <circle cx="16" cy="16" r="16" fill="#fff" opacity=".1"/>
             <text x="16" y="22" text-anchor="middle" font-size="13" font-weight="700" fill="#fff" font-family="sans-serif">Дія</text>
           </svg>
-          Продовжити з Дія
+          <span data-i18n="auth.continue_diia">Продовжити з Дія</span>
         </span>
-        <span class="diia-unavail">тимчасово не працює</span>
+        <span class="diia-unavail" data-i18n="diia.unavailable">тимчасово не працює</span>
       </a>
     </div>
   </div>
@@ -2476,36 +2481,36 @@ body{visibility:hidden}
 <div class="mov" id="madd">
   <div class="mo">
     <button class="moc" onclick="closeAdd()">&#10005;</button>
-    <h2>&#10022; Додати загиблого</h2>
-    <p class="mo-sub">Записи проходять модерацію. Вказуйте лише достовірні дані.</p>
+    <h2>&#10022; <span data-i18n="title.add">Додати загиблого</span></h2>
+    <p class="mo-sub" data-i18n="subtitle">Записи проходять модерацію. Вказуйте лише достовірні дані.</p>
     <div class="fr">
-      <div class="fg"><label>Прізвище *</label><input id="flast" placeholder="Шевченко" maxlength="50" oninput="this.value=this.value.replace(/[^а-яА-ЯіІїЇєЄґҐёЁa-zA-Z'\-]/gu,'')"></div>
-      <div class="fg"><label>Імʼя *</label><input id="ffirst" placeholder="Олег" maxlength="50" oninput="this.value=this.value.replace(/[^а-яА-ЯіІїЇєЄґҐёЁa-zA-Z'\-]/gu,'')"></div>
+      <div class="fg"><label data-i18n="last.label">Прізвище *</label><input id="flast" data-i18n-placeholder="last.placeholder" placeholder="Шевченко" maxlength="50" oninput="this.value=this.value.replace(/[^а-яА-ЯіІїЇєЄґҐёЁa-zA-Z'\-]/gu,'')"></div>
+      <div class="fg"><label data-i18n="first.label">Імʼя *</label><input id="ffirst" data-i18n-placeholder="first.placeholder" placeholder="Олег" maxlength="50" oninput="this.value=this.value.replace(/[^а-яА-ЯіІїЇєЄґҐёЁa-zA-Z'\-]/gu,'')"></div>
     </div>
     <div class="fr">
-      <div class="fg"><label>По батькові</label><input id="fmid" placeholder="Миколайович" maxlength="50" oninput="this.value=this.value.replace(/[^а-яА-ЯіІїЇєЄґҐёЁa-zA-Z'\-]/gu,'')"></div>
-      <div class="fg"><label>Фото (URL)</label><input id="fphoto" placeholder="https://…"></div>
+      <div class="fg"><label data-i18n="mid.label">По батькові</label><input id="fmid" data-i18n-placeholder="mid.placeholder" placeholder="Миколайович" maxlength="50" oninput="this.value=this.value.replace(/[^а-яА-ЯіІїЇєЄґҐёЁa-zA-Z'\-]/gu,'')"></div>
+      <div class="fg"><label data-i18n="photo.label">Фото (URL)</label><input id="fphoto" placeholder="https://…"></div>
     </div>
-    <div class="fr full"><div class="fg"><label>Відео YouTube (URL)</label><input id="fvideo" placeholder="https://youtu.be/… або youtube.com/watch?v=…"></div></div>
+    <div class="fr full"><div class="fg"><label data-i18n="video.label">Відео YouTube (URL)</label><input id="fvideo" placeholder="https://youtu.be/… або youtube.com/watch?v=…"></div></div>
     <div class="fr">
-      <div class="fg"><label>Дата народження</label><input type="date" id="fbirth" min="1900-01-01" onchange="_validatePublicDates()"></div>
-      <div class="fg"><label>Дата загибелі</label><input type="date" id="fdeath" min="1900-01-01" onchange="_validatePublicDates()"></div>
+      <div class="fg"><label data-i18n="birth.label">Дата народження</label><input type="date" id="fbirth" min="1900-01-01" onchange="_validatePublicDates()"></div>
+      <div class="fg"><label data-i18n="death.label">Дата загибелі</label><input type="date" id="fdeath" min="1900-01-01" onchange="_validatePublicDates()"></div>
     </div>
-    <div class="fr full"><div class="fg"><label>Де загинув (текст)</label><input id="floc" placeholder="Авдіївка, Донецька обл."></div></div>
-    <div class="fr full"><div class="fg"><label>Де похований (текст)</label><input id="fbury" placeholder="с. Березівка, Київська обл."></div></div>
+    <div class="fr full"><div class="fg"><label data-i18n="loc.label">Де загинув (текст)</label><input id="floc" data-i18n-placeholder="loc.placeholder" placeholder="Авдіївка, Донецька обл."></div></div>
+    <div class="fr full"><div class="fg"><label data-i18n="bury.label">Де похований (текст)</label><input id="fbury" data-i18n-placeholder="bury.placeholder" placeholder="с. Березівка, Київська обл."></div></div>
     <div class="fr full">
-      <div class="fg"><label>Обставини загибелі</label>
+      <div class="fg"><label data-i18n="circ.label">Обставини загибелі</label>
         <select id="fcirc">
-          <option value="">— оберіть —</option>
+          <option value="" data-i18n="circ.placeholder">— оберіть —</option>
           <option>Міна</option><option>Ракетний удар</option><option>Шахед</option>
           <option>Артилерія</option><option>Прямий контакт</option><option>Снайпер</option>
           <option>Авіабомба</option><option>Полон</option><option>Інше</option>
         </select>
       </div>
     </div>
-    <div class="fr full"><div class="fg"><label>Опис</label><textarea id="fdesc" placeholder="Хоробрий захисник…"></textarea></div></div>
+    <div class="fr full"><div class="fg"><label data-i18n="descr.label">Опис</label><textarea id="fdesc" data-i18n-placeholder="descr.placeholder" placeholder="Хоробрий захисник…"></textarea></div></div>
     <div class="fg" style="margin-bottom:12px">
-      <label>Колір точки</label>
+      <label data-i18n="color.label">Колір точки</label>
       <div class="crow" id="crow">
         <div class="csw sel" style="background:#4fc3f7" data-c="#4fc3f7"></div>
         <div class="csw" style="background:#ffd54f" data-c="#ffd54f"></div>
@@ -2518,24 +2523,24 @@ body{visibility:hidden}
       </div>
     </div>
     <div id="faward-block" style="display:none;margin-bottom:12px">
-      <label style="display:block;margin-bottom:6px;font-size:13px;color:var(--text-secondary,#aaa)">Нагороди та відзнаки <span style="font-size:11px;opacity:.6">(необов'язково)</span></label>
+      <label style="display:block;margin-bottom:6px;font-size:13px;color:var(--text-secondary,#aaa)" data-i18n="form.awards_label">Нагороди та відзнаки <span style="font-size:11px;opacity:.6">(необов'язково)</span></label>
       <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:6px">
-        <input type="text" id="faward-search" placeholder="Пошук нагороди..."
+        <input type="text" id="faward-search" data-i18n-placeholder="award.search" placeholder="Пошук нагороди..."
           style="flex:1;min-width:110px;padding:6px 10px;border-radius:6px;border:1px solid var(--border2,#333);background:var(--surface2,#1a1a2e);color:var(--text,#e0e0e0);font-size:12px">
         <select id="faward-sel"
           style="flex:2;min-width:150px;padding:6px 8px;border-radius:6px;border:1px solid var(--border2,#333);background:var(--surface2,#1a1a2e);color:var(--text,#e0e0e0);font-size:12px">
-          <option value="">— обрати нагороду —</option>
+          <option value="" data-i18n="award.select">— обрати нагороду —</option>
         </select>
-        <button type="button" onclick="_userAddAward()" style="padding:6px 14px;border-radius:6px;background:#0a4f7a;color:#a8e0f8;border:1px solid rgba(0,136,187,.6);font-size:12px;cursor:pointer;white-space:nowrap">+ Додати</button>
+        <button type="button" onclick="_userAddAward()" style="padding:6px 14px;border-radius:6px;background:#0a4f7a;color:#a8e0f8;border:1px solid rgba(0,136,187,.6);font-size:12px;cursor:pointer;white-space:nowrap">+ <span data-i18n="btn.add">Додати</span></button>
       </div>
       <div id="faward-list"></div>
     </div>
-    <p class="plbl" style="margin-bottom:6px">&#128205; Місце загибелі / поховання: <strong id="pstatus" style="color:#4ade80">не обрано</strong></p>
+    <p class="plbl" style="margin-bottom:6px">&#128205; <span data-i18n="map.location_burial_label">Місце загибелі / поховання:</span> <strong id="pstatus" style="color:#4ade80" data-i18n="errors.location_not_selected">не обрано</strong></p>
     <div id="madd-map" style="height:260px;border-radius:10px;border:1px solid rgba(255,255,255,.15);overflow:hidden;margin-bottom:6px"></div>
-    <p style="font-size:11px;color:rgba(255,255,255,.35);margin:0 0 8px">Клікніть на карті щоб поставити мітку · Мітку можна перетягнути</p>
+    <p style="font-size:11px;color:rgba(255,255,255,.35);margin:0 0 8px" data-i18n="map.click_hint">Клікніть на карті щоб поставити мітку · Мітку можна перетягнути</p>
     <input type="hidden" id="fpx"><input type="hidden" id="fpy">
     <input type="hidden" id="fwlat"><input type="hidden" id="fwlng">
-    <button class="fsub" onclick="submitAdd()">&#10022; НАДІСЛАТИ НА МОДЕРАЦІЮ</button>
+    <button class="fsub" onclick="submitAdd()">&#10022; <span data-i18n="submit">НАДІСЛАТИ НА МОДЕРАЦІЮ</span></button>
   </div>
 </div>
 
@@ -2678,7 +2683,7 @@ function _renderWorldMarkers() {
     const tipHtml =
       `<div class="tn">${h(p.last)} ${h(p.first)}</div>` +
       `<div class="tl">&#9875; ${h(p.bury)||'—'}</div>` +
-      `<div class="ts">&#11088; ${p.likes||0}${dupes.length?' &nbsp;&#128279;'+dupes.length+' збіг':''}${hasVid?' &nbsp;&#9654; відео':''}</div>`;
+      `<div class="ts">&#11088; ${p.likes||0}${dupes.length?' &nbsp;&#128279;'+dupes.length+' '+LANG.t('marker.duplicates'):''}${hasVid?' &nbsp;&#9654; '+LANG.t('marker.video'):''}</div>`;
     marker.bindTooltip(tipHtml, {sticky: true, opacity: 1, className: 'lf-tip', offset: [10, 0]});
     marker.on('click', () => {
       openCard(p);
@@ -2742,6 +2747,14 @@ function setMapMode(mode) {
   document.getElementById('map-mode-toggle')?.classList.toggle('mode-world', mode === 'world');
 }
 /* ── /Карта світу ──────────────────────────────────────── */
+
+function _langToggleUpdateUI(lang) {
+  const toggle = document.getElementById('lang-toggle');
+  if (!toggle) return;
+  const thumb = document.getElementById('lt-thumb');
+  if (thumb) thumb.textContent = lang === 'en' ? '🇬🇧' : '🇺🇦';
+  toggle.classList.toggle('lang-en', lang === 'en');
+}
 
 async function loadColors() {
   try {
@@ -2815,8 +2828,8 @@ function _applyRegSettings() {
   if (lblMid) {
     const star = fieldMid === 'required' ? ' *' : '';
     const optTxt = fieldMid === 'optional'
-      ? ' <span style="font-size:10px;color:var(--muted)">(необов\'язково)</span>' : '';
-    lblMid.innerHTML = 'По батькові' + star + optTxt +
+      ? ' <span style="font-size:10px;color:var(--muted)">('+LANG.t('optional')+')</span>' : '';
+    lblMid.innerHTML = LANG.t('mid.label') + star + optTxt +
       ' <span id="cnt-mid" style="float:right;font-size:10px;color:var(--muted)">'+(cntMid?cntMid.textContent:'0/50')+'</span>';
   }
 
@@ -2826,11 +2839,11 @@ function _applyRegSettings() {
   const lblPhone   = document.getElementById('lbl-phone');
   const hintPhone  = document.getElementById('hint-phone');
   if (fregPhone) fregPhone.style.display = fieldPhone === 'hidden' ? 'none' : '';
-  if (lblPhone)  lblPhone.textContent = fieldPhone === 'required' ? 'Телефон *' : 'Телефон';
+  if (lblPhone)  lblPhone.textContent = LANG.t('phone.label') + (fieldPhone === 'required' ? ' *' : '');
   if (hintPhone) {
     hintPhone.textContent = fieldPhone === 'required'
-      ? 'Обов\'язковий (+380XXXXXXXXX або 0XXXXXXXXX)'
-      : 'Необов\'язково';
+      ? LANG.t('errors.phone_hint_required')
+      : LANG.t('optional');
     hintPhone.className = 'f-hint ' + (fieldPhone === 'required' ? '' : 'inf');
   }
 
@@ -2845,15 +2858,15 @@ function _applyRegSettings() {
   // ── Мінімальна довжина пароля ───────────────────────────
   const minPass = parseInt(g('reg_min_pass_len','10')) || 10;
   const lblPMin = document.getElementById('lbl-pass-min');
-  if (lblPMin) lblPMin.textContent = `(мін. ${minPass} симв.)`;
+  if (lblPMin) lblPMin.textContent = LANG.t('errors.pass_min_hint', {min: minPass});
 
   // ── Кнопка відправки / реєстрації ──────────────────────
   const emailVerify = g('reg_require_email_verify','1') === '1';
   const btnSend = document.getElementById('btn-send-code');
   if (btnSend && !btnSend.disabled) {
     btnSend.textContent = emailVerify
-      ? 'Надіслати код підтвердження на email'
-      : 'Зареєструватись';
+      ? LANG.t('send_code_btn')
+      : LANG.t('btn.register');
   }
 }
 
@@ -3303,7 +3316,7 @@ window.addEventListener('mousemove',e=>{
         const dupes=people.filter(x=>x._dupKey&&x._dupKey===p._dupKey&&x.id!==p.id);
         const hasVid=!!_ytExtractId(p.video_url);
         tip.classList.remove('has-video');
-        tip.innerHTML=`<div class="tn">${h(p.last)} ${h(p.first)}</div><div class="tl">&#9875; ${h(p.bury)||'—'}</div><div class="ts">&#11088; ${p.likes||0}${dupes.length?' &nbsp;&#128279;'+dupes.length+' збіг':''}${hasVid?' &nbsp;&#9654; відео':''}</div>`;
+        tip.innerHTML=`<div class="tn">${h(p.last)} ${h(p.first)}</div><div class="tl">&#9875; ${h(p.bury)||'—'}</div><div class="ts">&#11088; ${p.likes||0}${dupes.length?' &nbsp;&#128279;'+dupes.length+' '+LANG.t('marker.duplicates'):''}${hasVid?' &nbsp;&#9654; '+LANG.t('marker.video'):''}</div>`;
       }
     } else {
       _tipPid=null;
@@ -3328,7 +3341,7 @@ function _buildYtPreview(cont, ytId) {
 
   const btn = document.createElement('div');
   btn.style.cssText = 'position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px';
-  btn.innerHTML = '<div style="width:52px;height:52px;background:rgba(255,0,0,.9);border-radius:50%;display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="24" height="24" fill="white"><polygon points="9,7 19,12 9,17"/></svg></div><div style="font-size:11px;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.8)">Натисніть для перегляду</div>';
+  btn.innerHTML = '<div style="width:52px;height:52px;background:rgba(255,0,0,.9);border-radius:50%;display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="24" height="24" fill="white"><polygon points="9,7 19,12 9,17"/></svg></div><div style="font-size:11px;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.8)">'+LANG.t('card.award_zoom_hint')+'</div>';
 
   wrap.appendChild(img);
   wrap.appendChild(btn);
@@ -3376,7 +3389,7 @@ function _ytFallback(cont, ytId) {
   cont.innerHTML = '';
   const d = document.createElement('div');
   d.style.cssText = 'background:rgba(20,0,0,.4);border:1px solid rgba(224,80,80,.3);border-radius:8px;padding:16px;text-align:center';
-  d.innerHTML = `<div style="color:#e05050;font-size:12px;margin-bottom:10px">⚠️ Власник відео заборонив вбудовування</div><a href="https://www.youtube.com/watch?v=${ytId}" target="_blank" rel="noopener" style="display:inline-block;background:#ff0000;color:#fff;padding:8px 18px;border-radius:6px;font-size:12px;text-decoration:none;font-weight:600">▶ Відкрити на YouTube</a>`;
+  d.innerHTML = `<div style="color:#e05050;font-size:12px;margin-bottom:10px">⚠️ ${LANG.t('video.embed_blocked')}</div><a href="https://www.youtube.com/watch?v=${ytId}" target="_blank" rel="noopener" style="display:inline-block;background:#ff0000;color:#fff;padding:8px 18px;border-radius:6px;font-size:12px;text-decoration:none;font-weight:600">▶ ${LANG.t('video.open_youtube')}</a>`;
   cont.appendChild(d);
 }
 
@@ -3389,7 +3402,7 @@ window.addEventListener('keydown',e=>{
     _cardYtMuted=!_cardYtMuted;
     f.contentWindow.postMessage(JSON.stringify({event:'command',func:_cardYtMuted?'mute':'unMute',args:[]}), 'https://www.youtube.com');
     const hint=document.getElementById('cvideo-hint');
-    if(hint)hint.textContent=_cardYtMuted?'🔇 ПРОБІЛ — увімкнути звук':'🔊 ПРОБІЛ — вимкнути звук';
+    if(hint)hint.textContent=_cardYtMuted?LANG.t('sound.mute'):LANG.t('sound.unmute');
   }
 });
 window.addEventListener('mouseup',e=>{
@@ -3887,7 +3900,7 @@ async function loadData() {
     const stats=await rs.json();cities=await rc.json();
     // Передобчислюємо нормалізовані назви для пошуку
     cities.forEach(c=>{ c._nameNorm=(c.name||'').toLowerCase(); c._nameLat=_cityTranslit(c.name); });
-    _setPL(20, 'Список захисників...');
+    _setPL(20, LANG.t('preload.people'));
     // Один запит — тільки поля для карти (швидко навіть при 10k+ записів)
     const rp = await fetch(API+'/api/map-points');
     const pd = await rp.json();
@@ -3942,7 +3955,7 @@ function _renderVideoBlock(videoUrl){
     if(cvHint) cvHint.style.display='none';
     const ph=document.createElement('div');
     ph.style.cssText='position:relative;width:100%;aspect-ratio:16/9;border-radius:8px;overflow:hidden;border:1px solid var(--border2)';
-    ph.innerHTML='<img src="/img/novidio.gif" style="width:100%;height:100%;object-fit:cover;display:block;opacity:.8"><span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.6);font-size:11px;letter-spacing:.08em">ВІДЕО ВІДСУТНЄ</span>';
+    ph.innerHTML='<img src="/img/novidio.gif" style="width:100%;height:100%;object-fit:cover;display:block;opacity:.8"><span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.6);font-size:11px;letter-spacing:.08em">'+LANG.t('video.none')+'</span>';
     cvCont.appendChild(ph);
   }
 }
@@ -4077,10 +4090,10 @@ function _initUserAwardSel() {
   const sel = document.getElementById('faward-sel');
   const srch = document.getElementById('faward-search');
   if (!sel) return;
-  const GROUPS = {hero:'Вищі звання', order:'Ордени', cross:'Хрести', medal:'Медалі', badge:'Відзнаки/Знаки'};
+  const GROUPS = {hero:LANG.t('award.cat.hero'), order:LANG.t('award.cat.order'), cross:LANG.t('award.cat.cross'), medal:LANG.t('award.cat.medal'), badge:LANG.t('award.cat.badge')};
   function rebuild(q) {
     q = (q||'').toLowerCase();
-    sel.innerHTML = '<option value="">— обрати нагороду —</option>';
+    sel.innerHTML = `<option value="">${LANG.t('award.select')}</option>`;
     const byG = {};
     AWARDS_DATA.forEach((a, i) => {
       if (q && !a.name.toLowerCase().includes(q)) return;
@@ -4164,7 +4177,7 @@ async function openAwards(){
   }
 
   const list = document.getElementById('awards-list');
-  if(list) list.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:16px 0">Завантаження...</div>';
+  if(list) list.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:16px 0">${LANG.t('loading')}</div>`;
 
   document.getElementById('mawards').classList.add('open');
 
@@ -4173,15 +4186,15 @@ async function openAwards(){
     const awards = await res.json();
     if(!list) return;
     if(!awards.length){
-      list.innerHTML = '<div class="awards-empty"><div class="awards-empty-ico">🏅</div><div class="awards-empty-title">Немає даних</div><div class="awards-empty-sub">Інформація про нагороди відсутня в базі даних</div></div>';
+      list.innerHTML = `<div class="awards-empty"><div class="awards-empty-ico">🏅</div><div class="awards-empty-title">${LANG.t('no_data')}</div><div class="awards-empty-sub">${LANG.t('card.awards_empty')}</div></div>`;
       return;
     }
     list.innerHTML = awards.map(a => {
       const imgSrc = a.img_file ? _wikiImg(a.img_file, 60) : '';
       const imgHtml = imgSrc
-        ? `<img class="award-medal-img" src="${imgSrc}" alt="${h(a.name)}" title="Натисніть для перегляду" onclick="medalZoom('${_wikiImg(a.img_file,400)}')" onerror="this.style.display='none'" style="width:44px;height:44px;object-fit:contain;flex-shrink:0;cursor:zoom-in">`
+        ? `<img class="award-medal-img" src="${imgSrc}" alt="${h(a.name)}" title="${LANG.t('card.award_zoom_hint')}" onclick="medalZoom('${_wikiImg(a.img_file,400)}')" onerror="this.style.display='none'" style="width:44px;height:44px;object-fit:contain;flex-shrink:0;cursor:zoom-in">`
         : `<div style="width:44px;height:44px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:24px;background:rgba(255,255,255,.04);border-radius:4px">🏅</div>`;
-      const dateHtml = a.award_date ? `<div class="award-date">Дата нагородження: ${a.award_date}</div>` : '';
+      const dateHtml = a.award_date ? `<div class="award-date">${LANG.t('card.award_date_label')} ${a.award_date}</div>` : '';
       const descHtml = a.descr ? `<div class="award-desc">${h(a.descr)}</div>` : '';
       return `<div class="award-item" style="display:flex;flex-direction:row;align-items:flex-start;gap:12px">
         ${imgHtml}
@@ -4192,7 +4205,7 @@ async function openAwards(){
       </div>`;
     }).join('');
   } catch(e) {
-    if(list) list.innerHTML = '<div class="awards-empty"><div class="awards-empty-ico">⚠️</div><div class="awards-empty-title">Помилка завантаження</div></div>';
+    if(list) list.innerHTML = `<div class="awards-empty"><div class="awards-empty-ico">⚠️</div><div class="awards-empty-title">${LANG.t('card.awards_load_error')}</div></div>`;
   }
 }
 function closeAwards(){
@@ -4208,7 +4221,7 @@ function medalZoom(src){
 const lCD={};
 async function doLike(){
   if(!activePerson)return;
-  if(!curUser){showN("Увійдіть щоб ставити зірки",true);openAuth();return;}
+  if(!curUser){showN(LANG.t("errors.login_required_like"),true);openAuth();return;}
   const id=activePerson.id,now=Date.now();
   if(lCD[id]&&now-lCD[id]<700)return;lCD[id]=now;
   activePerson.likes=(activePerson.likes||0)+1;
@@ -4311,7 +4324,7 @@ function clientScore(p, q) {
 /* --- Рендер списку --- */
 function renderDrop(results, q) {
   if (!results.length) {
-    sd.innerHTML = `<div class="sdi sdi-empty">Нічого не знайдено</div>`;
+    sd.innerHTML = `<div class="sdi sdi-empty">${LANG.t('search.not_found')}</div>`;
     sd.style.display = 'block';
     return;
   }
@@ -4337,9 +4350,9 @@ function renderDrop(results, q) {
 function renderDropCombined(cityRes, peopleRes, q){
   const parts=[];
   if(cityRes.length){
-    parts.push('<div class="sdi-section-hdr">Населені пункти</div>');
+    parts.push(`<div class="sdi-section-hdr">${LANG.t('search.settlements')}</div>`);
     cityRes.forEach((c,i)=>{
-      const tierLabel=['','обл. центр','місто','столиця'][c.tier]||'';
+      const tierLabel=['',LANG.t('search.tier.oblast'),LANG.t('search.tier.city'),LANG.t('search.tier.capital')][c.tier]||'';
       const tierHtml=tierLabel?`<span class="sdi-tier">${tierLabel}</span>`:'';
       parts.push(`<div class="sdi${i===sIdx?' sdi-active':''}" onmousedown="pickCity(${i})">
         <div class="sdi-city-ico"></div>
@@ -4348,7 +4361,7 @@ function renderDropCombined(cityRes, peopleRes, q){
     });
   }
   if(peopleRes.length){
-    if(cityRes.length) parts.push('<div class="sdi-section-hdr">Меморіали</div>');
+    if(cityRes.length) parts.push(`<div class="sdi-section-hdr">${LANG.t('search.memorials')}</div>`);
     peopleRes.forEach((p,i)=>{
       const gi=cityRes.length+i;
       const name=hlText(`${p.last} ${p.first} ${p.mid||''}`.trim(),q);
@@ -4364,7 +4377,7 @@ function renderDropCombined(cityRes, peopleRes, q){
     });
   }
   if(!cityRes.length&&!peopleRes.length)
-    parts.push('<div class="sdi sdi-empty">Нічого не знайдено</div>');
+    parts.push(`<div class="sdi sdi-empty">${LANG.t('search.not_found')}</div>`);
   sd.innerHTML=parts.join(''); sd.style.display='block';
 }
 
@@ -4413,7 +4426,7 @@ async function doSearch(q) {
   if (_cityResults.length) {
     renderDropCombined(_cityResults, [], q);
   } else {
-    sd.innerHTML = '<div class="sdi sdi-loader"><span class="sld"></span>Пошук…</div>';
+    sd.innerHTML = '<div class="sdi sdi-loader"><span class="sld"></span>'+LANG.t('btn.search')+'…</div>';
     sd.style.display = 'block';
   }
 
@@ -4551,14 +4564,14 @@ function switchTab(t){ /* форми email/пароль прибрані — з�
 async function doLogin(){
   const email=document.getElementById('lemail').value.trim();
   const pass=document.getElementById('lpass').value;
-  if(!email||!pass){showN("Заповніть email та пароль",true);return;}
+  if(!email||!pass){showN(LANG.t("errors.fill_email_pass"),true);return;}
   try{
     const r=await fetch(API+'/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:pass})});
     const d=await r.json();
-    if(!d.ok)throw new Error(d.detail||'Помилка');
+    if(!d.ok)throw new Error(d.detail||LANG.t("error"));
     curUser={...d.user};localStorage.setItem('mu',JSON.stringify(curUser));
-    updateAuthUI();closeAuth();showN("Ласкаво просимо, "+(curUser.nickname||curUser.name)+"!");
-  }catch(e){showN(e.message||"Невірний email або пароль",true);}
+    updateAuthUI();closeAuth();showN(LANG.t("welcome")+" "+(curUser.nickname||curUser.name)+"!");
+  }catch(e){showN(e.message||LANG.t("login.failed"),true);}
 }
 /* ═══════════════════════════════════════════════════════
    ФІЛЬТРИ ВВОДУ — реєстрація / профіль
@@ -4609,7 +4622,7 @@ function _fName(el, cntId, hintId) {
   _cnt(cntId, v.length, 50);
   // Підказка
   if (!v) { _hint(hintId, '', ''); _borderState(el, null); return; }
-  if (v.length < 2) { _hint(hintId, 'Мінімум 2 символи', 'err'); _borderState(el, 'f-err'); }
+  if (v.length < 2) { _hint(hintId, LANG.t('errors.min2chars'), 'err'); _borderState(el, 'f-err'); }
   else { _hint(hintId, '✓', 'ok'); _borderState(el, 'f-ok'); }
 }
 function _blurName(el, hintId) {
@@ -4617,7 +4630,7 @@ function _blurName(el, hintId) {
   // Не може закінчуватись на дефіс або апостроф
   el.value = v.replace(/[-']+$/, '');
   if (v.length >= 2) { _hint(hintId, '✓', 'ok'); _borderState(el, 'f-ok'); }
-  else if (v.length > 0) { _hint(hintId, 'Мінімум 2 символи', 'err'); _borderState(el, 'f-err'); }
+  else if (v.length > 0) { _hint(hintId, LANG.t('errors.min2chars'), 'err'); _borderState(el, 'f-err'); }
 }
 
 /* ── Нік ─────────────────────────────────────────── */
@@ -4630,15 +4643,15 @@ function _fNick(el, cntId, hintId) {
   el.value = v;
   try { const p = Math.max(0, caret - (before - v.length)); el.setSelectionRange(p, p); } catch {}
   _cnt(cntId, v.length, 50);
-  if (!v) { _hint(hintId, 'Укр/латинські літери, цифри, _ . -', 'inf'); _borderState(el, null); return; }
-  if (v.length < 2) { _hint(hintId, 'Мінімум 2 символи', 'err'); _borderState(el, 'f-err'); }
+  if (!v) { _hint(hintId, LANG.t('errors.nick_chars_hint'), 'inf'); _borderState(el, null); return; }
+  if (v.length < 2) { _hint(hintId, LANG.t('errors.min2chars'), 'err'); _borderState(el, 'f-err'); }
   else { _hint(hintId, '✓ @' + v, 'ok'); _borderState(el, 'f-ok'); }
 }
 function _blurNick(el, hintId) {
   const v = el.value.replace(/[.\-]+$/, ''); // не може закінчуватись на . або -
   el.value = v;
   if (v.length >= 2) { _hint(hintId, '✓ @' + v, 'ok'); _borderState(el, 'f-ok'); }
-  else if (v) { _hint(hintId, 'Мінімум 2 символи', 'err'); _borderState(el, 'f-err'); }
+  else if (v) { _hint(hintId, LANG.t('errors.min2chars'), 'err'); _borderState(el, 'f-err'); }
 }
 
 /* ── Email ───────────────────────────────────────── */
@@ -4647,14 +4660,14 @@ function _fEmail(el, hintId) {
   const v = el.value.trim();
   if (!v) { _hint(hintId, '', ''); _borderState(el, null); return; }
   if (_RE_EMAIL.test(v)) { _hint(hintId, '✓', 'ok'); _borderState(el, 'f-ok'); }
-  else { _hint(hintId, 'Невірний формат', 'err'); _borderState(el, 'f-err'); }
+  else { _hint(hintId, LANG.t('errors.invalid_format'), 'err'); _borderState(el, 'f-err'); }
 }
 function _fEmail2(el, hintId) {
   const v = el.value.trim();
   const ref = document.getElementById('r-email')?.value.trim() || document.getElementById('pf-email')?.value.trim() || '';
   if (!v) { _hint(hintId, '', ''); _borderState(el, null); return; }
-  if (v === ref) { _hint(hintId, '✓ Збігаються', 'ok'); _borderState(el, 'f-ok'); }
-  else { _hint(hintId, 'Email не збігається', 'err'); _borderState(el, 'f-err'); }
+  if (v === ref) { _hint(hintId, '✓ '+LANG.t('errors.match'), 'ok'); _borderState(el, 'f-ok'); }
+  else { _hint(hintId, LANG.t('errors.email_mismatch'), 'err'); _borderState(el, 'f-err'); }
 }
 
 /* ── Телефон ─────────────────────────────────────── */
@@ -4675,13 +4688,13 @@ function _fPhone(el, hintId) {
   if (digits.length > 8)  fmt = digits.slice(0,3) + ' ' + digits.slice(3,6) + '-' + digits.slice(6,8) + '-' + digits.slice(8,10);
   el.value = fmt;
   // Підказка
-  if (!digits) { _hint(hintId, "Необов'язково. Лише українські номери", 'inf'); _borderState(el, null); return; }
+  if (!digits) { _hint(hintId, LANG.t('errors.phone_optional_hint'), 'inf'); _borderState(el, null); return; }
   if (digits.length < 10) {
-    _hint(hintId, 'Ще ' + (10 - digits.length) + ' цифр(и)', 'inf'); _borderState(el, null);
+    _hint(hintId, LANG.t('errors.phone_digits_left', {n: 10 - digits.length}), 'inf'); _borderState(el, null);
   } else if (_RE_PHONE_VALID.test(digits)) {
     _hint(hintId, '✓ +38 ' + fmt, 'ok'); _borderState(el, 'f-ok');
   } else {
-    _hint(hintId, '✗ Невірний оператор (підтримуємо 03X–09X)', 'err'); _borderState(el, 'f-err');
+    _hint(hintId, '✗ '+LANG.t('errors.phone_bad_operator'), 'err'); _borderState(el, 'f-err');
   }
 }
 
@@ -4690,8 +4703,8 @@ function _fPass2(el, hintId) {
   const v = el.value;
   const ref = document.getElementById('r-pass')?.value || document.getElementById('pf-newpass')?.value || '';
   if (!v) { _hint(hintId, '', ''); _borderState(el, null); return; }
-  if (v === ref) { _hint(hintId, '✓ Збігаються', 'ok'); _borderState(el, 'f-ok'); }
-  else { _hint(hintId, 'Паролі не збігаються', 'err'); _borderState(el, 'f-err'); }
+  if (v === ref) { _hint(hintId, '✓ '+LANG.t('errors.match'), 'ok'); _borderState(el, 'f-ok'); }
+  else { _hint(hintId, LANG.t('errors.pass_mismatch'), 'err'); _borderState(el, 'f-err'); }
 }
 
 function _passScore(pw){
@@ -4704,7 +4717,7 @@ function _passScore(pw){
 function checkPassStrength(pw,pfx=''){
   const score=_passScore(pw);
   const colors=['#e53935','#e53935','#fb8c00','#fdd835','#43a047','#1b5e20'];
-  const labels=['','Дуже слабкий','Слабкий','Прийнятний','Добрий','Відмінний'];
+  const labels=['',LANG.t('errors.pass_very_weak'),LANG.t('errors.pass_weak'),LANG.t('errors.pass_acceptable'),LANG.t('errors.pass_good'),LANG.t('errors.pass_excellent')];
   const fill=document.getElementById(pfx+'pass-strength-fill');
   const hint=document.getElementById(pfx+'pass-strength-hint');
   if(fill){fill.style.width=(pw?score*20+'%':'0');fill.style.background=colors[score];}
@@ -4749,8 +4762,8 @@ function _fCode(el) {
   el.value = el.value.replace(/\D/g, '').slice(0, 6);
   const hint = document.getElementById('hint-code');
   if (!hint) return;
-  if (el.value.length === 6) { hint.textContent = '✓ Готово до підтвердження'; hint.className = 'f-hint ok'; }
-  else if (el.value.length > 0) { hint.textContent = `Введіть ще ${6 - el.value.length} цифр`; hint.className = 'f-hint inf'; }
+  if (el.value.length === 6) { hint.textContent = '✓ '+LANG.t('errors.code_ready'); hint.className = 'f-hint ok'; }
+  else if (el.value.length > 0) { hint.textContent = LANG.t('errors.code_digits_left', {n: 6 - el.value.length}); hint.className = 'f-hint inf'; }
   else { hint.textContent = ''; hint.className = 'f-hint'; }
 }
 
@@ -4793,26 +4806,26 @@ function _validateRegForm(f) {
   const fieldPhone = getC('reg_field_phone',  'optional');
   const minPass    = Math.max(8, parseInt(getC('reg_min_pass_len','10')) || 10);
 
-  if (!f.last || f.last.length < 2)   { showN("Введіть прізвище (мін. 2 символи)", true); document.getElementById('r-last').focus(); return false; }
-  if (!f.first || f.first.length < 2) { showN("Введіть ім'я (мін. 2 символи)", true); document.getElementById('r-first').focus(); return false; }
+  if (!f.last || f.last.length < 2)   { showN(LANG.t("errors.last_min2"), true); document.getElementById('r-last').focus(); return false; }
+  if (!f.first || f.first.length < 2) { showN(LANG.t("errors.first_min2"), true); document.getElementById('r-first').focus(); return false; }
   if (fieldMid === 'required' && (!f.mid || f.mid.length < 2)) {
-    showN("Введіть по батькові (мін. 2 символи)", true); document.getElementById('r-mid').focus(); return false;
+    showN(LANG.t("errors.mid_min2"), true); document.getElementById('r-mid').focus(); return false;
   }
-  if (!f.nick || f.nick.length < 2)   { showN("Нік: мінімум 2 символи", true); document.getElementById('r-nick').focus(); return false; }
-  if (!f.email || !_RE_EMAIL.test(f.email)) { showN("Введіть коректний email", true); document.getElementById('r-email').focus(); return false; }
+  if (!f.nick || f.nick.length < 2)   { showN(LANG.t("errors.nick_min2"), true); document.getElementById('r-nick').focus(); return false; }
+  if (!f.email || !_RE_EMAIL.test(f.email)) { showN(LANG.t("errors.email_invalid"), true); document.getElementById('r-email').focus(); return false; }
   if (fieldPhone === 'required' && !f.phoneRaw) {
-    showN("Введіть номер телефону", true); document.getElementById('r-phone').focus(); return false;
+    showN(LANG.t("errors.phone_required"), true); document.getElementById('r-phone').focus(); return false;
   }
   if (fieldPhone !== 'hidden' && f.phoneRaw && (f.phoneRaw.length !== 10 || !_RE_PHONE_VALID.test(f.phoneRaw))) {
-    showN("Невірний номер телефону. Формат: 0671234567", true); return false;
+    showN(LANG.t("errors.phone_format"), true); return false;
   }
-  if (f.pass !== f.pass2) { showN("Паролі не збігаються", true); return false; }
+  if (f.pass !== f.pass2) { showN(LANG.t("errors.pass_mismatch"), true); return false; }
   const passRe = new RegExp(`^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).{${minPass},}$`);
   if (!passRe.test(f.pass)) {
-    showN(`Пароль: мін. ${minPass} символів, великі та малі латинські літери, цифри`, true);
+    showN(LANG.t("errors.pass_requirements", {min: minPass}), true);
     document.getElementById('r-pass').focus(); return false;
   }
-  if (!f.terms) { showN("Необхідно погодитись з умовами використання", true); return false; }
+  if (!f.terms) { showN(LANG.t("errors.terms_required"), true); return false; }
   return true;
 }
 
@@ -4827,7 +4840,7 @@ async function _sendCodeRequest(email, f) {
     })
   });
   const d = await r.json();
-  if (!d.ok) throw new Error(d.detail||'Помилка');
+  if (!d.ok) throw new Error(d.detail||LANG.t('error'));
   return d;
 }
 
@@ -4849,8 +4862,8 @@ async function _checkAvailField(type, val, statusId) {
         else { el.textContent = ''; el.className = 'f-hint'; }
         return;
       }
-      if (d.available) { el.textContent = '✓ Вільний'; el.className = 'f-hint ok'; }
-      else { el.textContent = '✗ Вже зайнятий'; el.className = 'f-hint err'; }
+      if (d.available) { el.textContent = '✓ '+LANG.t('errors.avail_free'); el.className = 'f-hint ok'; }
+      else { el.textContent = '✗ '+LANG.t('errors.avail_taken'); el.className = 'f-hint err'; }
     } catch { el.textContent = ''; el.className = 'f-hint'; }
   }, 600);
 }
@@ -4859,14 +4872,14 @@ async function doSendCode() {
   const f = _collectRegData();
   if (!_validateRegForm(f)) return;
   const btn = document.getElementById('btn-send-code');
-  btn.disabled = true; btn.textContent = 'Надсилаємо…';
+  btn.disabled = true; btn.textContent = LANG.t("sending");
   try {
     const d = await _sendCodeRequest(f.email, f);
     // Якщо підтвердження email вимкнено — сервер реєструє одразу
     if (d.registered && d.user) {
       curUser = {...d.user}; localStorage.setItem('mu', JSON.stringify(curUser));
       updateAuthUI(); closeAuth();
-      showN(d.welcome || ("Вітаємо, @" + (d.user.nickname||d.user.name) + "!"));
+      showN(d.welcome || (LANG.t("welcome_nick", {nick: (d.user.nickname||d.user.name)})));
       return;
     }
     _regEmail = f.email;
@@ -4875,19 +4888,19 @@ async function doSendCode() {
     if (d.dev && d.code) {
       const inp = document.getElementById('r-code');
       if (inp) { inp.value = d.code; _fCode(inp); }
-      showN('⚠ DEV: код ' + d.code + ' (SMTP не налаштований)', false);
+      showN(LANG.t("errors.dev_code", {code: d.code}), false);
     } else {
-      showN('✉ Код надіслано на ' + f.email);
+      showN(LANG.t("errors.code_sent", {email: f.email}));
     }
     _showCodeRow(true);
     _startResendTimer(60);
   } catch(e) {
-    showN(e.message||"Помилка відправки коду", true);
+    showN(e.message||LANG.t("errors.code_send_failed"), true);
   } finally {
     btn.disabled = false;
     btn.textContent = getC('reg_require_email_verify','1') === '1'
-      ? 'Надіслати код підтвердження на email'
-      : 'Зареєструватись';
+      ? LANG.t("send_code_btn")
+      : LANG.t("btn.register");
   }
 }
 
@@ -4901,43 +4914,43 @@ async function doResendCode() {
     if (d.dev && d.code) {
       const inp = document.getElementById('r-code');
       if (inp) { inp.value = d.code; _fCode(inp); }
-      showN('⚠ DEV: код ' + d.code);
+      showN(LANG.t("errors.dev_code", {code: d.code}));
     } else {
-      showN('✉ Код надіслано повторно на ' + _regEmail);
+      showN(LANG.t("errors.code_resent", {email: _regEmail}));
     }
     _startResendTimer(60);
-  } catch(e) { showN(e.message||"Помилка", true); }
+  } catch(e) { showN(e.message||LANG.t("error"), true); }
   finally { if (btn) btn.disabled = false; }
 }
 
 async function doRegister() {
   const code = (document.getElementById('r-code').value||'').trim();
-  if (code.length !== 6) { showN("Введіть 6-значний код з листа", true); document.getElementById('r-code').focus(); return; }
+  if (code.length !== 6) { showN(LANG.t("errors.code_6digits"), true); document.getElementById('r-code').focus(); return; }
   if (!_regEmail) { switchRegStep(1); return; }
   const btn = document.getElementById('btn-do-register');
-  btn.disabled = true; btn.textContent = 'Перевіряємо…';
+  btn.disabled = true; btn.textContent = LANG.t("checking");
   try {
     const r = await fetch(API+'/api/auth/register', {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({email: _regEmail, code})
     });
     const d = await r.json();
-    if (!d.ok) throw new Error(d.detail||'Помилка');
+    if (!d.ok) throw new Error(d.detail||LANG.t("error"));
     curUser = {...d.user}; localStorage.setItem('mu', JSON.stringify(curUser));
     updateAuthUI(); closeAuth();
-    showN("Вітаємо, @" + (d.user.nickname||d.user.name) + "! Реєстрацію завершено.");
+    showN(LANG.t("errors.reg_complete", {nick: (d.user.nickname||d.user.name)}));
   } catch(e) {
-    showN(e.message||"Помилка перевірки коду", true);
+    showN(e.message||LANG.t("errors.code_check_failed"), true);
     if ((e.message||'').includes('знову') || (e.message||'').includes('ліміт')) {
       setTimeout(() => switchRegStep(1), 1800);
     }
   } finally {
-    btn.disabled = false; btn.textContent = 'Зареєструватись';
+    btn.disabled = false; btn.textContent = LANG.t("btn.register");
   }
 }
 function doLogout(){
   fetch(API+'/api/auth/logout',{method:'POST'}).catch(()=>{});
-  curUser=null;localStorage.removeItem('mu');updateAuthUI();showN("До побачення!");
+  curUser=null;localStorage.removeItem('mu');updateAuthUI();showN(LANG.t("errors.goodbye"));
 }
 function openProfile(){
   if(!curUser){openAuth();return;}
@@ -4947,7 +4960,7 @@ function openProfile(){
 
 /* ── Add ── */
 function onAdd(){
-  if(!curUser){showN("Спочатку увійдіть або зареєструйтесь",true);openAuth();return;}
+  if(!curUser){showN(LANG.t("errors.login_required_add"),true);openAuth();return;}
   openAdd();
 }
 /* ── World map picker (Leaflet) для форми "Додати загиблого" ── */
@@ -5000,7 +5013,7 @@ function closeAdd(){
   document.getElementById('fpx').value='';
   document.getElementById('fpy').value='';
   const ps=document.getElementById('pstatus');
-  if(ps){ps.textContent='не обрано';ps.style.color='';}
+  if(ps){ps.textContent=LANG.t('errors.location_not_selected');ps.style.color='';}
   if(_maddMarker){_maddMarker.remove();_maddMarker=null;}
 }
 document.getElementById('crow').addEventListener('click',e=>{
@@ -5029,29 +5042,29 @@ async function submitAdd(){
   const first=document.getElementById('ffirst').value.trim();
   const wlat=document.getElementById('fwlat').value;
   const wlng=document.getElementById('fwlng').value;
-  if(!last||!first){showN("Введіть прізвище та імʼя",true);return;}
+  if(!last||!first){showN(LANG.t("errors.name_required"),true);return;}
   const _nRe=/^[а-яА-ЯіІїЇєЄґҐёЁa-zA-Z'\-]+$/u;
   const _fmid=document.getElementById('fmid').value.trim();
-  if(!_nRe.test(last)){showN('Прізвище: тільки літери без пробілів',true);return;}
-  if(!_nRe.test(first)){showN("Ім'я: тільки літери без пробілів",true);return;}
-  if(_fmid&&!_nRe.test(_fmid)){showN('По батькові: тільки літери без пробілів',true);return;}
-  if(_checkPubNameBad(last)||_checkPubNameBad(first)||(_fmid&&_checkPubNameBad(_fmid))){showN('ПІБ містить недопустимі слова',true);return;}
-  if(!wlat||!wlng){showN("Оберіть місце на карті",true);return;}
+  if(!_nRe.test(last)){showN(LANG.t("errors.last_letters_only"),true);return;}
+  if(!_nRe.test(first)){showN(LANG.t("errors.first_letters_only"),true);return;}
+  if(_fmid&&!_nRe.test(_fmid)){showN(LANG.t("errors.mid_letters_only"),true);return;}
+  if(_checkPubNameBad(last)||_checkPubNameBad(first)||(_fmid&&_checkPubNameBad(_fmid))){showN(LANG.t("errors.name_bad_words"),true);return;}
+  if(!wlat||!wlng){showN(LANG.t("errors.pick_location"),true);return;}
   const _today=new Date().toISOString().slice(0,10);
   const _b=document.getElementById('fbirth').value;
   const _d=document.getElementById('fdeath').value;
-  if(_b&&_b>_today){showN('Дата народження не може бути в майбутньому',true);return;}
-  if(_d&&_d>_today){showN('Дата загибелі не може бути в майбутньому',true);return;}
-  if(_b&&_d&&_b>_d){showN('Дата народження не може бути пізніше дати загибелі',true);return;}
+  if(_b&&_b>_today){showN(LANG.t("errors.birth_future"),true);return;}
+  if(_d&&_d>_today){showN(LANG.t("errors.death_future"),true);return;}
+  if(_b&&_d&&_b>_d){showN(LANG.t("errors.birth_after_death"),true);return;}
   const px=document.getElementById('fpx').value;
   const py=document.getElementById('fpy').value;
   const body={last,first,mid:document.getElementById('fmid').value.trim(),birth:document.getElementById('fbirth').value||null,death:document.getElementById('fdeath').value||null,loc:document.getElementById('floc').value.trim(),bury:document.getElementById('fbury').value.trim(),circ:document.getElementById('fcirc').value,descr:document.getElementById('fdesc').value.trim(),photo:document.getElementById('fphoto').value.trim(),video_url:document.getElementById('fvideo').value.trim(),color:selColor,pos_x:+px,pos_y:+py,world_lat:+wlat,world_lng:+wlng,added_by:curUser?.name||'',awards:_userAwards.filter(a=>a.name).map(a=>({name:a.name,img_file:a.file||'',category:a.category||''}))};
   try{
     const r=await fetch(API+'/api/people',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     const d=await r.json();
-    if(!r.ok){showN(d.detail||d.message||'Помилка відправки',true);return;}
-    showN(d.message||"Надіслано на модерацію");
-  }catch{showN("Помилка мережі. Спробуйте ще раз.",true);return;}
+    if(!r.ok){showN(d.detail||d.message||LANG.t("errors.submit_failed"),true);return;}
+    showN(d.message||LANG.t("errors.sent_for_moderation"));
+  }catch{showN(LANG.t("network"),true);return;}
   _userAwards=[]; _renderUserAwards();
   closeAdd();
   setTimeout(loadData,500);
@@ -5136,7 +5149,7 @@ function _applySmokeState() {
   }
   if (window._fluidConfig) window._fluidConfig.PAUSED = !actuallyOn;
   if (btn) btn.classList.toggle('active', actuallyOn);
-  if (lbl) { const f=lbl.querySelector('.smoke-lbl-full'); if(f) f.textContent=' '+(actuallyOn?'увімкнено':'вимкнено'); }
+  if (lbl) { const f=lbl.querySelector('.smoke-lbl-full'); if(f) f.textContent=LANG.t(actuallyOn?'on':'off'); }
   if (_cookiesOk) _setCookie('zp_smoke', _smokeOn ? '1' : '0');
 }
 
@@ -5150,7 +5163,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const btn = document.getElementById('btn-smoke');
   const lbl = document.getElementById('smoke-lbl');
   if (btn) btn.classList.add('active');
-  if (lbl) { const f=lbl.querySelector('.smoke-lbl-full'); if(f) f.textContent=' увімкнено'; }
+  if (lbl) { const f=lbl.querySelector('.smoke-lbl-full'); if(f) f.textContent=LANG.t('on'); }
 });
 
 // Open card from SEO redirect: /?open=ivan-petrenko-42
@@ -5218,24 +5231,24 @@ async function checkOAuthCallback(){
         localStorage.setItem('mu',JSON.stringify(curUser));
         updateAuthUI();
         const greet=curUser.nickname?('@'+curUser.nickname):(curUser.name||'');
-        showN("Ласкаво просимо, "+greet+"!");
+        showN(LANG.t("welcome")+" "+greet+"!");
       }
     }catch(e){}
     history.replaceState({},'','/');
   }else if(p.has('oauth_error')){
     const msgs={
-      google_not_configured:'Google OAuth не налаштовано — зверніться до адміністратора.',
-      google_cancelled:'Авторизацію через Google скасовано.',
-      google_token:'Помилка отримання токена Google.',
-      google_userinfo:'Помилка отримання даних Google.',
-      google_no_email:'Google не надав email адресу.',
-      diia_not_configured:'Дія OAuth не налаштовано — зверніться до адміністратора.',
-      diia_cancelled:'Авторизацію через Дія скасовано.',
-      diia_token:'Помилка отримання токена Дія.',
-      diia_userinfo:'Помилка отримання даних Дія.',
-      diia_no_email:'Дія не надала email адресу.',
+      google_not_configured: LANG.t("errors.oauth_google_not_configured"),
+      google_cancelled:      LANG.t("errors.oauth_google_cancelled"),
+      google_token:           LANG.t("errors.oauth_google_token"),
+      google_userinfo:       LANG.t("errors.oauth_google_userinfo"),
+      google_no_email:       LANG.t("errors.oauth_google_no_email"),
+      diia_not_configured:   LANG.t("errors.oauth_diia_not_configured"),
+      diia_cancelled:        LANG.t("errors.oauth_diia_cancelled"),
+      diia_token:            LANG.t("errors.oauth_diia_token"),
+      diia_userinfo:         LANG.t("errors.oauth_diia_userinfo"),
+      diia_no_email:         LANG.t("errors.oauth_diia_no_email"),
     };
-    showN(msgs[p.get('oauth_error')]||'Помилка авторизації',true);
+    showN(msgs[p.get('oauth_error')]||LANG.t("errors.oauth_generic"),true);
     history.replaceState({},'','/');
   }
 }
@@ -5289,19 +5302,22 @@ async function checkDeviceAccess() {
 
 /* ── INIT ── */
 (async()=>{
-  _setPL(0, 'Завантаження...');
+  // i18n завантажуємо ПЕРШИМ — далі LANG.t() використовується в _setPL і loadData
+  await LANG.load();
+  _langToggleUpdateUI(LANG.current);
+  _setPL(0, LANG.t('preload.loading'));
   await loadColors();
   _loadPublicBannedWords();
   await checkDeviceAccess();
-  _setPL(15, 'Налаштування...');
+  _setPL(15, LANG.t('preload.settings'));
   await loadData();
-  _setPL(88, 'Підписи карти...');
+  _setPL(88, LANG.t('preload.labels'));
   await loadLabels();
-  _setPL(94, 'Рендер карти...');
+  _setPL(94, LANG.t('preload.render'));
   renderCityLabels();
   _setPL(97);
   initSVGBorders();
-  _setPL(100, 'Готово');
+  _setPL(100, LANG.t('preload.done'));
   await checkOAuthCallback();
   updateAuthUI();
   connectWS();
@@ -5309,6 +5325,8 @@ async function checkDeviceAccess() {
   document.body.style.visibility = 'visible';
   const pl=document.getElementById('preloader');
   if(pl) pl.classList.add('hidden');
+  // Повторний прохід — на випадок текстів, відрендерених компонентами вище
+  LANG.applyI18n();
   if(typeof _tourStart==='function') _tourStart();
   if(typeof _mcInit==='function') _mcInit();
 
@@ -5424,21 +5442,21 @@ async function checkDeviceAccess() {
 <div class="mov" id="m-rules">
   <div class="mo" style="max-width:520px">
     <button class="moc" onclick="closeInfo('rules')">&#10005;</button>
-    <h2>📋 Правила сайту</h2>
+    <h2>📋 <span data-i18n="modal.rules.title">Правила сайту</span></h2>
     <div class="info-body">
-      <p>Сайт «Зоряна Памʼять» — це відкритий меморіал загиблих захисників України. Він створений з повагою до памʼяті кожного воїна.</p>
-      <h3>Загальні правила</h3>
+      <p data-i18n="modal.rules.intro">Сайт «Зоряна Памʼять» — це відкритий меморіал загиблих захисників України. Він створений з повагою до памʼяті кожного воїна.</p>
+      <h3 data-i18n="modal.rules.general_title">Загальні правила</h3>
       <ul>
-        <li>Сайт призначений виключно для вшанування памʼяті загиблих захисників України.</li>
-        <li>Забороняється розміщення інформації, що ображає честь та гідність загиблих або їхніх родин.</li>
-        <li>Забороняється розміщення недостовірної інформації або фейків.</li>
-        <li>Адміністрація залишає за собою право видаляти записи, що суперечать правилам.</li>
-        <li>Усі записи проходять модерацію перед публікацією.</li>
+        <li data-i18n="modal.rules.general1">Сайт призначений виключно для вшанування памʼяті загиблих захисників України.</li>
+        <li data-i18n="modal.rules.general2">Забороняється розміщення інформації, що ображає честь та гідність загиблих або їхніх родин.</li>
+        <li data-i18n="modal.rules.general3">Забороняється розміщення недостовірної інформації або фейків.</li>
+        <li data-i18n="modal.rules.general4">Адміністрація залишає за собою право видаляти записи, що суперечать правилам.</li>
+        <li data-i18n="modal.rules.general5">Усі записи проходять модерацію перед публікацією.</li>
       </ul>
-      <h3>Фотографії</h3>
+      <h3 data-i18n="modal.rules.photo_title">Фотографії</h3>
       <ul>
-        <li>Дозволяються лише фотографії самого воїна.</li>
-        <li>Фото мають бути гідними та поважними.</li>
+        <li data-i18n="modal.rules.photo1">Дозволяються лише фотографії самого воїна.</li>
+        <li data-i18n="modal.rules.photo2">Фото мають бути гідними та поважними.</li>
       </ul>
     </div>
   </div>
@@ -5447,23 +5465,23 @@ async function checkDeviceAccess() {
 <div class="mov" id="m-terms">
   <div class="mo" style="max-width:520px">
     <button class="moc" onclick="closeInfo('terms')">&#10005;</button>
-    <h2>📄 Правила використання</h2>
+    <h2>📄 <span data-i18n="modal.terms.title">Правила використання</span></h2>
     <div class="info-body">
-      <p>Використовуючи сайт, ви погоджуєтесь з наступними умовами:</p>
-      <h3>Додавання записів</h3>
+      <p data-i18n="modal.terms.intro">Використовуючи сайт, ви погоджуєтесь з наступними умовами:</p>
+      <h3 data-i18n="modal.terms.records_title">Додавання записів</h3>
       <ul>
-        <li>Додавати записи можуть лише зареєстровані користувачі.</li>
-        <li>Ви несете відповідальність за достовірність наданої інформації.</li>
-        <li>Будь ласка, вказуйте лише перевірені дані — ПІБ, дати, місце поховання.</li>
+        <li data-i18n="modal.terms.records1">Додавати записи можуть лише зареєстровані користувачі.</li>
+        <li data-i18n="modal.terms.records2">Ви несете відповідальність за достовірність наданої інформації.</li>
+        <li data-i18n="modal.terms.records3">Будь ласка, вказуйте лише перевірені дані — ПІБ, дати, місце поховання.</li>
       </ul>
-      <h3>Зірки памʼяті</h3>
+      <h3 data-i18n="modal.terms.stars_title">Зірки памʼяті</h3>
       <ul>
-        <li>Зірку памʼяті можна поставити кожному запису — це знак поваги та вдячності.</li>
-        <li>Голосування анонімне, одна зірка з одного акаунту.</li>
+        <li data-i18n="modal.terms.stars1">Зірку памʼяті можна поставити кожному запису — це знак поваги та вдячності.</li>
+        <li data-i18n="modal.terms.stars2">Голосування анонімне, одна зірка з одного акаунту.</li>
       </ul>
-      <h3>Конфіденційність</h3>
+      <h3 data-i18n="modal.terms.privacy_title">Конфіденційність</h3>
       <ul>
-        <li>Ваш email використовується лише для авторизації і не передається третім особам.</li>
+        <li data-i18n="modal.terms.privacy1">Ваш email використовується лише для авторизації і не передається третім особам.</li>
       </ul>
     </div>
   </div>
@@ -5472,27 +5490,27 @@ async function checkDeviceAccess() {
 <div class="mov" id="m-faq">
   <div class="mo" style="max-width:520px">
     <button class="moc" onclick="closeInfo('faq')">&#10005;</button>
-    <h2>❓ Питання — відповідь</h2>
+    <h2>❓ <span data-i18n="modal.faq.title">Питання — відповідь</span></h2>
     <div class="info-body">
       <div class="faq-item">
-        <div class="faq-q">Як додати запис про загиблого?</div>
-        <div class="faq-a">Зареєструйтеся або увійдіть в акаунт, натисніть кнопку «+ ДОДАТИ» і заповніть форму. Запис потрапить на модерацію.</div>
+        <div class="faq-q" data-i18n="modal.faq.q1">Як додати запис про загиблого?</div>
+        <div class="faq-a" data-i18n="modal.faq.a1">Зареєструйтеся або увійдіть в акаунт, натисніть кнопку «+ ДОДАТИ» і заповніть форму. Запис потрапить на модерацію.</div>
       </div>
       <div class="faq-item">
-        <div class="faq-q">Як довго чекати на модерацію?</div>
-        <div class="faq-a">Зазвичай від кількох годин до одного дня. Адміністратор перевіряє кожен запис вручну.</div>
+        <div class="faq-q" data-i18n="modal.faq.q2">Як довго чекати на модерацію?</div>
+        <div class="faq-a" data-i18n="modal.faq.a2">Зазвичай від кількох годин до одного дня. Адміністратор перевіряє кожен запис вручну.</div>
       </div>
       <div class="faq-item">
-        <div class="faq-q">Можна виправити помилку в записі?</div>
-        <div class="faq-a">Так. Напишіть адміністратору через контактну форму із зазначенням імені та що потрібно виправити.</div>
+        <div class="faq-q" data-i18n="modal.faq.q3">Можна виправити помилку в записі?</div>
+        <div class="faq-a" data-i18n="modal.faq.a3">Так. Напишіть адміністратору через контактну форму із зазначенням імені та що потрібно виправити.</div>
       </div>
       <div class="faq-item">
-        <div class="faq-q">Чи можна додати того, хто зник безвісти?</div>
-        <div class="faq-a">На даному етапі сайт призначений для підтвердженої загибелі. Розділ для зниклих безвісти планується.</div>
+        <div class="faq-q" data-i18n="modal.faq.q4">Чи можна додати того, хто зник безвісти?</div>
+        <div class="faq-a" data-i18n="modal.faq.a4">На даному етапі сайт призначений для підтвердженої загибелі. Розділ для зниклих безвісти планується.</div>
       </div>
       <div class="faq-item">
-        <div class="faq-q">Що означає «зірка памʼяті»?</div>
-        <div class="faq-a">Це знак поваги від відвідувачів сайту — спосіб вшанувати память кожного захисника.</div>
+        <div class="faq-q" data-i18n="modal.faq.q5">Що означає «зірка памʼяті»?</div>
+        <div class="faq-a" data-i18n="modal.faq.a5">Це знак поваги від відвідувачів сайту — спосіб вшанувати память кожного захисника.</div>
       </div>
     </div>
   </div>
@@ -5544,22 +5562,22 @@ function closeInfo(id){document.getElementById('m-'+id).classList.remove('open')
   <!-- 18+ Warning -->
   <div style="display: flex; align-items: center; gap: 8px; background: rgba(255,82,82,0.15); border: 1px solid rgba(255,82,82,0.4); border-radius: 6px; padding: 8px 12px; width: fit-content;">
     <span style="background: #ff5252; color: #fff; font-weight: 800; font-size: 14px; padding: 3px 8px; border-radius: 4px;">18+</span>
-    <span style="font-size: 13px; color: #ff8a80;">Контент сайту призначений лише для осіб старше 18 років</span>
+    <span style="font-size: 13px; color: #ff8a80;" data-i18n="cookie.18plus">Контент сайту призначений лише для осіб старше 18 років</span>
   </div>
 
   <!-- Disclaimer -->
-  <div style="font-size: 13px; color: #aaa; padding-left: 12px; border-left: 2px solid #333;">
+  <div style="font-size: 13px; color: #aaa; padding-left: 12px; border-left: 2px solid #333;" data-i18n="cookie.disclaimer">
     Інформація на сайті має виключно ознайомчий характер і не є довідником. Не використовуйте її як керівництво до дії.
   </div>
 
   <!-- Cookie Notice -->
   <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px;">
     <p style="margin: 0; font-size: 14px; line-height: 1.5; max-width: 800px;">
-      Ми використовуємо файли cookie для покращення роботи сайту, аналізу трафіку та персоналізації контенту. Продовжуючи користуватися сайтом, ви погоджуєтесь з <a href="/privacy-policy" style="color: #4fc3f7; text-decoration: underline;">політикою конфіденційності</a> та обробкою файлів cookie.
+      <span data-i18n="cookie.notice1">Ми використовуємо файли cookie для покращення роботи сайту, аналізу трафіку та персоналізації контенту. Продовжуючи користуватися сайтом, ви погоджуєтесь з</span> <a href="/privacy-policy" style="color: #4fc3f7; text-decoration: underline;" data-i18n="cookie.privacy_link">політикою конфіденційності</a> <span data-i18n="cookie.notice2">та обробкою файлів cookie.</span>
     </p>
     <div style="display: flex; gap: 10px; flex-shrink: 0;">
-      <button id="cookie-decline" style="background: transparent; border: 1px solid #555; color: #aaa; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; transition: all 0.2s;" onmouseover="this.style.borderColor='#888';this.style.color='#ccc'" onmouseout="this.style.borderColor='#555';this.style.color='#aaa'">Відхилити</button>
-      <button id="cookie-accept" style="background: #4fc3f7; border: none; color: #1a1a2e; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='#81d4fa'" onmouseout="this.style.background='#4fc3f7'">Прийняти</button>
+      <button id="cookie-decline" style="background: transparent; border: 1px solid #555; color: #aaa; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; transition: all 0.2s;" onmouseover="this.style.borderColor='#888';this.style.color='#ccc'" onmouseout="this.style.borderColor='#555';this.style.color='#aaa'" data-i18n="cookie.decline">Відхилити</button>
+      <button id="cookie-accept" style="background: #4fc3f7; border: none; color: #1a1a2e; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='#81d4fa'" onmouseout="this.style.background='#4fc3f7'" data-i18n="cookie.accept">Прийняти</button>
     </div>
   </div>
 </div>
@@ -5697,8 +5715,8 @@ function closeInfo(id){document.getElementById('m-'+id).classList.remove('open')
         <line x1="42" y1="23" x2="22" y2="41"/>
       </svg>
     </div>
-    <div id="too-small-title">Вибачте</div>
-    <div id="too-small-msg">
+    <div id="too-small-title" data-i18n="too_small.title">Вибачте</div>
+    <div id="too-small-msg" data-i18n-html="too_small.message">
       Ваш пристрій має занадто малий екран<br>
       для коректного відображення сайту.<br><br>
       Будь ласка, скористайтесь пристроєм<br>
@@ -5796,8 +5814,8 @@ function closeInfo(id){document.getElementById('m-'+id).classList.remove('open')
   <div id="zp-tour-title"></div>
   <div id="zp-tour-text"></div>
   <div id="zp-tour-btns">
-    <button id="zp-tour-skip" onclick="_tourEnd()">Пропустити навчання</button>
-    <button id="zp-tour-next" onclick="_tourNext()">Далі →</button>
+    <button id="zp-tour-skip" onclick="_tourEnd()" data-i18n="tour.skip">Пропустити навчання</button>
+    <button id="zp-tour-next" onclick="_tourNext()"><span data-i18n="tour.next">Далі</span> →</button>
   </div>
   <div id="zp-tour-dots"></div>
 </div>
@@ -5816,63 +5834,63 @@ var _tourOpenedCard = false;
 var _TOUR_STEPS = [
   {
     el: '#logo',
-    title: 'Зоряна Памʼять',
-    text: '★ Це меморіальна платформа вічної памʼяті захисників України. Натисніть на логотип, щоб дізнатись більше про проєкт.',
+    titleKey: 'tour.logo.title',
+    textKey: 'tour.logo.text',
     arrowDir: 'top'
   },
   {
     el: null,
-    title: 'Зірки на карті',
-    text: 'Кожна зірка ★ на карті — це загиблий захисник України. Клікніть на будь-яку зірку, щоб відкрити картку з деталями.',
+    titleKey: 'tour.stars.title',
+    textKey: 'tour.stars.text',
     arrowDir: null
   },
   {
     el: '#card',
-    title: 'Дошка памʼяті',
-    text: 'Це бічна панель захисника: імʼя, дати, фото, звання та нагороди. Відкривається кліком на зірку карти.',
+    titleKey: 'tour.card.title',
+    textKey: 'tour.card.text',
     arrowDir: 'right',
     onShow: function(){ if(window.people && people.length){ openCard(people[0]); _tourOpenedCard=true; } }
   },
   {
     el: '#count',
-    title: 'Лічильник памʼяті',
-    text: 'Кількість захисників у меморіалі. Допоможіть зберегти більше — додайте запис про загиблого.',
+    titleKey: 'tour.count.title',
+    textKey: 'tour.count.text',
     arrowDir: 'bottom'
   },
   {
     el: '#search',
-    title: 'Пошук',
-    text: 'Шукайте за прізвищем, позивним або підрозділом — результати зʼявляються одразу.',
+    titleKey: 'tour.search.title',
+    textKey: 'tour.search.text',
     arrowDir: 'top'
   },
   {
     el: '#zoom',
-    title: 'Масштаб карти',
-    text: 'Кнопки + та − масштабують карту. Також можна крутити колесо миші. Чим ближче — тим більше зірок і деталей видно.',
+    titleKey: 'tour.zoom.title',
+    textKey: 'tour.zoom.text',
     arrowDir: 'right'
   },
   {
     el: '#map-mode-bar',
-    title: 'Режим карти',
-    text: 'Перемикайтесь між картою України та інтерактивною картою світу — обидва режими містять маркери загиблих.',
+    titleKey: 'tour.mapmode.title',
+    textKey: 'tour.mapmode.text',
     arrowDir: 'top'
   },
   {
     el: '#btn-add',
-    title: 'Додати запис',
-    text: 'Знаєте загиблого якого ще немає тут? Додайте запис — збережіть памʼять разом з нами.',
+    titleKey: 'tour.add.title',
+    textKey: 'tour.add.text',
     arrowDir: 'top'
   },
   {
     el: '#logo',
-    title: 'Про проєкт',
-    text: 'Дізнайтеся більше про проєкт та команду на сторінці portfolio → зоряна-памʼять.укр/portfolio/',
+    titleKey: 'tour.about.title',
+    textKey: 'tour.about.text',
     arrowDir: 'top'
   },
   {
     el: '#treetex-npo',
-    title: 'TREETEX NPO',
-    text: 'Платформу розроблено громадською організацією TREETEX NPO. Натисніть, щоб дізнатись більше про команду та ініціативи.',
+    titleKey: 'tour.npo.title',
+    textKey: 'tour.npo.text',
     arrowDir: 'right',
     isLast: true
   }
@@ -5895,12 +5913,12 @@ function _tourMobileTopbar() {
   if (!bubble || !overlay) return;
 
   overlay.classList.add('active');
-  document.getElementById('zp-tour-title').textContent = 'Панель керування';
+  document.getElementById('zp-tour-title').textContent = LANG.t('tour.mobtopbar.title');
   document.getElementById('zp-tour-text').innerHTML =
-    '← Панель зверху можна гортати пальцем вліво і вправо →<br><br>' +
+    '← '+LANG.t('tour.mobtopbar.text1')+' →<br><br>' +
     '<span style="font-size:18px;letter-spacing:6px">← ◈ →</span><br><br>' +
-    'Проведіть пальцем по верхній панелі щоб побачити всі кнопки.';
-  document.getElementById('zp-tour-next').textContent = 'Зрозуміло ✓';
+    LANG.t('tour.mobtopbar.text2');
+  document.getElementById('zp-tour-next').textContent = LANG.t('tour.understood')+' ✓';
 
   // Одна точка прогресу
   var dotsEl = document.getElementById('zp-tour-dots');
@@ -5950,12 +5968,12 @@ function _tourShow(idx) {
   overlay.classList.add('active');
 
   // Заповнюємо вміст
-  document.getElementById('zp-tour-title').textContent = step.title;
-  document.getElementById('zp-tour-text').textContent = step.text;
+  document.getElementById('zp-tour-title').textContent = LANG.t(step.titleKey);
+  document.getElementById('zp-tour-text').textContent = LANG.t(step.textKey);
 
   // Кнопка "Далі" / "Завершити"
   var btnNext = document.getElementById('zp-tour-next');
-  btnNext.textContent = (step.isLast || idx === steps.length - 1) ? 'Завершити ✓' : 'Далі →';
+  btnNext.textContent = (step.isLast || idx === steps.length - 1) ? ('✓ '+LANG.t('tour.finish')) : (LANG.t('tour.next')+' →');
 
   // Точки прогресу
   var dotsEl = document.getElementById('zp-tour-dots');

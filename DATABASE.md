@@ -665,4 +665,55 @@ SELECT COUNT(*) FROM users WHERE last_seen > %s AND is_banned=0
 
 ---
 
-*Оновлено: 2026-05-10 · SEO Phase 2: seo_broken_links, seo_score_history; відео теги в sitemap.xml*
+---
+
+## Таблиця `languages` (i18n)
+
+Список мов інтерфейсу. Активні мови відображаються у перемикачі `#lang-toggle`.
+
+| Колонка | Тип | Опис |
+|---------|-----|------|
+| `code` | VARCHAR(5) PK | ISO 639-1 код: `uk`, `en` |
+| `name` | VARCHAR(100) | Назва мови: `Українська`, `English` |
+| `flag` | VARCHAR(10) | Emoji прапора: `🇺🇦`, `🇬🇧` |
+| `direction` | ENUM('ltr','rtl') | Напрямок тексту |
+| `is_active` | TINYINT(1) | 1 = відображати у перемикачі |
+| `is_default` | TINYINT(1) | 1 = мова за замовчуванням (тільки одна) |
+| `sort_order` | INT | Порядок у перемикачі |
+| `created_at` | DATETIME | Дата додавання |
+
+**Дефолтні рядки:** `uk` (default), `en`
+
+---
+
+## Таблиця `i18n_translations`
+
+Всі переклади інтерфейсу. Єдине джерело правди — редагується через адмін-панель або `PUT /api/admin/i18n/batch`.
+
+| Колонка | Тип | Опис |
+|---------|-----|------|
+| `id` | INT AUTO_INCREMENT PK | — |
+| `lang` | VARCHAR(5) FK→languages | Код мови |
+| `section` | VARCHAR(50) | Секція: `ui`, `map`, `card`, `admin`, `auth`, `errors` |
+| `key` | VARCHAR(100) | Ключ: `btn.save`, `nav.search`, тощо |
+| `value` | TEXT | Значення перекладу |
+| `updated_at` | DATETIME | Автооновлення при INSERT/UPDATE |
+
+**Ключі:**
+- `UNIQUE KEY uq_lang_key (lang, key)` — один ключ на мову
+- `INDEX idx_lang_sec (lang, section)` — швидкий запит по секції
+- `FK fk_i18n_lang → languages(code) ON DELETE CASCADE`
+
+**API:**
+- `GET /api/langs` — активні мови
+- `GET /api/i18n/{lang}` — словник для lang (з fallback до uk)
+- `GET /api/admin/i18n/keys?lang=uk&section=ui` — список для редагування
+- `PUT /api/admin/i18n/key` — зберегти один ключ
+- `PUT /api/admin/i18n/batch` — пакетне збереження
+- `POST /api/admin/i18n/lang` — додати/оновити мову
+
+**Колонка `users.lang`** — VARCHAR(5) DEFAULT 'uk', зберігає обрану мову користувача.
+
+---
+
+*Оновлено: 2026-07-14 · i18n Фаза 1: languages, i18n_translations, users.lang, lang_engine.py, /js/i18n.js*

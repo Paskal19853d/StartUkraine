@@ -57,12 +57,31 @@
       "WebFetch(domain:speedhost.com.ua)",
       "Bash(grep -E \"\\\\.html$\")",
       "Bash(Get-ChildItem -Path \"d:\\\\OSPanel\\\\OpenServer\\\\domains\\\\localhost\\\\treetex\" -Recurse -Include \"*.css\", \"*.js\", \"*.html\")",
-      "Bash(Select-Object FullName)"
+      "Bash(Select-Object FullName)",
+      "Bash(grep -n \"^}\\);\\\\s*$\\\\|^}\\\\\\);\\\\s*$\" \"d:/OSPanel/OpenServer/domains/localhost/treetex/admin.html\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\('Paskal.py','r',encoding='utf-8'\\).read\\(\\)\\); print\\('OK'\\)\")",
+      "Bash(curl -s \"http://127.0.0.1:8000/api/i18n/en\")",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); t=d.get\\('t',{}\\); print\\('keys count:', len\\(t\\)\\); print\\('sample:', list\\(t.items\\(\\)\\)[:5]\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\('lang_engine.py','r',encoding='utf-8'\\).read\\(\\)\\); print\\('OK'\\)\")",
+      "WebFetch(domain:xn----7sbbz2acglf0a4i2ag.xn--j1amh)",
+      "Bash(grep -n \"CREATE TABLE \\\\`languages\\\\`\\\\|CREATE TABLE \\\\`i18n_translations\\\\`\" \"C:/Users/Paskal/Downloads/zoryana_pamyat.sql\")",
+      "Bash(grep -n \"INSERT INTO \\\\`languages\\\\`\\\\|INSERT INTO \\\\`i18n_translations\\\\`\" \"C:/Users/Paskal/Downloads/zoryana_pamyat.sql\")",
+      "Bash(grep -c \"'en', '\" \"C:/Users/Paskal/Downloads/zoryana_pamyat.sql\" 2>/dev/null; echo \"---\"; awk '/INSERT INTO `i18n_translations`/,/;$/' \"C:/Users/Paskal/Downloads/zoryana_pamyat.sql\" > /tmp/i18n_dump.txt 2>/dev/null; wc -l /tmp/i18n_dump.txt 2>/dev/null)",
+      "Bash(curl -s -m 5 \"http://127.0.0.1:8000/api/langs\")",
+      "Bash(curl -s -m 5 \"http://127.0.0.1:8000/api/i18n/en\")",
+      "Bash(curl -s -m 10 \"https://зоряна-память.укр/api/langs\" -o /tmp/langs.json -w \"HTTP:%{http_code}\\\\n\")",
+      "Bash(curl -s -m 10 \"https://зоряна-память.укр/api/i18n/en\" -o /tmp/i18n_en.json -w \"HTTP:%{http_code}\\\\n\")",
+      "Bash(curl -s -m 10 \"https://зоряна-память.укр/js/i18n.js\" -o /tmp/prod_i18n.js -w \"HTTP:%{http_code} SIZE:%{size_download}\\\\n\")",
+      "Bash(curl -s -m 10 \"https://зоряна-память.укр/\" -o /tmp/prod_index.html -w \"HTTP:%{http_code} SIZE:%{size_download}\\\\n\")",
+      "Bash(curl -s -m 10 -D - \"https://зоряна-память.укр/\" -o /dev/null)",
+      "Bash(curl -s -m 10 -b \"lang=en\" \"https://зоряна-память.укр/api/i18n/en\" -o /tmp/i18n_en2.json -w \"HTTP:%{http_code}\\\\n\")",
+      "Bash(curl -s -m 10 -b lang=en https://зоряна-память.укр/api/i18n/en -o 'C:\\\\Users\\\\Paskal\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\d--OSPanel-OpenServer-domains-localhost-treetex\\\\be38064f-3cdf-4a68-8f21-6b7b34001005\\\\scratchpad/i18n_en2.json' -w 'HTTP:%{http_code}\\\\n')"
     ],
     "additionalDirectories": [
       "D:\\OSPanel\\OpenServer\\domains\\localhost\\mpu\\backend",
       "D:\\OSPanel\\OpenServer\\domains\\localhost\\mpu\\migrations",
-      "D:\\OSPanel\\OpenServer\\domains\\localhost\\mpu"
+      "D:\\OSPanel\\OpenServer\\domains\\localhost\\mpu",
+      "\\tmp"
     ]
   }
 }

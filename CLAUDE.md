@@ -66,7 +66,9 @@ treetex/
 │   ├── social/          # Іконки соцмереж (PNG, 8 штук)
 │   ├── awards/          # Зображення нагород — 31+ PNG, локальні (завантажені з Wikimedia)
 │   └── ranks/           # Погони звань — 21 PNG (UA_shoulder_mark_01..17 + 4 генеральські)
+├── lang_engine.py       # i18n движок: t(), get_all(), get_languages(), invalidate_cache()
 ├── js/
+│   ├── i18n.js          # Клієнтська локалізація: window.LANG, t(), applyI18n(), switchLang()
 │   ├── sea.js           # Анімація хвиль
 │   └── dat.gui.min.js   # GUI контроли
 ├── fonts/uicons/        # Flaticon UIcons (woff2, woff, css) — ЛОКАЛЬНІ
@@ -518,7 +520,69 @@ sudo systemctl reload nginx
 
 ---
 
+## 16. i18n — ЛОКАЛІЗАЦІЯ
+
+### Архітектура
+- **Єдине джерело правди**: MySQL таблиці `languages` + `i18n_translations`
+- **Backend модуль**: `lang_engine.py` — `t()`, `get_all()`, `get_languages()`, `invalidate_cache()`
+- **Кеш**: `lru_cache` у пам'яті + Redis TTL 300с, авто-інвалідація при збереженні
+- **Frontend**: `js/i18n.js` — `window.LANG.t(key, vars?)`, `applyI18n()`, `switchLang(lang)`
+- **Мова**: cookie `lang` (1 рік) → Accept-Language → `uk` (fallback)
+- **Fallback**: якщо ключ відсутній у lang → підставляється uk
+
+### HTML атрибути для перекладу
+| Атрибут | Що перекладає |
+|---------|--------------|
+| `data-i18n="key"` | `textContent` |
+| `data-i18n-html="key"` | `innerHTML` |
+| `data-i18n-placeholder="key"` | `placeholder` |
+| `data-i18n-hint="key"` | `data-hint` (для `.zp-hint`) |
+| `data-i18n-aria="key"` | `aria-label` |
+| `data-i18n-title="key"` | `title` |
+
+### Перемикач мови `#lang-toggle`
+- CSS: точний патерн `#map-mode-toggle` / `.mmt-thumb`
+- Клас `lang-en` на `<html>` при англійській мові
+- Синхронізація між вкладками через `BroadcastChannel('zoryana_lang')`
+
+### API endpoints
+| Метод | Endpoint | Опис |
+|-------|----------|------|
+| GET | `/api/langs` | Активні мови |
+| GET | `/api/i18n/{lang}` | Словник для lang (з fallback uk) |
+| GET | `/api/admin/i18n/langs` | Всі мови (адмін) |
+| POST | `/api/admin/i18n/lang` | Додати/оновити мову |
+| GET | `/api/admin/i18n/keys?lang=uk&section=ui` | Ключі для редагування |
+| PUT | `/api/admin/i18n/key` | Зберегти один ключ |
+| PUT | `/api/admin/i18n/batch` | Пакетне збереження |
+
+### Секції ключів
+| Секція | Вміст |
+|--------|-------|
+| `ui` | Кнопки, мітки, загальні елементи |
+| `map` | Карта, маркери, підписи |
+| `card` | Картка меморіалу |
+| `admin` | Адмін-панель |
+| `auth` | Авторизація, профіль |
+| `errors` | Повідомлення про помилки |
+
+### Правила роботи з i18n
+- **НЕ хардкодити** тексти інтерфейсу напряму в HTML/JS — використовувати `data-i18n` або `LANG.t()`
+- Нові ключі додавати через `PUT /api/admin/i18n/batch` або напряму в PhpMyAdmin
+- При зміні перекладів — `invalidate_cache()` викликається автоматично в ендпоінтах
+- Секція `uk` обов'язкова для кожного ключа (це fallback для всіх мов)
+- Зміни БД i18n — через PhpMyAdmin SQL або ендпоінти (НЕ через `init_db`)
+
+---
+
 ## 15. ЖУРНАЛ ЗМІН
+
+### v3.1 (2026-07-14) — i18n Фаза 1: Інфраструктура
+- Нові таблиці БД: `languages` + `i18n_translations` + колонка `users.lang`
+- Новий модуль `lang_engine.py`: `t()`, `get_all()`, `get_languages()`, `invalidate_cache()`
+- Новий файл `js/i18n.js`: `window.LANG`, `applyI18n()`, `switchLang()`, `BroadcastChannel`
+- Нові ендпоінти: `/api/langs`, `/api/i18n/{lang}`, `/api/admin/i18n/*` (6 ендпоінтів)
+- Документація: `DATABASE.md` + `CLAUDE.md` секція 16
 
 ### v2.2 (2026-07-02)
 - Додано модуль **"Вартість проекту"** (sec-projcost) в адмін-панелі

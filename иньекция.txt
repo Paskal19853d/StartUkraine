@@ -1,0 +1,252 @@
+-- Таблиця мов
+CREATE TABLE IF NOT EXISTS `languages` (
+    `code`       VARCHAR(5)        PRIMARY KEY,
+    `name`       VARCHAR(100)      NOT NULL,
+    `flag`       VARCHAR(10)       DEFAULT '',
+    `direction`  ENUM('ltr','rtl') DEFAULT 'ltr',
+    `is_active`  TINYINT(1)        DEFAULT 1,
+    `is_default` TINYINT(1)        DEFAULT 0,
+    `sort_order` INT               DEFAULT 0,
+    `created_at` DATETIME          DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Таблиця перекладів
+CREATE TABLE IF NOT EXISTS `i18n_translations` (
+    `id`         INT AUTO_INCREMENT PRIMARY KEY,
+    `lang`       VARCHAR(5)   NOT NULL,
+    `section`    VARCHAR(50)  NOT NULL,
+    `key`        VARCHAR(100) NOT NULL,
+    `value`      TEXT         NOT NULL DEFAULT '',
+    `updated_at` DATETIME     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY `uq_lang_key`  (`lang`, `key`),
+    INDEX       `idx_lang_sec` (`lang`, `section`),
+    CONSTRAINT  `fk_i18n_lang` FOREIGN KEY (`lang`)
+                REFERENCES `languages`(`code`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Колонка lang в users (якщо ще немає)
+ALTER TABLE `users` ADD COLUMN IF NOT EXISTS `lang` VARCHAR(5) NOT NULL DEFAULT 'uk';
+
+-- Дефолтні мови
+INSERT IGNORE INTO `languages` (`code`,`name`,`flag`,`is_active`,`is_default`,`sort_order`) VALUES
+  ('uk', 'Українська', '🇺🇦', 1, 1, 0),
+  ('en', 'English',    '🇬🇧', 1, 0, 1);
+
+
+
+---------------------------------------------------------------
+-- ============================================================
+-- i18n_translations — початковий набір uk ключів
+-- Виконати в PhpMyAdmin: база zoryana_pamyat → SQL
+-- ============================================================
+
+INSERT INTO i18n_translations (lang, section, `key`, value) VALUES
+
+-- ── section: ui (загальні елементи) ─────────────────────────
+('uk','ui','btn.save',         'Зберегти'),
+('uk','ui','btn.cancel',       'Скасувати'),
+('uk','ui','btn.delete',       'Видалити'),
+('uk','ui','btn.edit',         'Редагувати'),
+('uk','ui','btn.add',          'Додати'),
+('uk','ui','btn.close',        'Закрити'),
+('uk','ui','btn.send',         'Надіслати'),
+('uk','ui','btn.search',       'Пошук'),
+('uk','ui','btn.clear',        'Очистити'),
+('uk','ui','btn.back',         'Назад'),
+('uk','ui','btn.next',         'Далі'),
+('uk','ui','btn.confirm',      'Підтвердити'),
+('uk','ui','btn.approve',      'Схвалити'),
+('uk','ui','btn.reject',       'Відхилити'),
+('uk','ui','btn.export',       'Експорт'),
+('uk','ui','btn.import',       'Імпорт'),
+('uk','ui','btn.refresh',      'Оновити'),
+('uk','ui','btn.upload',       'Завантажити'),
+('uk','ui','btn.copy',         'Копіювати'),
+('uk','ui','btn.share',        'Поділитись'),
+('uk','ui','btn.like',         'Вподобати'),
+('uk','ui','btn.fullscreen',   'На весь екран'),
+('uk','ui','loading',          'Завантаження...'),
+('uk','ui','error',            'Помилка'),
+('uk','ui','success',          'Успішно'),
+('uk','ui','no_data',          'Немає даних'),
+('uk','ui','yes',              'Так'),
+('uk','ui','no',               'Ні'),
+('uk','ui','all',              'Всі'),
+('uk','ui','total',            'Всього'),
+('uk','ui','of',               'з'),
+('uk','ui','page',             'Сторінка'),
+('uk','ui','rows_per_page',    'Рядків на сторінці'),
+('uk','ui','online',           'онлайн'),
+('uk','ui','visitors_24h',     'відвідувачів за 24 години'),
+
+-- ── section: nav (навігація / topbar) ───────────────────────
+('uk','nav','search.placeholder',  'Пошук за іменем, позивним, місцем…'),
+('uk','nav','search.hint',         'Пошук'),
+('uk','nav','logo.hint',           'Зоряна Памʼять — головна'),
+('uk','nav','smoke.hint',          'Ефект диму'),
+('uk','nav','mapmode.hint',        'Режим карти'),
+('uk','nav','auth.hint',           'Увійти / Профіль'),
+('uk','nav','coffee.hint',         'Підтримати проєкт'),
+('uk','nav','fullscreen.hint',     'На весь екран'),
+('uk','nav','chat.hint',           'Чат'),
+('uk','nav','info.hint',           'Інформація'),
+('uk','nav','visitors.hint',       'Відвідувачів за 24 години'),
+('uk','nav','lang.hint',           'Змінити мову'),
+
+-- ── section: map (карта) ─────────────────────────────────────
+('uk','map','title',               'Інтерактивна карта'),
+('uk','map','zoom.in',             'Збільшити'),
+('uk','map','zoom.out',            'Зменшити'),
+('uk','map','zoom.reset',          'Скинути масштаб'),
+('uk','map','marker.likes',        'Вподобань'),
+('uk','map','marker.video',        'відео'),
+('uk','map','marker.duplicates',   'збіг'),
+('uk','map','tip.bury',            'Поховання'),
+('uk','map','mode.map',            'Карта'),
+('uk','map','mode.satellite',      'Супутник'),
+('uk','map','total_label',         'Героїв'),
+
+-- ── section: card (картка меморіалу) ─────────────────────────
+('uk','card','loading',            'Завантаження...'),
+('uk','card','not_found',          'Запис не знайдено'),
+('uk','card','last_name',          'Прізвище'),
+('uk','card','first_name',         'Ім\'я'),
+('uk','card','middle_name',        'По батькові'),
+('uk','card','birth',              'Дата народження'),
+('uk','card','death',              'Дата загибелі'),
+('uk','card','rank',               'Звання'),
+('uk','card','position',           'Посада'),
+('uk','card','unit',               'Підрозділ'),
+('uk','card','callsign',           'Позивний'),
+('uk','card','location',           'Місце загибелі'),
+('uk','card','burial',             'Місце поховання'),
+('uk','card','circumstances',      'Обставини'),
+('uk','card','description',        'Опис'),
+('uk','card','awards',             'Нагороди'),
+('uk','card','awards.empty',       'Інформація про нагороди відсутня'),
+('uk','card','awards.loading',     'Завантаження нагород...'),
+('uk','card','video.none',         'ВІДЕО ВІДСУТНЄ'),
+('uk','card','video.play',         'Натисніть для перегляду'),
+('uk','card','sound.mute',         '🔇 ПРОБІЛ — увімкнути звук'),
+('uk','card','sound.unmute',       '🔊 ПРОБІЛ — вимкнути звук'),
+('uk','card','likes',              'Вподобань'),
+('uk','card','share',              'Поділитись'),
+('uk','card','edit',               'Редагувати'),
+('uk','card','age',                'років'),
+('uk','card','born',               'нар.'),
+('uk','card','fell',               'заг.'),
+
+-- ── section: form (форма додавання) ──────────────────────────
+('uk','form','title.add',          'Додати запис'),
+('uk','form','title.edit',         'Редагувати запис'),
+('uk','form','last.label',         'Прізвище *'),
+('uk','form','last.placeholder',   'Шевченко'),
+('uk','form','first.label',        'Ім\'я *'),
+('uk','form','first.placeholder',  'Олег'),
+('uk','form','mid.label',          'По батькові'),
+('uk','form','mid.placeholder',    'Миколайович'),
+('uk','form','birth.label',        'Дата народження'),
+('uk','form','death.label',        'Дата загибелі'),
+('uk','form','rank.label',         'Звання'),
+('uk','form','position.label',     'Посада'),
+('uk','form','unit.label',         'Підрозділ'),
+('uk','form','callsign.label',     'Позивний'),
+('uk','form','loc.label',          'Де загинув (текст)'),
+('uk','form','loc.placeholder',    'Авдіївка, Донецька обл.'),
+('uk','form','bury.label',         'Де похований (текст)'),
+('uk','form','bury.placeholder',   'с. Березівка, Київська обл.'),
+('uk','form','circ.label',         'Обставини загибелі'),
+('uk','form','descr.label',        'Опис'),
+('uk','form','descr.placeholder',  'Хоробрий захисник…'),
+('uk','form','photo.label',        'Фото (URL)'),
+('uk','form','video.label',        'Відео (YouTube URL)'),
+('uk','form','color.label',        'Колір маркера'),
+('uk','form','award.search',       'Пошук нагороди...'),
+('uk','form','award.select',       '— обрати нагороду —'),
+('uk','form','required',           '* — обов\'язкові поля'),
+('uk','form','submit',             'Надіслати на модерацію'),
+('uk','form','submit.edit',        'Зберегти зміни'),
+
+-- ── section: auth (авторизація) ──────────────────────────────
+('uk','auth','login.title',        'Вхід'),
+('uk','auth','register.title',     'Реєстрація'),
+('uk','auth','email.label',        'Email'),
+('uk','auth','email.placeholder',  'your@email.com'),
+('uk','auth','password.label',     'Пароль'),
+('uk','auth','password.placeholder','Мінімум 8 символів'),
+('uk','auth','name.label',         'Ім\'я'),
+('uk','auth','nickname.label',     'Нікнейм'),
+('uk','auth','phone.label',        'Телефон'),
+('uk','auth','btn.login',          'Увійти'),
+('uk','auth','btn.register',       'Зареєструватись'),
+('uk','auth','btn.logout',         'Вийти'),
+('uk','auth','btn.google',         'Увійти через Google'),
+('uk','auth','forgot.password',    'Забули пароль?'),
+('uk','auth','no.account',         'Немає акаунту?'),
+('uk','auth','has.account',        'Вже є акаунт?'),
+('uk','auth','profile.title',      'Профіль'),
+('uk','auth','profile.save',       'Зберегти профіль'),
+('uk','auth','nick.taken',         'Нікнейм вже зайнятий'),
+('uk','auth','email.taken',        'Email вже зареєстровано'),
+('uk','auth','nick.available',     'Нікнейм доступний'),
+
+-- ── section: chat (чат) ──────────────────────────────────────
+('uk','chat','title',              'Чат'),
+('uk','chat','placeholder',        'Написати…'),
+('uk','chat','send',               'Надіслати'),
+('uk','chat','empty',              'Повідомлень ще немає'),
+('uk','chat','collapse',           'Згорнути/розгорнути'),
+('uk','chat','open',               'Відкрити чат'),
+
+-- ── section: stats (статистика) ──────────────────────────────
+('uk','stats','total',             'Героїв'),
+('uk','stats','likes',             'Вподобань'),
+('uk','stats','visitors',          'Відвідувачів'),
+('uk','stats','online',            'Онлайн'),
+('uk','stats','added_today',       'Додано сьогодні'),
+
+-- ── section: errors (помилки) ────────────────────────────────
+('uk','errors','network',          'Помилка мережі. Спробуйте ще раз.'),
+('uk','errors','server',           'Помилка сервера. Спробуйте пізніше.'),
+('uk','errors','not_found',        'Запис не знайдено.'),
+('uk','errors','unauthorized',     'Необхідна авторизація.'),
+('uk','errors','forbidden',        'Доступ заборонено.'),
+('uk','errors','validation',       'Перевірте правильність заповнення полів.'),
+('uk','errors','photo.invalid',    'Невірний URL фото.'),
+('uk','errors','rate_limit',       'Забагато запитів. Спробуйте через хвилину.'),
+('uk','errors','login.failed',     'Невірний email або пароль.'),
+('uk','errors','register.failed',  'Помилка реєстрації. Спробуйте ще раз.'),
+
+-- ── section: admin (адмін-панель) ────────────────────────────
+('uk','admin','title',             'Адмін-панель'),
+('uk','admin','nav.stats',         'Статистика'),
+('uk','admin','nav.memorials',     'Всі записи'),
+('uk','admin','nav.pending',       'На модерації'),
+('uk','admin','nav.users',         'Користувачі'),
+('uk','admin','nav.mapeditor',     'Редактор карти'),
+('uk','admin','nav.social',        'Соцмережі'),
+('uk','admin','nav.colors',        'Кольори'),
+('uk','admin','nav.smoke',         'Дим'),
+('uk','admin','nav.sea',           'Хвилі'),
+('uk','admin','nav.icons',         'Іконки'),
+('uk','admin','nav.photo',         'Фото на карті'),
+('uk','admin','nav.cities',        'Міста'),
+('uk','admin','nav.projcost',      'Вартість'),
+('uk','admin','nav.legacy',        'Спадщина'),
+('uk','admin','nav.i18n',          'Локалізація'),
+('uk','admin','mem.search',        'Пошук у записах...'),
+('uk','admin','mem.approve_all',   'Схвалити всі'),
+('uk','admin','mem.pending_count', 'На модерації: {count}'),
+('uk','admin','user.ban',          'Заблокувати'),
+('uk','admin','user.unban',        'Розблокувати'),
+('uk','admin','user.role.admin',   'Адмін'),
+('uk','admin','user.role.moder',   'Модератор'),
+('uk','admin','user.role.user',    'Користувач'),
+('uk','admin','export.csv',        'Експорт CSV'),
+('uk','admin','import.csv',        'Імпорт CSV'),
+('uk','admin','saved',             'Збережено!'),
+('uk','admin','deleted',           'Видалено!'),
+('uk','admin','approved',          'Схвалено!'),
+('uk','admin','rejected',          'Відхилено!')
+
+ON DUPLICATE KEY UPDATE value = VALUES(value);
