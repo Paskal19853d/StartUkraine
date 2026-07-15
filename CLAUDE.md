@@ -577,6 +577,17 @@ sudo systemctl reload nginx
 
 ## 15. ЖУРНАЛ ЗМІН
 
+### v3.3 (2026-07-15) — Google/Дія OAuth: редірект в /admin для адмінів
+- Проблема: вхід через Google з `/admin` завжди редіректив на `/` (публічну головну), а не назад в адмін-панель — сесійна кука виставлялась коректно, але сторінка губилась
+- Рішення: стандартний OAuth `state`-параметр несе намір `next=admin` через увесь flow (Google/Дія повертають `state` без змін)
+- `/api/auth/google` та `/api/auth/diia` (Paskal.py) приймають `?next=admin` → передають `state=admin` до провайдера
+- `/api/auth/google/callback` та `/api/auth/diia/callback` читають `state` і редіректять на `/admin?oauth=success` замість `/?oauth=success`, якщо `state=="admin"`
+- Захист від open-redirect: білий список `_OAUTH_NEXT_TARGETS = {"admin": "/admin"}` (Paskal.py, перед Google OAuth блоком) — будь-яке інше/відсутнє значення `state` фолбечиться на `/`
+- `admin.html`: кнопка Google (рядок ~582) тепер `onclick="window.location.href='/api/auth/google?next=admin'"`
+- `admin.html`: новий `checkOAuthCallback()` (біля `DOMContentLoaded`, ~рядок 5876) — обробляє `?oauth=success`/`oauth_error`, чистить URL, показує помилку в `#lerr` якщо роль не admin/moder (через `/api/auth/me`, бо `/api/admin/me` кидає 403 для не-модераторів)
+- Нові i18n ключі: `adm.login.no_rights`, `adm.login.oauth_failed` (секція `admin`, uk+en)
+- `index.html` — поведінка без змін (без `next` → дефолтний редірект на `/`)
+
 ### v3.2 (2026-07-15) — Лічильник відвідувачів: київська доба замість rolling 24h
 - `visitors_24h` тепер рахується від **00:00 за київським часом (Europe/Kyiv)**, а не як плаваюче вікно "останні 24 години"
 - Новий хелпер `_kyiv_day_start_ts()` (Paskal.py, ~рядок 1259) — обчислює unix-timestamp початку поточної доби за Києвом через `zoneinfo.ZoneInfo("Europe/Kyiv")`

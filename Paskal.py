@@ -4409,26 +4409,35 @@ def _oauth_set_session(resp: RedirectResponse, user_id: int) -> RedirectResponse
 
 # ── Google OAuth ──────────────────────────────────────────
 
+_OAUTH_NEXT_TARGETS = {"admin": "/admin"}  # білий список next → допустимі шляхи повернення
+
+def _oauth_redirect_target(state: str = None) -> str:
+    """Визначає шлях для редіректу після OAuth-логіну (захист від open redirect)."""
+    return _OAUTH_NEXT_TARGETS.get(state, "/")
+
 @app.get("/api/auth/google")
-def auth_google():
+def auth_google(next: str = None):
     if not GOOGLE_CLIENT_ID:
         return RedirectResponse("/?oauth_error=google_not_configured", status_code=302)
     if _get_color_val("reg_allow_google", "1") != "1":
         return RedirectResponse("/?oauth_error=google_disabled", status_code=302)
-    params = urllib.parse.urlencode({
+    params = {
         "client_id":     GOOGLE_CLIENT_ID,
         "redirect_uri":  f"{OAUTH_REDIRECT_BASE}/api/auth/google/callback",
         "response_type": "code",
         "scope":         "openid email profile",
         "access_type":   "online",
-    })
-    return RedirectResponse(f"https://accounts.google.com/o/oauth2/v2/auth?{params}", status_code=302)
+    }
+    if next in _OAUTH_NEXT_TARGETS:
+        params["state"] = next
+    return RedirectResponse(f"https://accounts.google.com/o/oauth2/v2/auth?{urllib.parse.urlencode(params)}", status_code=302)
 
 
 @app.get("/api/auth/google/callback")
-def auth_google_callback(code: str = None, error: str = None):
+def auth_google_callback(code: str = None, error: str = None, state: str = None):
+    target = _oauth_redirect_target(state)
     if error or not code:
-        return RedirectResponse("/?oauth_error=google_cancelled", status_code=302)
+        return RedirectResponse(f"{target}?oauth_error=google_cancelled", status_code=302)
     token_data = urllib.parse.urlencode({
         "code":          code,
         "client_id":     GOOGLE_CLIENT_ID,
@@ -4445,10 +4454,10 @@ def auth_google_callback(code: str = None, error: str = None):
         with urllib.request.urlopen(req, timeout=10) as r:
             token_json = json.loads(r.read())
     except Exception:
-        return RedirectResponse("/?oauth_error=google_token", status_code=302)
+        return RedirectResponse(f"{target}?oauth_error=google_token", status_code=302)
     access_token = token_json.get("access_token")
     if not access_token:
-        return RedirectResponse("/?oauth_error=google_token", status_code=302)
+        return RedirectResponse(f"{target}?oauth_error=google_token", status_code=302)
     try:
         req2 = urllib.request.Request(
             "https://www.googleapis.com/oauth2/v2/userinfo",
@@ -4457,35 +4466,38 @@ def auth_google_callback(code: str = None, error: str = None):
         with urllib.request.urlopen(req2, timeout=10) as r:
             info = json.loads(r.read())
     except Exception:
-        return RedirectResponse("/?oauth_error=google_userinfo", status_code=302)
+        return RedirectResponse(f"{target}?oauth_error=google_userinfo", status_code=302)
     email = info.get("email", "").lower()
     if not email:
-        return RedirectResponse("/?oauth_error=google_no_email", status_code=302)
+        return RedirectResponse(f"{target}?oauth_error=google_no_email", status_code=302)
     name = info.get("name") or email.split("@")[0]
     user = _oauth_login_or_create(email, name)
-    resp = RedirectResponse("/?oauth=success", status_code=302)
+    resp = RedirectResponse(f"{target}?oauth=success", status_code=302)
     return _oauth_set_session(resp, user["id"])
 
 
 # ── Дія OAuth ─────────────────────────────────────────────
 
 @app.get("/api/auth/diia")
-def auth_diia():
+def auth_diia(next: str = None):
     if not DIIA_CLIENT_ID:
         return RedirectResponse("/?oauth_error=diia_not_configured", status_code=302)
-    params = urllib.parse.urlencode({
+    params = {
         "client_id":     DIIA_CLIENT_ID,
         "redirect_uri":  f"{OAUTH_REDIRECT_BASE}/api/auth/diia/callback",
         "response_type": "code",
         "scope":         "openid email profile",
-    })
-    return RedirectResponse(f"{DIIA_AUTH_URL}?{params}", status_code=302)
+    }
+    if next in _OAUTH_NEXT_TARGETS:
+        params["state"] = next
+    return RedirectResponse(f"{DIIA_AUTH_URL}?{urllib.parse.urlencode(params)}", status_code=302)
 
 
 @app.get("/api/auth/diia/callback")
-def auth_diia_callback(code: str = None, error: str = None):
+def auth_diia_callback(code: str = None, error: str = None, state: str = None):
+    target = _oauth_redirect_target(state)
     if error or not code:
-        return RedirectResponse("/?oauth_error=diia_cancelled", status_code=302)
+        return RedirectResponse(f"{target}?oauth_error=diia_cancelled", status_code=302)
     token_data = urllib.parse.urlencode({
         "code":          code,
         "client_id":     DIIA_CLIENT_ID,
@@ -4502,10 +4514,10 @@ def auth_diia_callback(code: str = None, error: str = None):
         with urllib.request.urlopen(req, timeout=10) as r:
             token_json = json.loads(r.read())
     except Exception:
-        return RedirectResponse("/?oauth_error=diia_token", status_code=302)
+        return RedirectResponse(f"{target}?oauth_error=diia_token", status_code=302)
     access_token = token_json.get("access_token")
     if not access_token:
-        return RedirectResponse("/?oauth_error=diia_token", status_code=302)
+        return RedirectResponse(f"{target}?oauth_error=diia_token", status_code=302)
     try:
         req2 = urllib.request.Request(
             DIIA_USERINFO_URL,
@@ -4514,13 +4526,13 @@ def auth_diia_callback(code: str = None, error: str = None):
         with urllib.request.urlopen(req2, timeout=10) as r:
             info = json.loads(r.read())
     except Exception:
-        return RedirectResponse("/?oauth_error=diia_userinfo", status_code=302)
+        return RedirectResponse(f"{target}?oauth_error=diia_userinfo", status_code=302)
     email = info.get("email", "").lower()
     if not email:
-        return RedirectResponse("/?oauth_error=diia_no_email", status_code=302)
+        return RedirectResponse(f"{target}?oauth_error=diia_no_email", status_code=302)
     name = info.get("name") or info.get("rnokpp") or email.split("@")[0]
     user = _oauth_login_or_create(email, name)
-    resp = RedirectResponse("/?oauth=success", status_code=302)
+    resp = RedirectResponse(f"{target}?oauth=success", status_code=302)
     return _oauth_set_session(resp, user["id"])
 
 
