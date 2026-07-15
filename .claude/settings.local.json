@@ -37,7 +37,32 @@
       "Bash(python new_keys_uk.py)",
       "Bash(python new_keys2.py)",
       "Bash(grep -noE '>[^<>{}$]*[а-яА-ЯіІїЇєЄ][^<>{}$]*<' index.html)",
-      "Bash(grep -nE '>[^<>{}$]*[а-яА-ЯіІїЇєЄ][^<>{}$]*<' index.html)"
+      "Bash(grep -nE '>[^<>{}$]*[а-яА-ЯіІїЇєЄ][^<>{}$]*<' index.html)",
+      "Bash(grep -noE '>[^<>{}$]*[а-яА-ЯіІїЇєЄ][^<>{}$]*<' admin.html)",
+      "Bash(grep -n '</div><!-- /content-area\\\\|^  </div>\\\\s*$\\\\|<script>' admin.html)",
+      "Bash(grep -coE \"['\\\\\"\\\\`][^'\\\\\"\\\\`]*[а-яА-ЯіІїЇєЄ][^'\\\\\"\\\\`]*['\\\\\"\\\\`]\")",
+      "Bash(grep -n \"['\\\\\"\\\\`][^'\\\\\"\\\\`]*[а-яА-ЯіІїЇєЄ]\")",
+      "Bash(awk -F: '$1>11700 && $1<12200')",
+      "Bash(awk 'NR<=11800 && /^const.*=\\\\s*\\\\[/{last=NR\": \"$0} END{print last}' admin.html)",
+      "Bash(awk -F: '$1<11800')",
+      "Bash(grep -noE '>[^<>{}$]*[а-яА-ЯіІїЇєЄ][^<>{}$]*<')",
+      "Bash(grep -nE '>[^<>{}$]*[а-яА-ЯіІїЇєЄ][^<>{}$]*<')",
+      "Bash(curl -s -m 10 \"https://зоряна-память.укр/api/i18n/en\" -o /tmp/check_en.json -w \"HTTP:%{http_code}\\\\n\")",
+      "Bash(curl -s -m 10 https://зоряна-память.укр/api/i18n/en -o 'C:\\\\Users\\\\Paskal\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\d--OSPanel-OpenServer-domains-localhost-treetex\\\\be38064f-3cdf-4a68-8f21-6b7b34001005\\\\scratchpad/check_en.json' -w 'HTTP:%{http_code}\\\\n')",
+      "Bash(curl -s -m 10 https://зоряна-память.укр/ -o 'C:\\\\Users\\\\Paskal\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\d--OSPanel-OpenServer-domains-localhost-treetex\\\\be38064f-3cdf-4a68-8f21-6b7b34001005\\\\scratchpad/prod_index_check.html' -w 'HTTP:%{http_code}\\\\n')",
+      "Bash(grep -o 'id=\"logo\"[^>]*>.\\\\{0,250\\\\}' 'C:\\\\Users\\\\Paskal\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\d--OSPanel-OpenServer-domains-localhost-treetex\\\\be38064f-3cdf-4a68-8f21-6b7b34001005\\\\scratchpad/prod_index_check.html')",
+      "Bash(curl -s -m 10 https://зоряна-память.укр/js/i18n.js -o 'C:\\\\Users\\\\Paskal\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\d--OSPanel-OpenServer-domains-localhost-treetex\\\\be38064f-3cdf-4a68-8f21-6b7b34001005\\\\scratchpad/prod_i18n_check.js' -w 'HTTP:%{http_code} SIZE:%{size_download}\\\\n')",
+      "Bash(curl -s -m 10 -D - \"https://зоряна-память.укр/\" -o /dev/null)",
+      "Bash(curl -s -m 10 -D - \"https://зоряна-память.укр/js/i18n.js\" -o /dev/null)",
+      "Bash(grep -nE '>[^<>{}$]*[а-яА-ЯіІїЇєЄ][^<>{}$]*<' rules.html)",
+      "Bash(grep -nE '>[^<>{}$]*[а-яА-ЯіІїЇєЄ][^<>{}$]*<' terms.html)",
+      "Bash(grep -nE '>[^<>{}$]*[а-яА-ЯіІїЇєЄ][^<>{}$]*<' faq.html)",
+      "Bash(grep -c 'faq-q-text\">Як\\\\|faq-a\">$' faq.html)",
+      "Bash(python extract_doc_keys.py)",
+      "Bash(python apply_doc_keys.py)",
+      "Bash(python -c \"import ast; ast.parse\\(open\\('Paskal.py', encoding='utf-8'\\).read\\(\\)\\)\")",
+      "Bash(pip show *)",
+      "Bash(venv/Scripts/python.exe -m pip install tzdata)"
     ]
   }
 }

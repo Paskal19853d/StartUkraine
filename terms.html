@@ -163,6 +163,13 @@ html, body {
   letter-spacing: .06em;
 }
 
+#doc-lang-toggle:hover { border-color: #999; }
+#doc-lang-toggle #doc-lang-uk, #doc-lang-toggle #doc-lang-en { transition: color .15s, font-weight .15s; }
+#doc-lang-toggle.lang-en #doc-lang-uk { font-weight: 400; color: #999; }
+#doc-lang-toggle.lang-en #doc-lang-en { font-weight: 600; color: #111; }
+#doc-lang-toggle:not(.lang-en) #doc-lang-uk { font-weight: 600; color: #111; }
+#doc-lang-toggle:not(.lang-en) #doc-lang-en { font-weight: 400; color: #999; }
+
 .doc-wrapper {
   flex: 1;
   padding: 40px 48px;
@@ -451,6 +458,7 @@ html, body {
   .doc-wrapper { padding: 24px 16px; }
 }
 </style>
+<script src="/js/i18n.js?v=2"></script>
 </head>
 <body>
 
@@ -458,46 +466,46 @@ html, body {
 
   <nav class="doc-nav">
     <div class="doc-nav__logo">
-      <div class="doc-nav__logo-title">Зоряна Памʼять</div>
-      <div class="doc-nav__logo-sub">Офіційний портал</div>
+      <div class="doc-nav__logo-title" data-i18n="brand.name">Зоряна Памʼять</div>
+      <div class="doc-nav__logo-sub" data-i18n="doc.official_portal">Офіційний портал</div>
     </div>
 
-    <div class="doc-nav__label">Документи</div>
+    <div class="doc-nav__label" data-i18n="doc.documents">Документи</div>
 
     <ul class="doc-nav__list">
       <li class="doc-nav__item">
         <a href="rules.html">
           <span class="nav-icon"><svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg></span>
-          <span>Правила сайту</span>
+          <span data-i18n="rules">Правила сайту</span>
         </a>
       </li>
       <li class="doc-nav__item">
         <a href="terms.html" class="active">
           <span class="nav-icon"><svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="14" y2="17"/></svg></span>
-          <span>Правила використання</span>
+          <span data-i18n="terms">Правила використання</span>
         </a>
       </li>
       <li class="doc-nav__item">
         <a href="faq.html">
           <span class="nav-icon"><svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>
-          <span>Питання та відповіді</span>
+          <span data-i18n="doc.faq_nav">Питання та відповіді</span>
         </a>
       </li>
     </ul>
 
-    <div class="doc-nav__label">Головна</div>
+    <div class="doc-nav__label" data-i18n="doc.home_label">Головна</div>
     <ul class="doc-nav__list">
       <li class="doc-nav__item">
         <a href="index.html">
           <span class="nav-icon"><svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>
-          <span>На головну</span>
+          <span data-i18n="doc.to_home">На головну</span>
         </a>
       </li>
     </ul>
 
     <div class="doc-nav__footer">
-      © 2025 Зоряна Памʼять<br>
-      Усі права захищено
+      © 2025 <span data-i18n="brand.name">Зоряна Памʼять</span><br>
+      <span data-i18n="doc.all_rights">Усі права захищено</span>
     </div>
   </nav>
 
@@ -505,11 +513,14 @@ html, body {
 
     <div class="doc-topbar">
       <div class="doc-topbar__breadcrumb">
-        Головна &rsaquo; Документи &rsaquo; <span>Правила використання</span>
+        <span data-i18n="doc.home_label">Головна</span> &rsaquo; <span data-i18n="doc.documents">Документи</span> &rsaquo; <span data-i18n="terms">Правила використання</span>
       </div>
       <div class="doc-topbar__meta">
-        <span class="badge">ЧИННИЙ</span>
-        <span>Документ № ЗП-02-2025</span>
+        <div id="doc-lang-toggle" onclick="LANG.switchLang(LANG.current==='uk'?'en':'uk')" title="Змінити мову / Switch language" style="display:flex;align-items:center;gap:4px;background:#f0f0f0;border:1px solid #ccc;border-radius:20px;padding:4px 12px;cursor:pointer;font-size:11px;color:#555;user-select:none">
+          <span id="doc-lang-uk" style="font-weight:600">UA</span><span style="opacity:.4">|</span><span id="doc-lang-en">EN</span>
+        </div>
+        <span class="badge" data-i18n="doc.status_active">ЧИННИЙ</span>
+        <span><span data-i18n="doc.number_label">Документ №</span> ЗП-02-2025</span>
       </div>
     </div>
 
@@ -519,168 +530,168 @@ html, body {
         <div class="doc-header">
           <div class="doc-header__emblem"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></div>
           <div class="doc-header__info">
-            <div class="doc-header__org">Меморіальний вебпортал</div>
-            <div class="doc-header__title">Правила використання порталу «Зоряна Памʼять»</div>
-            <div class="doc-header__code">Документ № ЗП-02-2025 · Версія 1.0 · Угода користувача</div>
+            <div class="doc-header__org" data-i18n="doc.memorial_portal">Меморіальний вебпортал</div>
+            <div class="doc-header__title" data-i18n-html="terms.doc_title">Правила використання порталу «Зоряна Памʼять»</div>
+            <div class="doc-header__code"><span data-i18n="doc.number_label">Документ №</span> ЗП-02-2025 · <span data-i18n="doc.version_label">Версія</span> 1.0 · <span data-i18n="terms.user_agreement">Угода користувача</span></div>
           </div>
         </div>
 
         <div class="doc-requisites">
           <div class="doc-req-row">
-            <span class="doc-req-label">Набрання чинності:</span>
-            <span class="doc-req-value">01 травня 2025 р.</span>
+            <span class="doc-req-label" data-i18n="terms.effective">Набрання чинності:</span>
+            <span class="doc-req-value" data-i18n="doc.date_may2025">01 травня 2025 р.</span>
           </div>
           <div class="doc-req-row">
-            <span class="doc-req-label">Остання редакція:</span>
-            <span class="doc-req-value">01 травня 2025 р.</span>
+            <span class="doc-req-label" data-i18n="doc.last_revision">Остання редакція:</span>
+            <span class="doc-req-value" data-i18n="doc.date_may2025">01 травня 2025 р.</span>
           </div>
           <div class="doc-req-row">
-            <span class="doc-req-label">Мова документа:</span>
-            <span class="doc-req-value">Українська</span>
+            <span class="doc-req-label" data-i18n="terms.doc_lang">Мова документа:</span>
+            <span class="doc-req-value" data-i18n="terms.ukrainian">Українська</span>
           </div>
           <div class="doc-req-row">
-            <span class="doc-req-label">Статус:</span>
-            <span class="doc-req-value">Чинний</span>
+            <span class="doc-req-label" data-i18n="doc.status_label">Статус:</span>
+            <span class="doc-req-value" data-i18n="doc.status_active">Чинний</span>
           </div>
         </div>
 
         <!-- SECTION 1 -->
         <div class="doc-section">
-          <div class="doc-section-title">1. Визначення термінів</div>
-          <p class="doc-text">
+          <div class="doc-section-title" data-i18n="terms.s1.title">1. Визначення термінів</div>
+          <p class="doc-text" data-i18n="terms.s1.intro">
             У цьому документі наведені терміни вживаються у таких значеннях:
           </p>
           <ul class="doc-list numbered">
-            <li><strong>Портал</strong> — вебсайт «Зоряна Памʼять», що розміщений за адресою, визначеною адміністрацією.</li>
-            <li><strong>Користувач</strong> — будь-яка фізична особа, яка здійснює доступ до Порталу через мережу Інтернет.</li>
-            <li><strong>Адміністрація</strong> — команда осіб, що здійснює технічне та змістовне управління Порталом.</li>
-            <li><strong>Меморіальний запис</strong> — сторінка Порталу, що містить відомості про конкретного загиблого захисника або захисницю.</li>
-            <li><strong>Персональні дані</strong> — відомості, що дозволяють ідентифікувати фізичну особу.</li>
+            <li data-i18n-html="terms.s1.d1"><strong>Портал</strong> — вебсайт «Зоряна Памʼять», що розміщений за адресою, визначеною адміністрацією.</li>
+            <li data-i18n-html="terms.s1.d2"><strong>Користувач</strong> — будь-яка фізична особа, яка здійснює доступ до Порталу через мережу Інтернет.</li>
+            <li data-i18n-html="terms.s1.d3"><strong>Адміністрація</strong> — команда осіб, що здійснює технічне та змістовне управління Порталом.</li>
+            <li data-i18n-html="terms.s1.d4"><strong>Меморіальний запис</strong> — сторінка Порталу, що містить відомості про конкретного загиблого захисника або захисницю.</li>
+            <li data-i18n-html="terms.s1.d5"><strong>Персональні дані</strong> — відомості, що дозволяють ідентифікувати фізичну особу.</li>
           </ul>
         </div>
 
         <!-- SECTION 2 -->
         <div class="doc-section">
-          <div class="doc-section-title">2. Умови доступу</div>
-          <p class="doc-text">
+          <div class="doc-section-title" data-i18n="terms.s2.title">2. Умови доступу</div>
+          <p class="doc-text" data-i18n="terms.s2.p1">
             Доступ до Порталу є безкоштовним та відкритим для всіх користувачів без реєстрації. Окремі функції (подання заявок, коментування, редагування) можуть вимагати ідентифікації відповідно до вимог чинного законодавства України.
           </p>
           <div class="doc-highlight">
-            <strong>Важливо:</strong> Використовуючи Портал, ви підтверджуєте, що досягли 14-річного віку або маєте дозвіл батьків чи законних представників.
+            <strong data-i18n="terms.important">Важливо:</strong> <span data-i18n="terms.s2.age">Використовуючи Портал, ви підтверджуєте, що досягли 14-річного віку або маєте дозвіл батьків чи законних представників.</span>
           </div>
         </div>
 
         <!-- SECTION 3 -->
         <div class="doc-section">
-          <div class="doc-section-title">3. Обробка персональних даних</div>
-          <p class="doc-text">
+          <div class="doc-section-title" data-i18n="terms.s3.title">3. Обробка персональних даних</div>
+          <p class="doc-text" data-i18n="terms.s3.p1">
             Адміністрація Порталу дотримується вимог Закону України «Про захист персональних даних» та Регламенту (ЄС) 2016/679 (GDPR) щодо обробки персональних даних.
           </p>
 
           <table class="doc-table">
             <thead>
               <tr>
-                <th>Категорія даних</th>
-                <th>Мета обробки</th>
-                <th>Термін зберігання</th>
+                <th data-i18n="terms.s3.th1">Категорія даних</th>
+                <th data-i18n="terms.s3.th2">Мета обробки</th>
+                <th data-i18n="terms.s3.th3">Термін зберігання</th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td>Технічні дані (IP, браузер)</td>
-                <td>Забезпечення безпеки та аналітика</td>
-                <td>90 днів</td>
+                <td data-i18n="terms.s3.r1c1">Технічні дані (IP, браузер)</td>
+                <td data-i18n="terms.s3.r1c2">Забезпечення безпеки та аналітика</td>
+                <td data-i18n="terms.s3.r1c3">90 днів</td>
               </tr>
               <tr>
-                <td>Контактні дані (email)</td>
-                <td>Зворотний зв'язок з адміністрацією</td>
-                <td>До відкликання згоди</td>
+                <td data-i18n="terms.s3.r2c1">Контактні дані (email)</td>
+                <td data-i18n="terms.s3.r2c2">Зворотний зв'язок з адміністрацією</td>
+                <td data-i18n="terms.s3.r2c3">До відкликання згоди</td>
               </tr>
               <tr>
-                <td>Дані про загиблих</td>
-                <td>Формування меморіального реєстру</td>
-                <td>Безстроково</td>
+                <td data-i18n="terms.s3.r3c1">Дані про загиблих</td>
+                <td data-i18n="terms.s3.r3c2">Формування меморіального реєстру</td>
+                <td data-i18n="terms.s3.r3c3">Безстроково</td>
               </tr>
             </tbody>
           </table>
 
-          <p class="doc-text">
+          <p class="doc-text" data-i18n="terms.s3.p2">
             Персональні дані, надані добровільно, не передаються третім особам без письмової згоди особи, яка їх надала, крім випадків, передбачених законодавством.
           </p>
         </div>
 
         <!-- SECTION 4 -->
         <div class="doc-section">
-          <div class="doc-section-title">4. Інтелектуальна власність</div>
-          <p class="doc-text">
+          <div class="doc-section-title" data-i18n="terms.s4.title">4. Інтелектуальна власність</div>
+          <p class="doc-text" data-i18n="terms.s4.p1">
             Всі матеріали Порталу — тексти, зображення, дизайн, програмний код — є власністю Адміністрації або правовласників, які надали дозвіл на їх використання. Копіювання та відтворення матеріалів допускається виключно з посиланням на джерело та за некомерційного використання.
           </p>
           <ul class="doc-list">
-            <li>Фотографії загиблих публікуються за згодою родичів або на підставі відкритих джерел.</li>
-            <li>Текстові матеріали, створені користувачами, залишаються їхньою власністю з наданням Порталу невиключної ліцензії на публікацію.</li>
+            <li data-i18n="terms.s4.l1">Фотографії загиблих публікуються за згодою родичів або на підставі відкритих джерел.</li>
+            <li data-i18n="terms.s4.l2">Текстові матеріали, створені користувачами, залишаються їхньою власністю з наданням Порталу невиключної ліцензії на публікацію.</li>
           </ul>
         </div>
 
         <!-- SECTION 5 -->
         <div class="doc-section">
-          <div class="doc-section-title">5. Відповідальність сторін</div>
-          <p class="doc-text">
+          <div class="doc-section-title" data-i18n="terms.s5.title">5. Відповідальність сторін</div>
+          <p class="doc-text" data-i18n="terms.s5.intro">
             Адміністрація не несе відповідальності за:
           </p>
           <ul class="doc-list">
-            <li>тимчасову недоступність Порталу з технічних причин;</li>
-            <li>достовірність інформації, наданої третіми особами;</li>
-            <li>збитки, що виникли внаслідок несанкціонованого доступу до облікових даних користувача.</li>
+            <li data-i18n="terms.s5.l1">тимчасову недоступність Порталу з технічних причин;</li>
+            <li data-i18n="terms.s5.l2">достовірність інформації, наданої третіми особами;</li>
+            <li data-i18n="terms.s5.l3">збитки, що виникли внаслідок несанкціонованого доступу до облікових даних користувача.</li>
           </ul>
-          <p class="doc-text" style="margin-top:14px;">
+          <p class="doc-text" style="margin-top:14px;" data-i18n="terms.s5.p2">
             Користувач несе повну відповідальність за зміст інформації, яку він подає до розміщення на Порталі, відповідно до чинного законодавства України.
           </p>
         </div>
 
         <!-- SECTION 6 -->
         <div class="doc-section">
-          <div class="doc-section-title">6. Вирішення спорів</div>
-          <p class="doc-text">
+          <div class="doc-section-title" data-i18n="terms.s6.title">6. Вирішення спорів</div>
+          <p class="doc-text" data-i18n="terms.s6.p1">
             Всі суперечки, що виникають у звʼязку з використанням Порталу, вирішуються шляхом переговорів. У разі неможливості досягнення згоди спір передається на розгляд до судових органів відповідно до законодавства України.
           </p>
         </div>
 
         <!-- SECTION 7 -->
         <div class="doc-section">
-          <div class="doc-section-title">7. Зв'язок з адміністрацією</div>
-          <p class="doc-text">
+          <div class="doc-section-title" data-i18n="terms.s7.title">7. Зв'язок з адміністрацією</div>
+          <p class="doc-text" data-i18n="terms.s7.intro">
             З питань, що стосуються цих Правил, персональних даних або скарг на контент, звертайтеся до Адміністрації:
           </p>
           <ul class="doc-list">
-            <li>Електронна пошта: <a href="mailto:treetex.g.ads@gmail.com" style="color:var(--doc-accent);">treetex.g.ads@gmail.com</a></li>
-            <li>Термін розгляду звернення: до 14 робочих днів.</li>
+            <li><span data-i18n="terms.s7.email_label">Електронна пошта:</span> <a href="mailto:treetex.g.ads@gmail.com" style="color:var(--doc-accent);">treetex.g.ads@gmail.com</a></li>
+            <li data-i18n="terms.s7.response_time">Термін розгляду звернення: до 14 робочих днів.</li>
           </ul>
         </div>
 
         <!-- PROJECT COST -->
         <div class="doc-section" style="display:none;margin-top:32px;padding:20px 24px;background:rgba(180,140,60,.07);border:1px solid rgba(180,140,60,.25);border-radius:10px;">
-          <div class="doc-section-title" style="margin-bottom:14px">Мінімальна ціна проєкту</div>
+          <div class="doc-section-title" style="margin-bottom:14px" data-i18n="doc.min_project_cost">Мінімальна ціна проєкту</div>
           <table style="width:100%;border-collapse:collapse;font-size:13px;">
             <tr style="border-bottom:1px solid rgba(180,140,60,.2)">
-              <td style="padding:8px 4px;color:var(--doc-muted)">Мінімальна оцінка (ринок)</td>
+              <td style="padding:8px 4px;color:var(--doc-muted)" data-i18n="doc.min_estimate">Мінімальна оцінка (ринок)</td>
               <td style="padding:8px 4px;text-align:right;font-weight:600">$30,000</td>
               <td style="padding:8px 4px;text-align:right;font-weight:600;color:var(--doc-accent)" id="terms-price-uah">— ₴</td>
             </tr>
             <tr>
-              <td style="padding:8px 4px;color:var(--doc-muted)" colspan="2">Курс НБУ (USD/UAH)</td>
-              <td style="padding:8px 4px;text-align:right;color:var(--doc-muted);font-size:11px" id="terms-rate-val">оновлення…</td>
+              <td style="padding:8px 4px;color:var(--doc-muted)" colspan="2" data-i18n="doc.nbu_rate">Курс НБУ (USD/UAH)</td>
+              <td style="padding:8px 4px;text-align:right;color:var(--doc-muted);font-size:11px" id="terms-rate-val" data-i18n="doc.updating">оновлення…</td>
             </tr>
           </table>
         </div>
 
         <div class="doc-sign">
           <div class="doc-sign__left">
-            Адміністрація Порталу «Зоряна Памʼять»<br>
-            Контакт: <a href="mailto:treetex.g.ads@gmail.com" style="color:var(--doc-accent);">treetex.g.ads@gmail.com</a>
+            <span data-i18n="doc.portal_admin">Адміністрація Порталу «Зоряна Памʼять»</span><br>
+            <span data-i18n="doc.contact">Контакт:</span> <a href="mailto:treetex.g.ads@gmail.com" style="color:var(--doc-accent);">treetex.g.ads@gmail.com</a>
           </div>
           <div class="doc-sign__right">
             <div class="doc-sign__stamp"><img src="/img/bgda.png" alt="Печатка" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;"></div>
-            <div>Документ підписано<br>електронним підписом</div>
+            <div data-i18n="doc.signed">Документ підписано<br>електронним підписом</div>
           </div>
         </div>
 
@@ -689,13 +700,13 @@ html, body {
 
     <footer class="doc-footer">
       <div class="doc-footer__left">
-        <span>Документ № ЗП-02-2025 · Версія 1.0 · Правила використання</span>
-        <span class="doc-footer__doc-id">Дата створення документа: 01.04.2025 · Дата публікації: 01.05.2025</span>
+        <span><span data-i18n="doc.number_label">Документ №</span> ЗП-02-2025 · <span data-i18n="doc.version_label">Версія</span> 1.0 · <span data-i18n="terms">Правила використання</span></span>
+        <span class="doc-footer__doc-id"><span data-i18n="doc.created_date">Дата створення документа: 01.04.2025</span> · <span data-i18n="doc.published_date">Дата публікації: 01.05.2025</span></span>
       </div>
       <div class="doc-footer__right">
-        Також перегляньте:
-        <a href="rules.html">Правила сайту</a> ·
-        <a href="faq.html">Питання та відповіді</a>
+        <span data-i18n="doc.also_see">Також перегляньте:</span>
+        <a href="rules.html" data-i18n="rules">Правила сайту</a> ·
+        <a href="faq.html" data-i18n="doc.faq_nav">Питання та відповіді</a>
       </div>
     </footer>
 
@@ -703,7 +714,13 @@ html, body {
 </div>
 
 <script>
-(function() {
+function _langToggleUpdateUI(lang) {
+  const toggle = document.getElementById('doc-lang-toggle');
+  if (toggle) toggle.classList.toggle('lang-en', lang === 'en');
+}
+(async function() {
+  await LANG.load();
+  _langToggleUpdateUI(LANG.current);
   const MIN_USD = 30000;
   fetch('/api/colors').then(r => r.json()).then(d => {
     const rate = parseFloat((d.proj_usd_rate || {}).value) || 0;
@@ -714,7 +731,7 @@ html, body {
       if (rateEl) rateEl.textContent = rate.toFixed(2) + ' ₴';
     } else {
       if (uahEl) uahEl.textContent = '— ₴';
-      if (rateEl) rateEl.textContent = 'курс невідомий';
+      if (rateEl) rateEl.textContent = LANG.t('doc.rate_unknown');
     }
   }).catch(() => {});
 })();

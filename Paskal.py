@@ -1251,7 +1251,17 @@ _db_queries_hourly: dict = {}   # {hour_ts: count} — кількість зве
 _cpu_ram_snapshots: list = []   # [{ts, cpu, ram}] — знімки щохвилини
 _pageviews_hourly:  dict = {}   # {hour_ts: count} — лише HTML-сторінки (не API/статика)
 _human_pv_hourly:   dict = {}   # {hour_ts: count} — HTML-сторінки БЕЗ ботів
-_unique_visitors:   dict = {}   # {ip_hash: hour_ts} — унікальні люди, TTL 24г
+_unique_visitors:   dict = {}   # {ip_hash: day_start_ts} — унікальні люди, скидається щодоби (Europe/Kyiv)
+
+from zoneinfo import ZoneInfo
+import datetime as _dt_module
+_KYIV_TZ = ZoneInfo("Europe/Kyiv")
+
+def _kyiv_day_start_ts() -> float:
+    """Unix timestamp початку поточної доби (00:00) за київським часом."""
+    now_kyiv = _dt_module.datetime.now(_KYIV_TZ)
+    day_start = now_kyiv.replace(hour=0, minute=0, second=0, microsecond=0)
+    return day_start.timestamp()
 
 # ── Bot detection ─────────────────────────────────────────
 _BOT_PATTERNS: list = [
@@ -1641,12 +1651,12 @@ async def track_visits(request, call_next):
         for k in [k for k in _pageviews_hourly if k < cutoff]:
             del _pageviews_hourly[k]
         if not bot:
-            # Унікальний відвідувач: рахуємо IP один раз за 24г
+            # Унікальний відвідувач: рахуємо IP один раз за поточну добу (Europe/Kyiv, з 00:00)
             ip = _get_ip(request)
             ip_hash = hashlib.md5(ip.encode()).hexdigest()
-            cutoff_24h = now - 86400
+            kyiv_day_start = _kyiv_day_start_ts()
             last_seen = _unique_visitors.get(ip_hash, 0)
-            if last_seen < cutoff_24h:
+            if last_seen < kyiv_day_start:
                 _unique_visitors[ip_hash] = now
                 _human_pv_hourly[hour] = _human_pv_hourly.get(hour, 0) + 1
             # Чистимо старі записи рідко (раз на ~1000 req через _request_count)
@@ -1662,8 +1672,8 @@ async def track_visits(request, call_next):
         _flush_daily_visits()
         _flush_hourly_visits()
         _flush_bot_queue()
-        # Чистимо _unique_visitors старше 24г
-        _uv_cutoff = time.time() - 86400
+        # Чистимо _unique_visitors, накопичених до початку поточної доби (Europe/Kyiv)
+        _uv_cutoff = _kyiv_day_start_ts()
         for _k in [_k for _k, _v in _unique_visitors.items() if _v < _uv_cutoff]:
             del _unique_visitors[_k]
     return await call_next(request)
@@ -3029,9 +3039,9 @@ def get_stats():
             "SELECT COUNT(*) AS total, COALESCE(SUM(likes),0) AS likes FROM memorials WHERE approved=1"
         )
         row = c.fetchone()
-        # visitors_24h: з БД (переживає рестарт) + поточна година з пам'яті
+        # visitors_24h: рахунок від початку поточної доби за київським часом (з БД + пам'ять)
         now_hour = int(time.time() // 3600) * 3600
-        cutoff = now_hour - 23 * 3600
+        cutoff = int(_kyiv_day_start_ts() // 3600) * 3600
         c.execute(
             "SELECT COALESCE(SUM(human_views),0) AS v FROM hourly_stats WHERE hour_ts >= %s AND hour_ts < %s",
             (cutoff, now_hour)
@@ -6154,11 +6164,11 @@ def admin_stats(request: Request):
     with _bot_lock:
         online_bots = _bot_online_count
     now_hour = int(time.time() // 3600) * 3600
-    # visitors_24h: з БД (переживає рестарт) + поточна година з пам'яті
+    # visitors_24h: рахунок від початку поточної доби за київським часом (з БД + пам'ять)
     try:
         db2 = get_db()
         with db2.cursor() as c2:
-            cutoff = now_hour - 23 * 3600
+            cutoff = int(_kyiv_day_start_ts() // 3600) * 3600
             c2.execute(
                 "SELECT COALESCE(SUM(human_views),0) AS v FROM hourly_stats WHERE hour_ts >= %s AND hour_ts < %s",
                 (cutoff, now_hour)

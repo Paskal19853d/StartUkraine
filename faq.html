@@ -66,6 +66,12 @@ html, body {
 .doc-topbar__breadcrumb span { color: var(--doc-accent); font-weight: 500; }
 .doc-topbar__meta { font-size: 11px; color: var(--doc-muted); display: flex; gap: 16px; }
 .doc-topbar__meta .badge { background: #dddddd; color: #111111; border-radius: 3px; padding: 2px 8px; font-size: 10px; font-weight: 600; letter-spacing: .06em; }
+#doc-lang-toggle:hover { border-color: #999; }
+#doc-lang-toggle #doc-lang-uk, #doc-lang-toggle #doc-lang-en { transition: color .15s, font-weight .15s; }
+#doc-lang-toggle.lang-en #doc-lang-uk { font-weight: 400; color: #999; }
+#doc-lang-toggle.lang-en #doc-lang-en { font-weight: 600; color: #111; }
+#doc-lang-toggle:not(.lang-en) #doc-lang-uk { font-weight: 600; color: #111; }
+#doc-lang-toggle:not(.lang-en) #doc-lang-en { font-weight: 400; color: #999; }
 
 .doc-wrapper { flex: 1; padding: 40px 48px; display: flex; flex-direction: column; align-items: center; }
 
@@ -362,6 +368,7 @@ html, body {
   .doc-wrapper { padding: 24px 12px; }
 }
 </style>
+<script src="/js/i18n.js?v=2"></script>
 </head>
 <body>
 
@@ -370,31 +377,31 @@ html, body {
   <!-- NAV -->
   <nav class="doc-nav">
     <div class="doc-nav__logo">
-      <div class="doc-nav__logo-title">Зоряна Памʼять</div>
-      <div class="doc-nav__logo-sub">Офіційний портал</div>
+      <div class="doc-nav__logo-title" data-i18n="brand.name">Зоряна Памʼять</div>
+      <div class="doc-nav__logo-sub" data-i18n="doc.official_portal">Офіційний портал</div>
     </div>
 
-    <div class="doc-nav__label">Документи</div>
+    <div class="doc-nav__label" data-i18n="doc.documents">Документи</div>
     <ul class="doc-nav__list">
       <li class="doc-nav__item">
-        <a href="rules.html"><span class="nav-icon"><svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg></span><span>Правила сайту</span></a>
+        <a href="rules.html"><span class="nav-icon"><svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg></span><span data-i18n="rules">Правила сайту</span></a>
       </li>
       <li class="doc-nav__item">
-        <a href="terms.html"><span class="nav-icon"><svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="14" y2="17"/></svg></span><span>Правила використання</span></a>
+        <a href="terms.html"><span class="nav-icon"><svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="14" y2="17"/></svg></span><span data-i18n="terms">Правила використання</span></a>
       </li>
       <li class="doc-nav__item">
-        <a href="faq.html" class="active"><span class="nav-icon"><svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span><span>Питання та відповіді</span></a>
+        <a href="faq.html" class="active"><span class="nav-icon"><svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span><span data-i18n="doc.faq_nav">Питання та відповіді</span></a>
       </li>
     </ul>
 
-    <div class="doc-nav__label">Головна</div>
+    <div class="doc-nav__label" data-i18n="doc.home_label">Головна</div>
     <ul class="doc-nav__list">
       <li class="doc-nav__item">
-        <a href="index.html"><span class="nav-icon"><svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span><span>На головну</span></a>
+        <a href="index.html"><span class="nav-icon"><svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span><span data-i18n="doc.to_home">На головну</span></a>
       </li>
     </ul>
 
-    <div class="doc-nav__footer">© 2025 Зоряна Памʼять<br>Усі права захищено</div>
+    <div class="doc-nav__footer">© 2025 <span data-i18n="brand.name">Зоряна Памʼять</span><br><span data-i18n="doc.all_rights">Усі права захищено</span></div>
   </nav>
 
   <!-- MAIN -->
@@ -402,11 +409,14 @@ html, body {
 
     <div class="doc-topbar">
       <div class="doc-topbar__breadcrumb">
-        Головна &rsaquo; Документи &rsaquo; <span>Питання та відповіді</span>
+        <span data-i18n="doc.home_label">Головна</span> &rsaquo; <span data-i18n="doc.documents">Документи</span> &rsaquo; <span data-i18n="doc.faq_nav">Питання та відповіді</span>
       </div>
       <div class="doc-topbar__meta">
-        <span class="badge">АКТУАЛЬНО</span>
-        <span>Документ № ЗП-03-2025</span>
+        <div id="doc-lang-toggle" onclick="LANG.switchLang(LANG.current==='uk'?'en':'uk')" title="Змінити мову / Switch language" style="display:flex;align-items:center;gap:4px;background:#f0f0f0;border:1px solid #ccc;border-radius:20px;padding:4px 12px;cursor:pointer;font-size:11px;color:#555;user-select:none">
+          <span id="doc-lang-uk" style="font-weight:600">UA</span><span style="opacity:.4">|</span><span id="doc-lang-en">EN</span>
+        </div>
+        <span class="badge" data-i18n="faq.actual">АКТУАЛЬНО</span>
+        <span><span data-i18n="doc.number_label">Документ №</span> ЗП-03-2025</span>
       </div>
     </div>
 
@@ -417,70 +427,70 @@ html, body {
         <div class="doc-header">
           <div class="doc-header__emblem"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><circle cx="12" cy="17" r="0.5" fill="#fff"/></svg></div>
           <div class="doc-header__info">
-            <div class="doc-header__org">Меморіальний вебпортал</div>
-            <div class="doc-header__title">Питання та відповіді</div>
-            <div class="doc-header__code">Документ № ЗП-03-2025 · Версія 1.0 · Довідник користувача</div>
+            <div class="doc-header__org" data-i18n="doc.memorial_portal">Меморіальний вебпортал</div>
+            <div class="doc-header__title" data-i18n="doc.faq_nav">Питання та відповіді</div>
+            <div class="doc-header__code"><span data-i18n="doc.number_label">Документ №</span> ЗП-03-2025 · <span data-i18n="doc.version_label">Версія</span> 1.0 · <span data-i18n="faq.user_guide">Довідник користувача</span></div>
           </div>
         </div>
 
         <!-- REQUISITES -->
         <div class="doc-requisites">
           <div class="doc-req-row">
-            <span class="doc-req-label">Оновлено:</span>
-            <span class="doc-req-value">01 травня 2025 р.</span>
+            <span class="doc-req-label" data-i18n="faq.updated">Оновлено:</span>
+            <span class="doc-req-value" data-i18n="doc.date_may2025">01 травня 2025 р.</span>
           </div>
           <div class="doc-req-row">
-            <span class="doc-req-label">Кількість питань:</span>
+            <span class="doc-req-label" data-i18n="faq.question_count">Кількість питань:</span>
             <span class="doc-req-value" id="faq-count">—</span>
           </div>
           <div class="doc-req-row">
-            <span class="doc-req-label">Розділів:</span>
+            <span class="doc-req-label" data-i18n="faq.sections">Розділів:</span>
             <span class="doc-req-value">6</span>
           </div>
           <div class="doc-req-row">
-            <span class="doc-req-label">Статус:</span>
-            <span class="doc-req-value">Актуально</span>
+            <span class="doc-req-label" data-i18n="doc.status_label">Статус:</span>
+            <span class="doc-req-value" data-i18n="faq.actual_status">Актуально</span>
           </div>
         </div>
 
         <!-- FILTER CATEGORIES -->
         <div class="faq-categories">
-          <button class="faq-cat-btn active" data-cat="all">Всі питання</button>
-          <button class="faq-cat-btn" data-cat="general">Загальне</button>
-          <button class="faq-cat-btn" data-cat="records">Записи</button>
-          <button class="faq-cat-btn" data-cat="data">Дані та конфіденційність</button>
-          <button class="faq-cat-btn" data-cat="tech">Технічні питання</button>
-          <button class="faq-cat-btn" data-cat="contact">Звернення</button>
-          <button class="faq-cat-btn" data-cat="guide">Інструкція</button>
+          <button class="faq-cat-btn active" data-cat="all" data-i18n="faq.cat_all">Всі питання</button>
+          <button class="faq-cat-btn" data-cat="general" data-i18n="faq.cat_general">Загальне</button>
+          <button class="faq-cat-btn" data-cat="records" data-i18n="faq.cat_records">Записи</button>
+          <button class="faq-cat-btn" data-cat="data" data-i18n="faq.cat_data">Дані та конфіденційність</button>
+          <button class="faq-cat-btn" data-cat="tech" data-i18n="faq.cat_tech">Технічні питання</button>
+          <button class="faq-cat-btn" data-cat="contact" data-i18n="faq.cat_contact">Звернення</button>
+          <button class="faq-cat-btn" data-cat="guide" data-i18n="faq.cat_guide">Інструкція</button>
         </div>
 
         <!-- SEARCH -->
         <div class="faq-search-wrap">
           <span class="faq-search-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></span>
-          <input class="faq-search" type="text" placeholder="Пошук по питаннях…" id="faqSearch" autocomplete="off">
+          <input class="faq-search" type="text" data-i18n-placeholder="faq.search_placeholder" placeholder="Пошук по питаннях…" id="faqSearch" autocomplete="off">
         </div>
 
         <!-- NO RESULTS -->
         <div class="faq-no-results" id="faqNoResults">
-          За вашим запитом нічого не знайдено.<br>
-          Спробуйте інші ключові слова або <a href="mailto:treetex.g.ads@gmail.com" style="color:var(--doc-accent);">зверніться до адміністрації</a>.
+          <span data-i18n="faq.no_results">За вашим запитом нічого не знайдено.</span><br>
+          <span data-i18n="faq.try_other_words">Спробуйте інші ключові слова або</span> <a href="mailto:treetex.g.ads@gmail.com" style="color:var(--doc-accent);" data-i18n="faq.contact_admin">зверніться до адміністрації</a>.
         </div>
 
         <!-- ═══ SECTION: GENERAL ═══ -->
-        <div class="faq-section-label" data-section="general">Загальне</div>
+        <div class="faq-section-label" data-section="general" data-i18n="faq.cat_general">Загальне</div>
 
         <div class="faq-item" data-cat="general">
           <div class="faq-q" onclick="toggleFaq(this)">
             <span class="faq-q-num">П01</span>
-            <span class="faq-q-text">Що таке портал «Зоряна Памʼять» і для чого він призначений?</span>
+            <span class="faq-q-text" data-i18n="faq.q_p01">Що таке портал «Зоряна Памʼять» і для чого він призначений?</span>
             <span class="faq-chevron">▼</span>
           </div>
           <div class="faq-a">
-            «Зоряна Памʼять» — некомерційний меморіальний портал, створений для вшанування памʼяті захисників та захисниць України, які загинули під час збройної агресії. Портал зберігає імена, фотографії та відомості про загиблих для майбутніх поколінь.
+            <span data-i18n="faq.a_p01">«Зоряна Памʼять» — некомерційний меморіальний портал, створений для вшанування памʼяті захисників та захисниць України, які загинули під час збройної агресії. Портал зберігає імена, фотографії та відомості про загиблих для майбутніх поколінь.</span>
             <div class="faq-quick">
-              <div class="faq-quick-label">Часті уточнення:</div>
-              <button class="faq-chip" onclick="expandByNum('П02')">Хто може додавати записи?</button>
-              <button class="faq-chip" onclick="expandByNum('П03')">Чи є оплата?</button>
+              <div class="faq-quick-label" data-i18n="faq.frequent_clarifications">Часті уточнення:</div>
+              <button class="faq-chip" onclick="expandByNum('П02')" data-i18n="faq.q_p02_short">Хто може додавати записи?</button>
+              <button class="faq-chip" onclick="expandByNum('П03')" data-i18n="faq.q_p03_short">Чи є оплата?</button>
             </div>
           </div>
         </div>
@@ -488,10 +498,11 @@ html, body {
         <div class="faq-item" data-cat="general">
           <div class="faq-q" onclick="toggleFaq(this)">
             <span class="faq-q-num">П02</span>
-            <span class="faq-q-text">Хто може подати заявку на додавання меморіального запису?</span>
+            <span class="faq-q-text" data-i18n="faq.q_p02">Хто може подати заявку на додавання меморіального запису?</span>
             <span class="faq-chevron">▼</span>
           </div>
           <div class="faq-a">
+            <span data-i18n-html="faq.a_p02">
             Будь-яка особа може подати заявку на додавання запису. Перевагу надають:
             <ul>
               <li>родичі або члени сімʼї загиблого;</li>
@@ -499,10 +510,11 @@ html, body {
               <li>офіційні представники військових підрозділів.</li>
             </ul>
             Всі заявки проходять перевірку адміністрацією перед публікацією.
+            </span>
             <div class="faq-quick">
-              <div class="faq-quick-label">Пов'язані питання:</div>
-              <button class="faq-chip" onclick="expandByNum('З01')">Які документи потрібні?</button>
-              <button class="faq-chip" onclick="expandByNum('З03')">Скільки часу займає перевірка?</button>
+              <div class="faq-quick-label" data-i18n="faq.related_questions">Пов'язані питання:</div>
+              <button class="faq-chip" onclick="expandByNum('З01')" data-i18n="faq.q_z01_short">Які документи потрібні?</button>
+              <button class="faq-chip" onclick="expandByNum('З03')" data-i18n="faq.q_z03_short">Скільки часу займає перевірка?</button>
             </div>
           </div>
         </div>
@@ -510,24 +522,25 @@ html, body {
         <div class="faq-item" data-cat="general">
           <div class="faq-q" onclick="toggleFaq(this)">
             <span class="faq-q-num">П03</span>
-            <span class="faq-q-text">Чи є портал платним? Чи є комерційна реклама?</span>
+            <span class="faq-q-text" data-i18n="faq.q_p03">Чи є портал платним? Чи є комерційна реклама?</span>
             <span class="faq-chevron">▼</span>
           </div>
-          <div class="faq-a">
+          <div class="faq-a" data-i18n-html="faq.a_p03">
             Портал є повністю безкоштовним для всіх користувачів. Реклама відсутня. Підтримка проекту здійснюється за рахунок добровільних пожертвувань. <span class="faq-tag">БЕЗКОШТОВНО</span>
           </div>
         </div>
 
         <!-- ═══ SECTION: RECORDS ═══ -->
-        <div class="faq-section-label" data-section="records">Меморіальні записи</div>
+        <div class="faq-section-label" data-section="records" data-i18n="faq.cat_records2">Меморіальні записи</div>
 
         <div class="faq-item" data-cat="records">
           <div class="faq-q" onclick="toggleFaq(this)">
             <span class="faq-q-num">З01</span>
-            <span class="faq-q-text">Які документи або відомості потрібні для створення запису?</span>
+            <span class="faq-q-text" data-i18n="faq.q_z01">Які документи або відомості потрібні для створення запису?</span>
             <span class="faq-chevron">▼</span>
           </div>
           <div class="faq-a">
+            <span data-i18n-html="faq.a_z01">
             Для створення меморіального запису необхідно надати:
             <ul>
               <li>повне ПІБ загиблого;</li>
@@ -536,9 +549,10 @@ html, body {
               <li>фотографію (бажано, але не обовʼязково).</li>
             </ul>
             Додаткові відомості (нагороди, біографія, повідомлення від рідних) можна додати пізніше.
+            </span>
             <div class="faq-quick">
-              <div class="faq-quick-label">Наступний крок:</div>
-              <button class="faq-chip" onclick="expandByNum('З02')">Як подати заявку?</button>
+              <div class="faq-quick-label" data-i18n="faq.next_step">Наступний крок:</div>
+              <button class="faq-chip" onclick="expandByNum('З02')" data-i18n="faq.q_z02_short">Як подати заявку?</button>
             </div>
           </div>
         </div>
@@ -546,10 +560,10 @@ html, body {
         <div class="faq-item" data-cat="records">
           <div class="faq-q" onclick="toggleFaq(this)">
             <span class="faq-q-num">З02</span>
-            <span class="faq-q-text">Як подати заявку на додавання або редагування запису?</span>
+            <span class="faq-q-text" data-i18n="faq.q_z02">Як подати заявку на додавання або редагування запису?</span>
             <span class="faq-chevron">▼</span>
           </div>
-          <div class="faq-a">
+          <div class="faq-a" data-i18n-html="faq.a_z02">
             Заявку можна подати двома способами:
             <ul>
               <li>через форму на головній сторінці Порталу (розділ «Додати запис»);</li>
@@ -562,10 +576,10 @@ html, body {
         <div class="faq-item" data-cat="records">
           <div class="faq-q" onclick="toggleFaq(this)">
             <span class="faq-q-num">З03</span>
-            <span class="faq-q-text">Скільки часу займає перевірка та публікація запису?</span>
+            <span class="faq-q-text" data-i18n="faq.q_z03">Скільки часу займає перевірка та публікація запису?</span>
             <span class="faq-chevron">▼</span>
           </div>
-          <div class="faq-a">
+          <div class="faq-a" data-i18n-html="faq.a_z03">
             Стандартний термін перевірки та публікації — від 3 до 10 робочих днів. У разі надходження великої кількості заявок термін може бути збільшено. Про статус заявки вас буде повідомлено електронним листом. <span class="faq-tag">3–10 днів</span>
           </div>
         </div>
@@ -573,10 +587,10 @@ html, body {
         <div class="faq-item" data-cat="records">
           <div class="faq-q" onclick="toggleFaq(this)">
             <span class="faq-q-num">З04</span>
-            <span class="faq-q-text">Чи можна виправити або доповнити вже опублікований запис?</span>
+            <span class="faq-q-text" data-i18n="faq.q_z04">Чи можна виправити або доповнити вже опублікований запис?</span>
             <span class="faq-chevron">▼</span>
           </div>
-          <div class="faq-a">
+          <div class="faq-a" data-i18n-html="faq.a_z04">
             Так. Для внесення змін до наявного запису надішліть запит на <a href="mailto:treetex.g.ads@gmail.com">treetex.g.ads@gmail.com</a> із зазначенням:
             <ul>
               <li>посилання на запис або ПІБ особи;</li>
@@ -588,19 +602,21 @@ html, body {
         </div>
 
         <!-- ═══ SECTION: DATA ═══ -->
-        <div class="faq-section-label" data-section="data">Дані та конфіденційність</div>
+        <div class="faq-section-label" data-section="data" data-i18n="faq.cat_data">Дані та конфіденційність</div>
 
         <div class="faq-item" data-cat="data">
           <div class="faq-q" onclick="toggleFaq(this)">
             <span class="faq-q-num">Д01</span>
-            <span class="faq-q-text">Як портал захищає персональні дані загиблих та їхніх родичів?</span>
+            <span class="faq-q-text" data-i18n="faq.q_d01">Як портал захищає персональні дані загиблих та їхніх родичів?</span>
             <span class="faq-chevron">▼</span>
           </div>
           <div class="faq-a">
+            <span data-i18n="faq.a_d01">
             Портал дотримується вимог Закону України «Про захист персональних даних». Ми публікуємо лише ті відомості, які надані з відома родичів або отримані з відкритих офіційних джерел. Контактні дані осіб, що подавали заявки, не розголошуються третім особам.
+            </span>
             <div class="faq-quick">
-              <div class="faq-quick-label">Додатково:</div>
-              <button class="faq-chip" onclick="expandByNum('Д02')">Чи можна видалити запис?</button>
+              <div class="faq-quick-label" data-i18n="faq.additionally">Додатково:</div>
+              <button class="faq-chip" onclick="expandByNum('Д02')" data-i18n="faq.q_d02_short">Чи можна видалити запис?</button>
             </div>
           </div>
         </div>
@@ -608,10 +624,10 @@ html, body {
         <div class="faq-item" data-cat="data">
           <div class="faq-q" onclick="toggleFaq(this)">
             <span class="faq-q-num">Д02</span>
-            <span class="faq-q-text">Чи можна видалити меморіальний запис або фотографію?</span>
+            <span class="faq-q-text" data-i18n="faq.q_d02">Чи можна видалити меморіальний запис або фотографію?</span>
             <span class="faq-chevron">▼</span>
           </div>
-          <div class="faq-a">
+          <div class="faq-a" data-i18n-html="faq.a_d02">
             Так. Запит на видалення може подати лише підтверджений родич або офіційний представник. Для цього надішліть звернення на <a href="mailto:treetex.g.ads@gmail.com">treetex.g.ads@gmail.com</a> з поясненням причин. Адміністрація розгляне звернення індивідуально та прийме рішення у 14-денний строк.
           </div>
         </div>
@@ -619,24 +635,24 @@ html, body {
         <div class="faq-item" data-cat="data">
           <div class="faq-q" onclick="toggleFaq(this)">
             <span class="faq-q-num">Д03</span>
-            <span class="faq-q-text">Чи використовує портал файли cookie?</span>
+            <span class="faq-q-text" data-i18n="faq.q_d03">Чи використовує портал файли cookie?</span>
             <span class="faq-chevron">▼</span>
           </div>
-          <div class="faq-a">
+          <div class="faq-a" data-i18n="faq.a_d03">
             Портал використовує виключно технічні cookie, необхідні для коректної роботи сайту. Рекламні або відстежувальні файли cookie не використовуються. Дані не передаються стороннім аналітичним сервісам.
           </div>
         </div>
 
         <!-- ═══ SECTION: TECH ═══ -->
-        <div class="faq-section-label" data-section="tech">Технічні питання</div>
+        <div class="faq-section-label" data-section="tech" data-i18n="faq.cat_tech">Технічні питання</div>
 
         <div class="faq-item" data-cat="tech">
           <div class="faq-q" onclick="toggleFaq(this)">
             <span class="faq-q-num">Т01</span>
-            <span class="faq-q-text">Портал не відкривається або відображається некоректно. Що робити?</span>
+            <span class="faq-q-text" data-i18n="faq.q_t01">Портал не відкривається або відображається некоректно. Що робити?</span>
             <span class="faq-chevron">▼</span>
           </div>
-          <div class="faq-a">
+          <div class="faq-a" data-i18n-html="faq.a_t01">
             Спробуйте наступні кроки:
             <ul>
               <li>очистіть кеш браузера (Ctrl+Shift+Delete);</li>
@@ -651,10 +667,10 @@ html, body {
         <div class="faq-item" data-cat="tech">
           <div class="faq-q" onclick="toggleFaq(this)">
             <span class="faq-q-num">Т02</span>
-            <span class="faq-q-text">Які браузери підтримуються?</span>
+            <span class="faq-q-text" data-i18n="faq.q_t02">Які браузери підтримуються?</span>
             <span class="faq-chevron">▼</span>
           </div>
-          <div class="faq-a">
+          <div class="faq-a" data-i18n-html="faq.a_t02">
             Портал оптимізовано для сучасних браузерів:
             <ul>
               <li>Google Chrome (версія 90+);</li>
@@ -669,24 +685,24 @@ html, body {
         <div class="faq-item" data-cat="tech">
           <div class="faq-q" onclick="toggleFaq(this)">
             <span class="faq-q-num">Т03</span>
-            <span class="faq-q-text">Чи доступний портал на мобільних пристроях?</span>
+            <span class="faq-q-text" data-i18n="faq.q_t03">Чи доступний портал на мобільних пристроях?</span>
             <span class="faq-chevron">▼</span>
           </div>
-          <div class="faq-a">
+          <div class="faq-a" data-i18n="faq.a_t03">
             Так, портал повністю адаптований для перегляду на смартфонах та планшетах з будь-якими розмірами екрана. Окремого застосунку не існує — використовуйте браузер вашого мобільного пристрою.
           </div>
         </div>
 
         <!-- ═══ SECTION: CONTACT ═══ -->
-        <div class="faq-section-label" data-section="contact">Звернення та скарги</div>
+        <div class="faq-section-label" data-section="contact" data-i18n="faq.cat_contact2">Звернення та скарги</div>
 
         <div class="faq-item" data-cat="contact">
           <div class="faq-q" onclick="toggleFaq(this)">
             <span class="faq-q-num">С01</span>
-            <span class="faq-q-text">Як повідомити про некоректну або образливу інформацію на сторінці?</span>
+            <span class="faq-q-text" data-i18n="faq.q_s01">Як повідомити про некоректну або образливу інформацію на сторінці?</span>
             <span class="faq-chevron">▼</span>
           </div>
-          <div class="faq-a">
+          <div class="faq-a" data-i18n-html="faq.a_s01">
             Якщо ви виявили некоректний, неправдивий або образливий контент, скористайтесь кнопкою «Повідомити про помилку» на відповідній сторінці, або надішліть листа на <a href="mailto:treetex.g.ads@gmail.com">treetex.g.ads@gmail.com</a> з темою «Скарга на контент». Ми розглянемо звернення протягом 48 годин.
           </div>
         </div>
@@ -694,10 +710,10 @@ html, body {
         <div class="faq-item" data-cat="contact">
           <div class="faq-q" onclick="toggleFaq(this)">
             <span class="faq-q-num">С02</span>
-            <span class="faq-q-text">Як стати волонтером або допомогти проекту?</span>
+            <span class="faq-q-text" data-i18n="faq.q_s02">Як стати волонтером або допомогти проекту?</span>
             <span class="faq-chevron">▼</span>
           </div>
-          <div class="faq-a">
+          <div class="faq-a" data-i18n-html="faq.a_s02">
             Ми щиро вдячні всім, хто хоче підтримати меморіальний проект. Можливості участі:
             <ul>
               <li>верифікація та поповнення бази записів;</li>
@@ -712,10 +728,10 @@ html, body {
         <div class="faq-item" data-cat="contact">
           <div class="faq-q" onclick="toggleFaq(this)">
             <span class="faq-q-num">С03</span>
-            <span class="faq-q-text">Не знайшли відповіді? Як звернутись до адміністрації?</span>
+            <span class="faq-q-text" data-i18n="faq.q_s03">Не знайшли відповіді? Як звернутись до адміністрації?</span>
             <span class="faq-chevron">▼</span>
           </div>
-          <div class="faq-a">
+          <div class="faq-a" data-i18n-html="faq.a_s03">
             Якщо ваше питання не висвітлено в цьому розділі, звертайтеся напряму:
             <ul>
               <li>Електронна пошта: <a href="mailto:treetex.g.ads@gmail.com">treetex.g.ads@gmail.com</a></li>
@@ -727,15 +743,16 @@ html, body {
         </div>
 
         <!-- ═══ SECTION: GUIDE ═══ -->
-        <div class="faq-section-label" data-section="guide">Інструкція користувача — як користуватися сайтом</div>
+        <div class="faq-section-label" data-section="guide" data-i18n="faq.cat_guide2">Інструкція користувача — як користуватися сайтом</div>
 
         <div class="faq-item" data-cat="guide">
           <div class="faq-q" onclick="toggleFaq(this)">
             <span class="faq-q-num">І01</span>
-            <span class="faq-q-text">Що я бачу на головній сторінці сайту?</span>
+            <span class="faq-q-text" data-i18n="faq.q_i01">Що я бачу на головній сторінці сайту?</span>
             <span class="faq-chevron">▼</span>
           </div>
           <div class="faq-a">
+            <span data-i18n-html="faq.a_i01">
             Головна сторінка (<a href="/">зоряна-памʼять.укр</a>) складається з кількох частин:
             <ul>
               <li><strong>Верхній рядок (топ-бар)</strong> — логотип сайту, поле пошуку, кнопки «Увійти» та «Додати».</li>
@@ -744,10 +761,11 @@ html, body {
               <li><strong>Блок соціальних мереж</strong> — внизу по центру, посилання на офіційні сторінки проекту.</li>
               <li><strong>Партнери</strong> — логотипи організацій, що підтримують проект.</li>
             </ul>
+            </span>
             <div class="faq-quick">
-              <div class="faq-quick-label">Далі:</div>
-              <button class="faq-chip" onclick="expandByNum('І02')">Як користуватися картою?</button>
-              <button class="faq-chip" onclick="expandByNum('І03')">Що означає зірка?</button>
+              <div class="faq-quick-label" data-i18n="faq.next">Далі:</div>
+              <button class="faq-chip" onclick="expandByNum('І02')" data-i18n="faq.q_i02_short">Як користуватися картою?</button>
+              <button class="faq-chip" onclick="expandByNum('І03')" data-i18n="faq.q_i03_short">Що означає зірка?</button>
             </div>
           </div>
         </div>
@@ -755,10 +773,11 @@ html, body {
         <div class="faq-item" data-cat="guide">
           <div class="faq-q" onclick="toggleFaq(this)">
             <span class="faq-q-num">І02</span>
-            <span class="faq-q-text">Як користуватися картою? Як збільшити, зменшити, переміщуватись?</span>
+            <span class="faq-q-text" data-i18n="faq.q_i02">Як користуватися картою? Як збільшити, зменшити, переміщуватись?</span>
             <span class="faq-chevron">▼</span>
           </div>
           <div class="faq-a">
+            <span data-i18n-html="faq.a_i02">
             Карта повністю інтерактивна і підтримує такі жести:
             <ul>
               <li><strong>Колесо миші / свайп двома пальцями</strong> — збільшення або зменшення масштабу.</li>
@@ -768,9 +787,10 @@ html, body {
               <li><strong>Кнопка повноекранного режиму</strong> — лише карта без інтерфейсу, вийти — клавіша Esc.</li>
             </ul>
             При збільшенні масштабу зірочки розділяються і стають більш помітними. При зменшенні — карта показує загальну картину. <span class="faq-tag">ZOOM 0.4×–12×</span>
+            </span>
             <div class="faq-quick">
-              <div class="faq-quick-label">Далі:</div>
-              <button class="faq-chip" onclick="expandByNum('І04')">Як відкрити картку?</button>
+              <div class="faq-quick-label" data-i18n="faq.next">Далі:</div>
+              <button class="faq-chip" onclick="expandByNum('І04')" data-i18n="faq.q_i04_short">Як відкрити картку?</button>
             </div>
           </div>
         </div>
@@ -778,10 +798,10 @@ html, body {
         <div class="faq-item" data-cat="guide">
           <div class="faq-q" onclick="toggleFaq(this)">
             <span class="faq-q-num">І03</span>
-            <span class="faq-q-text">Що означає зірка на карті?</span>
+            <span class="faq-q-text" data-i18n="faq.q_i03">Що означає зірка на карті?</span>
             <span class="faq-chevron">▼</span>
           </div>
-          <div class="faq-a">
+          <div class="faq-a" data-i18n-html="faq.a_i03">
             Кожна зірка на карті — це конкретна людина: захисник або захисниця України, яка загинула під час збройної агресії. Зірка розташована на місці загибелі (або якомога ближче до нього).
             <ul>
               <li>Колір зірки може відрізнятися — він залежить від того, який колір обрав автор запису.</li>
@@ -795,19 +815,21 @@ html, body {
         <div class="faq-item" data-cat="guide">
           <div class="faq-q" onclick="toggleFaq(this)">
             <span class="faq-q-num">І04</span>
-            <span class="faq-q-text">Як відкрити картку загиблого?</span>
+            <span class="faq-q-text" data-i18n="faq.q_i04">Як відкрити картку загиблого?</span>
             <span class="faq-chevron">▼</span>
           </div>
           <div class="faq-a">
+            <span data-i18n-html="faq.a_i04">
             Є два способи відкрити картку:
             <ul>
               <li><strong>Клік на зірку</strong> на карті — відкривається бічна панель з інформацією.</li>
               <li><strong>Пошук за іменем</strong> — введіть ім'я у полі пошуку (вгорі), оберіть результат зі списку — картка відкриється автоматично.</li>
             </ul>
             Також кожна людина має власну окрему сторінку-меморіал за адресою <code>/memorial/імʼя-прізвище-ID</code> — її зручно зберегти в закладки або поширити у соцмережах.
+            </span>
             <div class="faq-quick">
-              <div class="faq-quick-label">Що є у картці:</div>
-              <button class="faq-chip" onclick="expandByNum('І05')">Вміст картки</button>
+              <div class="faq-quick-label" data-i18n="faq.card_contents">Що є у картці:</div>
+              <button class="faq-chip" onclick="expandByNum('І05')" data-i18n="faq.q_i05_short">Вміст картки</button>
             </div>
           </div>
         </div>
@@ -815,10 +837,11 @@ html, body {
         <div class="faq-item" data-cat="guide">
           <div class="faq-q" onclick="toggleFaq(this)">
             <span class="faq-q-num">І05</span>
-            <span class="faq-q-text">Що є всередині картки загиблого?</span>
+            <span class="faq-q-text" data-i18n="faq.q_i05">Що є всередині картки загиблого?</span>
             <span class="faq-chevron">▼</span>
           </div>
           <div class="faq-a">
+            <span data-i18n-html="faq.a_i05">
             Картка містить всю відому інформацію про людину:
             <ul>
               <li><strong>Фотографія</strong> — якщо завантажена.</li>
@@ -832,10 +855,11 @@ html, body {
               <li><strong>Кнопка лайку ⭐</strong> — щоб вшанувати пам'ять.</li>
               <li><strong>Дублікати</strong> — якщо є інші записи з таким самим іменем.</li>
             </ul>
+            </span>
             <div class="faq-quick">
-              <div class="faq-quick-label">Пов'язані дії:</div>
-              <button class="faq-chip" onclick="expandByNum('І08')">Як поставити лайк?</button>
-              <button class="faq-chip" onclick="expandByNum('І09')">Як поділитися?</button>
+              <div class="faq-quick-label" data-i18n="faq.related_actions">Пов'язані дії:</div>
+              <button class="faq-chip" onclick="expandByNum('І08')" data-i18n="faq.q_i08_short">Як поставити лайк?</button>
+              <button class="faq-chip" onclick="expandByNum('І09')" data-i18n="faq.q_i09_short">Як поділитися?</button>
             </div>
           </div>
         </div>
@@ -843,10 +867,11 @@ html, body {
         <div class="faq-item" data-cat="guide">
           <div class="faq-q" onclick="toggleFaq(this)">
             <span class="faq-q-num">І06</span>
-            <span class="faq-q-text">Як шукати людину за іменем або позивним?</span>
+            <span class="faq-q-text" data-i18n="faq.q_i06">Як шукати людину за іменем або позивним?</span>
             <span class="faq-chevron">▼</span>
           </div>
           <div class="faq-a">
+            <span data-i18n-html="faq.a_i06">
             Поле пошуку знаходиться у верхньому рядку сторінки (іконка лупи).
             <ul>
               <li>Введіть прізвище, ім'я або позивний — мінімум 2 символи.</li>
@@ -856,10 +881,11 @@ html, body {
               <li>Щоб очистити пошук — натисніть кнопку «×» поруч із полем.</li>
             </ul>
             <span class="faq-tag">ДО 10 РЕЗУЛЬТАТІВ</span>
+            </span>
             <div class="faq-quick">
-              <div class="faq-quick-label">Не знайшли?</div>
-              <button class="faq-chip" onclick="expandByNum('І07')">Що таке позивний?</button>
-              <button class="faq-chip" onclick="expandByNum('І13')">Додати новий запис</button>
+              <div class="faq-quick-label" data-i18n="faq.not_found_q">Не знайшли?</div>
+              <button class="faq-chip" onclick="expandByNum('І07')" data-i18n="faq.q_i07_short">Що таке позивний?</button>
+              <button class="faq-chip" onclick="expandByNum('І13')" data-i18n="faq.q_i13_short">Додати новий запис</button>
             </div>
           </div>
         </div>
@@ -867,10 +893,10 @@ html, body {
         <div class="faq-item" data-cat="guide">
           <div class="faq-q" onclick="toggleFaq(this)">
             <span class="faq-q-num">І07</span>
-            <span class="faq-q-text">Що таке позивний і де його шукати?</span>
+            <span class="faq-q-text" data-i18n="faq.q_i07">Що таке позивний і де його шукати?</span>
             <span class="faq-chevron">▼</span>
           </div>
-          <div class="faq-a">
+          <div class="faq-a" data-i18n-html="faq.a_i07">
             Позивний — це бойовий псевдонім, який використовують військові. Наприклад: «Граніт», «Снайпер», «Лис», «Сонце».
             <ul>
               <li>Позивний зберігається в полі «Позивний / підрозділ» при додаванні запису.</li>
@@ -884,10 +910,10 @@ html, body {
         <div class="faq-item" data-cat="guide">
           <div class="faq-q" onclick="toggleFaq(this)">
             <span class="faq-q-num">І08</span>
-            <span class="faq-q-text">Як поставити лайк — вшанувати пам'ять?</span>
+            <span class="faq-q-text" data-i18n="faq.q_i08">Як поставити лайк — вшанувати пам'ять?</span>
             <span class="faq-chevron">▼</span>
           </div>
-          <div class="faq-a">
+          <div class="faq-a" data-i18n-html="faq.a_i08">
             У картці загиблого знизу є кнопка з зіркою ⭐ і числом — це лайк. Натисніть на неї, щоб вшанувати пам'ять людини.
             <ul>
               <li>Реєстрація для цього <strong>не потрібна</strong>.</li>
@@ -901,10 +927,10 @@ html, body {
         <div class="faq-item" data-cat="guide">
           <div class="faq-q" onclick="toggleFaq(this)">
             <span class="faq-q-num">І09</span>
-            <span class="faq-q-text">Як поділитися посиланням на сторінку загиблого?</span>
+            <span class="faq-q-text" data-i18n="faq.q_i09">Як поділитися посиланням на сторінку загиблого?</span>
             <span class="faq-chevron">▼</span>
           </div>
-          <div class="faq-a">
+          <div class="faq-a" data-i18n-html="faq.a_i09">
             Кожна людина має власну унікальну сторінку-меморіал. Адреса виглядає так:
             <br><br>
             <code>https://зоряна-памʼять.укр/memorial/іван-петренко-42</code>
@@ -922,10 +948,11 @@ html, body {
         <div class="faq-item" data-cat="guide">
           <div class="faq-q" onclick="toggleFaq(this)">
             <span class="faq-q-num">І10</span>
-            <span class="faq-q-text">Навіщо реєструватися? Що дає акаунт?</span>
+            <span class="faq-q-text" data-i18n="faq.q_i10">Навіщо реєструватися? Що дає акаунт?</span>
             <span class="faq-chevron">▼</span>
           </div>
           <div class="faq-a">
+            <span data-i18n-html="faq.a_i10">
             Без реєстрації можна переглядати всі записи, шукати і ставити лайки. Реєстрація потрібна якщо ви хочете:
             <ul>
               <li><strong>Додавати записи</strong> про загиблих — ваш акаунт прив'язується до запису.</li>
@@ -933,10 +960,11 @@ html, body {
               <li><strong>Редагувати свої записи</strong> у майбутньому через адміністрацію.</li>
             </ul>
             Реєстрація безкоштовна і займає 2 хвилини. <span class="faq-tag">БЕЗКОШТОВНО</span>
+            </span>
             <div class="faq-quick">
-              <div class="faq-quick-label">Далі:</div>
-              <button class="faq-chip" onclick="expandByNum('І11')">Як зареєструватися?</button>
-              <button class="faq-chip" onclick="expandByNum('І12')">Вхід через Google</button>
+              <div class="faq-quick-label" data-i18n="faq.next">Далі:</div>
+              <button class="faq-chip" onclick="expandByNum('І11')" data-i18n="faq.q_i11_short">Як зареєструватися?</button>
+              <button class="faq-chip" onclick="expandByNum('І12')" data-i18n="faq.q_i12_short">Вхід через Google</button>
             </div>
           </div>
         </div>
@@ -944,10 +972,10 @@ html, body {
         <div class="faq-item" data-cat="guide">
           <div class="faq-q" onclick="toggleFaq(this)">
             <span class="faq-q-num">І11</span>
-            <span class="faq-q-text">Як зареєструватися на сайті? Покрокова інструкція.</span>
+            <span class="faq-q-text" data-i18n="faq.q_i11">Як зареєструватися на сайті? Покрокова інструкція.</span>
             <span class="faq-chevron">▼</span>
           </div>
-          <div class="faq-a">
+          <div class="faq-a" data-i18n-html="faq.a_i11">
             <strong>Крок 1.</strong> Натисніть кнопку «Увійти» у верхньому правому куті.<br>
             <strong>Крок 2.</strong> У вікні, що відкрилося, перейдіть на вкладку «Реєстрація».<br>
             <strong>Крок 3.</strong> Заповніть форму:
@@ -966,10 +994,10 @@ html, body {
         <div class="faq-item" data-cat="guide">
           <div class="faq-q" onclick="toggleFaq(this)">
             <span class="faq-q-num">І12</span>
-            <span class="faq-q-text">Як увійти через Google? Це безпечно?</span>
+            <span class="faq-q-text" data-i18n="faq.q_i12">Як увійти через Google? Це безпечно?</span>
             <span class="faq-chevron">▼</span>
           </div>
-          <div class="faq-a">
+          <div class="faq-a" data-i18n-html="faq.a_i12">
             Так, вхід через Google — зручний і безпечний варіант.
             <ul>
               <li>Натисніть «Увійти» → кнопку «Увійти через Google».</li>
@@ -984,10 +1012,11 @@ html, body {
         <div class="faq-item" data-cat="guide">
           <div class="faq-q" onclick="toggleFaq(this)">
             <span class="faq-q-num">І13</span>
-            <span class="faq-q-text">Як додати запис про загиблого? Покрокова інструкція.</span>
+            <span class="faq-q-text" data-i18n="faq.q_i13">Як додати запис про загиблого? Покрокова інструкція.</span>
             <span class="faq-chevron">▼</span>
           </div>
           <div class="faq-a">
+            <span data-i18n-html="faq.a_i13">
             <strong>Крок 1.</strong> Увійдіть в акаунт (або зареєструйтесь).<br>
             <strong>Крок 2.</strong> Натисніть кнопку <strong>«Додати»</strong> у верхньому правому куті — відкриється форма.<br>
             <strong>Крок 3.</strong> Заповніть поля (детальніше — питання І14).<br>
@@ -996,11 +1025,12 @@ html, body {
             <strong>Крок 6.</strong> Запис відправляється на модерацію — адміністрація перевіряє його перед публікацією (питання І15).<br>
             <br>
             Після перевірки запис з'явиться на карті у вигляді зірки.
+            </span>
             <div class="faq-quick">
-              <div class="faq-quick-label">Деталі:</div>
-              <button class="faq-chip" onclick="expandByNum('І14')">Обов'язкові поля</button>
-              <button class="faq-chip" onclick="expandByNum('І15')">Чому не з'являється?</button>
-              <button class="faq-chip" onclick="expandByNum('І16')">Як вибрати місце на карті</button>
+              <div class="faq-quick-label" data-i18n="faq.details">Деталі:</div>
+              <button class="faq-chip" onclick="expandByNum('І14')" data-i18n="faq.q_i14_short">Обов'язкові поля</button>
+              <button class="faq-chip" onclick="expandByNum('І15')" data-i18n="faq.q_i15_short">Чому не з'являється?</button>
+              <button class="faq-chip" onclick="expandByNum('І16')" data-i18n="faq.q_i16_short">Як вибрати місце на карті</button>
             </div>
           </div>
         </div>
@@ -1008,10 +1038,10 @@ html, body {
         <div class="faq-item" data-cat="guide">
           <div class="faq-q" onclick="toggleFaq(this)">
             <span class="faq-q-num">І14</span>
-            <span class="faq-q-text">Які поля обов'язкові при додаванні запису?</span>
+            <span class="faq-q-text" data-i18n="faq.q_i14">Які поля обов'язкові при додаванні запису?</span>
             <span class="faq-chevron">▼</span>
           </div>
-          <div class="faq-a">
+          <div class="faq-a" data-i18n-html="faq.a_i14">
             <strong>Обов'язкові поля:</strong>
             <ul>
               <li>Прізвище</li>
@@ -1037,10 +1067,10 @@ html, body {
         <div class="faq-item" data-cat="guide">
           <div class="faq-q" onclick="toggleFaq(this)">
             <span class="faq-q-num">І15</span>
-            <span class="faq-q-text">Чому запис не з'являється одразу після додавання?</span>
+            <span class="faq-q-text" data-i18n="faq.q_i15">Чому запис не з'являється одразу після додавання?</span>
             <span class="faq-chevron">▼</span>
           </div>
-          <div class="faq-a">
+          <div class="faq-a" data-i18n-html="faq.a_i15">
             Всі нові записи проходять <strong>модерацію</strong> — перевірку адміністрацією перед публікацією. Це зроблено щоб:
             <ul>
               <li>виключити неправдиву або образливу інформацію;</li>
@@ -1054,10 +1084,10 @@ html, body {
         <div class="faq-item" data-cat="guide">
           <div class="faq-q" onclick="toggleFaq(this)">
             <span class="faq-q-num">І16</span>
-            <span class="faq-q-text">Як вибрати місце на карті при додаванні запису?</span>
+            <span class="faq-q-text" data-i18n="faq.q_i16">Як вибрати місце на карті при додаванні запису?</span>
             <span class="faq-chevron">▼</span>
           </div>
-          <div class="faq-a">
+          <div class="faq-a" data-i18n-html="faq.a_i16">
             При заповненні форми додавання — внизу є міні-карта або є можливість клікнути на основну карту:
             <ul>
               <li>Знайдіть потрібне місце на карті (місто, район, вулиця).</li>
@@ -1071,10 +1101,10 @@ html, body {
         <div class="faq-item" data-cat="guide">
           <div class="faq-q" onclick="toggleFaq(this)">
             <span class="faq-q-num">І17</span>
-            <span class="faq-q-text">Як додати фото? Які вимоги до посилання на фото?</span>
+            <span class="faq-q-text" data-i18n="faq.q_i17">Як додати фото? Які вимоги до посилання на фото?</span>
             <span class="faq-chevron">▼</span>
           </div>
-          <div class="faq-a">
+          <div class="faq-a" data-i18n-html="faq.a_i17">
             Поле «Фото» приймає пряме посилання (URL) на зображення в Інтернеті. Вимоги:
             <ul>
               <li>Посилання має починатися з <code>https://</code></li>
@@ -1093,10 +1123,10 @@ html, body {
         <div class="faq-item" data-cat="guide">
           <div class="faq-q" onclick="toggleFaq(this)">
             <span class="faq-q-num">І18</span>
-            <span class="faq-q-text">Як додати відео з YouTube до картки?</span>
+            <span class="faq-q-text" data-i18n="faq.q_i18">Як додати відео з YouTube до картки?</span>
             <span class="faq-chevron">▼</span>
           </div>
-          <div class="faq-a">
+          <div class="faq-a" data-i18n-html="faq.a_i18">
             У формі додавання є поле «Відео YouTube». Як його заповнити:
             <ul>
               <li>Відкрийте відео на YouTube.</li>
@@ -1110,10 +1140,10 @@ html, body {
         <div class="faq-item" data-cat="guide">
           <div class="faq-q" onclick="toggleFaq(this)">
             <span class="faq-q-num">І19</span>
-            <span class="faq-q-text">Що таке звання, посада, підрозділ — як правильно заповнювати?</span>
+            <span class="faq-q-text" data-i18n="faq.q_i19">Що таке звання, посада, підрозділ — як правильно заповнювати?</span>
             <span class="faq-chevron">▼</span>
           </div>
-          <div class="faq-a">
+          <div class="faq-a" data-i18n-html="faq.a_i19">
             Ці поля описують військову службу людини:
             <ul>
               <li><strong>Звання</strong> — військове звання. Наприклад: «Молодший сержант», «Капітан», «Майор», «Генерал-майор». Пишіть так, як зазначено в офіційних документах.</li>
@@ -1128,10 +1158,10 @@ html, body {
         <div class="faq-item" data-cat="guide">
           <div class="faq-q" onclick="toggleFaq(this)">
             <span class="faq-q-num">І20</span>
-            <span class="faq-q-text">Як змінити дані мого профілю — нік, email, телефон, пароль?</span>
+            <span class="faq-q-text" data-i18n="faq.q_i20">Як змінити дані мого профілю — нік, email, телефон, пароль?</span>
             <span class="faq-chevron">▼</span>
           </div>
-          <div class="faq-a">
+          <div class="faq-a" data-i18n-html="faq.a_i20">
             Після входу в акаунт натисніть на іконку профілю (верхній правий кут) → «Мій профіль».
             <br><br>
             Що можна змінити:
@@ -1152,10 +1182,10 @@ html, body {
         <div class="faq-item" data-cat="guide">
           <div class="faq-q" onclick="toggleFaq(this)">
             <span class="faq-q-num">І21</span>
-            <span class="faq-q-text">Як переглянути всі записи, які я додав?</span>
+            <span class="faq-q-text" data-i18n="faq.q_i21">Як переглянути всі записи, які я додав?</span>
             <span class="faq-chevron">▼</span>
           </div>
-          <div class="faq-a">
+          <div class="faq-a" data-i18n-html="faq.a_i21">
             Всі ваші записи зібрані на вашій публічній сторінці профілю:
             <br><br>
             <code>https://зоряна-памʼять.укр/user/ваш-нік</code>
@@ -1172,10 +1202,10 @@ html, body {
         <div class="faq-item" data-cat="guide">
           <div class="faq-q" onclick="toggleFaq(this)">
             <span class="faq-q-num">І22</span>
-            <span class="faq-q-text">Що таке мобільна версія і як між нею перемкнутися?</span>
+            <span class="faq-q-text" data-i18n="faq.q_i22">Що таке мобільна версія і як між нею перемкнутися?</span>
             <span class="faq-chevron">▼</span>
           </div>
-          <div class="faq-a">
+          <div class="faq-a" data-i18n-html="faq.a_i22">
             Сайт має дві версії:
             <ul>
               <li><strong>Десктопна</strong> — повний інтерфейс для комп'ютерів і ноутбуків.</li>
@@ -1194,10 +1224,10 @@ html, body {
         <div class="faq-item" data-cat="guide">
           <div class="faq-q" onclick="toggleFaq(this)">
             <span class="faq-q-num">І23</span>
-            <span class="faq-q-text">Які сторінки є на сайті? Опис усіх розділів та посилань.</span>
+            <span class="faq-q-text" data-i18n="faq.q_i23">Які сторінки є на сайті? Опис усіх розділів та посилань.</span>
             <span class="faq-chevron">▼</span>
           </div>
-          <div class="faq-a">
+          <div class="faq-a" data-i18n-html="faq.a_i23">
             Повний перелік розділів сайту:
             <ul>
               <li><strong><a href="/">Головна</a></strong> — інтерактивна карта з зірками, пошук, додавання записів.</li>
@@ -1216,10 +1246,10 @@ html, body {
         <div class="faq-item" data-cat="guide">
           <div class="faq-q" onclick="toggleFaq(this)">
             <span class="faq-q-num">І24</span>
-            <span class="faq-q-text">Що таке «Зоряна Памʼять» — хто створив і навіщо?</span>
+            <span class="faq-q-text" data-i18n="faq.q_i24">Що таке «Зоряна Памʼять» — хто створив і навіщо?</span>
             <span class="faq-chevron">▼</span>
           </div>
-          <div class="faq-a">
+          <div class="faq-a" data-i18n-html="faq.a_i24">
             «Зоряна Памʼять» — некомерційний меморіальний проект, створений ветераном 82-ї окремої десантно-штурмової бригади ДШВ ЗСУ Денисом «PASKAL» Кошеленком.
             <br><br>
             Ідея виникла з болю: коли людина гине на війні — її ім'я поступово стирається. Через кілька років про неї пам'ятає хіба що мати. «Зоряна Памʼять» створена щоб цього не сталося — щоб кожен загиблий захисник мав своє місце на карті і свою сторінку, яка залишається назавжди.
@@ -1233,10 +1263,11 @@ html, body {
         <div class="faq-item" data-cat="guide">
           <div class="faq-q" onclick="toggleFaq(this)">
             <span class="faq-q-num">І25</span>
-            <span class="faq-q-text">Що робити якщо є помилка у вже опублікованому записі?</span>
+            <span class="faq-q-text" data-i18n="faq.q_i25">Що робити якщо є помилка у вже опублікованому записі?</span>
             <span class="faq-chevron">▼</span>
           </div>
           <div class="faq-a">
+            <span data-i18n-html="faq.a_i25">
             Якщо ви знайшли помилку у прізвищі, даті, місці або будь-якій іншій інформації — зверніться до адміністрації:
             <ul>
               <li>Надішліть лист на <a href="mailto:treetex.g.ads@gmail.com">treetex.g.ads@gmail.com</a> з темою «Виправлення запису».</li>
@@ -1244,26 +1275,27 @@ html, body {
               <li>Напишіть що саме потрібно виправити і звідки ця інформація (документ, офіційна сторінка тощо).</li>
             </ul>
             Адміністрація перевірить і внесе виправлення. Якщо ви є автором запису та увійшли в акаунт — можете також скористатися кнопкою «Повідомити про помилку» прямо у картці.
+            </span>
             <div class="faq-quick">
-              <div class="faq-quick-label">Пов'язане:</div>
-              <button class="faq-chip" onclick="expandByNum('Д02')">Видалення запису</button>
-              <button class="faq-chip" onclick="expandByNum('С01')">Повідомити про контент</button>
+              <div class="faq-quick-label" data-i18n="faq.related">Пов'язане:</div>
+              <button class="faq-chip" onclick="expandByNum('Д02')" data-i18n="faq.q_d02_short2">Видалення запису</button>
+              <button class="faq-chip" onclick="expandByNum('С01')" data-i18n="faq.q_s01_short">Повідомити про контент</button>
             </div>
           </div>
         </div>
 
         <!-- PROJECT COST -->
         <div class="doc-section" style="display:none;margin-top:32px;padding:20px 24px;background:rgba(180,140,60,.07);border:1px solid rgba(180,140,60,.25);border-radius:10px;">
-          <div class="doc-section-title" style="margin-bottom:14px">Мінімальна ціна проєкту</div>
+          <div class="doc-section-title" style="margin-bottom:14px" data-i18n="doc.min_project_cost">Мінімальна ціна проєкту</div>
           <table style="width:100%;border-collapse:collapse;font-size:13px;">
             <tr style="border-bottom:1px solid rgba(180,140,60,.2)">
-              <td style="padding:8px 4px;color:var(--doc-muted)">Мінімальна оцінка (ринок)</td>
+              <td style="padding:8px 4px;color:var(--doc-muted)" data-i18n="doc.min_estimate">Мінімальна оцінка (ринок)</td>
               <td style="padding:8px 4px;text-align:right;font-weight:600">$30,000</td>
               <td style="padding:8px 4px;text-align:right;font-weight:600;color:var(--doc-accent)" id="faq-price-uah">— ₴</td>
             </tr>
             <tr>
-              <td style="padding:8px 4px;color:var(--doc-muted)" colspan="2">Курс НБУ (USD/UAH)</td>
-              <td style="padding:8px 4px;text-align:right;color:var(--doc-muted);font-size:11px" id="faq-rate-val">оновлення…</td>
+              <td style="padding:8px 4px;color:var(--doc-muted)" colspan="2" data-i18n="doc.nbu_rate">Курс НБУ (USD/UAH)</td>
+              <td style="padding:8px 4px;text-align:right;color:var(--doc-muted);font-size:11px" id="faq-rate-val" data-i18n="doc.updating">оновлення…</td>
             </tr>
           </table>
         </div>
@@ -1271,12 +1303,12 @@ html, body {
         <!-- SIGN -->
         <div class="doc-sign">
           <div class="doc-sign__left">
-            Адміністрація Порталу «Зоряна Памʼять»<br>
-            Контакт: <a href="mailto:treetex.g.ads@gmail.com" style="color:var(--doc-accent);">treetex.g.ads@gmail.com</a>
+            <span data-i18n="doc.portal_admin">Адміністрація Порталу «Зоряна Памʼять»</span><br>
+            <span data-i18n="doc.contact">Контакт:</span> <a href="mailto:treetex.g.ads@gmail.com" style="color:var(--doc-accent);">treetex.g.ads@gmail.com</a>
           </div>
           <div class="doc-sign__right">
             <div class="doc-sign__stamp"><img src="/img/bgda.png" alt="Печатка" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;"></div>
-            <div>Документ підготовлено<br>адміністрацією Порталу</div>
+            <div data-i18n="faq.prepared_by">Документ підготовлено<br>адміністрацією Порталу</div>
           </div>
         </div>
 
@@ -1285,13 +1317,13 @@ html, body {
 
     <footer class="doc-footer">
       <div class="doc-footer__left">
-        <span>Документ № ЗП-03-2025 · Версія 1.0 · Питання та відповіді</span>
-        <span class="doc-footer__doc-id">Дата створення документа: 01.04.2025 · Оновлено: 01.05.2025</span>
+        <span><span data-i18n="doc.number_label">Документ №</span> ЗП-03-2025 · <span data-i18n="doc.version_label">Версія</span> 1.0 · <span data-i18n="doc.faq_nav">Питання та відповіді</span></span>
+        <span class="doc-footer__doc-id"><span data-i18n="doc.created_date">Дата створення документа: 01.04.2025</span> · <span data-i18n="faq.updated">Оновлено:</span> 01.05.2025</span>
       </div>
       <div class="doc-footer__right">
-        Також перегляньте:
-        <a href="rules.html">Правила сайту</a> ·
-        <a href="terms.html">Правила використання</a>
+        <span data-i18n="doc.also_see">Також перегляньте:</span>
+        <a href="rules.html" data-i18n="rules">Правила сайту</a> ·
+        <a href="terms.html" data-i18n="terms">Правила використання</a>
       </div>
     </footer>
 
@@ -1370,10 +1402,17 @@ function filterFaq() {
   document.getElementById('faqNoResults').style.display = visible === 0 ? 'block' : 'none';
 }
 
+function _langToggleUpdateUI(lang) {
+  const toggle = document.getElementById('doc-lang-toggle');
+  if (toggle) toggle.classList.toggle('lang-en', lang === 'en');
+}
+
 // ── COUNT ────────────────────────────────────────────────
-window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', async () => {
+  await LANG.load();
+  _langToggleUpdateUI(LANG.current);
   const total = document.querySelectorAll('.faq-item').length;
-  document.getElementById('faq-count').textContent = total + ' питань';
+  document.getElementById('faq-count').textContent = total + ' ' + LANG.t('faq.questions_word');
 });
 
 // ── PROJECT PRICE (live rate from NBU via /api/colors) ───
@@ -1388,7 +1427,7 @@ window.addEventListener('DOMContentLoaded', () => {
       if (rateEl) rateEl.textContent = rate.toFixed(2) + ' ₴';
     } else {
       if (uahEl) uahEl.textContent = '— ₴';
-      if (rateEl) rateEl.textContent = 'курс невідомий';
+      if (rateEl) rateEl.textContent = LANG.t('doc.rate_unknown');
     }
   }).catch(() => {});
 })();

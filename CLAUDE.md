@@ -577,6 +577,13 @@ sudo systemctl reload nginx
 
 ## 15. ЖУРНАЛ ЗМІН
 
+### v3.2 (2026-07-15) — Лічильник відвідувачів: київська доба замість rolling 24h
+- `visitors_24h` тепер рахується від **00:00 за київським часом (Europe/Kyiv)**, а не як плаваюче вікно "останні 24 години"
+- Новий хелпер `_kyiv_day_start_ts()` (Paskal.py, ~рядок 1259) — обчислює unix-timestamp початку поточної доби за Києвом через `zoneinfo.ZoneInfo("Europe/Kyiv")`
+- Змінено 3 місця в Paskal.py: middleware `track_visits` (dedup `_unique_visitors` + періодичне очищення), `/api/stats`, дублюючий адмін-ендпоінт статистики (~рядок 6170)
+- Додано залежність **`tzdata`** в `requirements.txt` — обов'язкова на Windows (systemd/Linux зазвичай має системну tzdata, але пакет не завадить)
+- **ВАЖЛИВО для деплою**: після `git pull` на проді виконати `pip install -r requirements.txt`, інакше `zoneinfo.ZoneInfoNotFoundError` при старті
+
 ### v3.1 (2026-07-14) — i18n Фаза 1: Інфраструктура
 - Нові таблиці БД: `languages` + `i18n_translations` + колонка `users.lang`
 - Новий модуль `lang_engine.py`: `t()`, `get_all()`, `get_languages()`, `invalidate_cache()`

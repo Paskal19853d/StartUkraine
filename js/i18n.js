@@ -87,6 +87,13 @@ window.LANG = (() => {
             const val = t(key);
             if (val !== key) el.setAttribute('title', val);
         });
+
+        // data-i18n-label → label (для <optgroup label="...">)
+        root.querySelectorAll('[data-i18n-label]').forEach(el => {
+            const key = el.getAttribute('data-i18n-label');
+            const val = t(key);
+            if (val !== key) el.setAttribute('label', val);
+        });
     }
 
     // ── Завантажити словник з сервера ────────────────────
@@ -141,8 +148,6 @@ window.LANG = (() => {
         } else {
             const toggle = document.getElementById('lang-toggle');
             if (!toggle) return;
-            const thumb = document.getElementById('lt-thumb');
-            if (thumb) thumb.textContent = lang === 'en' ? '🇬🇧' : '🇺🇦';
             toggle.classList.toggle('lang-en', lang === 'en');
         }
         const toggle = document.getElementById('lang-toggle');
