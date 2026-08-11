@@ -73,7 +73,34 @@
       "Bash(curl -s -i \"http://127.0.0.1:8000/api/auth/google/callback?error=access_denied\")",
       "Bash(curl -s -i \"http://127.0.0.1:8000/api/auth/google/callback?error=access_denied&state=https://evil.com\")",
       "Bash(curl -s -i \"http://127.0.0.1:8000/api/auth/diia?next=admin\")",
-      "Bash(curl -s -i \"http://127.0.0.1:8000/api/auth/diia/callback?error=x&state=admin\")"
+      "Bash(curl -s -i \"http://127.0.0.1:8000/api/auth/diia/callback?error=x&state=admin\")",
+      "Bash(curl -s http://127.0.0.1:8000/)",
+      "Bash(curl -s http://127.0.0.1:8000/Style.css)",
+      "Bash(git -C \"d:\\\\OSPanel\\\\OpenServer\\\\domains\\\\localhost\\\\treetex\" status --short)",
+      "Skill(artifact-design)",
+      "Skill(artifact-design:*)",
+      "Bash(python \"C:\\\\Users\\\\Paskal\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\d--OSPanel-OpenServer-domains-localhost-treetex\\\\be38064f-3cdf-4a68-8f21-6b7b34001005\\\\scratchpad\\\\embed_images.py\")",
+      "Bash(python \"C:\\\\Users\\\\Paskal\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\d--OSPanel-OpenServer-domains-localhost-treetex\\\\be38064f-3cdf-4a68-8f21-6b7b34001005\\\\scratchpad\\\\insert_images.py\")",
+      "Bash(python3 -c \"import weasyprint\")",
+      "Bash(ls \"/c/Program Files/Google/Chrome/Application/chrome.exe\" 2>/dev/null && echo \"Chrome found\" *)",
+      "Read(//c/Program Files \\\\\\(x86\\\\\\)/Microsoft/Edge/Application/**)",
+      "Bash('/c/Program Files/Google/Chrome/Application/chrome.exe' --headless --disable-gpu --no-pdf-header-footer --print-to-pdf=C:/Users/Paskal/AppData/Local/Temp/claude/d--OSPanel-OpenServer-domains-localhost-treetex/be38064f-3cdf-4a68-8f21-6b7b34001005/scratchpad/guide.pdf --print-to-pdf-no-header file:///C:/Users/Paskal/AppData/Local/Temp/claude/d--OSPanel-OpenServer-domains-localhost-treetex/be38064f-3cdf-4a68-8f21-6b7b34001005/scratchpad/guide.html)",
+      "Bash('/c/Program Files/Google/Chrome/Application/chrome.exe' --headless --disable-gpu --hide-scrollbars --window-size=900,1200 --screenshot=C:/Users/Paskal/AppData/Local/Temp/claude/d--OSPanel-OpenServer-domains-localhost-treetex/be38064f-3cdf-4a68-8f21-6b7b34001005/scratchpad/preview1.png file:///C:/Users/Paskal/AppData/Local/Temp/claude/d--OSPanel-OpenServer-domains-localhost-treetex/be38064f-3cdf-4a68-8f21-6b7b34001005/scratchpad/guide.html)",
+      "Bash('/c/Program Files/Google/Chrome/Application/chrome.exe' --headless --disable-gpu --window-size=900,1200 --screenshot=C:/Users/Paskal/AppData/Local/Temp/claude/d--OSPanel-OpenServer-domains-localhost-treetex/be38064f-3cdf-4a68-8f21-6b7b34001005/scratchpad/preview_pdfmode.png file:///C:/Users/Paskal/AppData/Local/Temp/claude/d--OSPanel-OpenServer-domains-localhost-treetex/be38064f-3cdf-4a68-8f21-6b7b34001005/scratchpad/guide.html --force-color-profile=srgb)",
+      "Bash('/c/Program Files/Google/Chrome/Application/chrome.exe' --headless --disable-gpu --window-size=900,1200 --screenshot=C:/Users/Paskal/AppData/Local/Temp/claude/d--OSPanel-OpenServer-domains-localhost-treetex/be38064f-3cdf-4a68-8f21-6b7b34001005/scratchpad/preview_light.png file:///C:/Users/Paskal/AppData/Local/Temp/claude/d--OSPanel-OpenServer-domains-localhost-treetex/be38064f-3cdf-4a68-8f21-6b7b34001005/scratchpad/guide_pdf_source.html)",
+      "Bash(rm -f C:/Users/Paskal/AppData/Local/Temp/claude/d--OSPanel-OpenServer-domains-localhost-treetex/be38064f-3cdf-4a68-8f21-6b7b34001005/scratchpad/guide.pdf)",
+      "Bash('/c/Program Files/Google/Chrome/Application/chrome.exe' --headless --disable-gpu --no-pdf-header-footer --print-to-pdf=C:/Users/Paskal/AppData/Local/Temp/claude/d--OSPanel-OpenServer-domains-localhost-treetex/be38064f-3cdf-4a68-8f21-6b7b34001005/scratchpad/guide.pdf --print-to-pdf-no-header file:///C:/Users/Paskal/AppData/Local/Temp/claude/d--OSPanel-OpenServer-domains-localhost-treetex/be38064f-3cdf-4a68-8f21-6b7b34001005/scratchpad/guide_pdf_source.html)",
+      "Bash(cp \"C:/Users/Paskal/AppData/Local/Temp/claude/d--OSPanel-OpenServer-domains-localhost-treetex/be38064f-3cdf-4a68-8f21-6b7b34001005/scratchpad/guide.pdf\" \"/c/Users/Paskal/Downloads/Як_додати_загиблого_на_сайт.pdf\" *)",
+      "Bash(cat /tmp_out.txt)",
+      "Bash('/c/Program Files/Google/Chrome/Application/chrome.exe' --headless --disable-gpu --window-size=900,1400 --screenshot=C:/Users/Paskal/AppData/Local/Temp/claude/d--OSPanel-OpenServer-domains-localhost-treetex/be38064f-3cdf-4a68-8f21-6b7b34001005/scratchpad/preview_strict.png file:///C:/Users/Paskal/AppData/Local/Temp/claude/d--OSPanel-OpenServer-domains-localhost-treetex/be38064f-3cdf-4a68-8f21-6b7b34001005/scratchpad/guide_pdf_source.html)",
+      "Bash('/c/Program Files/Google/Chrome/Application/chrome.exe' --headless --disable-gpu --window-size=900,2200 --screenshot=C:/Users/Paskal/AppData/Local/Temp/claude/d--OSPanel-OpenServer-domains-localhost-treetex/be38064f-3cdf-4a68-8f21-6b7b34001005/scratchpad/preview_full.png file:///C:/Users/Paskal/AppData/Local/Temp/claude/d--OSPanel-OpenServer-domains-localhost-treetex/be38064f-3cdf-4a68-8f21-6b7b34001005/scratchpad/guide_pdf_source.html)",
+      "Bash('/c/Program Files/Google/Chrome/Application/chrome.exe' --headless --disable-gpu --window-size=900,3400 --screenshot=C:/Users/Paskal/AppData/Local/Temp/claude/d--OSPanel-OpenServer-domains-localhost-treetex/be38064f-3cdf-4a68-8f21-6b7b34001005/scratchpad/preview_full2.png file:///C:/Users/Paskal/AppData/Local/Temp/claude/d--OSPanel-OpenServer-domains-localhost-treetex/be38064f-3cdf-4a68-8f21-6b7b34001005/scratchpad/guide_pdf_source.html)",
+      "Bash(python3 -c \"import cv2\")",
+      "Bash('/c/Program Files/Google/Chrome/Application/chrome.exe' --headless --disable-gpu --window-size=900,700 --screenshot=C:/Users/Paskal/AppData/Local/Temp/claude/d--OSPanel-OpenServer-domains-localhost-treetex/be38064f-3cdf-4a68-8f21-6b7b34001005/scratchpad/preview_tail.png file:///C:/Users/Paskal/AppData/Local/Temp/claude/d--OSPanel-OpenServer-domains-localhost-treetex/be38064f-3cdf-4a68-8f21-6b7b34001005/scratchpad/tail_check_wrapped.html)",
+      "Bash('/c/Program Files/Google/Chrome/Application/chrome.exe' --headless --disable-gpu --window-size=900,700 --screenshot=C:/Users/Paskal/AppData/Local/Temp/claude/d--OSPanel-OpenServer-domains-localhost-treetex/be38064f-3cdf-4a68-8f21-6b7b34001005/scratchpad/preview_tail2.png file:///C:/Users/Paskal/AppData/Local/Temp/claude/d--OSPanel-OpenServer-domains-localhost-treetex/be38064f-3cdf-4a68-8f21-6b7b34001005/scratchpad/tail_check_wrapped.html)"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\Paskal\\Downloads"
     ]
   }
 }

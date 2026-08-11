@@ -48,6 +48,7 @@ treetex/
 ├── card.html            # Публічна картка меморіалу (dark gold theme)
 ├── profile.html         # Публічний профіль користувача /user/{nickname}
 ├── faq.html / rules.html / terms.html
+├── how-to-add.html      # Інструкція "Як додати загиблого" (та сама doc-* дизайн-система, img/how-to-add/)
 ├── ukraine-map.svg      # Інтерактивна SVG карта (883KB)
 ├── favicon.ico
 ├── iconfont.ttf         # Кастомний шрифт іконок
@@ -576,6 +577,26 @@ sudo systemctl reload nginx
 ---
 
 ## 15. ЖУРНАЛ ЗМІН
+
+### v3.5 (2026-08-11) — Нова публічна сторінка how-to-add.html: "Як додати загиблого"
+- Нова сторінка `how-to-add.html` — покрокова інструкція для волонтерів/рекламного відділу (не технічних користувачів), як через публічний сайт додати меморіальний запис
+- Стиль повністю узгоджений з `faq.html`/`terms.html`/`rules.html` — та сама "паперовий документ" дизайн-система (`.doc-*` класи, inline CSS, PT Serif + Roboto Condensed, монохромна палітра, watermark, sidebar `.doc-nav`), четвертий пункт у `.doc-nav__list` на всіх чотирьох doc-сторінках
+- Контент: 5 кроків (`.doc-section`, той самий патерн що в terms.html) — вхід через Google, відкриття форми, заповнення (з `.doc-table` обов'язкових/необов'язкових полів, звірено з реальною валідацією `submitAdd()` в index.html), позначка на карті (обов'язково), відправка на модерацію
+- Новий CSS-компонент `.doc-shot`/`figcaption` — монохромні рамки для 8 скріншотів (вперше на doc-сторінках, немає аналога в faq/terms/rules)
+- Зображення: `img/how-to-add/1-login.png` … `7-submit-btn.png` (8 файлів, реальні статичні PNG, не base64) — звичайні `<img loading="lazy">`, на відміну від Artifact-версії цього ж гайду
+- Новий route в Paskal.py: `GET /how-to-add.html` (поруч з `rules_page`/`terms_page`/`faq_page`, ~рядок 2217)
+- Навігація: посилання додано в `.doc-footer__right` усіх 4 doc-сторінок, і в `#site-rules`/`#bb-popup` (index.html, desktop+mobile) — усього 6 місць
+- i18n: 90+ нових ключів під префіксом `howto.*` + спільний `doc.howto_nav`, повна uk/en локалізація через `data-i18n`/`data-i18n-html`, той самий `#doc-lang-toggle` патерн що в faq.html
+- Важливе бізнес-уточнення в тексті (`howto.s5.moderation_note`): запис публікується на карті лише після модерації, термін обробки — від 7 робочих днів до 30 днів
+- Нова SQL-міграція: `migrations_i18n_how_to_add.sql`
+
+### v3.4 (2026-07-15) — Фікс обрізаних підказок (hint) в шапці на мобільних/планшетах
+- Проблема: підказки (`.zp-hint::after`, `data-hint`) в `#topbar` обрізались знизу на мобільних/планшетах — видно було лише верхню частину балона. **Це не проблема z-index** — `#topbar` є overflow-контейнером (`overflow-x:auto` для горизонтального скролу шапки), тому CSS створює clipping box, що ріже будь-якого `position:absolute` нащадка, який виходить за межі блоку по вертикалі, незалежно від z-index
+- Перша спроба (JS `getBoundingClientRect()` + `position:fixed` через `mouseenter`/`touchstart`) виявилась ненадійною на touch/DevTools-емуляції — `mouseenter` не підтримує делегування через `capture`, а сама ідея "емулювати hover на touch" суперечить UX (на тач-пристроях немає наведення курсору)
+- **Фінальне рішення**: на `pointer:coarse` (телефони/планшети) CSS-hover балон повністю вимикається (`@media (pointer:coarse) { .zp-hint::after, .zp-hint::before { display:none } }`, [Style.css](Style.css) ~рядок 144), замість нього — tap-toast: клік на `.zp-hint` в `#topbar` показує текст `data-hint` в `#hint-toast` (`position:fixed`, центр знизу екрана, JS в index.html ~рядок 5167) на 1.8с
+- `#hint-toast` — новий елемент, стилізований під той самий золотий балон, але поза overflow-контейнерами (`position:fixed` відносно viewport)
+- Desktop (`pointer:fine`) поведінка не змінена — hover-балон працює як раніше
+- Стосується всіх `.zp-hint` елементів в шапці: лого, лічильник відвідувачів, дим, перемикач карти, пошук, вхід, мова, кава
 
 ### v3.3 (2026-07-15) — Google/Дія OAuth: редірект в /admin для адмінів
 - Проблема: вхід через Google з `/admin` завжди редіректив на `/` (публічну головну), а не назад в адмін-панель — сесійна кука виставлялась коректно, але сторінка губилась

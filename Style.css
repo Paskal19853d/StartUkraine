@@ -142,6 +142,40 @@ html, body {
 .zp-hint:hover::after,
 .zp-hint:hover::before { opacity: 1; }
 
+/* Touch-пристрої (телефони/планшети): :hover тут не природна взаємодія, а балун в шапці
+   обрізається горизонтальним скролом #topbar — вимикаємо hover-балон, замість нього
+   #hint-toast показується по тапу (JS, index.html) */
+@media (pointer: coarse) {
+  .zp-hint::after,
+  .zp-hint::before,
+  .zp-hint:hover::after,
+  .zp-hint:hover::before { display: none; }
+}
+
+/* Toast для підказок в шапці на touch-пристроях — по центру знизу, поза overflow-контейнерами */
+#hint-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%) translateY(8px);
+  background: #0b1627;
+  border: 1px solid rgba(255,215,0,.45);
+  border-radius: 10px;
+  padding: 9px 16px;
+  font-size: 12.5px;
+  color: #a8c0d8;
+  white-space: nowrap;
+  max-width: 88vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow: 0 4px 18px rgba(0,0,0,.55), 0 0 0 1px rgba(255,215,0,.08);
+  pointer-events: none;
+  opacity: 0;
+  z-index: 99999;
+  transition: opacity .2s ease, transform .2s ease;
+}
+#hint-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
 .tdot {
   width: 7px; height: 7px;
   border-radius: 50%;
@@ -594,7 +628,7 @@ mark.shl {
 
 /* Планшет ≤1000px: горизонтальний скрол топбару — резерв коли pointer:coarse не спрацював (DevTools) */
 @media (max-width: 1000px) {
-  #topbar { flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  #topbar { flex-wrap: nowrap; overflow-x: auto; overflow-y: visible; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
   #topbar::-webkit-scrollbar { display: none; }
   #topbar > * { flex-shrink: 0; }
   #topbar-spacer { flex: 0 0 12px; min-width: 12px; }
@@ -607,7 +641,7 @@ mark.shl {
 
 /* Планшет/телефон ≤768px: тільки іконки, компактний топбар */
 @media (max-width: 768px) {
-  #topbar { gap: 8px; padding: 0 8px; overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  #topbar { gap: 8px; padding: 0 8px; overflow-x: auto; overflow-y: visible; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
   #topbar::-webkit-scrollbar { display: none; }
 
   /* Ховаємо текст кнопок — тільки іконки */
@@ -1729,7 +1763,7 @@ input.f-err { border-color:#e53935 !important; }
     padding: 0 8px;
     align-items: center;
     overflow-x: auto;
-    overflow-y: hidden;
+    overflow-y: visible;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
   }
@@ -1802,7 +1836,7 @@ input.f-err { border-color:#e53935 !important; }
     gap: 6px;
     align-items: center;
     overflow-x: auto;
-    overflow-y: hidden;
+    overflow-y: visible;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
   }

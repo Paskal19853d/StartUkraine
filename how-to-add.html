@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-4V8B14HDN1"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-4V8B14HDN1');</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<title>Як додати загиблого — Зоряна Памʼять</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=PT+Serif:ital,wght@0,400;0,700;1,400&family=Roboto+Condensed:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --doc-bg:      #e8e8e8;
+  --doc-paper:   #ffffff;
+  --doc-border:  #aaaaaa;
+  --doc-accent:  #111111;
+  --doc-accent2: #555555;
+  --doc-text:    #111111;
+  --doc-text2:   #444444;
+  --doc-muted:   #777777;
+  --doc-nav-bg:  #ffffff;
+  --doc-nav-txt: #333333;
+  --doc-nav-act: #111111;
+  --doc-nav-hov: rgba(0,0,0,.06);
+  --doc-stamp:   rgba(0,0,0,.05);
+  --font-doc:    'PT Serif', 'Times New Roman', Georgia, serif;
+  --font-head:   'Roboto Condensed', 'Arial Narrow', Arial, sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  min-height: 100%;
+  font-family: var(--font-doc);
+  background: var(--doc-bg);
+  color: var(--doc-text);
+  -webkit-font-smoothing: antialiased;
+}
+
+.layout { display: flex; min-height: 100vh; }
+
+/* NAV — same as other doc pages */
+.doc-nav {
+  width: 240px; min-height: 100vh;
+  background: var(--doc-nav-bg); color: var(--doc-nav-txt);
+  display: flex; flex-direction: column;
+  position: fixed; top: 0; left: 0; bottom: 0;
+  z-index: 100; box-shadow: 2px 0 8px rgba(0,0,0,.08); border-right: 1px solid #ddd;
+}
+.doc-nav__logo { padding: 24px 20px 16px; border-bottom: 1px solid rgba(0,0,0,.1); }
+.doc-nav__logo-title { font-family: var(--font-head); font-size: 11px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: #111111; line-height: 1.4; }
+.doc-nav__logo-sub { font-size: 10px; color: rgba(0,0,0,.45); letter-spacing: .06em; margin-top: 4px; }
+.doc-nav__label { font-size: 9px; letter-spacing: .14em; text-transform: uppercase; color: rgba(0,0,0,.35); padding: 18px 20px 8px; }
+.doc-nav__list { list-style: none; flex: 1; }
+.doc-nav__item a { display: flex; align-items: center; gap: 10px; padding: 12px 20px; color: var(--doc-nav-txt); text-decoration: none; font-size: 12.5px; font-weight: 400; letter-spacing: .02em; transition: background .15s, color .15s; border-left: 3px solid transparent; }
+.doc-nav__item a:hover { background: var(--doc-nav-hov); }
+.doc-nav__item a.active { background: rgba(0,0,0,.06); border-left-color: #111; color: #111; font-weight: 600; }
+.doc-nav__item a .nav-icon { width:15px; height:15px; flex-shrink:0; opacity:.55; display:flex; align-items:center; justify-content:center; }
+.doc-nav__item a .nav-icon svg { width:15px; height:15px; stroke:#111; fill:none; }
+.doc-nav__footer { padding: 16px 20px; border-top: 1px solid rgba(0,0,0,.1); font-size: 10px; color: rgba(0,0,0,.35); line-height: 1.6; }
+
+/* MAIN */
+.doc-main { margin-left: 240px; flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
+.doc-topbar { position: sticky; top: 0; z-index: 50; background: #fff; border-bottom: 1px solid var(--doc-border); padding: 14px 48px; display: flex; align-items: center; justify-content: space-between; }
+.doc-topbar__breadcrumb { font-size: 11px; color: var(--doc-muted); letter-spacing: .05em; }
+.doc-topbar__breadcrumb span { color: var(--doc-accent); font-weight: 500; }
+.doc-topbar__meta { font-size: 11px; color: var(--doc-muted); display: flex; gap: 16px; align-items: center; }
+.doc-topbar__meta .badge { background: #dddddd; color: #111111; border-radius: 3px; padding: 2px 8px; font-size: 10px; font-weight: 600; letter-spacing: .06em; }
+#doc-lang-toggle:hover { border-color: #999; }
+#doc-lang-toggle #doc-lang-uk, #doc-lang-toggle #doc-lang-en { transition: color .15s, font-weight .15s; }
+#doc-lang-toggle.lang-en #doc-lang-uk { font-weight: 400; color: #999; }
+#doc-lang-toggle.lang-en #doc-lang-en { font-weight: 600; color: #111; }
+#doc-lang-toggle:not(.lang-en) #doc-lang-uk { font-weight: 600; color: #111; }
+#doc-lang-toggle:not(.lang-en) #doc-lang-en { font-weight: 400; color: #999; }
+
+.doc-wrapper { flex: 1; padding: 40px 48px; display: flex; flex-direction: column; align-items: center; }
+
+.doc-sheet {
+  width: 100%; max-width: 1225px;
+  background: var(--doc-paper);
+  border: 1px solid var(--doc-border);
+  box-shadow: 0 2px 24px rgba(0,0,0,.1), 0 1px 4px rgba(0,0,0,.08);
+  padding: 60px 72px;
+  position: relative;
+}
+
+.doc-sheet::before {
+  content: 'ЗОРЯНА ПАМʼЯТЬ';
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%,-50%) rotate(-35deg);
+  font-family: var(--font-head); font-size: 52px; font-weight: 600; letter-spacing: .2em;
+  color: var(--doc-stamp); pointer-events: none; white-space: nowrap; user-select: none;
+}
+
+.doc-header { display: flex; align-items: flex-start; gap: 20px; padding-bottom: 28px; border-bottom: 2px solid var(--doc-accent); margin-bottom: 32px; }
+.doc-header__emblem { width: 56px; height: 56px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: var(--doc-accent); border-radius: 4px; color: #fff; font-size: 26px; }
+.doc-header__info { flex: 1; }
+.doc-header__org { font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--doc-muted); margin-bottom: 4px; }
+.doc-header__title { font-family: var(--font-head); font-size: 18px; font-weight: 600; color: var(--doc-accent); letter-spacing: .03em; line-height: 1.3; margin-bottom: 6px; }
+.doc-header__code { font-size: 10px; color: var(--doc-muted); letter-spacing: .08em; font-family: 'Courier New', monospace; }
+
+.doc-requisites { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 24px; background: #f8f8f6; border: 1px solid #e8e4dc; border-left: 3px solid var(--doc-accent); padding: 16px 20px; margin-bottom: 32px; font-size: 11.5px; }
+.doc-req-row { display: flex; gap: 8px; }
+.doc-req-label { color: var(--doc-muted); font-size: 10.5px; min-width: 110px; flex-shrink: 0; }
+.doc-req-value { color: var(--doc-text); font-weight: 500; }
+
+/* ── DOC SECTION / LIST / HIGHLIGHT / TABLE — same pattern as terms.html/rules.html ── */
+.doc-section { margin-bottom: 28px; }
+
+.doc-section-title {
+  font-family: var(--font-head);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--doc-accent);
+  margin-bottom: 14px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #e0dcd4;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.doc-section-title::before {
+  content: '§';
+  font-size: 14px;
+  color: var(--doc-accent2);
+}
+
+.doc-text {
+  font-size: 13.5px;
+  line-height: 1.85;
+  color: var(--doc-text);
+  text-align: justify;
+  hyphens: auto;
+}
+
+.doc-text + .doc-text { margin-top: 10px; }
+
+.doc-list {
+  margin: 12px 0;
+  padding-left: 0;
+  list-style: none;
+}
+
+.doc-list li {
+  font-size: 13.5px;
+  line-height: 1.8;
+  color: var(--doc-text);
+  padding-left: 24px;
+  position: relative;
+  margin-bottom: 4px;
+}
+
+.doc-list li::before {
+  content: '—';
+  position: absolute;
+  left: 0;
+  color: var(--doc-accent2);
+  font-weight: 600;
+}
+
+.doc-list.numbered { counter-reset: doc-counter; }
+
+.doc-list.numbered li {
+  counter-increment: doc-counter;
+  padding-left: 32px;
+}
+
+.doc-list.numbered li::before {
+  content: counter(doc-counter) '.';
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--doc-accent);
+}
+
+.doc-highlight {
+  background: #f0f0f0;
+  border-left: 3px solid #555555;
+  padding: 12px 16px;
+  margin: 16px 0;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--doc-text2);
+}
+
+.doc-highlight strong { color: #111111; }
+
+.doc-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 16px 0;
+  font-size: 12.5px;
+}
+
+.doc-table th {
+  background: #222222;
+  color: #ffffff;
+  padding: 10px 14px;
+  text-align: left;
+  font-weight: 600;
+  letter-spacing: .04em;
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.doc-table td {
+  padding: 10px 14px;
+  border-bottom: 1px solid #e8e4dc;
+  color: var(--doc-text);
+  line-height: 1.5;
+}
+
+.doc-table tr:nth-child(even) td { background: #f8f8f6; }
+
+.doc-tag {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .05em;
+  padding: 2px 8px;
+  border-radius: 3px;
+  text-transform: uppercase;
+}
+.doc-tag.req { background: #111111; color: #ffffff; }
+.doc-tag.opt { background: #dddddd; color: #111111; }
+
+/* ── STEP NUMBER BADGE ── */
+.doc-step-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px; height: 22px;
+  background: var(--doc-accent);
+  color: #fff;
+  font-family: var(--font-head);
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 50%;
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+
+/* ── SCREENSHOT FIGURE — new component, monochrome, consistent with doc palette ── */
+.doc-shot {
+  margin: 18px 0 4px;
+  border: 1px solid var(--doc-border);
+  background: #fafafa;
+  padding: 12px;
+}
+.doc-shot img {
+  display: block;
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  border: 1px solid #ccc;
+}
+.doc-shot figcaption {
+  margin-top: 10px;
+  font-size: 11px;
+  color: var(--doc-muted);
+  font-family: 'Courier New', monospace;
+  letter-spacing: .02em;
+  text-align: center;
+}
+.doc-shot figcaption b { color: var(--doc-text); font-weight: 700; }
+
+.doc-shot-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin: 18px 0 4px;
+}
+@media (max-width: 640px) { .doc-shot-row { grid-template-columns: 1fr; } }
+
+/* FOOTER — identical to other doc pages */
+.doc-sign { margin-top: 48px; padding-top: 24px; border-top: 1px solid #e0dcd4; display: flex; justify-content: space-between; align-items: flex-end; }
+.doc-sign__left { font-size: 11px; color: var(--doc-muted); line-height: 1.8; }
+.doc-sign__right { text-align: right; font-size: 11px; color: var(--doc-muted); }
+.doc-sign__stamp { width: 80px; height: 80px; border: 2px solid var(--doc-accent); border-radius: 50%; overflow: hidden; display: flex; align-items: center; justify-content: center; font-size: 8px; font-weight: 600; letter-spacing: .08em; text-align: center; color: var(--doc-accent); text-transform: uppercase; line-height: 1.3; margin-left: auto; margin-bottom: 8px; opacity: .8; }
+
+.doc-footer { background: #111111; color: rgba(255,255,255,.5); padding: 20px 48px 20px 288px; display: flex; justify-content: space-between; align-items: center; font-size: 10.5px; letter-spacing: .04em; border-top: 2px solid #444444; }
+.doc-footer__left { display: flex; flex-direction: column; gap: 4px; }
+.doc-footer__doc-id { font-family: 'Courier New', monospace; font-size: 10px; color: rgba(255,255,255,.3); }
+.doc-footer__right { text-align: right; }
+.doc-footer a { color: #cccccc; text-decoration: none; }
+
+@media (max-width: 900px) {
+  .doc-nav { width: 56px; overflow: hidden; }
+  .doc-nav__logo-title,.doc-nav__logo-sub,.doc-nav__label,.doc-nav__item a span,.doc-nav__footer { display: none; }
+  .doc-nav__item a { justify-content: center; padding: 14px 0; }
+  .doc-main { margin-left: 56px; }
+  .doc-footer { padding-left: 72px; }
+  .doc-sheet { padding: 32px 24px; }
+  .doc-wrapper { padding: 24px 12px; }
+}
+</style>
+<script src="/js/i18n.js?v=2"></script>
+</head>
+<body>
+
+<div class="layout">
+
+  <!-- NAV -->
+  <nav class="doc-nav">
+    <div class="doc-nav__logo">
+      <div class="doc-nav__logo-title" data-i18n="brand.name">Зоряна Памʼять</div>
+      <div class="doc-nav__logo-sub" data-i18n="doc.official_portal">Офіційний портал</div>
+    </div>
+
+    <div class="doc-nav__label" data-i18n="doc.documents">Документи</div>
+    <ul class="doc-nav__list">
+      <li class="doc-nav__item">
+        <a href="rules.html"><span class="nav-icon"><svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg></span><span data-i18n="rules">Правила сайту</span></a>
+      </li>
+      <li class="doc-nav__item">
+        <a href="terms.html"><span class="nav-icon"><svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="14" y2="17"/></svg></span><span data-i18n="terms">Правила використання</span></a>
+      </li>
+      <li class="doc-nav__item">
+        <a href="faq.html"><span class="nav-icon"><svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span><span data-i18n="doc.faq_nav">Питання та відповіді</span></a>
+      </li>
+      <li class="doc-nav__item">
+        <a href="how-to-add.html" class="active"><span class="nav-icon"><svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg></span><span data-i18n="doc.howto_nav">Як додати загиблого</span></a>
+      </li>
+    </ul>
+
+    <div class="doc-nav__label" data-i18n="doc.home_label">Головна</div>
+    <ul class="doc-nav__list">
+      <li class="doc-nav__item">
+        <a href="index.html"><span class="nav-icon"><svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span><span data-i18n="doc.to_home">На головну</span></a>
+      </li>
+    </ul>
+
+    <div class="doc-nav__footer">© 2025 <span data-i18n="brand.name">Зоряна Памʼять</span><br><span data-i18n="doc.all_rights">Усі права захищено</span></div>
+  </nav>
+
+  <!-- MAIN -->
+  <div class="doc-main">
+
+    <div class="doc-topbar">
+      <div class="doc-topbar__breadcrumb">
+        <span data-i18n="doc.home_label">Головна</span> &rsaquo; <span data-i18n="doc.documents">Документи</span> &rsaquo; <span data-i18n="doc.howto_nav">Як додати загиблого</span>
+      </div>
+      <div class="doc-topbar__meta">
+        <div id="doc-lang-toggle" onclick="LANG.switchLang(LANG.current==='uk'?'en':'uk')" title="Змінити мову / Switch language" style="display:flex;align-items:center;gap:4px;background:#f0f0f0;border:1px solid #ccc;border-radius:20px;padding:4px 12px;cursor:pointer;font-size:11px;color:#555;user-select:none">
+          <span id="doc-lang-uk" style="font-weight:600">UA</span><span style="opacity:.4">|</span><span id="doc-lang-en">EN</span>
+        </div>
+        <span class="badge" data-i18n="doc.status_active">ЧИННИЙ</span>
+        <span><span data-i18n="doc.number_label">Документ №</span> ЗП-04-2025</span>
+      </div>
+    </div>
+
+    <div class="doc-wrapper">
+      <div class="doc-sheet">
+
+        <!-- HEADER -->
+        <div class="doc-header">
+          <div class="doc-header__emblem"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg></div>
+          <div class="doc-header__info">
+            <div class="doc-header__org" data-i18n="doc.memorial_portal">Меморіальний вебпортал</div>
+            <div class="doc-header__title" data-i18n="doc.howto_nav">Як додати загиблого на сайт</div>
+            <div class="doc-header__code"><span data-i18n="doc.number_label">Документ №</span> ЗП-04-2025 · <span data-i18n="doc.version_label">Версія</span> 1.0 · <span data-i18n="howto.user_guide">Інструкція користувача</span></div>
+          </div>
+        </div>
+
+        <!-- REQUISITES -->
+        <div class="doc-requisites">
+          <div class="doc-req-row">
+            <span class="doc-req-label" data-i18n="faq.updated">Оновлено:</span>
+            <span class="doc-req-value" data-i18n="howto.date_aug2025">11 серпня 2025 р.</span>
+          </div>
+          <div class="doc-req-row">
+            <span class="doc-req-label" data-i18n="howto.steps_count">Кроків:</span>
+            <span class="doc-req-value">5</span>
+          </div>
+          <div class="doc-req-row">
+            <span class="doc-req-label" data-i18n="howto.duration">Орієнтовний час:</span>
+            <span class="doc-req-value" data-i18n="howto.duration_value">~5 хвилин</span>
+          </div>
+          <div class="doc-req-row">
+            <span class="doc-req-label" data-i18n="doc.status_label">Статус:</span>
+            <span class="doc-req-value" data-i18n="howto.status_active_l">Чинний</span>
+          </div>
+        </div>
+
+        <!-- INTRO -->
+        <div class="doc-section">
+          <p class="doc-text" data-i18n="howto.intro">
+            Ця інструкція покроково пояснює, як через публічний сайт «Зоряна Памʼять» додати меморіальний запис про загиблого захисника чи захисницю. Додавання доступне будь-якому відвідувачу сайту після входу через акаунт Google — реєстрація окремим паролем не потрібна.
+          </p>
+        </div>
+
+        <!-- STEP 1 -->
+        <div class="doc-section">
+          <div class="doc-section-title"><span class="doc-step-num">1</span><span data-i18n="howto.s1.title">Увійти на сайт</span></div>
+          <p class="doc-text" data-i18n="howto.s1.p1">
+            Без входу форма додавання запису недоступна — це перша обов'язкова умова. Відкрийте сайт зоряна-пам'ять.укр і у верхній шапці сайту натисніть кнопку «Увійти».
+          </p>
+
+          <figure class="doc-shot">
+            <img src="/img/how-to-add/1-login.png" loading="lazy" alt="Кнопка «Увійти» у верхній шапці сайту">
+            <figcaption><b data-i18n="howto.shot1">Скріншот 1.</b> <span data-i18n="howto.s1.shot1_cap">Кнопка «Увійти» у верхній шапці сайту — саме на неї потрібно натиснути.</span></figcaption>
+          </figure>
+
+          <p class="doc-text" data-i18n="howto.s1.p2" style="margin-top:16px">
+            Відкриється невелике вікно входу. Натисніть «Продовжити з Google» і оберіть свій обліковий запис (звичайна пошта на gmail.com).
+          </p>
+
+          <figure class="doc-shot">
+            <img src="/img/how-to-add/2-oauth.png" loading="lazy" alt="Вікно входу з кнопками Google та Дія">
+            <figcaption><b data-i18n="howto.shot2">Скріншот 2.</b> <span data-i18n="howto.s1.shot2_cap">Вікно входу. Працює кнопка «Продовжити з Google».</span></figcaption>
+          </figure>
+
+          <div class="doc-highlight">
+            <strong data-i18n="howto.important">Важливо:</strong> <span data-i18n="howto.s1.diia_note">вхід через «Дія» зараз тимчасово не працює — використовуйте лише вхід через Google.</span>
+          </div>
+        </div>
+
+        <!-- STEP 2 -->
+        <div class="doc-section">
+          <div class="doc-section-title"><span class="doc-step-num">2</span><span data-i18n="howto.s2.title">Відкрити форму додавання</span></div>
+          <p class="doc-text" data-i18n="howto.s2.p1">
+            Після успішного входу в шапці сайту з'явиться ваш профіль, а замість кнопки «Увійти» — кнопка «Додати запис». Натисніть її, щоб відкрити форму.
+          </p>
+
+          <figure class="doc-shot">
+            <img src="/img/how-to-add/3-header-add.png" loading="lazy" alt="Шапка сайту після входу з кнопкою «Додати запис»">
+            <figcaption><b data-i18n="howto.shot3">Скріншот 3.</b> <span data-i18n="howto.s2.shot_cap">Шапка сайту після входу — видно профіль користувача та кнопку «Додати запис».</span></figcaption>
+          </figure>
+        </div>
+
+        <!-- STEP 3 -->
+        <div class="doc-section">
+          <div class="doc-section-title"><span class="doc-step-num">3</span><span data-i18n="howto.s3.title">Заповнити форму</span></div>
+          <p class="doc-text" data-i18n="howto.s3.p1">
+            Відкриється форма «Додати запис». Заповнюйте лише перевірені, достовірні дані — кожен запис перед публікацією проходить модерацію.
+          </p>
+
+          <figure class="doc-shot">
+            <img src="/img/how-to-add/4-form-full.png" loading="lazy" alt="Форма «Додати запис» повністю">
+            <figcaption><b data-i18n="howto.shot4">Скріншот 4.</b> <span data-i18n="howto.s3.shot4_cap">Форма «Додати запис» повністю — таблиця нижче пояснює кожне поле.</span></figcaption>
+          </figure>
+
+          <p class="doc-text" data-i18n="howto.s3.p2" style="margin-top:16px">
+            Поля прізвища, імені, дати та опису розташовані у верхній частині форми:
+          </p>
+
+          <figure class="doc-shot">
+            <img src="/img/how-to-add/5-form-fields.png" loading="lazy" alt="Верхня частина форми з полями ПІБ, фото, дат та опису">
+            <figcaption><b data-i18n="howto.shot5">Скріншот 5.</b> <span data-i18n="howto.s3.shot5_cap">Верхня частина форми крупним планом: прізвище, ім'я, по батькові, фото, відео, дати, місце загибелі/поховання, обставини та опис.</span></figcaption>
+          </figure>
+
+          <p class="doc-text" data-i18n="howto.s3.p3" style="margin-top:16px">
+            Нижче — колір позначки на карті та нагороди (обидва поля необов'язкові):
+          </p>
+
+          <figure class="doc-shot">
+            <img src="/img/how-to-add/5b-color-awards.png" loading="lazy" alt="Вибір кольору маркера та додавання нагород">
+            <figcaption><b data-i18n="howto.shot6">Скріншот 6.</b> <span data-i18n="howto.s3.shot5b_cap">Колір позначки на карті та блок «Нагороди та відзнаки» — обидва поля можна залишити без змін.</span></figcaption>
+          </figure>
+
+          <table class="doc-table" style="margin-top:20px">
+            <thead>
+              <tr>
+                <th data-i18n="howto.table.field">Поле</th>
+                <th data-i18n="howto.table.status">Статус</th>
+                <th data-i18n="howto.table.explain">Пояснення</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td data-i18n="howto.f.last">Прізвище</td>
+                <td><span class="doc-tag req" data-i18n="howto.required">Обов'язково</span></td>
+                <td data-i18n="howto.f.last_x">Лише літери (укр. або лат.), апостроф, дефіс — без цифр і символів</td>
+              </tr>
+              <tr>
+                <td data-i18n="howto.f.first">Ім'я</td>
+                <td><span class="doc-tag req" data-i18n="howto.required">Обов'язково</span></td>
+                <td data-i18n="howto.f.first_x">Ті самі правила, що й для прізвища</td>
+              </tr>
+              <tr>
+                <td data-i18n="howto.f.mid">По батькові</td>
+                <td><span class="doc-tag opt" data-i18n="howto.optional">Не обов'язково</span></td>
+                <td data-i18n="howto.f.mid_x">Вказується, якщо відоме</td>
+              </tr>
+              <tr>
+                <td data-i18n="howto.f.photo">Фото (посилання)</td>
+                <td><span class="doc-tag opt" data-i18n="howto.optional">Не обов'язково</span></td>
+                <td data-i18n="howto.f.photo_x">Пряме посилання на фото в інтернеті</td>
+              </tr>
+              <tr>
+                <td data-i18n="howto.f.video">Відео YouTube</td>
+                <td><span class="doc-tag opt" data-i18n="howto.optional">Не обов'язково</span></td>
+                <td data-i18n="howto.f.video_x">Посилання на ролик, якщо є</td>
+              </tr>
+              <tr>
+                <td data-i18n="howto.f.birth">Дата народження</td>
+                <td><span class="doc-tag opt" data-i18n="howto.optional">Не обов'язково</span></td>
+                <td data-i18n="howto.f.birth_x">Не може бути в майбутньому</td>
+              </tr>
+              <tr>
+                <td data-i18n="howto.f.death">Дата загибелі</td>
+                <td><span class="doc-tag opt" data-i18n="howto.optional">Не обов'язково</span></td>
+                <td data-i18n="howto.f.death_x">Не може бути в майбутньому і не раніше дати народження</td>
+              </tr>
+              <tr>
+                <td data-i18n="howto.f.loc">Де загинув (текст)</td>
+                <td><span class="doc-tag opt" data-i18n="howto.optional">Не обов'язково</span></td>
+                <td data-i18n="howto.f.loc_x">Наприклад: «Авдіївка, Донецька обл.»</td>
+              </tr>
+              <tr>
+                <td data-i18n="howto.f.bury">Де похований (текст)</td>
+                <td><span class="doc-tag opt" data-i18n="howto.optional">Не обов'язково</span></td>
+                <td data-i18n="howto.f.bury_x">Наприклад: «с. Березівка, Київська обл.»</td>
+              </tr>
+              <tr>
+                <td data-i18n="howto.f.circ">Обставини загибелі</td>
+                <td><span class="doc-tag opt" data-i18n="howto.optional">Не обов'язково</span></td>
+                <td data-i18n="howto.f.circ_x">Обрати зі списку (міна, авіабомба, полон тощо)</td>
+              </tr>
+              <tr>
+                <td data-i18n="howto.f.descr">Опис</td>
+                <td><span class="doc-tag opt" data-i18n="howto.optional">Не обов'язково</span></td>
+                <td data-i18n="howto.f.descr_x">Довільний текст про людину</td>
+              </tr>
+              <tr>
+                <td data-i18n="howto.f.color">Колір позначки на карті</td>
+                <td><span class="doc-tag opt" data-i18n="howto.optional">Не обов'язково</span></td>
+                <td data-i18n="howto.f.color_x">Якщо не обрати — за замовчуванням блакитний</td>
+              </tr>
+              <tr>
+                <td data-i18n="howto.f.awards">Нагороди та відзнаки</td>
+                <td><span class="doc-tag opt" data-i18n="howto.optional">Не обов'язково</span></td>
+                <td data-i18n="howto.f.awards_x">Можна додати зі списку, якщо відомі</td>
+              </tr>
+              <tr>
+                <td data-i18n="howto.f.point">Місце на карті</td>
+                <td><span class="doc-tag req" data-i18n="howto.required">Обов'язково</span></td>
+                <td data-i18n="howto.f.point_x">Детальніше — крок 4 нижче</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- STEP 4 -->
+        <div class="doc-section">
+          <div class="doc-section-title"><span class="doc-step-num">4</span><span data-i18n="howto.s4.title">Вказати місце на карті</span></div>
+          <p class="doc-text" data-i18n="howto.s4.p1">
+            Це друге поле (окрім прізвища та імені), без якого запис <strong data-i18n="howto.s4.wont_send">не відправиться</strong>. Прокрутіть форму до карти світу та клікніть у місці загибелі або поховання — з'явиться позначка з координатами. Якщо поставили не туди — позначку можна перетягнути мишкою в правильне місце.
+          </p>
+
+          <figure class="doc-shot">
+            <img src="/img/how-to-add/6-map-point.png" loading="lazy" alt="Карта з поставленою позначкою та координатами">
+            <figcaption><b data-i18n="howto.shot7">Скріншот 7.</b> <span data-i18n="howto.s4.shot_cap">Блок карти з поставленою позначкою — над картою відображаються координати (lat/lng). Клік на карті = позначка, позначку можна перетягнути.</span></figcaption>
+          </figure>
+        </div>
+
+        <!-- STEP 5 -->
+        <div class="doc-section">
+          <div class="doc-section-title"><span class="doc-step-num">5</span><span data-i18n="howto.s5.title">Надіслати на модерацію</span></div>
+          <p class="doc-text" data-i18n="howto.s5.p1">
+            Перевірте заповнені поля та натисніть кнопку «Надіслати на модерацію» внизу форми.
+          </p>
+
+          <figure class="doc-shot">
+            <img src="/img/how-to-add/7-submit-btn.png" loading="lazy" alt="Кнопка «Надіслати на модерацію»">
+            <figcaption><b data-i18n="howto.shot8">Скріншот 8.</b> <span data-i18n="howto.s5.shot_cap">Кнопка «Надіслати на модерацію» внизу форми.</span></figcaption>
+          </figure>
+
+          <div class="doc-highlight">
+            <strong data-i18n="howto.important">Важливо:</strong> <span data-i18n="howto.s5.moderation_note">запис не з'являється на карті одразу після надсилання. Його спочатку перевіряє адміністратор або модератор — і лише після схвалення зірка з'явиться на карті сайту. Опрацювання заявки триває від 7 робочих днів до 30 днів.</span>
+          </div>
+        </div>
+
+        <!-- SUMMARY -->
+        <div class="doc-section">
+          <div class="doc-section-title" data-i18n="howto.summary.title">Коротко</div>
+          <ul class="doc-list">
+            <li data-i18n-html="howto.summary.l1"><strong>Прізвище</strong> та <strong>ім'я</strong> — обов'язково, лише літери</li>
+            <li data-i18n-html="howto.summary.l2"><strong>Місце на карті</strong> — обов'язково, клік на карті світу</li>
+            <li data-i18n="howto.summary.l3">Усі інші поля (по батькові, фото, відео, дати, опис, колір, нагороди) — за бажанням</li>
+            <li data-i18n="howto.summary.l4">Запис публікується лише після модерації — до 30 робочих днів</li>
+          </ul>
+        </div>
+
+        <!-- SIGN -->
+        <div class="doc-sign">
+          <div class="doc-sign__left">
+            <span data-i18n="doc.portal_admin">Адміністрація Порталу «Зоряна Памʼять»</span><br>
+            <span data-i18n="doc.contact">Контакт:</span> <a href="mailto:treetex.g.ads@gmail.com" style="color:var(--doc-accent);">treetex.g.ads@gmail.com</a>
+          </div>
+          <div class="doc-sign__right">
+            <div class="doc-sign__stamp"><img src="/img/bgda.png" alt="Печатка" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;"></div>
+            <div data-i18n="howto.prepared_by">Документ підготовлено<br>адміністрацією Порталу</div>
+          </div>
+        </div>
+
+      </div><!-- /doc-sheet -->
+    </div><!-- /doc-wrapper -->
+
+    <footer class="doc-footer">
+      <div class="doc-footer__left">
+        <span><span data-i18n="doc.number_label">Документ №</span> ЗП-04-2025 · <span data-i18n="doc.version_label">Версія</span> 1.0 · <span data-i18n="doc.howto_nav">Як додати загиблого</span></span>
+        <span class="doc-footer__doc-id"><span data-i18n="howto.created_date_aug">Дата створення документа: 11.08.2025</span></span>
+      </div>
+      <div class="doc-footer__right">
+        <span data-i18n="doc.also_see">Також перегляньте:</span>
+        <a href="rules.html" data-i18n="rules">Правила сайту</a> ·
+        <a href="terms.html" data-i18n="terms">Правила використання</a> ·
+        <a href="faq.html" data-i18n="doc.faq_nav">Питання та відповіді</a>
+      </div>
+    </footer>
+
+  </div>
+</div>
+
+<script>
+function _langToggleUpdateUI(lang) {
+  const toggle = document.getElementById('doc-lang-toggle');
+  if (toggle) toggle.classList.toggle('lang-en', lang === 'en');
+}
+
+window.addEventListener('DOMContentLoaded', async () => {
+  await LANG.load();
+  _langToggleUpdateUI(LANG.current);
+});
+</script>
+
+</body>
+</html>

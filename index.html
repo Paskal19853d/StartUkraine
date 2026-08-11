@@ -2347,7 +2347,8 @@ body{visibility:hidden}
       <div class="sr-title" data-i18n="info_title">Інформація</div>
       <a class="sr-link" href="/rules.html" target="_blank" rel="noopener noreferrer">📋 <span data-i18n="rules">Правила сайту</span></a>
       <a class="sr-link" href="/terms.html" target="_blank" rel="noopener noreferrer">📄 <span data-i18n="terms">Правила використання</span></a>
-      <a class="sr-link" href="/faq.html" target="_blank" rel="noopener noreferrer">❓ <span data-i18n="faq">Питання — відповідь</span></a>
+      <a class="sr-link" href="/faq.html" target="_blank" rel="noopener noreferrer" style="display:none">❓ <span data-i18n="faq">Питання — відповідь</span></a>
+      <a class="sr-link" href="/how-to-add.html" target="_blank" rel="noopener noreferrer">➕ <span data-i18n="doc.howto_nav">Як додати загиблого</span></a>
     </div>
   </div>
 
@@ -2368,7 +2369,8 @@ body{visibility:hidden}
     <div class="bb-info-title" data-i18n="info_title">Інформація</div>
     <a class="bb-link" href="/rules.html" target="_blank" rel="noopener noreferrer">📋 <span data-i18n="rules">Правила сайту</span></a>
     <a class="bb-link" href="/terms.html" target="_blank" rel="noopener noreferrer">📄 <span data-i18n="terms">Правила використання</span></a>
-    <a class="bb-link" href="/faq.html" target="_blank" rel="noopener noreferrer">❓ <span data-i18n="faq">Питання — відповідь</span></a>
+    <a class="bb-link" href="/faq.html" target="_blank" rel="noopener noreferrer" style="display:none">❓ <span data-i18n="faq">Питання — відповідь</span></a>
+    <a class="bb-link" href="/how-to-add.html" target="_blank" rel="noopener noreferrer">➕ <span data-i18n="doc.howto_nav">Як додати загиблого</span></a>
   </div>
   <div id="tip"></div>
 </div>
@@ -5162,6 +5164,31 @@ document.addEventListener('DOMContentLoaded', () => {
   const lbl = document.getElementById('smoke-lbl');
   if (btn) btn.classList.add('active');
   if (lbl) { const f=lbl.querySelector('.smoke-lbl-full'); if(f) f.textContent=LANG.t('on'); }
+});
+
+/* Підказки (.zp-hint) в #topbar на touch-пристроях: CSS :hover там не є природною взаємодією
+   (немає наведення курсору), а сам балон при спробі його емулювати обрізається горизонтальним
+   скролом шапки. На pointer:coarse показуємо текст data-hint коротким toast по тапу замість hover-балона. */
+document.addEventListener('DOMContentLoaded', () => {
+  const topbar = document.getElementById('topbar');
+  if (!topbar || !window.matchMedia('(pointer: coarse)').matches) return;
+  let hintToastTimer = null;
+  topbar.addEventListener('click', (e) => {
+    const el = e.target.closest && e.target.closest('.zp-hint');
+    if (!el || !topbar.contains(el)) return;
+    const text = el.getAttribute('data-hint');
+    if (!text) return;
+    let toast = document.getElementById('hint-toast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.id = 'hint-toast';
+      document.body.appendChild(toast);
+    }
+    toast.textContent = text;
+    toast.classList.add('show');
+    clearTimeout(hintToastTimer);
+    hintToastTimer = setTimeout(() => toast.classList.remove('show'), 1800);
+  });
 });
 
 // Open card from SEO redirect: /?open=ivan-petrenko-42

@@ -2216,6 +2216,9 @@ def terms_page(): return FileResponse("terms.html")
 @app.get("/faq.html")
 def faq_page(): return FileResponse("faq.html")
 
+@app.get("/how-to-add.html")
+def how_to_add_page(): return FileResponse("how-to-add.html")
+
 @app.get("/privacy-policy")
 def privacy_policy_page(): return FileResponse("privacy-policy.html")
 
