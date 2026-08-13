@@ -924,6 +924,18 @@ mark.shl {
 }
 .sr-link:hover { color: #00e5ff; }
 
+/* М'яке пульсуюче підсвічування — привертає увагу без нав'язливості (3.2с цикл) */
+.sr-link--highlight,
+.bb-link--highlight {
+  animation: linkGlowPulse 3.2s ease-in-out infinite;
+}
+@keyframes linkGlowPulse {
+  0%, 100% { color: var(--text2); text-shadow: none; }
+  50%      { color: #ffd54f; text-shadow: 0 0 6px rgba(255,213,79,.55); }
+}
+.sr-link--highlight:hover,
+.bb-link--highlight:hover { animation-play-state: paused; color: #00e5ff; text-shadow: none; }
+
 /* Мобільна адаптація блоків */
 @media (max-width: 480px) {
   #bottom-blocks { gap: 5px; }

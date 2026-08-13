@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>МБФ «Українська діаспора» — Наші реквізити</title>
+<style>
+  :root {
+    --ink: #1b1f27;
+    --muted: #6b7280;
+    --accent: #16305c;
+    --accent-dark: #0d1f3d;
+    --line: #e2e4e8;
+    --panel: #f4f6f9;
+    --bg: #ffffff;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Segoe UI", Arial, sans-serif;
+    color: var(--ink);
+    background: var(--bg);
+  }
+
+  /* ---- header ---- */
+  header.site {
+    border-bottom: 1px solid var(--line);
+    position: sticky;
+    top: 0;
+    background: #fff;
+    z-index: 10;
+  }
+  .site-inner {
+    max-width: 1080px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 24px;
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+    font-size: 17px;
+    letter-spacing: -0.2px;
+  }
+  nav.mainnav {
+    display: flex;
+    gap: 26px;
+    font-size: 14px;
+  }
+  nav.mainnav a {
+    color: var(--ink);
+    text-decoration: none;
+    padding: 6px 0;
+    border-bottom: 2px solid transparent;
+  }
+  nav.mainnav a.active {
+    color: var(--accent-dark);
+    border-bottom-color: var(--accent);
+    font-weight: 600;
+  }
+
+  /* ---- hero ---- */
+  .hero {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 44px 24px 8px;
+    text-align: center;
+  }
+  .hero .eyebrow {
+    color: var(--accent-dark);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    margin: 0 0 10px;
+  }
+  .hero h1 {
+    font-size: 30px;
+    margin: 0 0 12px;
+    letter-spacing: -0.3px;
+  }
+  .hero p.lead {
+    max-width: 640px;
+    margin: 0 auto;
+    color: var(--muted);
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  /* ---- toggles ---- */
+  .switcher-wrap {
+    max-width: 1080px;
+    margin: 30px auto 0;
+    padding: 0 24px;
+  }
+  .switcher {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    background: var(--panel);
+    padding: 6px;
+    border-radius: 12px;
+    justify-content: center;
+  }
+  .switcher button {
+    border: none;
+    background: transparent;
+    padding: 10px 18px;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--muted);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all .15s ease;
+  }
+  .switcher button:hover { color: var(--ink); }
+  .switcher button.active {
+    background: #fff;
+    color: var(--ink);
+    box-shadow: 0 1px 4px rgba(0,0,0,.12);
+  }
+  .switcher button.active .dot { background: var(--accent); }
+  .switcher button .dot {
+    display: inline-block;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #c9c5bd;
+    margin-right: 7px;
+  }
+
+  /* ---- panels ---- */
+  main.content {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 30px 24px 60px;
+  }
+  .panel { display: none; animation: fade .2s ease; }
+  .panel.active { display: block; }
+  @keyframes fade { from { opacity: 0; transform: translateY(4px);} to { opacity: 1; transform: none; } }
+
+  .panel h2 {
+    font-size: 19px;
+    margin: 0 0 18px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .datagrid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+  }
+  .field {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .field.full { grid-column: 1 / -1; }
+  .field .k {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .6px;
+    color: var(--muted);
+    margin: 0 0 6px;
+  }
+  .field .v {
+    font-size: 15px;
+    font-weight: 600;
+    word-break: break-word;
+  }
+  .field .v.placeholder {
+    color: var(--accent-dark);
+    background: #e4eaf3;
+    padding: 2px 6px;
+    border-radius: 4px;
+    display: inline-block;
+    font-weight: 700;
+  }
+
+  .prose p { font-size: 14.5px; line-height: 1.7; color: #2b2f38; margin: 0 0 14px; }
+  .prose strong { color: var(--ink); }
+
+  .consent {
+    margin-top: 8px;
+    border: 1px solid var(--accent);
+    background: #eaeff6;
+    border-radius: 10px;
+    padding: 16px 18px;
+    font-size: 14.5px;
+    font-weight: 600;
+  }
+
+  .notice {
+    margin-top: 26px;
+    font-size: 12.5px;
+    color: var(--muted);
+    background: var(--panel);
+    border-radius: 10px;
+    padding: 14px 16px;
+    line-height: 1.6;
+  }
+
+  footer.site {
+    border-top: 1px solid var(--line);
+    padding: 20px 24px;
+    text-align: center;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  @media (max-width: 640px) {
+    .datagrid { grid-template-columns: 1fr; }
+    nav.mainnav { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="site-inner">
+    <div class="logo">Українська діаспора</div>
+    <nav class="mainnav">
+      <a href="#" class="active">Наші реквізити</a>
+    </nav>
+  </div>
+</header>
+
+<section class="hero">
+  <p class="eyebrow">Публічна інформація для платіжних та податкових агентів</p>
+  <h1>Реквізити та умови збору коштів</h1>
+  <p class="lead">Ця сторінка містить офіційну інформацію про МБФ «Українська діаспора», реквізити отримувача, мету збору коштів та умови повернення пожертвувань — сформовану на вимогу платіжної системи.</p>
+</section>
+
+<div class="switcher-wrap">
+  <div class="switcher" id="switcher">
+    <button data-panel="requisites" class="active"><span class="dot"></span>Реквізити</button>
+    <button data-panel="org"><span class="dot"></span>Про фонд</button>
+    <button data-panel="project"><span class="dot"></span>Мета збору</button>
+    <button data-panel="terms"><span class="dot"></span>Умови повернення</button>
+    <button data-panel="contacts"><span class="dot"></span>Контакти</button>
+  </div>
+</div>
+
+<main class="content">
+
+  <section class="panel active" id="requisites">
+    <h2>Банківські реквізити отримувача</h2>
+    <div class="datagrid">
+      <div class="field"><p class="k">Найменування отримувача</p><p class="v">БО МБФ УКРАЇНСЬКА ДІАСПОРА</p></div>
+      <div class="field"><p class="k">Код ЄДРПОУ</p><p class="v">46012111</p></div>
+      <div class="field full"><p class="k">IBAN рахунку</p><p class="v">UA72 3052 9900 0026 0010 0040 9863</p></div>
+      <div class="field"><p class="k">Банк отримувача</p><p class="v">АТ КБ «ПРИВАТБАНК»</p></div>
+      <div class="field"><p class="k">Валюта</p><p class="v">UAH</p></div>
+    </div>
+  </section>
+
+  <section class="panel" id="org">
+    <h2>Про організацію</h2>
+    <div class="prose">
+      <p><strong>Міжнародний благодійний фонд «Українська діаспора»</strong> — благодійна організація (ЄДРПОУ 46012111), що здійснює статутну діяльність із залучення та розподілу благодійних пожертвувань на підтримку осіб, які постраждали внаслідок бойових дій в Україні.</p>
+    </div>
+    <div class="datagrid">
+      <div class="field full">
+        <p class="k">Юридична адреса</p>
+        <p class="v placeholder">Вкажіть юридичну адресу фонду</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" id="project">
+    <h2>Мета, опис та сума збору</h2>
+    <div class="datagrid">
+      <div class="field full"><p class="k">Назва проєкту</p><p class="v">Допомога людям, які постраждали від бойових дій</p></div>
+      <div class="field full"><p class="k">Опис</p><p class="v" style="font-weight:400;">Кошти спрямовуються на евакуацію сімей, забезпечення тимчасовим прихистком, харчуванням та гуманітарною допомогою людей із зон бойових дій.</p></div>
+      <div class="field"><p class="k">Необхідна сума</p><p class="v">200 000 грн / місяць</p></div>
+      <div class="field"><p class="k">Термін збору</p><p class="v">Безстроково — до перемоги</p></div>
+    </div>
+  </section>
+
+  <section class="panel" id="terms">
+    <h2>Умови повернення та розподілу коштів</h2>
+    <div class="prose">
+      <p>У разі закриття збору кошти можуть бути перерозподілені та використані в інших проєктах фонду, спрямованих на підтримку постраждалих від війни. Залишок коштів після реалізації проєкту спрямовується на статутну діяльність фонду в межах цього ж напряму підтримки.</p>
+    </div>
+    <div class="consent">
+      Здійснюючи пожертвування, платник надає добровільну згоду з тим, що сума пожертвування є благодійним внеском і поверненню не підлягає.
+    </div>
+  </section>
+
+  <section class="panel" id="contacts">
+    <h2>Контакти для звернень клієнтів</h2>
+    <div class="datagrid">
+      <div class="field"><p class="k">Телефон</p><p class="v placeholder">Вкажіть контактний телефон</p></div>
+      <div class="field"><p class="k">E-mail</p><p class="v placeholder">Вкажіть контактний e-mail</p></div>
+    </div>
+  </section>
+
+  <div class="notice">
+    Сторінку сформовано для розкриття інформації про отримувача платежів, мету збору коштів та умови повернення пожертвувань — на запит платіжної системи для надання податковим агентам. Поля з позначкою потребують заповнення актуальними даними організації перед публікацією.
+  </div>
+
+</main>
+
+<footer class="site">
+  МБФ «Українська діаспора» · ЄДРПОУ 46012111 · <span id="gen-date"></span>
+</footer>
+
+<script>
+  const buttons = document.querySelectorAll('#switcher button');
+  const panels = document.querySelectorAll('.panel');
+  buttons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      buttons.forEach(b => b.classList.remove('active'));
+      panels.forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById(btn.dataset.panel).classList.add('active');
+    });
+  });
+  document.getElementById('gen-date').textContent = new Date().toLocaleDateString('uk-UA');
+</script>
+
+</body>
+</html>

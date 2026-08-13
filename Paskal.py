@@ -350,6 +350,11 @@ def init_db():
                 INDEX idx_vis (is_visible, sort_order)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
         """)
+        # Migration: окреме посилання для підпису партнера (незалежне від link_url картинки)
+        try:
+            c.execute("ALTER TABLE partners ADD COLUMN caption_url VARCHAR(500) NOT NULL DEFAULT ''")
+        except Exception:
+            pass  # column already exists
         # Migration: add ban_until and notes to users
         try:
             c.execute("ALTER TABLE users ADD COLUMN ban_until INT NOT NULL DEFAULT 0")
@@ -2219,6 +2224,9 @@ def faq_page(): return FileResponse("faq.html")
 @app.get("/how-to-add.html")
 def how_to_add_page(): return FileResponse("how-to-add.html")
 
+@app.get("/ud.html")
+def ud_page(): return FileResponse("ud.html")
+
 @app.get("/privacy-policy")
 def privacy_policy_page(): return FileResponse("privacy-policy.html")
 
@@ -2648,6 +2656,7 @@ class PartnerCreate(BaseModel):
     image_url: str
     link_url: str = ''
     caption: str = ''
+    caption_url: str = ''
     width: int = 120
     opacity: float = 1.0
     pos_x: int = 20
@@ -2660,6 +2669,7 @@ class PartnerUpdate(BaseModel):
     image_url: Optional[str] = None
     link_url: Optional[str] = None
     caption: Optional[str] = None
+    caption_url: Optional[str] = None
     width: Optional[int] = None
     opacity: Optional[float] = None
     pos_x: Optional[int] = None
@@ -3199,13 +3209,14 @@ def admin_create_partner(u: PartnerCreate, request: Request):
     try:
         with db.cursor() as c:
             c.execute(
-                "INSERT INTO partners (name,image_url,link_url,caption,width,opacity,pos_x,pos_y,is_visible,sort_order)"
-                " VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                "INSERT INTO partners (name,image_url,link_url,caption,caption_url,width,opacity,pos_x,pos_y,is_visible,sort_order)"
+                " VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
                 (
                     _sanitize_text(u.name)[:100],
                     u.image_url[:500],
                     u.link_url[:500],
                     _sanitize_text(u.caption)[:200],
+                    u.caption_url[:500],
                     max(20, min(800, u.width)),
                     round(max(0.0, min(1.0, u.opacity)), 2),
                     u.pos_x, u.pos_y, u.is_visible, u.sort_order,
@@ -3225,6 +3236,7 @@ def admin_update_partner(pid: int, u: PartnerUpdate, request: Request):
     if u.image_url is not None:  fields.append("image_url=%s");  vals.append(u.image_url[:500])
     if u.link_url is not None:   fields.append("link_url=%s");   vals.append(u.link_url[:500])
     if u.caption is not None:    fields.append("caption=%s");    vals.append(_sanitize_text(u.caption)[:200])
+    if u.caption_url is not None: fields.append("caption_url=%s"); vals.append(u.caption_url[:500])
     if u.width is not None:      fields.append("width=%s");      vals.append(max(20, min(800, u.width)))
     if u.opacity is not None:    fields.append("opacity=%s");    vals.append(round(max(0.0, min(1.0, u.opacity)), 2))
     if u.pos_x is not None:      fields.append("pos_x=%s");      vals.append(u.pos_x)

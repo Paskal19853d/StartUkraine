@@ -12490,6 +12490,11 @@ function openPartnerModal(id) {
           <input id="pm-caption" type="text" value="${h(p?.caption || '')}" placeholder="Необов'язково"
                  style="width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:8px 10px;font-size:12px;box-sizing:border-box">
         </div>
+        <div>
+          <div style="font-size:10px;color:var(--muted);margin-bottom:4px">Посилання підпису (куди веде клік на текст)</div>
+          <input id="pm-caption-link" type="text" value="${h(p?.caption_url || '')}" placeholder="https://… (необов'язково, може відрізнятись від посилання картинки)"
+                 style="width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:8px 10px;font-size:12px;box-sizing:border-box">
+        </div>
         <div style="display:flex;gap:12px">
           <div style="flex:1">
             <div style="font-size:10px;color:var(--muted);margin-bottom:4px">Ширина (px)</div>
@@ -12544,6 +12549,7 @@ async function savePartner(id) {
     image_url,
     link_url:   document.getElementById('pm-link')?.value.trim() || '',
     caption:    document.getElementById('pm-caption')?.value.trim() || '',
+    caption_url: document.getElementById('pm-caption-link')?.value.trim() || '',
     width:      +(document.getElementById('pm-width')?.value || 120),
     opacity:    +(document.getElementById('pm-opacity')?.value || 1),
     pos_x:      +(document.getElementById('pm-x')?.value || 20),

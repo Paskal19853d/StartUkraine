@@ -2348,7 +2348,7 @@ body{visibility:hidden}
       <a class="sr-link" href="/rules.html" target="_blank" rel="noopener noreferrer">📋 <span data-i18n="rules">Правила сайту</span></a>
       <a class="sr-link" href="/terms.html" target="_blank" rel="noopener noreferrer">📄 <span data-i18n="terms">Правила використання</span></a>
       <a class="sr-link" href="/faq.html" target="_blank" rel="noopener noreferrer" style="display:none">❓ <span data-i18n="faq">Питання — відповідь</span></a>
-      <a class="sr-link" href="/how-to-add.html" target="_blank" rel="noopener noreferrer">➕ <span data-i18n="doc.howto_nav">Як додати загиблого</span></a>
+      <a class="sr-link sr-link--highlight" href="/how-to-add.html" target="_blank" rel="noopener noreferrer">➕ <span data-i18n="doc.howto_nav">Як додати загиблого</span></a>
     </div>
   </div>
 
@@ -2370,7 +2370,7 @@ body{visibility:hidden}
     <a class="bb-link" href="/rules.html" target="_blank" rel="noopener noreferrer">📋 <span data-i18n="rules">Правила сайту</span></a>
     <a class="bb-link" href="/terms.html" target="_blank" rel="noopener noreferrer">📄 <span data-i18n="terms">Правила використання</span></a>
     <a class="bb-link" href="/faq.html" target="_blank" rel="noopener noreferrer" style="display:none">❓ <span data-i18n="faq">Питання — відповідь</span></a>
-    <a class="bb-link" href="/how-to-add.html" target="_blank" rel="noopener noreferrer">➕ <span data-i18n="doc.howto_nav">Як додати загиблого</span></a>
+    <a class="bb-link bb-link--highlight" href="/how-to-add.html" target="_blank" rel="noopener noreferrer">➕ <span data-i18n="doc.howto_nav">Як додати загиблого</span></a>
   </div>
   <div id="tip"></div>
 </div>
@@ -5642,22 +5642,20 @@ function closeInfo(id){document.getElementById('m-'+id).classList.remove('open')
     if (!list || !list.length) return;
 
     list.forEach(function(p) {
-      // Чорний блок для кожного партнера окремо
-      const box = document.createElement('a');
-      box.href = p.link_url || '#';
-      if (p.link_url) { box.target = '_blank'; box.rel = 'noopener noreferrer'; }
+      // Чорний блок для кожного партнера окремо. Контейнер — <div>, а не <a>,
+      // бо картинка і підпис можуть вести на РІЗНІ посилання (вкладати <a> в <a> не можна).
+      const box = document.createElement('div');
       var baseOpacity = p.opacity != null ? p.opacity : 0.82;
       box.style.cssText =
         'position:fixed;left:' + p.pos_x + 'px;top:' + p.pos_y + 'px;' +
         'display:inline-flex;flex-direction:column;align-items:center;gap:3px;' +
-        'z-index:' + (window.matchMedia('(pointer:coarse)').matches ? 1580 : 9990) + ';text-decoration:none;width:fit-content;' +
+        'z-index:' + (window.matchMedia('(pointer:coarse)').matches ? 1580 : 9990) + ';width:fit-content;' +
         'background:rgba(8,10,14,.82);border:1px solid rgba(255,255,255,.1);' +
         'border-radius:8px;padding:3px;box-sizing:border-box;' +
         'backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);' +
         'box-shadow:0 4px 18px rgba(0,0,0,.45);' +
         'opacity:' + baseOpacity + ';' +
-        'transition:opacity 0.25s ease,box-shadow 0.25s ease;' +
-        'cursor:' + (p.link_url ? 'pointer' : 'default') + ';';
+        'transition:opacity 0.25s ease,box-shadow 0.25s ease;';
       box.addEventListener('mouseenter', function() {
         this.style.opacity = '1';
         this.style.boxShadow = '0 6px 28px rgba(0,0,0,.7)';
@@ -5681,15 +5679,40 @@ function closeInfo(id){document.getElementById('m-'+id).classList.remove('open')
         fb.textContent = p.name || '?';
         this.parentNode.replaceChild(fb, this);
       };
-      box.appendChild(img);
+
+      if (p.link_url) {
+        const imgLink = document.createElement('a');
+        imgLink.href = p.link_url;
+        imgLink.target = '_blank';
+        imgLink.rel = 'noopener noreferrer';
+        imgLink.style.cssText = 'display:block;text-decoration:none;cursor:pointer;';
+        imgLink.appendChild(img);
+        box.appendChild(imgLink);
+      } else {
+        box.appendChild(img);
+      }
 
       if (p.caption) {
-        const cap = document.createElement('span');
-        cap.textContent = p.caption;
-        cap.style.cssText =
+        const capUrl = p.caption_url || p.link_url;
+        const capStyle =
           'font-size:10px;color:rgba(255,255,255,.5);letter-spacing:.04em;' +
-          'text-align:center;max-width:120px;line-height:1.3;pointer-events:none';
-        box.appendChild(cap);
+          'text-align:center;display:block;width:' + p.width + 'px;line-height:1.3;box-sizing:border-box;';
+        if (capUrl) {
+          const cap = document.createElement('a');
+          cap.href = capUrl;
+          cap.target = '_blank';
+          cap.rel = 'noopener noreferrer';
+          cap.textContent = p.caption;
+          cap.style.cssText = capStyle + 'text-decoration:underline;cursor:pointer;';
+          cap.addEventListener('mouseenter', function() { this.style.color = 'rgba(255,255,255,.9)'; });
+          cap.addEventListener('mouseleave', function() { this.style.color = 'rgba(255,255,255,.5)'; });
+          box.appendChild(cap);
+        } else {
+          const cap = document.createElement('span');
+          cap.textContent = p.caption;
+          cap.style.cssText = capStyle + 'pointer-events:none;';
+          box.appendChild(cap);
+        }
       }
 
       layer.appendChild(box);

@@ -97,7 +97,9 @@
       "Bash(python \"C:\\\\Users\\\\Paskal\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\d--OSPanel-OpenServer-domains-localhost-treetex\\\\be38064f-3cdf-4a68-8f21-6b7b34001005\\\\scratchpad\\\\fix_shot_keys.py\")",
       "Bash('/c/Program Files/Google/Chrome/Application/chrome.exe' --headless --disable-gpu --window-size=1400,1200 --screenshot=C:/Users/Paskal/AppData/Local/Temp/claude/d--OSPanel-OpenServer-domains-localhost-treetex/be38064f-3cdf-4a68-8f21-6b7b34001005/scratchpad/howto_fix_check.png http://127.0.0.1:8000/how-to-add.html)",
       "Bash('/c/Program Files/Google/Chrome/Application/chrome.exe' --headless --disable-gpu --window-size=1400,1200 --screenshot=C:/Users/Paskal/AppData/Local/Temp/claude/d--OSPanel-OpenServer-domains-localhost-treetex/be38064f-3cdf-4a68-8f21-6b7b34001005/scratchpad/howto_en_check.png http://127.0.0.1:8000/how-to-add.html?_test_lang=en)",
-      "Bash(curl -s http://127.0.0.1:8000/api/i18n/en)"
+      "Bash(curl -s http://127.0.0.1:8000/api/i18n/en)",
+      "Bash(curl -s http://127.0.0.1:8000/)",
+      "Bash(curl -s http://127.0.0.1:8000/Style.css)"
     ],
     "additionalDirectories": [
       "D:\\OSPanel\\OpenServer\\domains\\localhost\\mpu\\backend",
