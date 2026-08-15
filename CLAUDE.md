@@ -470,6 +470,20 @@ SECRET_KEY=...
 - Щоб додати нові нагороди: 1) Покласти PNG в `img/awards/` 2) Вставити запис в `awards_catalog` через setup_awards.py або SQL
 - **НЕ використовувати Wikimedia CDN** для нагород і погонів — тільки локальні файли
 
+### ⚠️ ВІДОМА ПРОБЛЕМА — Дим (WebGL fluid, `js/script.js`) вантажить пристрої
+Аудит (2026-08-15) виявив 4 незалежні причини підвисань/навантаження від ефекту диму. **Не виправлено, потребує окремої задачі:**
+1. **rAF-цикл ніколи не зупиняється** — `update()` (js/script.js:1393-1401) безумовно викликає `requestAnimationFrame(update)`, навіть коли `_fluidConfig.PAUSED=true` (дим "вимкнено" — canvas лише `opacity:0`, WebGL-контекст живий). У `render()` (js/script.js:1512-1535) `applyBloom()`/`applySunrays()` виконуються **завжди**, незалежно від PAUSED — вимкнений дим все одно рендерить bloom+sunrays в невидимий canvas щокадру. На відміну від двох інших циклів на сторінці (`_startCanvasLoop()` в index.html, `animate()` в js/sea.js) — обидва коректно зупиняються на `document.hidden`, тільки fluid-цикл цього не робить.
+2. **SIM_RESOLUTION/PRESSURE_ITERATIONS/BLOOM/SUNRAYS однакові на мобільних і десктопі**. `isMobile()` (js/script.js:378-380) знижує лише `DYE_RESOLUTION` (512→256, дешевий параметр). `SIM_RESOLUTION:128`, `PRESSURE_ITERATIONS:20`, `BLOOM:true` (8 ітерацій), `SUNRAYS:true` — найдорожчі параметри — залишаються десктопними на мобільних.
+3. **`devicePixelRatio` не капнутий** — `scaleByPixelRatio()` (js/script.js:1915-1918) множить canvas без `Math.min()`. На телефонах dpr часто 2.5-3.5 → площа canvas (і вартість bloom/sunrays/display passes) зростає у 6-12 разів проти dpr=1.
+4. Вже існуючий zoom-pause (index.html:3437-3440, `PAUSED=true` на 120мс під час wheel-zoom) — це лише частковий патч на один інтеракшн-кейс, не вирішує базове постійне навантаження.
+
+**Рішення без втрати якості картинки** (узгоджено з користувачем, ще НЕ виконано):
+- Зупиняти rAF повністю коли `PAUSED`/`document.hidden` (не викликати `requestAnimationFrame(update)` в паузі; `render()` теж пропускати, а не тільки `step()`).
+- Капнути `devicePixelRatio` до ~1.5 на мобільних.
+- В `isMobile()`-блоці додатково знижувати `SIM_RESOLUTION`→96, `PRESSURE_ITERATIONS`→12-14, `BLOOM_ITERATIONS`→4-5, розглянути вимкнення `SUNRAYS` на мобільних.
+- Якість візуалу диму залежить від `DYE_RESOLUTION`/кольорів/splat-параметрів — НЕ від SIM_RESOLUTION/pressure/pixel ratio, тому ці зміни безпечні для вигляду.
+- Адмін-керований quality-preset (high/medium/low в `colors`) — окреме рішення, підтвердження обсягу відкладено, НЕ узгоджено поки що.
+
 ---
 
 ## 12. ВІДОМІ ОСОБЛИВОСТІ ТА ОБМЕЖЕННЯ
