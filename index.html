@@ -3288,6 +3288,10 @@ mw.addEventListener('mousedown',e=>{
   if(document.querySelector('#dev-modal[style*="flex"],.mov.open'))return;
   if(isPick){const r=mw.getBoundingClientRect();const w=s2w(e.clientX-r.left,e.clientY-r.top);if(pickCb)pickCb(w);return;}
   drag=true;dragS={x:e.clientX,y:e.clientY};trS={x:tr.x,y:tr.y};mw.classList.add('grabbing');
+  // Тултіп ховаємо один раз тут (не на кожному mousemove під час драгу — зайві getElementById+style writes)
+  const tipEl=document.getElementById('tip');if(tipEl)tipEl.style.display='none';
+  // Пауза WebGL-симуляції диму на час активного панорамування — той самий патерн, що й для zoom (wheel)
+  if(window._fluidConfig)window._fluidConfig.PAUSED=true;
 });
 let _mousePending=false,_lastMX=0,_lastMY=0;
 let _tipPid=null;
@@ -3299,7 +3303,7 @@ function _ytExtractId(url){
 }
 window.addEventListener('mousemove',e=>{
   if(typeof SilenceModule!=='undefined')SilenceModule._primeAudio();
-  if(drag){tr.x=trS.x+(e.clientX-dragS.x);tr.y=trS.y+(e.clientY-dragS.y);clampTr();scheduleApplyTr();document.getElementById('tip').style.display='none';return;}
+  if(drag){tr.x=trS.x+(e.clientX-dragS.x);tr.y=trS.y+(e.clientY-dragS.y);clampTr();scheduleApplyTr();return;}
   _lastMX=e.clientX;_lastMY=e.clientY;
   if(_mapMode==='world'){document.getElementById('tip').style.display='none';return;}
   if(_mousePending)return;
@@ -3407,6 +3411,11 @@ window.addEventListener('keydown',e=>{
 });
 window.addEventListener('mouseup',e=>{
   const was=drag;drag=false;mw.classList.remove('grabbing');
+  // Знімаємо паузу диму, поставлену в mousedown — панорамування завершено
+  if(was&&window._fluidConfig){
+    window._fluidConfig.PAUSED=false;
+    if(window._fluidResume)window._fluidResume();
+  }
   if(e.target.closest('#zoom,#count,#bottom-blocks,#micro-chat,#social-bar,#pick-bar,#topbar,.mov,.zbtn,.btn,button,[role="button"]'))return;
   if(document.querySelector('#dev-modal[style*="flex"],.mov.open'))return;
   if(was&&Math.hypot(e.clientX-dragS.x,e.clientY-dragS.y)>5)return;
@@ -5670,7 +5679,7 @@ function closeInfo(id){document.getElementById('m-'+id).classList.remove('open')
       box.style.cssText =
         'position:fixed;left:' + p.pos_x + 'px;top:' + p.pos_y + 'px;' +
         'display:inline-flex;flex-direction:column;align-items:center;gap:3px;' +
-        'z-index:' + (window.matchMedia('(pointer:coarse)').matches ? 1580 : 9990) + ';width:fit-content;' +
+        'z-index:' + (window.matchMedia('(pointer:coarse)').matches ? 1580 : 890) + ';width:fit-content;' +
         'background:rgba(8,10,14,.82);border:1px solid rgba(255,255,255,.1);' +
         'border-radius:8px;padding:3px;box-sizing:border-box;' +
         'backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);' +

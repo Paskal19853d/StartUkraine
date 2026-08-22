@@ -287,7 +287,7 @@ body{ -webkit-tap-highlight-color: transparent; }
 #lcnt{ font-size: 20px; }
 
 /* ═══════════════ МОДАЛКИ → НИЖНІ ЛИСТИ ═══════════════ */
-.mov{ align-items: flex-end; z-index: 1200; }
+.mov{ align-items: flex-end; z-index: 9990; } /* узгоджено з десктопним Style.css — вище шапки/пошуку/чат-кнопки */
 .mo{
   width: 100%; max-width: 100%;
   max-height: calc(100vh - var(--sa-t) - 24px);

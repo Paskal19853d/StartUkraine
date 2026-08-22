@@ -69,7 +69,7 @@ body.silence-active video {
 
 #kyiv-clock {
   position: fixed;
-  z-index: 9998;
+  z-index: 890; /* декоративний оверлей поверх карти, але нижче модалок (.mov:9990) — раніше 9998 перекривав форми */
   padding: 4px 10px;
   border-radius: 6px;
   pointer-events: none;
