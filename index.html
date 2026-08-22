@@ -3437,7 +3437,10 @@ mw.addEventListener('wheel',e=>{
   if(window._fluidConfig&&!window._fluidConfig.PAUSED){
     window._fluidConfig.PAUSED=true;
     if(_zoomPauseTimer)clearTimeout(_zoomPauseTimer);
-    _zoomPauseTimer=setTimeout(()=>{if(window._fluidConfig)window._fluidConfig.PAUSED=false;},120);
+    _zoomPauseTimer=setTimeout(()=>{
+      if(window._fluidConfig)window._fluidConfig.PAUSED=false;
+      if(window._fluidResume)window._fluidResume();
+    },120);
   }
   wheelZoom(e.clientX-r.left,e.clientY-r.top,f);
 },{passive:false});
@@ -5122,6 +5125,7 @@ function _deleteCookie(name) {
 /* ── Дим — перемикач із підтримкою куків ── */
 let _smokeOn      = true;  // дефолт — увімкнено
 let _cookiesOk    = false; // стає true після loadColors якщо use_cookies=1
+let _smokeWasOn   = false; // попередній actuallyOn — для детекції переходу false→true (igniteSmoke)
 
 // Застосувати збережений стан з куки (викликається після loadColors)
 function _applyCookiePrefs() {
@@ -5148,6 +5152,23 @@ function _applySmokeState() {
     fl.style.pointerEvents = 'none';
   }
   if (window._fluidConfig) window._fluidConfig.PAUSED = !actuallyOn;
+  // При вимкненні PAUSED=true rAF-цикл диму сам зупиняється (js/script.js) — GPU не
+  // витрачається на невидимий canvas. При увімкненні його треба явно "розбудити".
+  if (actuallyOn && window._fluidResume) window._fluidResume();
+  // Гарантований видимий "запальний" імпульс при переході вимкнено→увімкнено — інакше
+  // дим може бути практично непомітний, якщо курсор нерухомий (немає mousemove-подій,
+  // splat не генерується, доступні лише початкові згасаючі multipleSplats() зі старту).
+  // _smokeWasOn оновлюємо в true лише якщо ignite реально відбувся — якщо js/script.js
+  // ще не встиг завантажитись (гонка з асинхронним /api/colors), наступний виклик
+  // _applySmokeState() (toggleSmoke або window.onload) спробує ще раз.
+  if (actuallyOn) {
+    if (!_smokeWasOn && window.igniteSmoke) {
+      window.igniteSmoke();
+      _smokeWasOn = true;
+    }
+  } else {
+    _smokeWasOn = false;
+  }
   if (btn) btn.classList.toggle('active', actuallyOn);
   if (lbl) { const f=lbl.querySelector('.smoke-lbl-full'); if(f) f.textContent=LANG.t(actuallyOn?'on':'off'); }
   if (_cookiesOk) _setCookie('zp_smoke', _smokeOn ? '1' : '0');
@@ -5887,17 +5908,50 @@ var _TOUR_STEPS = [
     arrowDir: 'top'
   },
   {
+    // Зіркові маркери намальовані на <canvas> (не DOM-вузли), тому для box-shadow
+    // підсвітки/стрілки потрібен тимчасовий якірний <div>, позиціонований на
+    // реальних екранних координатах конкретного запису через w2s().
     el: null,
     titleKey: 'tour.stars.title',
     textKey: 'tour.stars.text',
-    arrowDir: null
+    arrowDir: 'bottom',
+    onShow: function(){
+      // people — глобальний let у попередньому <script>, доступний через lexical
+      // scope, а НЕ через window (let на top-level не додає властивість window!).
+      if (!people || !people.length) return null;
+      var p = people[Math.floor(Math.random() * people.length)];
+      var xr = p.x != null ? p.x : 0.5, yr = p.y != null ? p.y : 0.5;
+      var pt = w2s(xr, yr);
+      // Точка поза видимою областю екрана — якір там марний, пропускаємо підсвітку
+      if (pt.x < 0 || pt.x > window.innerWidth || pt.y < 0 || pt.y > window.innerHeight) return null;
+      var a = document.createElement('div');
+      a.id = 'zp-tour-anchor';
+      a.style.cssText = 'position:fixed;width:16px;height:16px;left:' + (pt.x - 8) + 'px;top:' + (pt.y - 8) + 'px;pointer-events:none;';
+      document.body.appendChild(a);
+      return a;
+    }
   },
   {
     el: '#card',
     titleKey: 'tour.card.title',
     textKey: 'tour.card.text',
     arrowDir: 'right',
-    onShow: function(){ if(window.people && people.length){ openCard(people[0]); _tourOpenedCard=true; } }
+    onShow: function(){
+      // people вантажиться асинхронно окремим API-запитом — на момент показу цього
+      // кроку (setTimeout(1800) від старту сторінки) список іноді ще порожній.
+      // Чекаємо появи даних (до 3с), інакше картка "мовчки" не відкривалась.
+      // (people — глобальний let, доступний через lexical scope, НЕ через window.)
+      var attempts = 0;
+      var tryOpen = function(){
+        if (people && people.length) {
+          openCard(people[Math.floor(Math.random() * people.length)]);
+          _tourOpenedCard = true;
+        } else if (attempts++ < 15) {
+          setTimeout(tryOpen, 200);
+        }
+      };
+      tryOpen();
+    }
   },
   {
     el: '#count',
@@ -5906,9 +5960,17 @@ var _TOUR_STEPS = [
     arrowDir: 'bottom'
   },
   {
-    el: '#search',
+    // На мобільних/планшетах #search приховано (display:none), замість нього
+    // видима кнопка-лупа #btn-search-mob — обираємо ціль динамічно під пристрій.
+    el: function(){ return window.matchMedia('(pointer: coarse)').matches ? '#btn-search-mob' : '#search'; },
     titleKey: 'tour.search.title',
     textKey: 'tour.search.text',
+    arrowDir: 'top'
+  },
+  {
+    el: '#lang-toggle',
+    titleKey: 'tour.lang.title',
+    textKey: 'tour.lang.text',
     arrowDir: 'top'
   },
   {
@@ -5939,64 +6001,54 @@ var _TOUR_STEPS = [
     el: '#treetex-npo',
     titleKey: 'tour.npo.title',
     textKey: 'tour.npo.text',
-    arrowDir: 'right',
-    isLast: true
+    arrowDir: 'right'
+  },
+  {
+    // Тільки на touch-пристроях: топбар скролиться горизонтально — окрема
+    // безцільова підказка (як крок "зірки"), підсвічує #topbar через onShow.
+    el: null,
+    arrowDir: null,
+    skipIf: function(){ return !window.matchMedia('(pointer: coarse)').matches; },
+    isLast: true,
+    onShow: function(){
+      var tb = document.getElementById('topbar');
+      if (tb) { tb.classList.add('zp-tour-hl'); _tourPrevEl = tb; }
+    },
+    customContent: function(){
+      document.getElementById('zp-tour-title').textContent = LANG.t('tour.mobtopbar.title');
+      document.getElementById('zp-tour-text').innerHTML =
+        '← '+LANG.t('tour.mobtopbar.text1')+' →<br><br>' +
+        '<span style="font-size:18px;letter-spacing:6px">← ◈ →</span><br><br>' +
+        LANG.t('tour.mobtopbar.text2');
+    },
+    // Позиція — під топбаром по центру екрана (немає єдиної "цільової" точки,
+    // на відміну від решти кроків, що вказують стрілкою на конкретний елемент).
+    customPosition: function(bubble){
+      var tb = document.getElementById('topbar');
+      var barH = tb ? tb.getBoundingClientRect().height : 54;
+      bubble.classList.add('arr-top');
+      bubble.style.top = (barH + 14) + 'px';
+      bubble.style.left = '50%';
+      bubble.style.transform = 'translateX(-50%)';
+      bubble.style.setProperty('--arr-top', '18px');
+    }
   }
 ];
 
 function _tourStart() {
   if (localStorage.getItem('zp_tour_done') === '1') return;
-  if (window.matchMedia('(pointer: coarse)').matches) {
-    // Мобільний: показати тільки підказку про topbar scroll
-    setTimeout(_tourMobileTopbar, 1800);
-    return;
-  }
   setTimeout(function(){ _tourShow(0); }, 1800);
 }
 
-function _tourMobileTopbar() {
-  if (localStorage.getItem('zp_mob_topbar_hint') === '1') return;
-  var bubble = document.getElementById('zp-tour-bubble');
-  var overlay = document.getElementById('zp-tour-overlay');
-  if (!bubble || !overlay) return;
-
-  overlay.classList.add('active');
-  document.getElementById('zp-tour-title').textContent = LANG.t('tour.mobtopbar.title');
-  document.getElementById('zp-tour-text').innerHTML =
-    '← '+LANG.t('tour.mobtopbar.text1')+' →<br><br>' +
-    '<span style="font-size:18px;letter-spacing:6px">← ◈ →</span><br><br>' +
-    LANG.t('tour.mobtopbar.text2');
-  document.getElementById('zp-tour-next').textContent = LANG.t('tour.understood')+' ✓';
-
-  // Одна точка прогресу
-  var dotsEl = document.getElementById('zp-tour-dots');
-  dotsEl.innerHTML = '<div class="zp-tour-dot on"></div>';
-
-  // Підсвітити topbar
-  var tb = document.getElementById('topbar');
-  if (tb) tb.classList.add('zp-tour-hl');
-
-  bubble.className = '';
-  bubble.style.cssText = '';
-  void bubble.offsetWidth;
-  bubble.classList.add('visible', 'arr-top');
-
-  // Позиція — під topbar по центру
-  var barH = tb ? tb.getBoundingClientRect().height : 54;
-  bubble.style.top = (barH + 14) + 'px';
-  bubble.style.left = '50%';
-  bubble.style.transform = 'translateX(-50%)';
-  bubble.style.setProperty('--arr-top', '18px');
-
-  // Перевизначаємо next для мобільного тур
-  window._tourNext = function() {
-    localStorage.setItem('zp_mob_topbar_hint', '1');
-    if (tb) tb.classList.remove('zp-tour-hl');
-    bubble.classList.remove('visible');
-    overlay.classList.remove('active');
-    // Відновлюємо стандартний _tourNext
-    window._tourNext = function() { _tourShow(_tourStep + 1); };
-  };
+// Чи елемент реально видимий на екрані (в DOM, не display:none, має розміри) —
+// захист від показу зламаної підказки біля відсутнього/прихованого елемента
+// (напр. #map-mode-bar, вимкнений адміном; будь-який інший елемент, схований
+// адаптивною версткою на певному viewport).
+function _tourElVisible(el) {
+  if (!el) return false;
+  if (el.offsetParent === null && getComputedStyle(el).position !== 'fixed') return false;
+  var r = el.getBoundingClientRect();
+  return r.width > 0 && r.height > 0;
 }
 
 function _tourShow(idx) {
@@ -6005,19 +6057,41 @@ function _tourShow(idx) {
   if (idx >= steps.length) { _tourEnd(); return; }
   var step = steps[idx];
 
+  // Крок повністю пропускається на поточному пристрої (напр. topbar-scroll — лише touch)
+  if (step.skipIf && step.skipIf()) { _tourShow(idx + 1); return; }
+
+  // Резолвимо ціль кроку — el може бути рядком-селектором або функцією (динамічний вибір
+  // під пристрій, напр. #search на десктопі / #btn-search-mob на touch)
+  var elSelector = typeof step.el === 'function' ? step.el() : step.el;
+  var probeEl = elSelector ? document.querySelector(elSelector) : null;
+  if (elSelector && !_tourElVisible(probeEl)) { _tourShow(idx + 1); return; }
+
   // Знімаємо підсвічення попереднього елемента
   if (_tourPrevEl) { _tourPrevEl.classList.remove('zp-tour-hl'); _tourPrevEl = null; }
+  // Прибираємо тимчасовий якірний div попереднього кроку (напр. "зірка" без DOM-елемента)
+  var _prevAnchor = document.getElementById('zp-tour-anchor');
+  if (_prevAnchor) _prevAnchor.remove();
 
-  // Callback перед показом кроку
-  if (step.onShow) step.onShow();
+  // Callback перед показом кроку. Якщо повертає DOM-елемент — він стає ціллю для
+  // підсвітки/стрілки замість probeEl (для кроків без штатного el, напр. "зірка" —
+  // onShow створює тимчасовий якірний div на координатах конкретного маркера карти).
+  var _onShowTarget = null;
+  if (step.onShow) {
+    var _r = step.onShow();
+    if (_r instanceof Element) _onShowTarget = _r;
+  }
 
   var bubble = document.getElementById('zp-tour-bubble');
   var overlay = document.getElementById('zp-tour-overlay');
   overlay.classList.add('active');
 
-  // Заповнюємо вміст
-  document.getElementById('zp-tour-title').textContent = LANG.t(step.titleKey);
-  document.getElementById('zp-tour-text').textContent = LANG.t(step.textKey);
+  // Заповнюємо вміст — або стандартні title/text ключі, або кастомний рендер кроку
+  if (step.customContent) {
+    step.customContent();
+  } else {
+    document.getElementById('zp-tour-title').textContent = LANG.t(step.titleKey);
+    document.getElementById('zp-tour-text').textContent = LANG.t(step.textKey);
+  }
 
   // Кнопка "Далі" / "Завершити"
   var btnNext = document.getElementById('zp-tour-next');
@@ -6032,9 +6106,24 @@ function _tourShow(idx) {
     dotsEl.appendChild(d);
   }
 
-  // Підсвічення цільового елемента
-  var targetEl = step.el ? document.querySelector(step.el) : null;
+  // Прокручуємо шапку до цільового елемента, якщо він всередині горизонтально-
+  // скрольованого #topbar і зараз поза видимою частиною (rect.width/height > 0
+  // не гарантує видимість — на мобільних #topbar має overflow-x:auto, і елемент
+  // може технічно існувати з реальними розмірами, але бути прокрученим за кадр).
+  // behavior:'instant' — без анімації, щоб одразу читати актуальні координати.
+  var targetEl = _onShowTarget || probeEl;
   if (targetEl) {
+    var _topbar = document.getElementById('topbar');
+    if (_topbar && _topbar.contains(targetEl)) {
+      var _tr = targetEl.getBoundingClientRect(), _br = _topbar.getBoundingClientRect();
+      if (_tr.left < _br.left || _tr.right > _br.right) {
+        targetEl.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'instant' });
+      }
+    }
+  }
+
+  // Підсвічення цільового елемента (якщо onShow ще не підсвітив інший — напр. topbar-крок)
+  if (targetEl && !_tourPrevEl) {
     targetEl.classList.add('zp-tour-hl');
     _tourPrevEl = targetEl;
   }
@@ -6050,16 +6139,29 @@ function _tourShow(idx) {
   void bubble.offsetWidth; // trigger reflow для анімації
   bubble.classList.add('visible');
 
-  var bW = 280, bH = 170, margin = 14;
+  var margin = 14;
   var vW = window.innerWidth, vH = window.innerHeight;
+  // Адаптивна ширина/висота bubble — на вузьких екранах (320-360px) фіксовані 280px
+  // майже впритул до країв не залишали б запасу для клампінгу.
+  var bW = Math.min(280, vW - 2 * margin);
+  var bH = Math.min(170, vH - 2 * margin);
 
-  if (!targetEl || !step.arrowDir) {
+  if (step.customPosition) {
+    step.customPosition(bubble);
+  } else if (!targetEl || !step.arrowDir) {
     bubble.style.top = '50%';
     bubble.style.left = '50%';
     bubble.style.transform = 'translate(-50%, -50%)';
   } else {
     var r = targetEl.getBoundingClientRect();
     var ad = step.arrowDir;
+    // Fallback: на вузьких екранах праворуч/ліворуч від елемента може не вистачити
+    // місця — перемикаємось на позиціонування зверху/знизу.
+    if (ad === 'left' && r.right + margin + bW > vW - 8) {
+      ad = (r.top - bH - margin >= 8) ? 'bottom' : 'top';
+    } else if (ad === 'right' && r.left - margin - bW < 8) {
+      ad = (r.top - bH - margin >= 8) ? 'bottom' : 'top';
+    }
     var top, left;
     bubble.style.transform = '';
 

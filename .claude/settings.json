@@ -99,7 +99,15 @@
       "Bash('/c/Program Files/Google/Chrome/Application/chrome.exe' --headless --disable-gpu --window-size=1400,1200 --screenshot=C:/Users/Paskal/AppData/Local/Temp/claude/d--OSPanel-OpenServer-domains-localhost-treetex/be38064f-3cdf-4a68-8f21-6b7b34001005/scratchpad/howto_en_check.png http://127.0.0.1:8000/how-to-add.html?_test_lang=en)",
       "Bash(curl -s http://127.0.0.1:8000/api/i18n/en)",
       "Bash(curl -s http://127.0.0.1:8000/)",
-      "Bash(curl -s http://127.0.0.1:8000/Style.css)"
+      "Bash(curl -s http://127.0.0.1:8000/Style.css)",
+      "Bash(python -m http.server 8001)",
+      "Bash(curl -s -o /dev/null -w \"index: %{http_code}\\\\n\" http://127.0.0.1:8001/index.html)",
+      "Bash(curl -s -o /dev/null -w \"script.js: %{http_code}\\\\n\" http://127.0.0.1:8001/js/script.js)",
+      "Bash(\"/c/Program Files/Google/Chrome/Application/chrome.exe\" --headless --disable-gpu --enable-logging=stderr --v=1 --window-size=1200,800 --virtual-time-budget=4000 --dump-dom \"http://127.0.0.1:8001/index.html\")",
+      "Bash('/c/Program Files/Google/Chrome/Application/chrome.exe' --headless --disable-gpu --window-size=1200,800 --screenshot=C:/Users/Paskal/AppData/Local/Temp/claude/d--OSPanel-OpenServer-domains-localhost-treetex/be38064f-3cdf-4a68-8f21-6b7b34001005/scratchpad/smoke_check.png --virtual-time-budget=5000 http://127.0.0.1:8001/index.html)",
+      "Bash(python \"C:\\\\Users\\\\Paskal\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\d--OSPanel-OpenServer-domains-localhost-treetex\\\\be38064f-3cdf-4a68-8f21-6b7b34001005\\\\scratchpad\\\\check_inline_js.py\")",
+      "Bash(node -c \"C:/Users/Paskal/AppData/Local/Temp/claude/d--OSPanel-OpenServer-domains-localhost-treetex/be38064f-3cdf-4a68-8f21-6b7b34001005/scratchpad/inline_combined.js\")",
+      "Bash('/c/Program Files/Google/Chrome/Application/chrome.exe' --headless --disable-gpu --enable-logging=stderr --v=1 --window-size=1200,800 --screenshot=C:/Users/Paskal/AppData/Local/Temp/claude/d--OSPanel-OpenServer-domains-localhost-treetex/be38064f-3cdf-4a68-8f21-6b7b34001005/scratchpad/ignite_check.png --virtual-time-budget=3000 http://127.0.0.1:8001/index.html)"
     ],
     "additionalDirectories": [
       "D:\\OSPanel\\OpenServer\\domains\\localhost\\mpu\\backend",

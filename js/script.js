@@ -376,7 +376,18 @@ pointers.push(new pointerPrototype());
 const { gl, ext } = getWebGLContext(canvas);
 
 if (isMobile()) {
+  // Мобільні GPU суттєво слабші за десктопні дискретні відеокарти — знижуємо
+  // найдорожчі параметри симуляції (SIM_RESOLUTION, PRESSURE_ITERATIONS — вони
+  // множать кількість fragment-shader викликів у всіх 6+ passes step() щокадру,
+  // на відміну від DYE_RESOLUTION, який впливає лише на роздільність текстури
+  // диму — dye все одно лінійно інтерполюється поверх грубішої фізичної сітки,
+  // тому візуальна різниця мінімальна). BLOOM/SUNRAYS — важкий multi-pass
+  // post-processing, теж полегшуємо.
   config.DYE_RESOLUTION = 256;
+  config.SIM_RESOLUTION = 96;
+  config.PRESSURE_ITERATIONS = 14;
+  config.BLOOM_ITERATIONS = 5;
+  config.SUNRAYS = false;
 }
 if (!ext.supportLinearFiltering) {
   config.DYE_RESOLUTION = 256;
@@ -1220,6 +1231,11 @@ function initFramebuffers() {
   else
     velocity = resizeDoubleFBO(velocity, simRes.width, simRes.height, rg.internalFormat, rg.format, texType, filtering);
 
+  // divergence/curl/pressure — проміжні (scratch) буфери фізики, вмісту між кадрами
+  // не зберігають, тому просто звільняємо старі перед перестворенням (не resize-копіювання).
+  disposeFBO(divergence);
+  disposeFBO(curl);
+  disposeDoubleFBO(pressure);
   divergence = createFBO(simRes.width, simRes.height, r.internalFormat, r.format, texType, gl.NEAREST);
   curl = createFBO(simRes.width, simRes.height, r.internalFormat, r.format, texType, gl.NEAREST);
   pressure = createDoubleFBO(simRes.width, simRes.height, r.internalFormat, r.format, texType, gl.NEAREST);
@@ -1235,8 +1251,10 @@ function initBloomFramebuffers() {
   const rgba = ext.formatRGBA;
   const filtering = ext.supportLinearFiltering ? gl.LINEAR : gl.NEAREST;
 
+  disposeFBO(bloom);
   bloom = createFBO(res.width, res.height, rgba.internalFormat, rgba.format, texType, filtering);
 
+  bloomFramebuffers.forEach(disposeFBO);
   bloomFramebuffers.length = 0;
   for (let i = 0; i < config.BLOOM_ITERATIONS; i++) {
     let width = res.width >> (i + 1);
@@ -1256,8 +1274,26 @@ function initSunraysFramebuffers() {
   const r = ext.formatR;
   const filtering = ext.supportLinearFiltering ? gl.LINEAR : gl.NEAREST;
 
+  disposeFBO(sunrays);
+  disposeFBO(sunraysTemp);
   sunrays = createFBO(res.width, res.height, r.internalFormat, r.format, texType, filtering);
   sunraysTemp = createFBO(res.width, res.height, r.internalFormat, r.format, texType, filtering);
+}
+
+// Звільняє GPU-ресурси (текстуру + framebuffer) старого FBO. Викликати перед тим,
+// як JS-посилання на нього замінюється новим — інакше текстура/FBO "губиться" на GPU
+// без звільнення (WebGL memory leak), і resize (часта подія на мобільних — ховання/
+// поява адресного рядка при скролі, поворот екрана) поступово з'їдає VRAM.
+function disposeFBO(target) {
+  if (!target) return;
+  if (target.texture) gl.deleteTexture(target.texture);
+  if (target.fbo) gl.deleteFramebuffer(target.fbo);
+}
+
+function disposeDoubleFBO(target) {
+  if (!target) return;
+  disposeFBO(target.read);
+  disposeFBO(target.write);
 }
 
 function createFBO(w, h, internalFormat, format, type, param) {
@@ -1328,12 +1364,14 @@ function resizeFBO(target, w, h, internalFormat, format, type, param) {
   copyProgram.bind();
   gl.uniform1i(copyProgram.uniforms.uTexture, target.attach(0));
   blit(newFBO.fbo);
+  disposeFBO(target); // старий FBO вже скопійований в newFBO — можна звільнити GPU-ресурси
   return newFBO;
 }
 
 function resizeDoubleFBO(target, w, h, internalFormat, format, type, param) {
   if (target.width == w && target.height == h) return target;
   target.read = resizeFBO(target.read, w, h, internalFormat, format, type, param);
+  disposeFBO(target.write); // "write" буфер не копіюється — просто перестворюється, звільняємо стару версію одразу
   target.write = createFBO(w, h, internalFormat, format, type, param);
   target.width = w;
   target.height = h;
@@ -1388,17 +1426,44 @@ multipleSplats(parseInt(Math.random() * 20) + 5);
 
 let lastUpdateTime = Date.now();
 let colorUpdateTimer = 0.0;
+
+// rAF-цикл зупиняється повністю (не плаНується наступний кадр), коли дим вимкнено
+// (config.PAUSED) або вкладка неактивна (document.hidden) — інакше симуляція
+// (в т.ч. дорогі bloom/sunrays post-processing проходи) продовжує рахуватись
+// у невидимий canvas щокадру, витрачаючи GPU/батарею даремно.
+let _fluidLoopRunning = false;
+
+// Перший кадр малюємо синхронно (як і раніше), далі цикл продовжує сам себе через rAF.
 update();
 
 function update() {
+  if (config.PAUSED || document.hidden) {
+    _fluidLoopRunning = false;
+    return; // не плануємо requestAnimationFrame — цикл "засинає" до _fluidResume()
+  }
+  _fluidLoopRunning = true;
   const dt = calcDeltaTime();
   if (resizeCanvas()) initFramebuffers();
   updateColors(dt);
   applyInputs();
-  if (!config.PAUSED) step(dt);
+  step(dt);
   render(null);
   requestAnimationFrame(update);
 }
+
+// Викликається ззовні (index.html, _applySmokeState) коли дим знову вмикається,
+// або самим файлом при поверненні на вкладку — щоб "розбудити" зупинений цикл.
+function _fluidResume() {
+  if (_fluidLoopRunning || config.PAUSED || document.hidden) return;
+  _fluidLoopRunning = true;
+  lastUpdateTime = Date.now(); // уникнути "стрибка" dt після довгої паузи
+  requestAnimationFrame(update);
+}
+window._fluidResume = _fluidResume;
+
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) _fluidResume();
+});
 
 function calcDeltaTime() {
   let now = Date.now();
@@ -1654,6 +1719,37 @@ function multipleSplats(amount) {
     splat(x, y, dx, dy, color);
   }
 }
+
+// Гарантований видимий "запальний" імпульс диму, що НЕ залежить від реального руху миші.
+// Причина потреби: pointerPrototype() стартує з texcoordX/Y=0 (кут canvas), і splat
+// генерується лише коли mousemove дає ненульову дельту (updatePointerMoveData). Якщо
+// курсор нерухомий у вікні браузера при завантаженні — mousemove не спрацьовує жодного
+// разу, і єдине джерело диму лишаються початкові multipleSplats(), які з часом
+// дисипують без підживлення. igniteSmoke() імітує плавний "мазок" (кілька splat-ів
+// вздовж дуги з ненульовою швидкістю) — той самий тип видимого спалаху, що зараз
+// випадково трапляється лише коли миша фізично заходить у вікно з-за краю.
+function igniteSmoke() {
+  const steps = 6;
+  const cx = 0.5 + (Math.random() - 0.5) * 0.3;
+  const cy = 0.5 + (Math.random() - 0.5) * 0.3;
+  const radius = 0.22 + Math.random() * 0.12;
+  const startAngle = Math.random() * Math.PI * 2;
+  const color = generateColor();
+  color.r *= 10.0;
+  color.g *= 10.0;
+  color.b *= 10.0;
+  for (let i = 0; i < steps; i++) {
+    const t = i / (steps - 1);
+    const angle = startAngle + t * Math.PI * 1.3;
+    const x = cx + Math.cos(angle) * radius;
+    const y = cy + Math.sin(angle) * radius;
+    // Дотична швидкість вздовж дуги — імітує напрямок природного мазка миші.
+    const dx = -Math.sin(angle) * 900;
+    const dy = Math.cos(angle) * 900;
+    splat(x, y, dx, dy, color);
+  }
+}
+window.igniteSmoke = igniteSmoke;
 
 function splat(x, y, dx, dy, color) {
   gl.viewport(0, 0, velocity.width, velocity.height);
@@ -1913,7 +2009,12 @@ function getTextureScale(texture, width, height) {
 }
 
 function scaleByPixelRatio(input) {
-  let pixelRatio = window.devicePixelRatio || 1;
+  // Некапнутий devicePixelRatio (2.5-3.5 на типових сучасних телефонах) роздуває
+  // canvas.width/height (а разом з ним і вартість render()/bloom/sunrays/display
+  // passes, що працюють в розмірі drawingBuffer) у 6-12 разів по площі проти dpr=1.
+  // Капаємо жорсткіше на мобільних (де GPU слабший), м'якше на десктопі.
+  let maxDpr = isMobile() ? 1.5 : 2;
+  let pixelRatio = Math.min(window.devicePixelRatio || 1, maxDpr);
   return Math.floor(input * pixelRatio);
 }
 
