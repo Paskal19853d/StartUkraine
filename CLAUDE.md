@@ -409,6 +409,7 @@ SECRET_KEY=...
 - **Фото на карті**: `map_photo_url`, `map_photo_opacity`, `map_photo_blend`
 - **Пристрої**: `device_desktop_enabled`, `device_tablet_enabled`, `device_mobile_enabled` (1=так, 0=ні), `device_block_msg` (текст заглушки)
 - **Вартість проекту**: `proj_cost_server_usd`, `proj_cost_domains_usd`, `proj_cost_ai_usd`, `proj_cost_other_usd`, `proj_cost_months`, `proj_usd_rate` (НБУ, авто), `proj_usd_rate_updated` (timestamp), `proj_cost_per_user_usd` (CPM, default 1.0)
+- **Підказки сайту**: `tour_enabled` (1=так, 0=ні — вимикає онбординг-тур для нових відвідувачів), `tour_video_url` (посилання на відео-інструкцію, показується замість туру коли `tour_enabled=0`; YouTube → вбудований iframe, інше → кнопка-посилання)
 
 ---
 
@@ -602,6 +603,16 @@ sudo systemctl reload nginx
 ---
 
 ## 15. ЖУРНАЛ ЗМІН
+
+### v3.12 (2026-08-22) — Нова адмін-категорія «Підказки сайту»: увімкнення/вимкнення онбординг-туру + відео-інструкція
+- Новий розділ адмінки `sec-tour` ("Підказки") — перемикач `tour_enabled` (вмикає/вимикає онбординг-тур для нових відвідувачів) і поле `tour_video_url` (відео-інструкція, показується замість туру, коли він вимкнений)
+- Зберігання — без нової таблиці БД, через уже наявну універсальну `colors` (2 нові ключі: `tour_enabled` default `"1"`, `tour_video_url` default `""`), стандартний `PUT /api/admin/colors/batch`, читання через публічний `GET /api/colors` — нових ендпоінтів не додавалось
+- `admin.html`: нова іконка `#ico-tour` (play-в-колі) в SVG-спрайті; nav-item "Підказки" (після "Пристрої"); секція `sec-tour` за точним зразком `sec-device` (`.rg-row`/`.rg-toggle`); `loadTourSettings()`/`saveTourSettings()`/`_tourToggleUI()` — поле `tour-video-url` приховується/показується залежно від стану тогла (`_tourToggleUI`, показує поле лише коли тур ВИМКНЕНО — відео замінює тур, не доповнює)
+- `index.html`: `_tourStart()` тепер спершу перевіряє `getC('tour_enabled','1')` — якщо `'0'`, замість `_tourShow(0)` викликає новий `_showTourVideo(url)` (за наявності `tour_video_url`) або одразу виставляє `zp_tour_done=1` (якщо відео не задане — нічого не показуємо повторно). Новий `#zp-tour-video-modal` (full-screen overlay, той самий `dev-modal`-патерн: `position:fixed;inset:0;backdrop-filter:blur`) + `_showTourVideo()`/`_closeTourVideo()` — розпізнає YouTube через вже наявний `_ytExtractId()` (вбудований iframe), інакше показує кнопку-посилання "Дивитись відео" (той самий фолбек що в card.html для не-YouTube `video_url`)
+- Нові i18n ключі (`tour` секція, тільки для публічної модалки відео): `tour.video.title`, `tour.video.watch` (uk+en)
+- Нова SQL-міграція: `migrations_tour_video.sql` (2 рядки `colors` + 4 рядки `i18n_translations`)
+- Синтаксис усіх inline-скриптів index.html/admin.html перевірено (`node -c`) та Paskal.py (`ast.parse`) — помилок нема
+- **Не перевірено функціонально/скріншотами** — диск C: користувача заповнений (9MB вільних зі 107GB на момент розробки), headless Chrome нестабільний за цих умов. Рекомендовано користувачу самостійно перевірити на проді після деплою: (1) увімкнений тур (дефолт) — поведінка не змінилась; (2) вимкнений тур + YouTube-посилання — при першому візиті з'являється модалка з вбудованим відео; (3) вимкнений тур без посилання — нічого не показується
 
 ### v3.11 (2026-08-22) — Онбординг-тур: фікс регресій після деплою v3.10 (картка не відкривалась + мобільні підказки без стрілок)
 - Проблема 1 (десктоп): крок "Картка" — bubble з'являлась і підсвічувала `#card`, але бічна панель з фото/описом взагалі не відкривалась

@@ -5889,6 +5889,15 @@ function closeInfo(id){document.getElementById('m-'+id).classList.remove('open')
   <div id="zp-tour-dots"></div>
 </div>
 
+<!-- ── Відео-інструкція (заміна туру, якщо tour_enabled=0) ── -->
+<div id="zp-tour-video-modal" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.75);backdrop-filter:blur(4px);align-items:center;justify-content:center">
+  <div style="max-width:900px;width:92vw;background:var(--card-bg,#111318);border-radius:12px;padding:20px;position:relative">
+    <button onclick="_closeTourVideo()" style="position:absolute;top:10px;right:10px;background:none;border:none;color:#fff;font-size:22px;line-height:1;cursor:pointer" aria-label="Закрити">×</button>
+    <div id="zp-tour-video-title" style="color:#fff;font-size:16px;margin-bottom:14px;padding-right:30px"></div>
+    <div id="zp-tour-video-body"></div>
+  </div>
+</div>
+
 <script>
 (function(){
 var _tourStep = 0;
@@ -6037,8 +6046,48 @@ var _TOUR_STEPS = [
 
 function _tourStart() {
   if (localStorage.getItem('zp_tour_done') === '1') return;
+  if (getC('tour_enabled', '1') === '0') {
+    var vurl = getC('tour_video_url', '');
+    if (vurl) {
+      setTimeout(function(){ _showTourVideo(vurl); }, 1800);
+    } else {
+      // Тур вимкнено і відео не задане адміном — нічого не показуємо,
+      // але позначаємо як "показано", щоб не перевіряти це щоразу.
+      localStorage.setItem('zp_tour_done', '1');
+    }
+    return;
+  }
   setTimeout(function(){ _tourShow(0); }, 1800);
 }
+
+function _showTourVideo(url) {
+  var ytId = typeof _ytExtractId === 'function' ? _ytExtractId(url) : null;
+  var body = document.getElementById('zp-tour-video-body');
+  var title = document.getElementById('zp-tour-video-title');
+  var modal = document.getElementById('zp-tour-video-modal');
+  if (!body || !modal) return;
+  if (title) title.textContent = (typeof LANG !== 'undefined' && LANG.t) ? LANG.t('tour.video.title') : 'Відео-інструкція';
+  if (ytId) {
+    body.innerHTML = '<div style="position:relative;padding-bottom:56.25%;height:0">'
+      + '<iframe src="https://www.youtube.com/embed/' + ytId + '?rel=0&modestbranding=1" '
+      + 'style="position:absolute;top:0;left:0;width:100%;height:100%;border:0" allowfullscreen loading="lazy" '
+      + 'allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe></div>';
+  } else {
+    var safeUrl = String(url).replace(/"/g, '&quot;');
+    var watchText = (typeof LANG !== 'undefined' && LANG.t) ? LANG.t('tour.video.watch') : 'Дивитись відео';
+    body.innerHTML = '<a href="' + safeUrl + '" target="_blank" rel="noopener" class="btn btn-p" style="display:inline-flex">' + watchText + '</a>';
+  }
+  modal.style.display = 'flex';
+  localStorage.setItem('zp_tour_done', '1');
+}
+
+function _closeTourVideo() {
+  var m = document.getElementById('zp-tour-video-modal');
+  if (m) m.style.display = 'none';
+  var body = document.getElementById('zp-tour-video-body');
+  if (body) body.innerHTML = '';
+}
+window._closeTourVideo = _closeTourVideo;
 
 // Чи елемент реально видимий на екрані (в DOM, не display:none, має розміри) —
 // захист від показу зламаної підказки біля відсутнього/прихованого елемента

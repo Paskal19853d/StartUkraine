@@ -564,6 +564,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
   <symbol id="ico-lock" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol>
   <symbol id="ico-upload" viewBox="0 0 24 24"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></symbol>
   <symbol id="ico-device" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><rect x="9" y="18" width="6" height="1" rx="0.5" fill="currentColor" stroke="none"/><rect x="9" y="6" width="6" height="8" rx="1"/></symbol>
+  <symbol id="ico-tour" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8" fill="currentColor" stroke="none"/></symbol>
 </svg>
 
 <!-- Hamburger (mobile) -->
@@ -618,6 +619,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
     <div class="nav-item"        draggable="true" onclick="showSec('card')"    data-s="card">    <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-star"/></svg></span><span data-i18n="nav.card">Картка</span></div>
     <div class="nav-item"        draggable="true" onclick="showSec('portfolio')" data-s="portfolio"><span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-users"/></svg></span><span data-i18n="nav.portfolio">Сторінка Автора</span></div>
     <div class="nav-item"        draggable="true" onclick="showSec('device')"    data-s="device">   <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-device"/></svg></span><span data-i18n="nav.device">Пристрої</span></div>
+    <div class="nav-item"        draggable="true" onclick="showSec('tour')"      data-s="tour">      <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-tour"/></svg></span><span data-i18n="nav.tour">Підказки</span></div>
     <div class="nav-item"        draggable="true" onclick="showSec('chat')"      data-s="chat">      <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-candle"/></svg></span><span data-i18n="nav.chat">Чат</span><span class="nb" id="chat-nb" style="display:none">0</span></div>
     <div class="nav-item"        draggable="true" onclick="showSec('legacy')" data-s="legacy"><span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-hourglass"/></svg></span><span data-i18n="nav.legacy">Спадщина</span></div>
     <div class="nav-item"        draggable="true" onclick="showSec('devmode')" data-s="devmode"><span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-doc"/></svg></span><span data-i18n="nav.devmode">Режим розробки</span></div>
@@ -4821,6 +4823,47 @@ tr:hover td{background:rgba(255,255,255,.02)}
         </div>
       </div><!-- /sec-device -->
 
+      <!-- ── ПІДКАЗКИ САЙТУ (ОНБОРДИНГ-ТУР) ── -->
+      <div id="sec-tour" class="section">
+        <div class="sec-title"><svg class="adm-ico"><use href="#ico-tour"/></svg> Підказки сайту</div>
+        <p style="font-size:12px;color:var(--muted);margin:0 0 20px;line-height:1.6">
+          Керування навчальним туром для нових відвідувачів сайту.
+        </p>
+
+        <div class="rg-row">
+          <div class="rg-row-info">
+            <div class="rg-row-label">Тур підказок</div>
+            <div class="rg-row-desc">Показувати покроковий тур новим відвідувачам при першому візиті</div>
+          </div>
+          <label class="rg-toggle">
+            <input type="checkbox" id="tour-enabled" onchange="_tourToggleUI(this.checked)">
+            <span class="rg-slider"></span>
+          </label>
+        </div>
+
+        <div class="rg-row" id="tour-video-row" style="align-items:flex-start;padding-top:14px">
+          <div class="rg-row-info">
+            <div class="rg-row-label">Відео-інструкція</div>
+            <div class="rg-row-desc">Показується новим відвідувачам замість туру, якщо тур вимкнено. YouTube-посилання відкриється як вбудоване відео, інші — як кнопка «Дивитись відео»</div>
+          </div>
+          <div style="flex-shrink:0;width:300px">
+            <input type="text" id="tour-video-url" placeholder="https://youtube.com/watch?v=..."
+              style="width:100%;padding:8px 10px;font-size:12px;border-radius:6px;border:1px solid var(--border2);
+                     background:var(--surface2);color:var(--text);font-family:inherit">
+          </div>
+        </div>
+
+        <div style="display:flex;gap:10px;margin-top:16px;align-items:center">
+          <button class="btn btn-p" onclick="saveTourSettings()">
+            <svg class="adm-ico"><use href="#ico-check"/></svg> Зберегти
+          </button>
+          <button class="btn" onclick="loadTourSettings()">
+            <svg class="adm-ico"><use href="#ico-refresh"/></svg> Скасувати
+          </button>
+          <span id="tour-save-hint" style="font-size:11px;color:var(--green);margin-left:4px"></span>
+        </div>
+      </div><!-- /sec-tour -->
+
       <!-- ── ЧАТ ── -->
       <div id="sec-chat" class="section">
         <div class="sec-title"><svg class="adm-ico"><use href="#ico-candle"/></svg> Мікро-чат</div>
@@ -5971,6 +6014,7 @@ function showSec(id) {
   if(id==='silence')   _loadSilenceSettings();
   if(id==='portfolio') ptLoad();
   if(id==='device')    loadDeviceSettings();
+  if(id==='tour')      loadTourSettings();
   if(id==='worldmap')  loadWMSettings();
   if(id==='seo')     loadSeoAdminDash();
   if(id==='card')    cardSettingsLoad();
@@ -13354,6 +13398,44 @@ async function saveDeviceSettings() {
     });
     if (!r.ok) throw new Error();
     const hint = document.getElementById('dev-save-hint');
+    if (hint) { hint.textContent = 'Збережено'; setTimeout(() => hint.textContent = '', 2500); }
+  } catch { showN('Помилка збереження', true); }
+}
+
+/* ── Підказки сайту: налаштування ──────────────────── */
+async function loadTourSettings() {
+  try {
+    const r = await fetch(`${API}/api/colors`);
+    const d = await r.json();
+    const g = (k, def) => (d[k]?.value ?? def);
+    const enabled = g('tour_enabled', '1') !== '0';
+    const chkEl = document.getElementById('tour-enabled');
+    if (chkEl) chkEl.checked = enabled;
+    const urlEl = document.getElementById('tour-video-url');
+    if (urlEl) urlEl.value = g('tour_video_url', '');
+    _tourToggleUI(enabled);
+  } catch(e) { console.error('loadTourSettings', e); }
+}
+
+function _tourToggleUI(tourOn) {
+  // Поле відео показуємо саме коли тур ВИМКНЕНО (відео — заміна туру, не доповнення)
+  const row = document.getElementById('tour-video-row');
+  if (row) row.style.display = tourOn ? 'none' : '';
+}
+
+async function saveTourSettings() {
+  try {
+    const enabled = document.getElementById('tour-enabled')?.checked ? '1' : '0';
+    const url = document.getElementById('tour-video-url')?.value.trim() || '';
+    const r = await fetch(`${API}/api/admin/colors/batch`, {
+      method: 'PUT', headers: {...authH(), 'Content-Type': 'application/json'},
+      body: JSON.stringify([
+        {key: 'tour_enabled',   value: enabled},
+        {key: 'tour_video_url', value: url},
+      ])
+    });
+    if (!r.ok) throw new Error();
+    const hint = document.getElementById('tour-save-hint');
     if (hint) { hint.textContent = 'Збережено'; setTimeout(() => hint.textContent = '', 2500); }
   } catch { showN('Помилка збереження', true); }
 }
