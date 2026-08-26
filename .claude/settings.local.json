@@ -97,7 +97,12 @@
       "Bash('/c/Program Files/Google/Chrome/Application/chrome.exe' --headless --disable-gpu --window-size=900,3400 --screenshot=C:/Users/Paskal/AppData/Local/Temp/claude/d--OSPanel-OpenServer-domains-localhost-treetex/be38064f-3cdf-4a68-8f21-6b7b34001005/scratchpad/preview_full2.png file:///C:/Users/Paskal/AppData/Local/Temp/claude/d--OSPanel-OpenServer-domains-localhost-treetex/be38064f-3cdf-4a68-8f21-6b7b34001005/scratchpad/guide_pdf_source.html)",
       "Bash(python3 -c \"import cv2\")",
       "Bash('/c/Program Files/Google/Chrome/Application/chrome.exe' --headless --disable-gpu --window-size=900,700 --screenshot=C:/Users/Paskal/AppData/Local/Temp/claude/d--OSPanel-OpenServer-domains-localhost-treetex/be38064f-3cdf-4a68-8f21-6b7b34001005/scratchpad/preview_tail.png file:///C:/Users/Paskal/AppData/Local/Temp/claude/d--OSPanel-OpenServer-domains-localhost-treetex/be38064f-3cdf-4a68-8f21-6b7b34001005/scratchpad/tail_check_wrapped.html)",
-      "Bash('/c/Program Files/Google/Chrome/Application/chrome.exe' --headless --disable-gpu --window-size=900,700 --screenshot=C:/Users/Paskal/AppData/Local/Temp/claude/d--OSPanel-OpenServer-domains-localhost-treetex/be38064f-3cdf-4a68-8f21-6b7b34001005/scratchpad/preview_tail2.png file:///C:/Users/Paskal/AppData/Local/Temp/claude/d--OSPanel-OpenServer-domains-localhost-treetex/be38064f-3cdf-4a68-8f21-6b7b34001005/scratchpad/tail_check_wrapped.html)"
+      "Bash('/c/Program Files/Google/Chrome/Application/chrome.exe' --headless --disable-gpu --window-size=900,700 --screenshot=C:/Users/Paskal/AppData/Local/Temp/claude/d--OSPanel-OpenServer-domains-localhost-treetex/be38064f-3cdf-4a68-8f21-6b7b34001005/scratchpad/preview_tail2.png file:///C:/Users/Paskal/AppData/Local/Temp/claude/d--OSPanel-OpenServer-domains-localhost-treetex/be38064f-3cdf-4a68-8f21-6b7b34001005/scratchpad/tail_check_wrapped.html)",
+      "Bash(grep -n \"^\\(async\\(\\)=>{$\\\\|^}\\)\\(\\);$\" index.html)",
+      "Bash(python C:/Users/Paskal/AppData/Local/Temp/claude/d--OSPanel-OpenServer-domains-localhost-treetex/be38064f-3cdf-4a68-8f21-6b7b34001005/scratchpad/check_inline_js2.py)",
+      "Bash(node -c C:/Users/Paskal/AppData/Local/Temp/claude/d--OSPanel-OpenServer-domains-localhost-treetex/be38064f-3cdf-4a68-8f21-6b7b34001005/scratchpad/index_inline.js)",
+      "Bash(node -c C:/Users/Paskal/AppData/Local/Temp/claude/d--OSPanel-OpenServer-domains-localhost-treetex/be38064f-3cdf-4a68-8f21-6b7b34001005/scratchpad/admin_inline.js)",
+      "Bash(python -c \"import ast; ast.parse\\(open\\(r'd:\\\\OSPanel\\\\OpenServer\\\\domains\\\\localhost\\\\treetex\\\\Paskal.py', encoding='utf-8'\\).read\\(\\)\\)\")"
     ],
     "additionalDirectories": [
       "C:\\Users\\Paskal\\Downloads"

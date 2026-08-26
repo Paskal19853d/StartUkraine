@@ -1,6 +1,8 @@
 # CLAUDE.md — Зоряна Памʼять (Zoryana Memory)
 
 > Цей файл читається Claude Code на початку кожної сесії. При зміні структури проекту — оновлювати цей файл.
+>
+> **Пов'язана документація:** [SKILL.md](SKILL.md) (постійні навички: безпека + адаптив, читати ЗАВЖДИ) · [DATABASE.md](DATABASE.md) (повна схема БД) · [MASTER_GUIDE.md](MASTER_GUIDE.md) (гайд розгортання) · [SECURITY_RULES.md](SECURITY_RULES.md) (політики безпеки) · [PRODUCTION.md](PRODUCTION.md) (чекліст продакшн) · [SESSION_CHANGES.md](SESSION_CHANGES.md) (швидкий чекліст деплою останньої сесії — файли + SQL по кожній зміні)
 
 ---
 
@@ -80,7 +82,8 @@ treetex/
 ├── DATABASE.md          # Детальна схема БД (всі таблиці, колонки, індекси)
 ├── MASTER_GUIDE.md      # Гайд розгортання
 ├── SECURITY_RULES.md    # Політики безпеки
-└── PRODUCTION.md        # Чеклист продакшн
+├── PRODUCTION.md        # Чеклист продакшн
+└── SESSION_CHANGES.md   # Швидкий чекліст деплою останньої сесії (файли + SQL, доповнює журнал змін)
 ```
 
 ---
@@ -169,6 +172,14 @@ UNIQUE KEY uq_img (img_file)
 id, query, results_count, created_at
 ```
 
+#### `ad_video_views` — сервер-перевірене "показано сьогодні" для модуля «Відео-попап»
+```sql
+id INT PRIMARY KEY AUTO_INCREMENT
+visitor_id VARCHAR(64)             -- значення cookie zp_vid (UUID4, анонімний)
+seen_at    INT                     -- unix timestamp показу
+INDEX idx_visitor_seen (visitor_id, seen_at)
+```
+
 ---
 
 ## 5. API ENDPOINTS
@@ -187,6 +198,8 @@ id, query, results_count, created_at
 | GET | `/api/cities` | Міста |
 | POST | `/api/like/{id}` | Лайк (fingerprint dedup) |
 | GET | `/api/device-status` | Доступ за пристроєм: `{desktop, tablet, mobile, block_msg}` |
+| GET | `/api/ad-video/status` | Відео-попап: чи показувати зараз (`{show: bool}`), видає cookie `zp_vid` |
+| POST | `/api/ad-video/seen` | Відео-попап: фіксує показ для поточного `zp_vid` |
 | GET | `/health` | Health check |
 | GET | `/metrics` | Prometheus метрики |
 
@@ -228,6 +241,7 @@ id, query, results_count, created_at
 | GET | `/api/admin/server-stats` | CPU/RAM |
 | GET | `/api/admin/project-cost` | Дані модуля вартості: proj_* ключі + live stats (users, views, bots, mems) |
 | POST | `/api/admin/project-cost/refresh-rate` | Примусово оновити курс USD/UAH з НБУ API |
+| POST | `/api/admin/upload/ad-preview` | Завантажити прев'ю-картинку для модуля «Відео-попап» (PNG/JPG/WEBP, до 2 МБ) |
 
 ### Каталог нагород (публічний)
 | Метод | Endpoint | Опис |
@@ -409,14 +423,15 @@ SECRET_KEY=...
 - **Фото на карті**: `map_photo_url`, `map_photo_opacity`, `map_photo_blend`
 - **Пристрої**: `device_desktop_enabled`, `device_tablet_enabled`, `device_mobile_enabled` (1=так, 0=ні), `device_block_msg` (текст заглушки)
 - **Вартість проекту**: `proj_cost_server_usd`, `proj_cost_domains_usd`, `proj_cost_ai_usd`, `proj_cost_other_usd`, `proj_cost_months`, `proj_usd_rate` (НБУ, авто), `proj_usd_rate_updated` (timestamp), `proj_cost_per_user_usd` (CPM, default 1.0)
-- **Підказки сайту**: `tour_enabled` (1=так, 0=ні — вимикає онбординг-тур для нових відвідувачів), `tour_video_url` (посилання на відео-інструкцію, показується замість туру коли `tour_enabled=0`; YouTube → вбудований iframe, інше → кнопка-посилання)
+- **Підказки сайту**: `tour_enabled` (1=так, 0=ні — вимикає онбординг-тур для нових відвідувачів), `tour_video_enabled` (1=так, 0=ні — окремо вимикає показ відео-вікна, не видаляючи URL), `tour_video_url` (посилання на відео-інструкцію, показується замість туру коли `tour_enabled=0` і `tour_video_enabled=1`; YouTube → вбудований iframe, інше → кнопка-посилання)
+- **Відео-попап (реклама)**: `ad_video_enabled` (1=так, 0=ні), `ad_video_url` (YouTube), `ad_video_title` (назва над плеєром), `ad_video_preview_url` (URL прев'ю-картинки), `ad_video_channel_url` (посилання на канал), `ad_video_channel_btn` (текст кнопки каналу), `ad_video_freq_days` (частота показу одному відвідувачу, днів)
 
 ---
 
 ## 11. ПРАВИЛА РОБОТИ ДЛЯ CLAUDE
 
 ### При старті нової задачі — ОБОВ'ЯЗКОВО
-1. Прочитати **всі MD файли** проекту: `CLAUDE.md`, `SKILL.md`, `DATABASE.md`, `MASTER_GUIDE.md`, `SECURITY_RULES.md`, `PRODUCTION.md`
+1. Прочитати **всі MD файли** проекту: `CLAUDE.md`, `SKILL.md`, `DATABASE.md`, `MASTER_GUIDE.md`, `SECURITY_RULES.md`, `PRODUCTION.md`, `SESSION_CHANGES.md`
 2. Під час роботи **оновлювати MD файли** при зміні архітектури, нових ендпоінтів, таблиць, файлів
 3. Перевірити актуальність через читання `Paskal.py` / HTML файлів перед правками
 
@@ -603,6 +618,36 @@ sudo systemctl reload nginx
 ---
 
 ## 15. ЖУРНАЛ ЗМІН
+
+### v3.18 (2026-08-23) — Підказки сайту: окремий вимикач вікна відео-туру (незалежно від URL)
+- Проблема: розділ "Підказки сайту" мав лише 2 стани — тур увімкнено, або тур вимкнено+відео (якщо URL заповнений). Якщо адмін тимчасово не має готового відео, єдиний спосіб прибрати відео-вікно — стерти `tour_video_url`, втративши значення
+- Новий ключ `colors`: `tour_video_enabled` (дефолт `"1"` — без регресії для вже налаштованих сайтів)
+- `index.html` (`_tourStart()`): відео-вікно показується лише коли **і** `tour_video_url` заповнений, **і** `tour_video_enabled !== '0'`
+- `admin.html` (`sec-tour`): новий тогл "Показувати відео-вікно" між основним тоглом туру і полем URL; `_tourToggleUI()` тепер ховає/показує обидва рядки (тогл відео + поле URL) разом, коли тур увімкнено; `loadTourSettings()`/`saveTourSettings()` розширені новим ключем
+- `Paskal.py`: новий рядок у seed-списку `colors`
+- Нова SQL-міграція: `migrations_tour_video_toggle.sql`
+- Синтаксис перевірено (`node -c`, `ast.parse`) — помилок нема
+
+### v3.17 (2026-08-22) — Новий модуль «Відео-попап» (реклама): адмінка + БД + серверна безпека
+- Нова адмін-категорія `sec-adv` («Реклама») — спливаюче вікно з YouTube-відео на index.html, показується кожному відвідувачу не частіше заданої адміном частоти (днів), займає ~50% екрана
+- **Сервер-перевірена ідентифікація відвідувача** (не тільки localStorage) — нова анонімна non-auth cookie `zp_vid` (UUID4, `httponly`, `samesite=lax`, `secure` в проді, max_age 400 днів), видається при першому виклику `GET /api/ad-video/status`. Нова таблиця `ad_video_views (id, visitor_id, seen_at)` зберігає факт показу — `MAX(seen_at)` звіряється з `now - freq_days*86400`
+- **Звук лише після кліка** — автовідтворення зі звуком без дії користувача блокується браузерами завжди (не залежить від YouTube чи власного хостингу — підтверджено користувачу окремо). Реалізовано: прев'ю-картинка (завантажується адміном вручну, `POST /api/admin/upload/ad-preview`, копія `upload_logo()`) з play-кнопкою → клік користувача замінює на `<iframe autoplay=1>` (без mute) — звук стартує як прямий наслідок кліка, не порушує browser autoplay policy
+- Нові backend-ендпоінти (Paskal.py): `GET /api/ad-video/status` (публічний, rate-limit `advstatus:{ip}` 30/60с, видає cookie, звіряє `ad_video_enabled`+`ad_video_freq_days` на сервері — не покладається на клієнтський кеш `/api/colors`), `POST /api/ad-video/seen` (публічний, rate-limit `advseen:{ip}` 10/60с, INSERT в `ad_video_views`), `POST /api/admin/upload/ad-preview` (require_moder, magic-bytes перевірка, ліміт 2 МБ)
+- Нові ключі `colors`: `ad_video_enabled`, `ad_video_url`, `ad_video_title`, `ad_video_preview_url`, `ad_video_channel_url`, `ad_video_channel_btn`, `ad_video_freq_days` — читання/збереження через наявні `GET /api/colors`/`PUT /api/admin/colors/batch`, нових read/write ендпоінтів для налаштувань не додавалось
+- **Серверна валідація** додана прямо в `update_colors_batch()` для цих ключів (раніше цей batch-ендпоінт приймав значення без перевірки): `ad_video_url` → `_validate_yt_url()` (вже існує), `ad_video_channel_url` → `_validate_photo_url()` (SSRF/hostname-блокування, generic http(s)-перевірка — переюзана, не тільки для фото), `ad_video_title`/`ad_video_channel_btn` → `_sanitize_text(150)`
+- `index.html`: нова модалка `#ad-video-modal` (`z-index:9990`, узгоджено з фіксом `.mov` з v3.14), `_adVideoCheck()`/`_showAdVideo()`/`_closeAdVideo()`, виклик `setTimeout(_adVideoCheck, 2500)` в init-послідовності (після туру, щоб не накладались дві модалки на старті)
+- `admin.html`: нова іконка `#ico-ad` (мегафон) в SVG-спрайті, nav-item «Реклама» (після «Підказки»), секція `sec-adv` (toggle, поля URL/назва/прев'ю з file-upload+preview/канал/частота), `loadAdVideoSettings()`/`saveAdVideoSettings()`/`uploadAdVideoPreview()`
+- Нова SQL-міграція: `migrations_ad_video.sql` (CREATE TABLE `ad_video_views` + 7 рядків `colors`)
+- Синтаксис усіх inline-скриптів index.html/admin.html перевірено (`node -c`), Paskal.py — `ast.parse` — помилок нема
+- **Не перевірено функціонально/скріншотами** — диск C: критично заповнений (задокументовано в CLAUDE.md). Рекомендовано користувачу перевірити на проді після деплою: увімкнути модуль в адмінці, заповнити всі поля (включно з прев'ю-картинкою), відкрити сайт у приватному вікні браузера (без cookie `zp_vid`) — попап має з'явитись через ~2.5с після завантаження; клік на прев'ю запускає відео зі звуком; повторне відкриття сторінки в межах заданої частоти — попап більше не з'являється
+
+### v3.16 (2026-08-22) — Promo-сторінка (/promo/): реальна статистика замість статичних чисел + оновлено копірайт
+- Проблема 1: `promo/index.html` (лендинг для реклами/шерингу) показував захардкоджені статичні числа "128" (у пам'яті) і "14 142" (зірок) — не оновлювались ніколи
+- Фікс 1: додано `id="stat-total"`/`id="stat-likes"` на відповідні `.stat .n` елементи + новий JS-блок в кінці `<script>`, що підтягує реальні дані з уже наявного публічного `GET /api/stats` (`{total, likes, visitors_24h}`, Paskal.py) — той самий `fmtN()`-патерн (тис. скорочення), що вже використовується в `portfolio/index.html` для тієї ж мети. Третій стат-блок "online / щодня" — статичний текст, не число, не чіпався
+- Проблема 2: копірайт в шапці і футері promo-сторінки — `© 2026 TREETEX NPO` (стара назва бренду розробника)
+- Фікс 2: замінено в обох місцях (шапка `.npo`, футер `.footer`) на `© 2026 ТМ «ЗОРЯНА ПАМ'ЯТЬ»` — посилання на `/portfolio/` збережено за явним запитом користувача
+- Файл: лише `promo/index.html`
+- Синтаксис inline-скрипта перевірено (`node -c`) — помилок нема. Не перевірено скріншотами (диск C: критично заповнений)
 
 ### v3.15 (2026-08-22) — Фікс: #partners-layer і #kyiv-clock перекривали форму додавання загиблого (регресія від v3.14)
 - Проблема: після v3.14 (підняття `.mov` до z-index:9990) з'явилась нова колізія — `#partners-layer` (рекламні блоки партнерів, index.html) на десктопі отримував **той самий** inline `z-index:9990`, що й модалки, а `#kyiv-clock` (цифровий годинник Київ, `silence-module.css`) мав `z-index:9998` — **вище** за модалки. Обидва елементи — fixed, рендеряться поза стеком модалки, тому при рівному/вищому z-index і пізнішому порядку в DOM перекривали форму додавання загиблого (та інші модалки)

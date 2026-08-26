@@ -1,5 +1,7 @@
 # Зоряна Пам'ять — Production Deployment
 
+> **Пов'язана документація:** [CLAUDE.md](CLAUDE.md) (головний довідник) · [MASTER_GUIDE.md](MASTER_GUIDE.md) (гайд розгортання) · [SESSION_CHANGES.md](SESSION_CHANGES.md) (які файли й SQL залити після останньої сесії розробки)
+
 ## Вимоги
 - Ubuntu 20.04+ / Debian 11+
 - Python 3.8+

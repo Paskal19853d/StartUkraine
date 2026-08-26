@@ -2,6 +2,8 @@
 
 > MySQL/MariaDB · Хост: 127.0.0.1:3306 · Користувач: root · Кодування: utf8mb4_unicode_ci  
 > Оновлено: 2026-05-08 · Поточний стан: 9 таблиць
+>
+> ⚠️ Цей знімок не включає таблиці, додані в пізніших сесіях (напр. `partners`, `ad_video_views`) — актуальний повний список і швидкий SQL для їх створення дивіться в [CLAUDE.md](CLAUDE.md) секція 4 та в [SESSION_CHANGES.md](SESSION_CHANGES.md) (файли+SQL останньої сесії). Пов'язано також: [SKILL.md](SKILL.md) · [MASTER_GUIDE.md](MASTER_GUIDE.md) · [SECURITY_RULES.md](SECURITY_RULES.md)
 
 ---
 

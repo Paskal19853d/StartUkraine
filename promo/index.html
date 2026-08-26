@@ -202,7 +202,7 @@
     <!-- brand bar -->
     <header class="topbar">
       <div class="brand"><span class="star">★</span><span class="b1">Зоряна</span><span class="b2">Пам’ять</span></div>
-      <div class="npo">© 2026 <a href="/portfolio/" style="color:inherit;text-decoration:none"><b>TREETEX</b> NPO</a></div>
+      <div class="npo">© 2026 <a href="/portfolio/" style="color:inherit;text-decoration:none">ТМ «<b>ЗОРЯНА ПАМ'ЯТЬ</b>»</a></div>
     </header>
 
     <!-- hero -->
@@ -212,8 +212,8 @@
         <h1 class="head">Кожна <span class="g">зірка</span><br>— чиєсь <span class="c">ім’я</span>.</h1>
         <p class="sub">Запали зірку пам’яті на честь тих, кого ми не забудемо. Тисячі вогників на мапі України — жива історія, яку творимо разом.</p>
         <div class="stats">
-          <div class="stat"><div class="n">128</div><div class="l">у пам’яті</div></div>
-          <div class="stat"><div class="n">14 142</div><div class="l">зірок</div></div>
+          <div class="stat"><div class="n" id="stat-total">128</div><div class="l">у пам’яті</div></div>
+          <div class="stat"><div class="n" id="stat-likes">14 142</div><div class="l">зірок</div></div>
           <div class="stat"><div class="n">online</div><div class="l">щодня</div></div>
         </div>
       </div>
@@ -271,7 +271,7 @@
     </section>
 
     <footer class="footer">
-      <div>© 2026 <a href="/portfolio/" style="color:inherit;text-decoration:none"><b>TREETEX</b> NPO</a> · All rights reserved</div>
+      <div>© 2026 <a href="/portfolio/" style="color:inherit;text-decoration:none">ТМ «<b>ЗОРЯНА ПАМ'ЯТЬ</b>»</a> · All rights reserved</div>
       <div class="sm">Denys KOSHELENKO</div>
     </footer>
 
@@ -329,6 +329,24 @@
       setTimeout(tick, HOLD);
     }
     setTimeout(tick, 1400); // first dwell on the map
+  })();
+
+  // реальна статистика проєкту (той самий патерн, що й /portfolio/)
+  (function(){
+    function fmtN(n){
+      if (n >= 1000) return (n/1000).toFixed(1).replace('.0','') + ' тис';
+      return String(n);
+    }
+    fetch('/api/stats')
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(d){
+        if (!d) return;
+        var total = document.getElementById('stat-total');
+        var likes = document.getElementById('stat-likes');
+        if (total && d.total > 0) total.textContent = fmtN(d.total);
+        if (likes && d.likes > 0) likes.textContent = fmtN(d.likes);
+      })
+      .catch(function(){});
   })();
 </script>
 </body>

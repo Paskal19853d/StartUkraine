@@ -565,6 +565,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
   <symbol id="ico-upload" viewBox="0 0 24 24"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></symbol>
   <symbol id="ico-device" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><rect x="9" y="18" width="6" height="1" rx="0.5" fill="currentColor" stroke="none"/><rect x="9" y="6" width="6" height="8" rx="1"/></symbol>
   <symbol id="ico-tour" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="ico-ad" viewBox="0 0 24 24"><path d="M3 11v2a2 2 0 0 0 2 2h1l3 6 2-1-2.5-5H10l9 4V5l-9 4H5a2 2 0 0 0-2 2z"/><line x1="19" y1="9" x2="19" y2="15"/></symbol>
 </svg>
 
 <!-- Hamburger (mobile) -->
@@ -620,6 +621,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
     <div class="nav-item"        draggable="true" onclick="showSec('portfolio')" data-s="portfolio"><span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-users"/></svg></span><span data-i18n="nav.portfolio">Сторінка Автора</span></div>
     <div class="nav-item"        draggable="true" onclick="showSec('device')"    data-s="device">   <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-device"/></svg></span><span data-i18n="nav.device">Пристрої</span></div>
     <div class="nav-item"        draggable="true" onclick="showSec('tour')"      data-s="tour">      <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-tour"/></svg></span><span data-i18n="nav.tour">Підказки</span></div>
+    <div class="nav-item"        draggable="true" onclick="showSec('adv')"       data-s="adv">       <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-ad"/></svg></span><span data-i18n="nav.adv">Реклама</span></div>
     <div class="nav-item"        draggable="true" onclick="showSec('chat')"      data-s="chat">      <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-candle"/></svg></span><span data-i18n="nav.chat">Чат</span><span class="nb" id="chat-nb" style="display:none">0</span></div>
     <div class="nav-item"        draggable="true" onclick="showSec('legacy')" data-s="legacy"><span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-hourglass"/></svg></span><span data-i18n="nav.legacy">Спадщина</span></div>
     <div class="nav-item"        draggable="true" onclick="showSec('devmode')" data-s="devmode"><span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-doc"/></svg></span><span data-i18n="nav.devmode">Режим розробки</span></div>
@@ -4761,7 +4763,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
             <div class="rg-row-desc">Дозволити доступ з персональних комп'ютерів і ноутбуків</div>
           </div>
           <label class="rg-toggle">
-            <input type="checkbox" id="dev-desktop" onchange="saveDeviceSetting('device_desktop_enabled',this.checked?'1':'0')">
+            <input type="checkbox" id="dev-desktop">
             <span class="rg-slider"></span>
           </label>
         </div>
@@ -4772,7 +4774,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
             <div class="rg-row-desc">Дозволити доступ з планшетів (iPad, Android-планшет тощо)</div>
           </div>
           <label class="rg-toggle">
-            <input type="checkbox" id="dev-tablet" onchange="saveDeviceSetting('device_tablet_enabled',this.checked?'1':'0')">
+            <input type="checkbox" id="dev-tablet">
             <span class="rg-slider"></span>
           </label>
         </div>
@@ -4783,7 +4785,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
             <div class="rg-row-desc">Дозволити доступ зі смартфонів (iPhone, Android тощо)</div>
           </div>
           <label class="rg-toggle">
-            <input type="checkbox" id="dev-mobile" onchange="saveDeviceSetting('device_mobile_enabled',this.checked?'1':'0')">
+            <input type="checkbox" id="dev-mobile">
             <span class="rg-slider"></span>
           </label>
         </div>
@@ -4794,7 +4796,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
             <div class="rg-row-desc">Показувати кнопку підтримки розробника на головній сторінці</div>
           </div>
           <label class="rg-toggle">
-            <input type="checkbox" id="chk-coffee" onchange="saveDeviceSetting('show_coffee',this.checked?'1':'0')">
+            <input type="checkbox" id="chk-coffee">
             <span class="rg-slider"></span>
           </label>
         </div>
@@ -4843,8 +4845,19 @@ tr:hover td{background:rgba(255,255,255,.02)}
 
         <div class="rg-row" id="tour-video-row" style="align-items:flex-start;padding-top:14px">
           <div class="rg-row-info">
+            <div class="rg-row-label">Показувати відео-вікно</div>
+            <div class="rg-row-desc">Вимкніть, щоб тимчасово не показувати вікно з відео (напр. поки немає готового ролика) — посилання нижче збережеться</div>
+          </div>
+          <label class="rg-toggle">
+            <input type="checkbox" id="tour-video-enabled">
+            <span class="rg-slider"></span>
+          </label>
+        </div>
+
+        <div class="rg-row" id="tour-video-url-row" style="align-items:flex-start;padding-top:14px">
+          <div class="rg-row-info">
             <div class="rg-row-label">Відео-інструкція</div>
-            <div class="rg-row-desc">Показується новим відвідувачам замість туру, якщо тур вимкнено. YouTube-посилання відкриється як вбудоване відео, інші — як кнопка «Дивитись відео»</div>
+            <div class="rg-row-desc">Показується новим відвідувачам замість туру, якщо тур вимкнено і відео-вікно увімкнене. YouTube-посилання відкриється як вбудоване відео, інші — як кнопка «Дивитись відео»</div>
           </div>
           <div style="flex-shrink:0;width:300px">
             <input type="text" id="tour-video-url" placeholder="https://youtube.com/watch?v=..."
@@ -4863,6 +4876,114 @@ tr:hover td{background:rgba(255,255,255,.02)}
           <span id="tour-save-hint" style="font-size:11px;color:var(--green);margin-left:4px"></span>
         </div>
       </div><!-- /sec-tour -->
+
+      <!-- ── ВІДЕО-ПОПАП (РЕКЛАМА) ── -->
+      <div id="sec-adv" class="section">
+        <div class="sec-title"><svg class="adm-ico"><use href="#ico-ad"/></svg> Реклама (відео-попап)</div>
+        <p style="font-size:12px;color:var(--muted);margin:0 0 20px;line-height:1.6">
+          Спливаюче вікно з YouTube-відео. Показується кожному відвідувачу не частіше вказаної частоти (сервер-перевірено, окремо від пристрою). Звук відтворюється лише після кліка відвідувача на прев'ю — браузери блокують автовідтворення зі звуком без дії користувача.
+        </p>
+
+        <div class="rg-row">
+          <div class="rg-row-info">
+            <div class="rg-row-label">Відео-попап увімкнено</div>
+            <div class="rg-row-desc">Показувати спливаюче вікно з відео відвідувачам сайту</div>
+          </div>
+          <label class="rg-toggle">
+            <input type="checkbox" id="adv-enabled">
+            <span class="rg-slider"></span>
+          </label>
+        </div>
+
+        <div class="rg-row" style="align-items:flex-start;padding-top:14px">
+          <div class="rg-row-info">
+            <div class="rg-row-label">Посилання YouTube</div>
+            <div class="rg-row-desc">Відео, яке відкриється в попапі після кліка відвідувача</div>
+          </div>
+          <div style="flex-shrink:0;width:300px">
+            <input type="text" id="adv-url" placeholder="https://youtube.com/watch?v=..."
+              style="width:100%;padding:8px 10px;font-size:12px;border-radius:6px;border:1px solid var(--border2);
+                     background:var(--surface2);color:var(--text);font-family:inherit">
+          </div>
+        </div>
+
+        <div class="rg-row" style="align-items:flex-start;padding-top:14px">
+          <div class="rg-row-info">
+            <div class="rg-row-label">Назва відео</div>
+            <div class="rg-row-desc">Показується над плеєром у попапі (напр. «Привітання зі святом»)</div>
+          </div>
+          <div style="flex-shrink:0;width:300px">
+            <input type="text" id="adv-title" maxlength="150" placeholder="Привітання зі святом"
+              style="width:100%;padding:8px 10px;font-size:12px;border-radius:6px;border:1px solid var(--border2);
+                     background:var(--surface2);color:var(--text);font-family:inherit">
+          </div>
+        </div>
+
+        <div class="rg-row" style="align-items:flex-start;padding-top:14px">
+          <div class="rg-row-info">
+            <div class="rg-row-label">Прев'ю-картинка</div>
+            <div class="rg-row-desc">Показується замість відео до кліка відвідувача (PNG/JPG/WEBP, до 2 МБ)</div>
+          </div>
+          <div style="flex-shrink:0;width:300px;display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;gap:8px;align-items:center">
+              <input type="text" id="adv-preview-url" placeholder="/img/ad_preview_....jpg"
+                style="flex:1;padding:8px 10px;font-size:12px;border-radius:6px;border:1px solid var(--border2);
+                       background:var(--surface2);color:var(--text);font-family:inherit">
+              <label class="btn btn-b" style="cursor:pointer;padding:8px 10px;flex-shrink:0" title="Завантажити прев'ю з комп'ютера">
+                <svg class="adm-ico"><use href="#ico-photo"/></svg>
+                <input type="file" id="adv-preview-file" accept="image/png,image/jpeg,image/webp" style="display:none" onchange="uploadAdVideoPreview(this)">
+              </label>
+            </div>
+            <img id="adv-preview-img" src="" alt="" style="display:none;max-width:100%;border-radius:8px;border:1px solid var(--border2)">
+          </div>
+        </div>
+
+        <div class="rg-row" style="align-items:flex-start;padding-top:14px">
+          <div class="rg-row-info">
+            <div class="rg-row-label">Посилання на канал</div>
+            <div class="rg-row-desc">Кнопка під відео веде на YouTube-канал</div>
+          </div>
+          <div style="flex-shrink:0;width:300px">
+            <input type="text" id="adv-channel-url" placeholder="https://youtube.com/@channel"
+              style="width:100%;padding:8px 10px;font-size:12px;border-radius:6px;border:1px solid var(--border2);
+                     background:var(--surface2);color:var(--text);font-family:inherit">
+          </div>
+        </div>
+
+        <div class="rg-row" style="align-items:flex-start;padding-top:14px">
+          <div class="rg-row-info">
+            <div class="rg-row-label">Текст кнопки каналу</div>
+            <div class="rg-row-desc">Напис на кнопці посилання на канал</div>
+          </div>
+          <div style="flex-shrink:0;width:300px">
+            <input type="text" id="adv-channel-btn" maxlength="150" placeholder="Ми на YouTube"
+              style="width:100%;padding:8px 10px;font-size:12px;border-radius:6px;border:1px solid var(--border2);
+                     background:var(--surface2);color:var(--text);font-family:inherit">
+          </div>
+        </div>
+
+        <div class="rg-row" style="align-items:flex-start;padding-top:14px">
+          <div class="rg-row-info">
+            <div class="rg-row-label">Частота показу (днів)</div>
+            <div class="rg-row-desc">Раз на скільки діб один відвідувач знову побачить попап</div>
+          </div>
+          <div style="flex-shrink:0;width:120px">
+            <input type="number" id="adv-freq-days" min="1" step="1"
+              style="width:100%;padding:8px 10px;font-size:12px;border-radius:6px;border:1px solid var(--border2);
+                     background:var(--surface2);color:var(--text);font-family:inherit">
+          </div>
+        </div>
+
+        <div style="display:flex;gap:10px;margin-top:16px;align-items:center">
+          <button class="btn btn-p" onclick="saveAdVideoSettings()">
+            <svg class="adm-ico"><use href="#ico-check"/></svg> Зберегти
+          </button>
+          <button class="btn" onclick="loadAdVideoSettings()">
+            <svg class="adm-ico"><use href="#ico-refresh"/></svg> Скасувати
+          </button>
+          <span id="adv-save-hint" style="font-size:11px;color:var(--green);margin-left:4px"></span>
+        </div>
+      </div><!-- /sec-adv -->
 
       <!-- ── ЧАТ ── -->
       <div id="sec-chat" class="section">
@@ -6015,6 +6136,7 @@ function showSec(id) {
   if(id==='portfolio') ptLoad();
   if(id==='device')    loadDeviceSettings();
   if(id==='tour')      loadTourSettings();
+  if(id==='adv')       loadAdVideoSettings();
   if(id==='worldmap')  loadWMSettings();
   if(id==='seo')     loadSeoAdminDash();
   if(id==='card')    cardSettingsLoad();
@@ -13370,18 +13492,6 @@ async function loadDeviceSettings() {
   } catch(e) { console.error('loadDeviceSettings', e); }
 }
 
-async function saveDeviceSetting(key, val) {
-  try {
-    const r = await fetch(`${API}/api/admin/color`, {
-      method: 'PUT', headers: {...authH(), 'Content-Type': 'application/json'},
-      body: JSON.stringify({key, value: val})
-    });
-    if (!r.ok) throw new Error();
-    const hint = document.getElementById('dev-save-hint');
-    if (hint) { hint.textContent = 'Збережено'; setTimeout(() => hint.textContent = '', 2000); }
-  } catch { showN('Помилка збереження', true); }
-}
-
 async function saveDeviceSettings() {
   try {
     const chkVal = id => document.getElementById(id)?.checked ? '1' : '0';
@@ -13411,6 +13521,8 @@ async function loadTourSettings() {
     const enabled = g('tour_enabled', '1') !== '0';
     const chkEl = document.getElementById('tour-enabled');
     if (chkEl) chkEl.checked = enabled;
+    const videoChkEl = document.getElementById('tour-video-enabled');
+    if (videoChkEl) videoChkEl.checked = g('tour_video_enabled', '1') !== '0';
     const urlEl = document.getElementById('tour-video-url');
     if (urlEl) urlEl.value = g('tour_video_url', '');
     _tourToggleUI(enabled);
@@ -13418,24 +13530,98 @@ async function loadTourSettings() {
 }
 
 function _tourToggleUI(tourOn) {
-  // Поле відео показуємо саме коли тур ВИМКНЕНО (відео — заміна туру, не доповнення)
+  // Блок відео-налаштувань (тогл «Показувати відео-вікно» + поле URL) показуємо
+  // саме коли тур ВИМКНЕНО (відео — заміна туру, не доповнення)
   const row = document.getElementById('tour-video-row');
   if (row) row.style.display = tourOn ? 'none' : '';
+  const urlRow = document.getElementById('tour-video-url-row');
+  if (urlRow) urlRow.style.display = tourOn ? 'none' : '';
 }
 
 async function saveTourSettings() {
   try {
     const enabled = document.getElementById('tour-enabled')?.checked ? '1' : '0';
+    const videoEnabled = document.getElementById('tour-video-enabled')?.checked ? '1' : '0';
     const url = document.getElementById('tour-video-url')?.value.trim() || '';
     const r = await fetch(`${API}/api/admin/colors/batch`, {
       method: 'PUT', headers: {...authH(), 'Content-Type': 'application/json'},
       body: JSON.stringify([
-        {key: 'tour_enabled',   value: enabled},
-        {key: 'tour_video_url', value: url},
+        {key: 'tour_enabled',       value: enabled},
+        {key: 'tour_video_enabled', value: videoEnabled},
+        {key: 'tour_video_url',     value: url},
       ])
     });
     if (!r.ok) throw new Error();
     const hint = document.getElementById('tour-save-hint');
+    if (hint) { hint.textContent = 'Збережено'; setTimeout(() => hint.textContent = '', 2500); }
+  } catch { showN('Помилка збереження', true); }
+}
+
+/* ── Відео-попап (реклама): налаштування ───────────── */
+async function loadAdVideoSettings() {
+  try {
+    const r = await fetch(`${API}/api/colors`);
+    const d = await r.json();
+    const g = (k, def) => (d[k]?.value ?? def);
+    const chkEl = document.getElementById('adv-enabled');
+    if (chkEl) chkEl.checked = g('ad_video_enabled', '0') === '1';
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
+    set('adv-url', g('ad_video_url', ''));
+    set('adv-title', g('ad_video_title', ''));
+    const previewUrl = g('ad_video_preview_url', '');
+    set('adv-preview-url', previewUrl);
+    set('adv-channel-url', g('ad_video_channel_url', ''));
+    set('adv-channel-btn', g('ad_video_channel_btn', 'Ми на YouTube'));
+    set('adv-freq-days', g('ad_video_freq_days', '1'));
+    _advUpdatePreviewImg(previewUrl);
+  } catch(e) { console.error('loadAdVideoSettings', e); }
+}
+
+function _advUpdatePreviewImg(url) {
+  const img = document.getElementById('adv-preview-img');
+  if (!img) return;
+  if (url) { img.src = url; img.style.display = ''; }
+  else { img.src = ''; img.style.display = 'none'; }
+}
+
+async function uploadAdVideoPreview(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const fd = new FormData();
+  fd.append('file', file);
+  showN('Завантаження…');
+  try {
+    const r = await fetch(`${API}/api/admin/upload/ad-preview`, { method: 'POST', headers: authH(), body: fd });
+    const d = await r.json();
+    if (!r.ok) { showN(d.detail || 'Помилка завантаження', true); return; }
+    const urlInput = document.getElementById('adv-preview-url');
+    if (urlInput) urlInput.value = d.url;
+    _advUpdatePreviewImg(d.url);
+    showN('Прев\'ю завантажено');
+  } catch(e) { showN('Помилка: ' + e.message, true); }
+  input.value = '';
+}
+
+async function saveAdVideoSettings() {
+  try {
+    const enabled = document.getElementById('adv-enabled')?.checked ? '1' : '0';
+    const freqRaw = parseInt(document.getElementById('adv-freq-days')?.value, 10);
+    const freq = (Number.isFinite(freqRaw) && freqRaw > 0) ? String(freqRaw) : '1';
+    const r = await fetch(`${API}/api/admin/colors/batch`, {
+      method: 'PUT', headers: {...authH(), 'Content-Type': 'application/json'},
+      body: JSON.stringify([
+        {key: 'ad_video_enabled',     value: enabled},
+        {key: 'ad_video_url',         value: document.getElementById('adv-url')?.value.trim() || ''},
+        {key: 'ad_video_title',       value: document.getElementById('adv-title')?.value.trim() || ''},
+        {key: 'ad_video_preview_url', value: document.getElementById('adv-preview-url')?.value.trim() || ''},
+        {key: 'ad_video_channel_url', value: document.getElementById('adv-channel-url')?.value.trim() || ''},
+        {key: 'ad_video_channel_btn', value: document.getElementById('adv-channel-btn')?.value.trim() || ''},
+        {key: 'ad_video_freq_days',   value: freq},
+      ])
+    });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) { showN(d.detail || 'Помилка збереження', true); return; }
+    const hint = document.getElementById('adv-save-hint');
     if (hint) { hint.textContent = 'Збережено'; setTimeout(() => hint.textContent = '', 2500); }
   } catch { showN('Помилка збереження', true); }
 }

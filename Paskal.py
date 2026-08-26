@@ -3,7 +3,7 @@
 Запуск: python -m uvicorn Paskal:app --reload --port 8000
 БД:     MySQL / MariaDB (налаштування у .env)
 """
-import os, time, asyncio, hashlib, threading, re, base64, secrets, string, html as _html, json, logging
+import os, time, asyncio, hashlib, threading, re, base64, secrets, string, html as _html, json, logging, uuid
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -355,6 +355,16 @@ def init_db():
             c.execute("ALTER TABLE partners ADD COLUMN caption_url VARCHAR(500) NOT NULL DEFAULT ''")
         except Exception:
             pass  # column already exists
+
+        # ── ad_video_views (модуль «Відео-попап»: сервер-перевірене «показано сьогодні») ──
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS ad_video_views (
+                id         INT PRIMARY KEY AUTO_INCREMENT,
+                visitor_id VARCHAR(64) NOT NULL,
+                seen_at    INT NOT NULL,
+                INDEX idx_visitor_seen (visitor_id, seen_at)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        """)
         # Migration: add ban_until and notes to users
         try:
             c.execute("ALTER TABLE users ADD COLUMN ban_until INT NOT NULL DEFAULT 0")
@@ -673,6 +683,15 @@ def init_db():
         # ── Підказки сайту (онбординг-тур) ──────────────────────────────────
         ("tour_enabled",           "1", "Підказки (онбординг-тур) — показувати новим відвідувачам (1=так, 0=ні)"),
         ("tour_video_url",         "",  "Посилання на відео-інструкцію (показується замість туру, якщо tour_enabled=0)"),
+        ("tour_video_enabled",     "1", "Показувати відео-вікно замість туру, якщо tour_enabled=0 (1=так, 0=ні — тимчасово вимкнути без втрати URL)"),
+        # ── Відео-попап (реклама/оголошення) ─────────────────────────────────
+        ("ad_video_enabled",     "0",  "Відео-попап — увімкнено (1=так, 0=ні)"),
+        ("ad_video_url",         "",   "Відео-попап: посилання YouTube"),
+        ("ad_video_title",       "",   "Відео-попап: назва відео (показується над плеєром)"),
+        ("ad_video_preview_url", "",   "Відео-попап: URL превью-картинки (завантажується вручну)"),
+        ("ad_video_channel_url", "",   "Відео-попап: посилання на YouTube-канал"),
+        ("ad_video_channel_btn", "Ми на YouTube", "Відео-попап: текст кнопки каналу"),
+        ("ad_video_freq_days",   "1",  "Відео-попап: частота показу одному відвідувачу (днів)"),
         # ── Мікро-чат ────────────────────────────────────────────────────────
         ("chat_enabled",       "1",    "Мікро-чат активний (1=так, 0=ні)"),
         ("chat_history_count", "50",   "Кількість повідомлень в чаті"),
@@ -3092,6 +3111,54 @@ def get_colors(request: Request):
             result[r["key"]] = {"value": r["value"], "label": r["label"]}
     cache_set("colors", json.dumps(result, ensure_ascii=False), ttl=300)
     return result
+
+@app.get("/api/ad-video/status")
+def ad_video_status(request: Request, response: Response):
+    """Чи показувати відео-попап цьому відвідувачу зараз. Видає анонімну cookie zp_vid
+    якщо відсутня — сервер сам звіряє enabled+частоту, не покладаючись лише на клієнтський
+    кеш /api/colors (щоб не показувати попап навіть якщо клієнт бачить застарілий стан)."""
+    ip = _get_ip(request)
+    if not _rl.check(f"advstatus:{ip}", 30, 60):
+        raise HTTPException(429, "Забагато запитів. Зачекайте.")
+    vid = request.cookies.get("zp_vid")
+    if not vid or not re.fullmatch(r"[a-f0-9-]{36}", vid):
+        vid = str(uuid.uuid4())
+        response.set_cookie("zp_vid", vid, max_age=86400 * 400, httponly=True,
+                             samesite="lax", secure=_IS_PROD, path="/")
+    db = get_db()
+    try:
+        with db.cursor() as c:
+            c.execute("SELECT `key`, value FROM colors WHERE `key` IN ('ad_video_enabled','ad_video_freq_days')")
+            rows = {r["key"]: r["value"] for r in c.fetchall()}
+            if rows.get("ad_video_enabled") != "1":
+                return {"show": False}
+            freq_raw = rows.get("ad_video_freq_days", "1")
+            freq_days = int(freq_raw) if freq_raw.isdigit() and int(freq_raw) > 0 else 1
+            c.execute("SELECT MAX(seen_at) AS last_seen FROM ad_video_views WHERE visitor_id=%s", (vid,))
+            last = c.fetchone()
+    finally:
+        db.close()
+    last_seen = int(last["last_seen"]) if last and last["last_seen"] else 0
+    show = (int(time.time()) - last_seen) >= (freq_days * 86400)
+    return {"show": show}
+
+@app.post("/api/ad-video/seen")
+def ad_video_seen(request: Request):
+    """Фіксує показ відео-попапу для поточного visitor_id (cookie zp_vid)."""
+    ip = _get_ip(request)
+    if not _rl.check(f"advseen:{ip}", 10, 60):
+        raise HTTPException(429, "Забагато запитів. Зачекайте.")
+    vid = request.cookies.get("zp_vid")
+    if not vid or not re.fullmatch(r"[a-f0-9-]{36}", vid):
+        raise HTTPException(400, "Відсутній ідентифікатор відвідувача")
+    db = get_db()
+    try:
+        with db.cursor() as c:
+            c.execute("INSERT INTO ad_video_views (visitor_id, seen_at) VALUES (%s,%s)", (vid, int(time.time())))
+        db.commit()
+    finally:
+        db.close()
+    return {"ok": True}
 
 @app.get("/api/labels")
 def get_labels(request: Request):
@@ -5861,6 +5928,14 @@ def update_colors_batch(colors: List[ColorUpdate], request: Request):
     db = get_db()
     with db.cursor() as c:
         for col in colors:
+            # Відео-попап: серверна валідація URL/тексту (batch-ендпоінт зазвичай приймає
+            # значення як є — тут явно перевіряємо саме ці ключі, бо вони йдуть у публічний iframe/посилання)
+            if col.key == "ad_video_url":
+                col.value = _validate_yt_url(col.value)
+            elif col.key == "ad_video_channel_url":
+                col.value = _validate_photo_url(col.value)
+            elif col.key in ("ad_video_title", "ad_video_channel_btn"):
+                col.value = _sanitize_text(col.value, 150)
             c.execute(
                 "INSERT INTO colors (`key`,value,label) VALUES (%s,%s,'') "
                 "ON DUPLICATE KEY UPDATE value=%s",
@@ -6391,6 +6466,25 @@ async def upload_logo(request: Request, file: UploadFile = File(...)):
     if not _check_image_magic(raw, ext):
         raise HTTPException(400, "Невалідний формат файлу")
     safe_name = f"logo_{int(time.time())}{ext}"
+    with open(os.path.join("img", safe_name), "wb") as fh:
+        fh.write(raw)
+    return {"url": f"/img/{safe_name}"}
+
+
+@app.post("/api/admin/upload/ad-preview")
+async def upload_ad_preview(request: Request, file: UploadFile = File(...)):
+    """Превью-картинка для відео-попапу (модуль «Реклама»)."""
+    require_moder(request)
+    _ALLOWED = {".png", ".jpg", ".jpeg", ".webp"}
+    ext = os.path.splitext(file.filename or "")[1].lower()
+    if ext not in _ALLOWED:
+        raise HTTPException(400, f"Дозволені формати: {', '.join(_ALLOWED)}")
+    raw = await file.read()
+    if len(raw) > 2_000_000:
+        raise HTTPException(400, "Файл завеликий (макс 2 МБ)")
+    if not _check_image_magic(raw, ext):
+        raise HTTPException(400, "Невалідний формат файлу")
+    safe_name = f"ad_preview_{int(time.time())}{ext}"
     with open(os.path.join("img", safe_name), "wb") as fh:
         fh.write(raw)
     return {"url": f"/img/{safe_name}"}
