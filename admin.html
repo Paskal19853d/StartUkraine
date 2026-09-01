@@ -1003,7 +1003,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
               <div class="rg-row-desc" data-i18n="adm.authreg.open_reg_desc">Нові користувачі можуть створювати акаунти</div>
             </div>
             <label class="rg-toggle">
-              <input type="checkbox" id="rg-enabled" onchange="saveRegSetting('reg_enabled',this.checked?'1':'0')">
+              <input type="checkbox" id="rg-enabled">
               <span class="rg-slider"></span>
             </label>
           </div>
@@ -1013,7 +1013,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
               <div class="rg-row-desc" data-i18n="adm.authreg.google_login_desc">Дозволити авторизацію через Google OAuth</div>
             </div>
             <label class="rg-toggle">
-              <input type="checkbox" id="rg-allow-google" onchange="saveRegSetting('reg_allow_google',this.checked?'1':'0')">
+              <input type="checkbox" id="rg-allow-google">
               <span class="rg-slider"></span>
             </label>
           </div>
@@ -1036,7 +1036,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
               <tr>
                 <td data-i18n="mid.label">По батькові</td>
                 <td>
-                  <select class="rg-sel" id="rg-field-mid" onchange="saveRegSetting('reg_field_mid',this.value)">
+                  <select class="rg-sel" id="rg-field-mid">
                     <option value="required" data-i18n="adm.authreg.required">Обов'язкове</option>
                     <option value="optional" data-i18n="adm.authreg.optional">Необов'язкове</option>
                     <option value="hidden" data-i18n="adm.authreg.hidden">Приховане</option>
@@ -1050,7 +1050,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
               <tr>
                 <td data-i18n="phone.label">Телефон</td>
                 <td>
-                  <select class="rg-sel" id="rg-field-phone" onchange="saveRegSetting('reg_field_phone',this.value)">
+                  <select class="rg-sel" id="rg-field-phone">
                     <option value="required" data-i18n="adm.authreg.required">Обов'язкове</option>
                     <option value="optional" data-i18n="adm.authreg.optional">Необов'язкове</option>
                     <option value="hidden" data-i18n="adm.authreg.hidden">Приховане</option>
@@ -1074,7 +1074,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
               <div class="rg-row-desc" data-i18n="adm.authreg.email_verify_desc">Надсилати 6-значний код на пошту при реєстрації. Якщо вимкнено — реєстрація завершується одразу без email-коду</div>
             </div>
             <label class="rg-toggle">
-              <input type="checkbox" id="rg-email-verify" onchange="saveRegSetting('reg_require_email_verify',this.checked?'1':'0')">
+              <input type="checkbox" id="rg-email-verify">
               <span class="rg-slider"></span>
             </label>
           </div>
@@ -1100,8 +1100,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
             </div>
             <div style="display:flex;align-items:center;gap:8px;margin-left:24px">
               <input type="number" id="rg-min-pass" min="8" max="20" value="10"
-                style="width:70px;padding:7px 10px;background:var(--input-bg,var(--panel));border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:14px;text-align:center"
-                onchange="saveRegSetting('reg_min_pass_len',Math.max(8,Math.min(20,+this.value||10)).toString())">
+                style="width:70px;padding:7px 10px;background:var(--input-bg,var(--panel));border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:14px;text-align:center">
               <span style="font-size:12px;color:var(--muted)" data-i18n="adm.authreg.chars_short">симв.</span>
             </div>
           </div>
@@ -1112,13 +1111,20 @@ tr:hover td{background:rgba(255,255,255,.02)}
             </div>
             <div style="margin-left:24px;flex:1;max-width:340px">
               <input type="text" id="rg-welcome-msg" maxlength="120"
-                style="width:100%;padding:7px 10px;background:var(--input-bg,var(--panel));border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px"
-                onblur="saveRegSetting('reg_welcome_msg',this.value.trim()||'Вітаємо!')">
+                style="width:100%;padding:7px 10px;background:var(--input-bg,var(--panel));border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px">
             </div>
           </div>
         </div>
 
-        <div id="rg-save-hint" style="font-size:12px;color:var(--accent);min-height:20px;padding-left:4px"></div>
+        <div style="display:flex;gap:10px;margin-top:16px;align-items:center">
+          <button class="btn btn-p" onclick="saveRegSettings()">
+            <svg class="adm-ico"><use href="#ico-check"/></svg> Зберегти
+          </button>
+          <button class="btn" onclick="_loadRegSettings()">
+            <svg class="adm-ico"><use href="#ico-refresh"/></svg> Скасувати
+          </button>
+          <span id="rg-save-hint" style="font-size:12px;color:var(--accent);margin-left:4px"></span>
+        </div>
       </div>
 
       <!-- EMAIL / SMTP SETTINGS -->
@@ -3617,7 +3623,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
           <label style="display:flex;align-items:center;gap:12px;cursor:pointer;padding:10px 14px;background:rgba(255,255,255,.04);border:1px solid var(--border2);border-radius:8px">
             <div style="position:relative;width:44px;height:24px;flex-shrink:0">
               <input type="checkbox" id="cities-ua-toggle" style="opacity:0;position:absolute;width:100%;height:100%;cursor:pointer;margin:0;z-index:1"
-                onchange="saveCitiesUaEnabled(this.checked)">
+                onchange="_updateCitiesToggleUI(this.checked)">
               <div id="cities-ua-track" style="position:absolute;inset:0;border-radius:12px;background:var(--red,#f87171);transition:background .2s"></div>
               <div id="cities-ua-thumb" style="position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.4)"></div>
             </div>
@@ -3632,22 +3638,31 @@ tr:hover td{background:rgba(255,255,255,.02)}
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;max-width:700px">
 
           <label style="display:flex;align-items:center;gap:10px;font-size:13px;cursor:pointer">
-            <input type="checkbox" id="wm-enabled" onchange="saveWMSetting('worldmap_enabled',this.checked?'1':'0')">
+            <input type="checkbox" id="wm-enabled">
             <span data-i18n="adm.worldmap.active">Карта світу активна (показувати перемикач)</span>
           </label>
 
           <label style="display:flex;align-items:center;gap:10px;font-size:13px;cursor:pointer">
-            <input type="checkbox" id="wm-default" onchange="saveWMSetting('worldmap_default',this.checked?'1':'0')">
+            <input type="checkbox" id="wm-default">
             <span data-i18n="adm.worldmap.default">Показувати карту світу за замовчуванням</span>
           </label>
 
           <div style="grid-column:span 2">
             <div style="font-size:12px;color:var(--muted);margin-bottom:6px" data-i18n="adm.worldmap.tile_url">URL тайлів</div>
+            <input type="text" id="wm-tile-url" style="width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:6px;background:var(--surface2);color:var(--text);font-size:12px;font-family:monospace" placeholder="https://basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png?key=ВАШ_КЛЮЧ">
+          </div>
+
+          <div style="grid-column:span 2">
+            <div style="font-size:12px;color:var(--muted);margin-bottom:6px">CARTO API-ключ</div>
             <div style="display:flex;gap:8px;align-items:center">
-              <input type="text" id="wm-tile-url" style="flex:1;padding:8px 10px;border:1px solid var(--border2);border-radius:6px;background:var(--surface2);color:var(--text);font-size:12px;font-family:monospace" placeholder="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png">
-              <button class="btn btn-p" onclick="saveWMSetting('worldmap_tile_url',document.getElementById('wm-tile-url').value)">
-                <svg class="adm-ico"><use href="#ico-check"/></svg> <span data-i18n="btn.save">Зберегти</span>
-              </button>
+              <input type="text" id="wm-carto-key" placeholder="вставте ключ з листа CARTO" style="flex:1;padding:8px 10px;border:1px solid var(--border2);border-radius:6px;background:var(--surface2);color:var(--text);font-size:12px;font-family:monospace">
+              <button class="btn" onclick="_wmApplyCartoKey()">Застосувати до пресетів</button>
+            </div>
+            <div style="font-size:11px;color:var(--muted);margin-top:4px">
+              CARTO тепер вимагає безкоштовний API-ключ для тайлів. Отримати:
+              <a href="https://carto.com/basemaps/apikey/" target="_blank" style="color:var(--accent)">carto.com/basemaps/apikey</a>
+              (email + домен сайту, ключ приходить на пошту миттєво, без реєстрації акаунта).
+              Вставте ключ сюди й натисніть «Застосувати до пресетів», потім оберіть стиль нижче.
             </div>
           </div>
 
@@ -3656,14 +3671,25 @@ tr:hover td{background:rgba(255,255,255,.02)}
             <div style="display:flex;gap:8px;flex-wrap:wrap">
               <button class="btn btn-p" onclick="_wmPreset('dark')">🌑 Dark Matter</button>
               <button class="btn btn-p" onclick="_wmPreset('positron')">☀️ Positron (Light)</button>
-              <button class="btn btn-p" onclick="_wmPreset('osm')">🗺 OpenStreetMap</button>
+              <button class="btn btn-p" onclick="_wmPreset('osm')">🗺 OpenStreetMap (без ключа)</button>
             </div>
           </div>
 
           <div style="grid-column:span 2;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:12px;color:var(--muted);line-height:1.6">
             <strong style="color:var(--text)" data-i18n="adm.worldmap.how_to_use">Як використовувати:</strong><br>
             <span data-i18n="adm.worldmap.leaflet_info1">Карта світу підключається через бібліотеку Leaflet.js. Тайли завантажуються браузером напряму з CARTO/OSM — без навантаження на сервер.</span><br>
-            <span data-i18n="adm.worldmap.leaflet_info2">Файл</span> <code>/js/leaflet.js</code> <span data-i18n="adm.worldmap.leaflet_info3">та</span> <code>/js/leaflet.css</code> <span data-i18n="adm.worldmap.leaflet_info4">мають бути на сервері (завантажити з</span> <a href="https://unpkg.com/leaflet@1.9.4/dist/" target="_blank" style="color:var(--accent)">unpkg.com</a>).
+            <span data-i18n="adm.worldmap.leaflet_info2">Файл</span> <code>/js/leaflet.js</code> <span data-i18n="adm.worldmap.leaflet_info3">та</span> <code>/js/leaflet.css</code> <span data-i18n="adm.worldmap.leaflet_info4">мають бути на сервері (завантажити з</span> <a href="https://unpkg.com/leaflet@1.9.4/dist/" target="_blank" style="color:var(--accent)">unpkg.com</a>).<br>
+            <span>Стилі Dark Matter/Positron (CARTO) з 2026 року вимагають безкоштовний API-ключ у URL — OpenStreetMap ключа не потребує. Той самий URL тайлів застосовується і на карті світу, і у формі додавання запису.</span>
+          </div>
+
+          <div style="grid-column:span 2;display:flex;gap:10px;margin-top:2px;align-items:center">
+            <button class="btn btn-p" onclick="saveWMSettings()">
+              <svg class="adm-ico"><use href="#ico-check"/></svg> <span data-i18n="btn.save">Зберегти</span>
+            </button>
+            <button class="btn" onclick="loadWMSettings()">
+              <svg class="adm-ico"><use href="#ico-refresh"/></svg> <span data-i18n="btn.cancel">Скасувати</span>
+            </button>
+            <span id="wm-save-hint" style="font-size:11px;color:var(--green);margin-left:4px"></span>
           </div>
 
         </div>
@@ -4333,7 +4359,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
               <div class="rg-row-desc" data-i18n="adm.google.enable_login_desc">Показувати кнопку «Увійти через Google» на сторінці авторизації</div>
             </div>
             <label class="rg-toggle">
-              <input type="checkbox" id="g-allow-google" onchange="_saveGoogleToggle('reg_allow_google', this.checked)">
+              <input type="checkbox" id="g-allow-google">
               <span class="rg-slider"></span>
             </label>
           </div>
@@ -4393,7 +4419,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
         </div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:6px">
           <button class="btn btn-p" onclick="_saveGoogleBatch()">
-            <svg class="adm-ico"><use href="#ico-check"/></svg> <span data-i18n="adm.google.save_console_analytics">Зберегти Search Console + Analytics</span>
+            <svg class="adm-ico"><use href="#ico-check"/></svg> <span data-i18n="adm.google.save_console_analytics">Зберегти</span>
           </button>
         </div>
         <div id="g-batch-status" style="font-size:12px;min-height:14px;margin-bottom:18px"></div>
@@ -5078,7 +5104,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
               <div class="rg-row-desc">Показувати мікро-чат на сайті</div>
             </div>
             <label class="rg-toggle">
-              <input type="checkbox" id="chat-cfg-enabled" onchange="chatSaveCfg('chat_enabled',this.checked?'1':'0')">
+              <input type="checkbox" id="chat-cfg-enabled">
               <span class="rg-slider"></span>
             </label>
           </div>
@@ -5087,16 +5113,23 @@ tr:hover td{background:rgba(255,255,255,.02)}
               <div class="rg-row-label">Кількість повідомлень в історії</div>
               <div class="rg-row-desc">Скільки останніх повідомлень завантажувати при відкритті (10–200)</div>
             </div>
-            <input type="number" id="chat-cfg-count" min="10" max="200" style="width:70px"
-              onchange="chatSaveCfg('chat_history_count',this.value)">
+            <input type="number" id="chat-cfg-count" min="10" max="200" style="width:70px">
           </div>
           <div class="rg-row">
             <div class="rg-row-info">
               <div class="rg-row-label">Інтервал оновлення (мс)</div>
               <div class="rg-row-desc">Як часто чат перевіряє нові повідомлення (мінімум 2000)</div>
             </div>
-            <input type="number" id="chat-cfg-interval" min="2000" max="30000" step="1000" style="width:90px"
-              onchange="chatSaveCfg('chat_poll_interval',this.value)">
+            <input type="number" id="chat-cfg-interval" min="2000" max="30000" step="1000" style="width:90px">
+          </div>
+          <div style="display:flex;gap:10px;margin-top:12px;align-items:center">
+            <button class="btn btn-p" onclick="chatSaveSettings()">
+              <svg class="adm-ico"><use href="#ico-check"/></svg> Зберегти
+            </button>
+            <button class="btn" onclick="chatLoadSettings()">
+              <svg class="adm-ico"><use href="#ico-refresh"/></svg> Скасувати
+            </button>
+            <span id="chat-cfg-save-hint" style="font-size:11px;color:var(--green);margin-left:4px"></span>
           </div>
 
           <!-- Чат-боти -->
@@ -8053,11 +8086,23 @@ async function _loadRegSettings() {
   } catch(e) { console.error('_loadRegSettings', e); }
 }
 
-async function saveRegSetting(key, val) {
+async function saveRegSettings() {
   try {
-    const r = await fetch(`${API}/api/admin/color`, {
+    const chkVal = id => document.getElementById(id)?.checked ? '1' : '0';
+    const selVal = id => document.getElementById(id)?.value || '';
+    const minPass = Math.max(8, Math.min(20, +document.getElementById('rg-min-pass')?.value || 10)).toString();
+    const welcome = document.getElementById('rg-welcome-msg')?.value.trim() || 'Вітаємо!';
+    const r = await fetch(`${API}/api/admin/colors/batch`, {
       method: 'PUT', headers: {...authH(), 'Content-Type': 'application/json'},
-      body: JSON.stringify({key, value: val})
+      body: JSON.stringify([
+        {key: 'reg_enabled',              value: chkVal('rg-enabled')},
+        {key: 'reg_allow_google',         value: chkVal('rg-allow-google')},
+        {key: 'reg_field_mid',            value: selVal('rg-field-mid')},
+        {key: 'reg_field_phone',          value: selVal('rg-field-phone')},
+        {key: 'reg_require_email_verify', value: chkVal('rg-email-verify')},
+        {key: 'reg_min_pass_len',         value: minPass},
+        {key: 'reg_welcome_msg',          value: welcome},
+      ])
     });
     if (!r.ok) throw new Error();
     const hint = document.getElementById('rg-save-hint');
@@ -11232,24 +11277,13 @@ async function _loadGoogleSettings() {
   } catch(e) { console.error('_loadGoogleSettings', e); }
 }
 
-async function _saveGoogleToggle(key, val) {
-  try {
-    const r = await fetch(`${API}/api/admin/color`, {
-      method: 'PUT',
-      headers: Object.assign(authH(), {'Content-Type': 'application/json'}),
-      body: JSON.stringify({ key, value: val ? '1' : '0' })
-    });
-    if (!r.ok) throw new Error(r.status);
-    showN('Збережено');
-  } catch(e) { showN('Помилка: ' + e.message, true); }
-}
-
 async function _saveGoogleBatch() {
   const g   = id => document.getElementById(id);
   const val = id => g(id)?.value.trim() || '';
   const chk = id => g(id)?.checked ? '1' : '0';
   const st  = g('g-batch-status');
   const payload = [
+    { key: 'reg_allow_google',         value: chk('g-allow-google') },
     { key: 'google_site_verification', value: val('g-site-verification') },
     { key: 'google_analytics_id',      value: val('g-analytics-id') },
     { key: 'google_analytics_enabled', value: chk('g-analytics-enabled') },
@@ -13635,6 +13669,8 @@ function loadWMSettings() {
   const u = document.getElementById('wm-tile-url');
   if (u) u.value = g('worldmap_tile_url', 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png');
   _updateCitiesToggleUI(g('cities_ua_enabled', '1') === '1');
+  const hint = document.getElementById('wm-save-hint');
+  if (hint) hint.textContent = '';
 }
 
 function _updateCitiesToggleUI(enabled) {
@@ -13646,29 +13682,33 @@ function _updateCitiesToggleUI(enabled) {
   if (thumb) thumb.style.transform = enabled ? 'translateX(20px)' : 'translateX(0)';
 }
 
-async function saveCitiesUaEnabled(enabled) {
-  _updateCitiesToggleUI(enabled);
-  await saveWMSetting('cities_ua_enabled', enabled ? '1' : '0');
-}
-
-async function saveWMSetting(key, value) {
+async function saveWMSettings() {
   try {
-    const r = await fetch(`${API}/api/admin/color`, {
-      method: 'PUT',
-      headers: authH({'Content-Type': 'application/json'}),
-      credentials: 'include',
-      body: JSON.stringify({key, value})
+    const chkVal = id => document.getElementById(id)?.checked ? '1' : '0';
+    const items = [
+      {key: 'worldmap_enabled',   value: chkVal('wm-enabled')},
+      {key: 'worldmap_default',   value: chkVal('wm-default')},
+      {key: 'worldmap_tile_url',  value: document.getElementById('wm-tile-url')?.value || ''},
+      {key: 'cities_ua_enabled',  value: document.getElementById('cities-ua-toggle')?.checked ? '1' : '0'},
+    ];
+    const r = await fetch(`${API}/api/admin/colors/batch`, {
+      method: 'PUT', headers: {...authH(), 'Content-Type': 'application/json'},
+      body: JSON.stringify(items)
     });
-    if (!r.ok) throw new Error(r.status);
-    if (COLORS[key]) COLORS[key].value = value; else COLORS[key] = {value, label: key};
-    _broadcastColors([{key, value}]);
-    showN('Збережено');
+    if (!r.ok) throw new Error();
+    items.forEach(({key, value}) => { if (COLORS[key]) COLORS[key].value = value; else COLORS[key] = {value, label: key}; });
+    _broadcastColors(items);
+    const hint = document.getElementById('wm-save-hint');
+    if (hint) { hint.textContent = 'Збережено'; setTimeout(() => hint.textContent = '', 2500); }
   } catch { showN('Помилка збереження', true); }
 }
 
+// CARTO з 2026 року вимагає API-ключ (query-параметр key=) для raster-тайлів dark_all/light_all —
+// новий домен без {s}-субдоменів: basemaps.cartocdn.com/rastertiles/{style}/...
+// OSM ключа не потребує, лишається без змін.
 const _WM_PRESETS = {
-  dark:     'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-  positron: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+  dark:     'https://basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png?key={carto_key}',
+  positron: 'https://basemaps.cartocdn.com/rastertiles/light_all/{z}/{x}/{y}.png?key={carto_key}',
   osm:      'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
 };
 
@@ -13676,8 +13716,15 @@ function _wmPreset(name) {
   const url = _WM_PRESETS[name];
   if (!url) return;
   const el = document.getElementById('wm-tile-url');
-  if (el) el.value = url;
-  saveWMSetting('worldmap_tile_url', url);
+  const key = document.getElementById('wm-carto-key')?.value.trim();
+  if (el) el.value = key ? url.replace('{carto_key}', encodeURIComponent(key)) : url;
+  // Пресет лише заповнює поле — застосовується разом з рештою полів по кнопці "Зберегти"
+}
+
+function _wmApplyCartoKey() {
+  const key = document.getElementById('wm-carto-key')?.value.trim();
+  if (!key) { showN('Спочатку вставте CARTO API-ключ', true); return; }
+  showN('Ключ збережено — тепер оберіть стиль нижче (Dark Matter / Positron), він підставить ключ автоматично');
 }
 /* ── /Карта світу ──────────────────────────────────── */
 </script>

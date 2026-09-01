@@ -343,16 +343,30 @@
       });
   };
 
-  window.chatSaveCfg = function (key, value) {
-    fetch('/api/admin/color', {
+  window.chatSaveSettings = function () {
+    var en  = document.getElementById('chat-cfg-enabled');
+    var cnt = document.getElementById('chat-cfg-count');
+    var itv = document.getElementById('chat-cfg-interval');
+    var hint = document.getElementById('chat-cfg-save-hint');
+    var payload = [
+      { key: 'chat_enabled',        value: (en && en.checked) ? '1' : '0' },
+      { key: 'chat_history_count',  value: String((cnt && cnt.value) || '50') },
+      { key: 'chat_poll_interval',  value: String((itv && itv.value) || '4000') },
+    ];
+    fetch('/api/admin/colors/batch', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ key: key, value: String(value) })
+      body: JSON.stringify(payload)
     })
       .then(function (r) { return r.json(); })
       .then(function (d) {
-        if (window.showN) window.showN(d.ok ? 'Збережено' : (d.detail || 'Помилка'), !d.ok);
-      });
+        if (d.ok) {
+          if (hint) { hint.textContent = 'Збережено'; setTimeout(function(){ hint.textContent = ''; }, 2500); }
+        } else if (window.showN) {
+          window.showN(d.detail || 'Помилка', true);
+        }
+      })
+      .catch(function () { if (window.showN) window.showN('Помилка збереження', true); });
   };
 
   /* ─── авто-ініціалізація при відкритті секції */

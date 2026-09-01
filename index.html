@@ -4986,7 +4986,11 @@ function _latLngToSvg(lat, lng) {
 function _initMaddMap() {
   if (_maddMap) { _maddMap.invalidateSize(); return; }
   _maddMap = L.map('madd-map', {center:[49.0,32.0], zoom:5, attributionControl:false});
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {maxZoom:19, attribution:''}).addTo(_maddMap);
+  // Той самий URL тайлів, що й для карти світу (адмінка → Карта світу) — єдине джерело,
+  // щоб зміна CARTO API-ключа в адмінці одразу діяла і тут, без правок коду.
+  const tileUrl = getC('worldmap_tile_url') ||
+    'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+  L.tileLayer(tileUrl, {maxZoom:19, attribution:'', subdomains:'abcd'}).addTo(_maddMap);
   _maddMap.on('click', function(e) { _maddMapSetPoint(e.latlng.lat, e.latlng.lng); });
 }
 function _maddMapSetPoint(lat, lng) {
