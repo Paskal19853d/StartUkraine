@@ -355,18 +355,30 @@
     ];
     fetch('/api/admin/colors/batch', {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      headers: Object.assign({ 'Content-Type': 'application/json' }, (typeof authH === 'function' ? authH() : {})),
       body: JSON.stringify(payload)
     })
-      .then(function (r) { return r.json(); })
-      .then(function (d) {
-        if (d.ok) {
+      .then(function (r) {
+        return r.json().catch(function () { return {}; }).then(function (d) {
+          return { ok: r.ok, status: r.status, data: d };
+        });
+      })
+      .then(function (res) {
+        if (res.ok && res.data.ok) {
+          payload.forEach(function (item) {
+            if (!window.COLORS) window.COLORS = {};
+            if (!window.COLORS[item.key]) window.COLORS[item.key] = { value: item.value, label: item.key };
+            else window.COLORS[item.key].value = item.value;
+          });
+          if (typeof _broadcastColors === 'function') _broadcastColors(payload);
           if (hint) { hint.textContent = 'Збережено'; setTimeout(function(){ hint.textContent = ''; }, 2500); }
         } else if (window.showN) {
-          window.showN(d.detail || 'Помилка', true);
+          var msg = (res.data && res.data.detail) || ('Помилка збереження (HTTP ' + res.status + ')');
+          window.showN(typeof msg === 'string' ? msg : 'Помилка збереження', true);
         }
       })
-      .catch(function () { if (window.showN) window.showN('Помилка збереження', true); });
+      .catch(function (e) { if (window.showN) window.showN('Помилка збереження: ' + (e && e.message || 'мережа'), true); });
   };
 
   /* ─── авто-ініціалізація при відкритті секції */

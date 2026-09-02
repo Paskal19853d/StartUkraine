@@ -251,6 +251,7 @@
       ? colors.chat_enabled.value : '1') !== '0';
     var mc = document.getElementById('micro-chat');
     if (!mc) return;
+    if (window._applyChatFabVisibility) window._applyChatFabVisibility();
     if (!enabled) { mc.classList.add('mc-hidden'); return; }
     mc.classList.remove('mc-hidden');
 

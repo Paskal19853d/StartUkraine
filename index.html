@@ -5386,6 +5386,13 @@ function _onColorsBC(data) {
   // Якщо змінились соцмережі — одразу перемалювати бар
   const _socialKeys = /^social_/;
   if (Object.keys(data.colors).some(k => _socialKeys.test(k))) applySocialLinks();
+  // Чат увімкнено/вимкнено адміном — одразу сховати/показати панель і FAB-кнопку
+  if ('chat_enabled' in data.colors) {
+    const mc = document.getElementById('micro-chat');
+    const enabled = getC('chat_enabled', '1') !== '0';
+    if (mc) mc.classList.toggle('mc-hidden', !enabled);
+    if (window._applyChatFabVisibility) window._applyChatFabVisibility();
+  }
 }
 try {
   const _colorBC = new BroadcastChannel('zoryana_colors');
@@ -5549,6 +5556,16 @@ async function checkDeviceAccess() {
       }
     }
     if (mcFab) mcFab.addEventListener('click', function(e){ e.stopPropagation(); mcFabToggle(); });
+
+    // Приховати FAB-кнопку чату на мобільних, якщо чат вимкнено адміном
+    // (сама панель #micro-chat вже ховається через .mc-hidden в _mcInit(),
+    // але кнопка відкриття залишалась видимою й клікабельною без цього)
+    window._applyChatFabVisibility = function() {
+      if (!mcFab) return;
+      const enabled = getC('chat_enabled', '1') !== '0';
+      mcFab.style.display = enabled ? '' : 'none';
+    };
+    window._applyChatFabVisibility(); // застосувати одразу — _mcInit() вже міг відпрацювати раніше цього блоку
 
     // Показати бейдж при новому повідомленні (хук для chat.js)
     window._mcFabNotify = function(count) {

@@ -110,7 +110,12 @@
       "Bash(cat)",
       "Bash(python 'C:\\\\Users\\\\Paskal\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\d--OSPanel-OpenServer-domains-localhost-treetex\\\\be38064f-3cdf-4a68-8f21-6b7b34001005\\\\scratchpad/check_inline_js2.py' index.html 'C:\\\\Users\\\\Paskal\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\d--OSPanel-OpenServer-domains-localhost-treetex\\\\be38064f-3cdf-4a68-8f21-6b7b34001005\\\\scratchpad/idx3.js')",
       "Bash(python 'C:\\\\Users\\\\Paskal\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\d--OSPanel-OpenServer-domains-localhost-treetex\\\\be38064f-3cdf-4a68-8f21-6b7b34001005\\\\scratchpad/check_inline_js2.py' admin.html 'C:\\\\Users\\\\Paskal\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\d--OSPanel-OpenServer-domains-localhost-treetex\\\\be38064f-3cdf-4a68-8f21-6b7b34001005\\\\scratchpad/adm3.js')",
-      "Bash(python 'C:\\\\Users\\\\Paskal\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\d--OSPanel-OpenServer-domains-localhost-treetex\\\\be38064f-3cdf-4a68-8f21-6b7b34001005\\\\scratchpad/check_inline_js2.py' mobile.html 'C:\\\\Users\\\\Paskal\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\d--OSPanel-OpenServer-domains-localhost-treetex\\\\be38064f-3cdf-4a68-8f21-6b7b34001005\\\\scratchpad/mob3.js')"
+      "Bash(python 'C:\\\\Users\\\\Paskal\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\d--OSPanel-OpenServer-domains-localhost-treetex\\\\be38064f-3cdf-4a68-8f21-6b7b34001005\\\\scratchpad/check_inline_js2.py' mobile.html 'C:\\\\Users\\\\Paskal\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\d--OSPanel-OpenServer-domains-localhost-treetex\\\\be38064f-3cdf-4a68-8f21-6b7b34001005\\\\scratchpad/mob3.js')",
+      "Bash(python 'C:\\\\Users\\\\Paskal\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\d--OSPanel-OpenServer-domains-localhost-treetex\\\\be38064f-3cdf-4a68-8f21-6b7b34001005\\\\scratchpad/check_inline_js2.py' index.html 'C:\\\\Users\\\\Paskal\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\d--OSPanel-OpenServer-domains-localhost-treetex\\\\be38064f-3cdf-4a68-8f21-6b7b34001005\\\\scratchpad/idx4.js')",
+      "Bash(node -c \"js/chat.js\")",
+      "Bash(node -c \"js/chat-admin.js\")",
+      "Bash(node -c js/chat-admin.js)",
+      "Bash(python __TRACKED_VAR__/check_inline_js2.py admin.html __TRACKED_VAR__/adm5.js)"
     ],
     "additionalDirectories": [
       "C:\\Users\\Paskal\\Downloads"
