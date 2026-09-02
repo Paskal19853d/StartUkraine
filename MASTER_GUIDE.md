@@ -718,7 +718,7 @@ redis[hiredis]             — async Redis
 python-jose[cryptography]  — JWT токени
 passlib[bcrypt]            — bcrypt хешування
 slowapi                    — rate limiting
-httpx                      — async HTTP клієнт (для ДІЯ OAuth)
+httpx                      — async HTTP клієнт
 ```
 
 ### Цільова база даних (MySQL InnoDB)
@@ -737,8 +737,6 @@ INDEX idx_approved (approved)
 FULLTEXT INDEX idx_fulltext (last, first, descr)
 
 -- Додати до users:
-ALTER TABLE users ADD COLUMN diia_id TEXT UNIQUE;
-ALTER TABLE users ADD COLUMN diia_verified INTEGER DEFAULT 0;
 ALTER TABLE users ADD COLUMN real_name TEXT DEFAULT '';
 ALTER TABLE users ADD COLUMN auth_method TEXT DEFAULT 'password';
 ```
@@ -761,14 +759,6 @@ register:   3/годину на IP
 search:     30/хвилину на IP
 like:       1/2 секунди на fingerprint (вже є)
 api:        100/хвилину загально
-```
-
-### Авторизація через ДІЯ (цільова)
-```
-Flow: Кнопка "Увійти через Дія" → OAuth 2.0 redirect → 
-      id.gov.ua авторизація → callback → JWT token
-Fallback: BankID (якщо ДІЯ недоступна)
-Потребує: реєстрації на id.gov.ua, client_id + client_secret у .env
 ```
 
 ### Масштабування WebSocket
@@ -845,7 +835,6 @@ async def broadcast_via_redis(data: dict):
 
 ### Фаза 4 — Нові функції
 - [ ] Оплата (Monobank API / LiqPay)
-- [ ] ДІЯ OAuth 2.0
 - [ ] Система рейтингу (зірки) з таблицею `rating_log`
 - [ ] Disclaimer вікно при першому вході
 - [ ] Антибот: challenge зображеннями

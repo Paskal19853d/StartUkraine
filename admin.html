@@ -566,6 +566,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
   <symbol id="ico-device" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><rect x="9" y="18" width="6" height="1" rx="0.5" fill="currentColor" stroke="none"/><rect x="9" y="6" width="6" height="8" rx="1"/></symbol>
   <symbol id="ico-tour" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8" fill="currentColor" stroke="none"/></symbol>
   <symbol id="ico-ad" viewBox="0 0 24 24"><path d="M3 11v2a2 2 0 0 0 2 2h1l3 6 2-1-2.5-5H10l9 4V5l-9 4H5a2 2 0 0 0-2 2z"/><line x1="19" y1="9" x2="19" y2="15"/></symbol>
+  <symbol id="ico-phone" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></symbol>
 </svg>
 
 <!-- Hamburger (mobile) -->
@@ -622,6 +623,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
     <div class="nav-item"        draggable="true" onclick="showSec('device')"    data-s="device">   <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-device"/></svg></span><span data-i18n="nav.device">Пристрої</span></div>
     <div class="nav-item"        draggable="true" onclick="showSec('tour')"      data-s="tour">      <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-tour"/></svg></span><span data-i18n="nav.tour">Підказки</span></div>
     <div class="nav-item"        draggable="true" onclick="showSec('adv')"       data-s="adv">       <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-ad"/></svg></span><span data-i18n="nav.adv">Реклама</span></div>
+    <div class="nav-item"        draggable="true" onclick="showSec('addmode')"   data-s="addmode">   <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-phone"/></svg></span><span data-i18n="nav.addmode">Додавання людей</span></div>
     <div class="nav-item"        draggable="true" onclick="showSec('chat')"      data-s="chat">      <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-candle"/></svg></span><span data-i18n="nav.chat">Чат</span><span class="nb" id="chat-nb" style="display:none">0</span></div>
     <div class="nav-item"        draggable="true" onclick="showSec('legacy')" data-s="legacy"><span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-hourglass"/></svg></span><span data-i18n="nav.legacy">Спадщина</span></div>
     <div class="nav-item"        draggable="true" onclick="showSec('devmode')" data-s="devmode"><span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-doc"/></svg></span><span data-i18n="nav.devmode">Режим розробки</span></div>
@@ -883,6 +885,13 @@ tr:hover td{background:rgba(255,255,255,.02)}
           <input id="mem-search" type="text" data-i18n-placeholder="adm.mem.search_placeholder" placeholder="Пошук за ПІБ, позивним, підрозділом..."
             style="flex:1;max-width:420px;background:var(--surface2);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;outline:none"
             oninput="memDoSearch(this.value)">
+          <select id="mem-f-category" onchange="memDoSearch(document.getElementById('mem-search').value)"
+            style="background:var(--surface2);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px">
+            <option value="all" data-i18n="adm.mem.all_categories">Всі категорії</option>
+            <option value="military">Військовослужбовці</option>
+            <option value="civilian_war">Цивільні (війна)</option>
+            <option value="civilian">Померлі (поза війною)</option>
+          </select>
           <span id="mem-search-hint" style="font-size:11px;color:var(--muted)"></span>
         </div>
         <div id="mem-pagination-top" style="display:flex;gap:8px;align-items:center;justify-content:center;margin-bottom:10px;flex-wrap:wrap;">
@@ -901,6 +910,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
               <th style="width:100px"><div class="tbl-resizer"></div><span data-i18n="adm.mem.col_loc">Місце загибелі</span></th>
               <th style="width:100px"><div class="tbl-resizer"></div><span data-i18n="adm.mem.col_bury">Місце поховання</span></th>
               <th style="width:80px"><div class="tbl-resizer"></div><span data-i18n="circumstances">Обставини</span></th>
+              <th style="width:70px"><div class="tbl-resizer"></div><span data-i18n="adm.mem.col_category">Категорія</span></th>
               <th style="width:62px"><div class="tbl-resizer"></div><span data-i18n="adm.mem.col_status">Статус</span></th>
               <th style="width:70px"><div class="tbl-resizer"></div><span data-i18n="adm.mem.col_added_by">Додав</span></th>
               <th style="width:38px"><div class="tbl-resizer"></div>★</th>
@@ -4851,6 +4861,68 @@ tr:hover td{background:rgba(255,255,255,.02)}
         </div>
       </div><!-- /sec-device -->
 
+      <!-- ── ДОДАВАННЯ ЛЮДЕЙ (free/request) ── -->
+      <div id="sec-addmode" class="section">
+        <div class="sec-title"><svg class="adm-ico"><use href="#ico-phone"/></svg> <span data-i18n="adm.addmode.title">Додавання людей</span></div>
+        <p style="font-size:12px;color:var(--muted);margin:0 0 20px;line-height:1.6" data-i18n="adm.addmode.hint">
+          У режимі «через заявку» публічна форма додавання прихована — відвідувач бачить повідомлення з телефоном кол-центру. Адміністратори й модератори завжди можуть додавати записи незалежно від режиму.
+        </p>
+
+        <div class="rg-row">
+          <div class="rg-row-info">
+            <div class="rg-row-label" data-i18n="adm.addmode.mode_label">Режим додавання</div>
+            <div class="rg-row-desc" data-i18n="adm.addmode.mode_desc">Безкоштовно самостійно / Через заявку в кол-центр</div>
+          </div>
+          <select class="rg-sel" id="addmode-mode">
+            <option value="free" data-i18n="adm.addmode.free">Безкоштовно самостійно</option>
+            <option value="request" data-i18n="adm.addmode.request">Через заявку (кол-центр)</option>
+          </select>
+        </div>
+
+        <div class="rg-row" style="align-items:flex-start;padding-top:14px">
+          <div class="rg-row-info">
+            <div class="rg-row-label" data-i18n="adm.addmode.phone_label">Телефон кол-центру</div>
+            <div class="rg-row-desc" data-i18n="adm.addmode.phone_desc">Формат: +380XXXXXXXXX</div>
+          </div>
+          <input type="text" id="addmode-phone" placeholder="+380XXXXXXXXX"
+            style="flex-shrink:0;width:220px;padding:8px 10px;font-size:12px;border-radius:6px;border:1px solid var(--border2);background:var(--surface2);color:var(--text)">
+        </div>
+
+        <div class="rg-row" style="align-items:flex-start;padding-top:14px">
+          <div class="rg-row-info">
+            <div class="rg-row-label" data-i18n="adm.addmode.msg_uk_label">Повідомлення (укр)</div>
+          </div>
+          <div style="flex-shrink:0;width:300px">
+            <textarea id="addmode-msg-uk" rows="3"
+              style="width:100%;padding:8px 10px;font-size:12px;border-radius:6px;border:1px solid var(--border2);
+                     background:var(--surface2);color:var(--text);font-family:inherit;resize:vertical;line-height:1.5"
+            ></textarea>
+          </div>
+        </div>
+
+        <div class="rg-row" style="align-items:flex-start;padding-top:14px">
+          <div class="rg-row-info">
+            <div class="rg-row-label" data-i18n="adm.addmode.msg_en_label">Повідомлення (англ)</div>
+          </div>
+          <div style="flex-shrink:0;width:300px">
+            <textarea id="addmode-msg-en" rows="3"
+              style="width:100%;padding:8px 10px;font-size:12px;border-radius:6px;border:1px solid var(--border2);
+                     background:var(--surface2);color:var(--text);font-family:inherit;resize:vertical;line-height:1.5"
+            ></textarea>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:10px;margin-top:16px;align-items:center">
+          <button class="btn btn-p" onclick="saveAddModeSettings()">
+            <svg class="adm-ico"><use href="#ico-check"/></svg> Зберегти
+          </button>
+          <button class="btn" onclick="loadAddModeSettings()">
+            <svg class="adm-ico"><use href="#ico-refresh"/></svg> Скасувати
+          </button>
+          <span id="addmode-save-hint" style="font-size:11px;color:var(--green);margin-left:4px"></span>
+        </div>
+      </div><!-- /sec-addmode -->
+
       <!-- ── ПІДКАЗКИ САЙТУ (ОНБОРДИНГ-ТУР) ── -->
       <div id="sec-tour" class="section">
         <div class="sec-title"><svg class="adm-ico"><use href="#ico-tour"/></svg> Підказки сайту</div>
@@ -5824,6 +5896,48 @@ tr:hover td{background:rgba(255,255,255,.02)}
       <div class="em-f"><label>Статус</label>
         <select id="e-approved"><option value="0">На модерації</option><option value="1">Схвалено</option></select>
       </div>
+      <div class="em-f"><label>Категорія</label>
+        <select id="e-category" onchange="_updateAdminDeathReasonOptions()">
+          <option value="military">Військовослужбовець</option>
+          <option value="civilian_war">Цивільний (від війни)</option>
+          <option value="civilian">Померлий (поза війною)</option>
+        </select>
+      </div>
+      <div class="em-f"><label>Причина смерті</label><select id="e-death-reason"></select></div>
+      <div class="em-f"><label>Громадянство</label>
+        <select id="e-citizenship">
+          <option value="">— не вказано —</option>
+          <option value="ukraine">Україна</option><option value="poland">Польща</option>
+          <option value="usa">США</option><option value="canada">Канада</option>
+          <option value="uk">Велика Британія</option><option value="germany">Німеччина</option>
+          <option value="moldova">Молдова</option><option value="belarus">Білорусь</option>
+          <option value="georgia">Грузія</option><option value="armenia">Вірменія</option>
+          <option value="other">Інше</option>
+        </select>
+      </div>
+      <div class="em-f"><label>Національність</label>
+        <select id="e-nationality">
+          <option value="">— не вказано —</option>
+          <option value="ukrainian">Українець/Українка</option>
+          <option value="polish">Поляк/Полька</option>
+          <option value="russian">Русский/Русская</option>
+          <option value="belarusian">Білорус/Білоруска</option>
+          <option value="moldovan">Молдаванин/Молдаванка</option>
+          <option value="jewish">Єврей/Єврейка</option>
+          <option value="crimean_tatar">Кримський татарин/Кримська татарка</option>
+          <option value="bulgarian">Болгарин/Болгарка</option>
+          <option value="hungarian">Угорець/Угорка</option>
+          <option value="romanian">Румун/Румунка</option>
+          <option value="armenian">Вірменин/Вірменка</option>
+          <option value="georgian">Грузин/Грузинка</option>
+          <option value="german">Німець/Німка</option>
+          <option value="other">Інше</option>
+        </select>
+      </div>
+      <div class="em-f"><label style="display:flex;align-items:center;gap:6px;margin-top:22px"><input type="checkbox" id="e-show-creator" style="width:auto"> Показувати автора публічно</label></div>
+      <div class="em-f em-full" style="font-size:11px;color:rgba(150,180,210,.6)">
+        Додав: <span id="e-added-by-ro">—</span> · Автор (uid): <span id="e-created-by-ro">—</span>
+      </div>
       <div class="em-f"><label>Позивний <span id="e-grp-cnt" style="float:right;font-weight:400;color:rgba(150,180,210,.5)">0/50</span></label><input id="e-grp" maxlength="50" oninput="_V.text(this)"></div>
       <div class="em-f em-full"><label>Підрозділ <span id="e-unit-cnt" style="float:right;font-weight:400;color:rgba(150,180,210,.5)">0/200</span></label><input id="e-unit" maxlength="200" placeholder="напр. 82 ДШВ 3в 1р" oninput="_V.text(this)"></div>
       <div class="em-f"><label>Звання *</label>
@@ -6070,7 +6184,7 @@ async function tryAutoLogin() {
   } catch { _admCookieDel(AUTH_COOKIE); }
 }
 
-/* ── OAuth callback (Google/Дія повертають сюди після /admin?next=admin) ── */
+/* ── OAuth callback (Google повертає сюди після /admin?next=admin) ── */
 async function checkOAuthCallback() {
   const p = new URLSearchParams(location.search);
   if (p.get('oauth') === 'success') {
@@ -6168,6 +6282,7 @@ function showSec(id) {
   if(id==='silence')   _loadSilenceSettings();
   if(id==='portfolio') ptLoad();
   if(id==='device')    loadDeviceSettings();
+  if(id==='addmode')   loadAddModeSettings();
   if(id==='tour')      loadTourSettings();
   if(id==='adv')       loadAdVideoSettings();
   if(id==='worldmap')  loadWMSettings();
@@ -7197,16 +7312,21 @@ function _memSyncSel() {
 
 function _memApplyFilter(q) {
   _memSearchQ = (q || '').toLowerCase().trim();
+  const catFilter = document.getElementById('mem-f-category')?.value || 'all';
+  let base = allPeople;
+  if (catFilter !== 'all') {
+    base = base.filter(p => (p.category || 'military') === catFilter);
+  }
   if (!_memSearchQ) {
-    filteredPeople = allPeople;
+    filteredPeople = base;
   } else {
-    filteredPeople = allPeople.filter(p => {
+    filteredPeople = base.filter(p => {
       const s = [p.last,p.first,p.mid,p.grp,p.unit,p.rank,p.loc,String(p.id||'')].filter(Boolean).join(' ').toLowerCase();
       return s.includes(_memSearchQ);
     });
   }
   const hint = document.getElementById('mem-search-hint');
-  if (hint) hint.textContent = _memSearchQ ? `Знайдено: ${filteredPeople.length} з ${allPeople.length}` : `Всього: ${allPeople.length}`;
+  if (hint) hint.textContent = (_memSearchQ || catFilter !== 'all') ? `Знайдено: ${filteredPeople.length} з ${allPeople.length}` : `Всього: ${allPeople.length}`;
   memCurrentPage = 0;
   renderMemPage();
 }
@@ -7232,6 +7352,7 @@ function renderMemPage() {
       : `<img src="/img/foto_false.png" style="width:36px;height:36px;object-fit:cover;border-radius:4px;display:block;margin:auto;opacity:.35">`;
     const rankStr = [p.rank, p.position].filter(Boolean).join(' / ') || '—';
     const dates = [p.birth, p.death].filter(Boolean).join(' – ') || '—';
+    const catLabel = {military:'Військ.', civilian_war:'Цив.(війна)', civilian:'Цив.'}[p.category] || 'Військ.';
     const safeNameJs = (p.last + ' ' + p.first).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
     return `<tr>
       <td style="color:var(--muted);font-size:11px;text-align:center">${p.id}</td>
@@ -7247,6 +7368,7 @@ function renderMemPage() {
       <td style="font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${h(p.loc||'')}">${h(p.loc)||'—'}</td>
       <td style="font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${h(p.bury||'')}">${h(p.bury)||'—'}</td>
       <td style="font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${h(p.circ||'')}">${h(p.circ)||'—'}</td>
+      <td style="font-size:10px;text-align:center;white-space:nowrap">${catLabel}</td>
       <td style="text-align:center"><span class="badge ${p.approved?'bg':'by'}">${p.approved?'OK':'Мод.'}</span></td>
       <td style="font-size:10px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${h(p.added_by||'')}">${h(p.added_by)||'—'}</td>
       <td style="text-align:center;font-size:11px">⭐${p.likes||0}</td>
@@ -7959,6 +8081,12 @@ async function loadPend() {
               ${p.rank?`<span style="color:var(--accent)">${h(p.rank)}</span>`:''}
               ${p.unit?`<span style="color:var(--muted)">${h(p.unit)}</span>`:''}
               ${p.position?`<span style="color:var(--muted)">${h(p.position)}</span>`:''}
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;font-size:10px">
+              <span class="badge bg">${h({military:'Військ.', civilian_war:'Цив.(війна)', civilian:'Цив.'}[p.category] || 'Військ.')}</span>
+              ${p.death_reason?`<span style="color:var(--muted)">Причина: ${h(p.death_reason)}</span>`:''}
+              ${p.citizenship?`<span style="color:var(--muted)">Громадянство: ${h(p.citizenship)}</span>`:''}
+              ${p.nationality?`<span style="color:var(--muted)">Національність: ${h(p.nationality)}</span>`:''}
             </div>
             ${p.circ?`<div style="font-size:12px;color:var(--muted);margin-bottom:8px"><strong style="color:var(--text)">Обставини:</strong> ${h(p.circ)}</div>`:''}
             ${p.descr?`<div style="font-size:12px;color:var(--muted);max-height:80px;overflow:hidden"><strong style="color:var(--text)">Опис:</strong> ${h(p.descr)}</div>`:''}
@@ -9470,6 +9598,25 @@ function updateEditPhotoPreview(){
   const url=(document.getElementById('e-photo').value||'').trim();
   document.getElementById('edit-photo-preview').src=url||'/img/foto_false.png';
 }
+const _DEATH_REASONS_BY_CAT = {
+  military: [['','— не вказано —'],['combat','Загинув у бою'],['missile','Ракетний удар'],['shahed','Шахед/БПЛА'],
+    ['artillery','Артилерія'],['direct_contact','Прямий контакт'],['sniper','Снайпер'],['airbomb','Авіабомба'],
+    ['captivity','Полон'],['other','Інше'],['unknown','Невідомо']],
+  civilian_war: [['','— не вказано —'],['missile','Ракетний удар'],['shahed','Шахед/БПЛА'],['artillery','Артилерія'],
+    ['airstrike','Авіаудар'],['mine','Міна'],['shelling','Обстріл'],['occupation','Окупація'],['torture','Катування'],
+    ['violent_death','Насильницька смерть'],['other','Інше воєнне'],['unknown','Невідомо']],
+  civilian: [['','— не вказано —'],['illness','Хвороба'],['old_age','Старість'],['accident','Нещасний випадок'],
+    ['other','Інша причина'],['unknown','Причина невідома']],
+};
+function _updateAdminDeathReasonOptions(selected){
+  const catEl = document.getElementById('e-category');
+  const cat = catEl ? catEl.value : 'military';
+  const sel = document.getElementById('e-death-reason');
+  if(!sel) return;
+  const opts = _DEATH_REASONS_BY_CAT[cat] || _DEATH_REASONS_BY_CAT.military;
+  sel.innerHTML = opts.map(([v,l]) => `<option value="${v}">${l}</option>`).join('');
+  if(selected !== undefined) sel.value = selected;
+}
 async function openEditById(id){
   editId=id; editMode='edit';
   const p=allPeople.find(x=>x.id===id)||people.find(x=>x.id===id);
@@ -9485,6 +9632,13 @@ async function openEditById(id){
   document.getElementById('e-bury').value=p.bury||'';
   document.getElementById('e-circ').value=p.circ||'';
   document.getElementById('e-approved').value=p.approved||0;
+  document.getElementById('e-category').value=p.category||'military';
+  _updateAdminDeathReasonOptions(p.death_reason||'');
+  document.getElementById('e-citizenship').value=p.citizenship||'';
+  document.getElementById('e-nationality').value=p.nationality||'';
+  document.getElementById('e-show-creator').checked=!!p.show_creator;
+  document.getElementById('e-added-by-ro').textContent=p.added_by||'—';
+  document.getElementById('e-created-by-ro').textContent=p.created_by_uid||'—';
   document.getElementById('e-grp').value=p.grp||'';
   document.getElementById('e-unit').value=p.unit||'';
   document.getElementById('e-rank').value=p.rank||'';
@@ -9530,6 +9684,13 @@ function openCreateModal(){
   document.getElementById('e-bury').value='';
   document.getElementById('e-circ').value='Інше';
   document.getElementById('e-approved').value='1';
+  document.getElementById('e-category').value='military';
+  _updateAdminDeathReasonOptions('');
+  document.getElementById('e-citizenship').value='';
+  document.getElementById('e-nationality').value='';
+  document.getElementById('e-show-creator').checked=false;
+  document.getElementById('e-added-by-ro').textContent='—';
+  document.getElementById('e-created-by-ro').textContent='—';
   document.getElementById('e-grp').value='';
   document.getElementById('e-unit').value='';
   document.getElementById('e-rank').value='';
@@ -9569,6 +9730,11 @@ async function saveEdit(){
     photo:document.getElementById('e-photo').value,
     video_url:document.getElementById('e-video').value.trim(),
     descr:document.getElementById('e-desc').value,
+    category:document.getElementById('e-category').value,
+    death_reason:document.getElementById('e-death-reason').value,
+    citizenship:document.getElementById('e-citizenship').value,
+    nationality:document.getElementById('e-nationality').value,
+    show_creator:document.getElementById('e-show-creator').checked?1:0,
   };
   if(!body.last||!body.first){showN('Вкажіть прізвище та імʼя',true);return;}
   const _nameRe=/^[а-яА-ЯіІїЇєЄґҐёЁa-zA-Z'\-]+$/u;
@@ -13542,6 +13708,40 @@ async function saveDeviceSettings() {
     });
     if (!r.ok) throw new Error();
     const hint = document.getElementById('dev-save-hint');
+    if (hint) { hint.textContent = 'Збережено'; setTimeout(() => hint.textContent = '', 2500); }
+  } catch { showN('Помилка збереження', true); }
+}
+
+/* ── Додавання людей: free/request ─────────────────── */
+async function loadAddModeSettings() {
+  try {
+    const r = await fetch(`${API}/api/colors`);
+    const d = await r.json();
+    const g = (k, def) => (d[k]?.value ?? def);
+    const modeEl = document.getElementById('addmode-mode');
+    if (modeEl) modeEl.value = g('add_person_mode', 'free');
+    const phoneEl = document.getElementById('addmode-phone');
+    if (phoneEl) phoneEl.value = g('callcenter_phone', '');
+    const ukEl = document.getElementById('addmode-msg-uk');
+    if (ukEl) ukEl.value = g('callcenter_msg_uk', '');
+    const enEl = document.getElementById('addmode-msg-en');
+    if (enEl) enEl.value = g('callcenter_msg_en', '');
+  } catch(e) { console.error('loadAddModeSettings', e); }
+}
+
+async function saveAddModeSettings() {
+  try {
+    const r = await fetch(`${API}/api/admin/colors/batch`, {
+      method: 'PUT', headers: {...authH(), 'Content-Type': 'application/json'},
+      body: JSON.stringify([
+        {key: 'add_person_mode',   value: document.getElementById('addmode-mode')?.value || 'free'},
+        {key: 'callcenter_phone',  value: document.getElementById('addmode-phone')?.value || ''},
+        {key: 'callcenter_msg_uk', value: document.getElementById('addmode-msg-uk')?.value || ''},
+        {key: 'callcenter_msg_en', value: document.getElementById('addmode-msg-en')?.value || ''},
+      ])
+    });
+    if (!r.ok) throw new Error();
+    const hint = document.getElementById('addmode-save-hint');
     if (hint) { hint.textContent = 'Збережено'; setTimeout(() => hint.textContent = '', 2500); }
   } catch { showN('Помилка збереження', true); }
 }

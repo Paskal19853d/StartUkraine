@@ -466,8 +466,16 @@ function showError(msg){
 }
 
 /* ── fill ─────────────────────────────── */
+const _CAT_FALLBACK_NAME = {military:'Захисник України', civilian_war:'Мирний житель', civilian:'Світла пам\'ять'};
+const _CAT_DEATH_SUB     = {military:'під час виконання обовʼязків', civilian_war:'внаслідок бойових дій', civilian:''};
+const _CAT_DEATH_LABEL   = {military:'Дата загибелі', civilian_war:'Дата загибелі', civilian:'Дата смерті'};
+const _CAT_LOC_LABEL     = {military:'Місце загибелі', civilian_war:'Місце загибелі', civilian:'Місце смерті'};
+const _CAT_TL_TITLE      = {military:'Загинув у бою', civilian_war:'Загинув(ла) внаслідок війни', civilian:'Помер(ла)'};
+const _CAT_VIDEO_CAPTION = {military:'Відеоматеріал про захисника.', civilian_war:'Відеоматеріал про загиблого.', civilian:'Відеоматеріал.'};
+
 function fillPage(p, awards){
-  const fullName = [p.last, p.first, p.mid].filter(Boolean).join(' ').trim() || 'Захисник України';
+  const cat = p.category || 'military';
+  const fullName = [p.last, p.first, p.mid].filter(Boolean).join(' ').trim() || (_CAT_FALLBACK_NAME[cat] || _CAT_FALLBACK_NAME.military);
 
   /* title */
   document.title = `${fullName} — Зоряна Памʼять`;
@@ -484,7 +492,13 @@ function fillPage(p, awards){
 
   const rl = document.getElementById('rank-line');
   const rlParts = [p.rank, p.unit].filter(Boolean);
-  rl.textContent = rlParts.length ? rlParts.join(' · ') : 'Захисник України';
+  if(rlParts.length){
+    rl.textContent = rlParts.join(' · ');
+  } else if(cat === 'military'){
+    rl.textContent = 'Захисник України';
+  } else {
+    rl.style.display = 'none';
+  }
 
   const nameEl = document.getElementById('hero-name');
   if(p.last && p.first){
@@ -531,8 +545,8 @@ function fillPage(p, awards){
     p.position && { lbl:'Посада',         val: p.position },
     p.unit     && { lbl:'Підрозділ',      val: p.unit },
     p.birth    && { lbl:'Дата народження',val: fd(p.birth) },
-    p.death    && { lbl:'Дата загибелі',  val: fd(p.death), sub: 'під час виконання обовʼязків' },
-    p.loc      && { lbl:'Місце загибелі', val: p.loc },
+    p.death    && { lbl:_CAT_DEATH_LABEL[cat] || _CAT_DEATH_LABEL.military, val: fd(p.death), sub: _CAT_DEATH_SUB[cat] ?? _CAT_DEATH_SUB.military },
+    p.loc      && { lbl:_CAT_LOC_LABEL[cat] || _CAT_LOC_LABEL.military, val: p.loc },
     p.bury     && { lbl:'Місце поховання',val: p.bury },
     p.grp      && { lbl:'Позивний',       val: `«${p.grp}»` },
   ].filter(Boolean);
@@ -560,7 +574,7 @@ function fillPage(p, awards){
   const tlEl = document.getElementById('timeline');
   const tlItems = [];
   if(p.birth) tlItems.push({ date: fd(p.birth), title: 'Народився', body: '', key: false });
-  if(p.death) tlItems.push({ date: fd(p.death), title: 'Загинув у бою', body: p.loc ? `Поблизу ${p.loc}` : '', key: true });
+  if(p.death) tlItems.push({ date: fd(p.death), title: _CAT_TL_TITLE[cat] || _CAT_TL_TITLE.military, body: p.loc ? `Поблизу ${p.loc}` : '', key: true });
   if(!tlItems.length){
     document.getElementById('sec-timeline').style.display = 'none';
   } else {
@@ -586,7 +600,7 @@ function fillPage(p, awards){
                   title="${h(fullName)}" allowfullscreen loading="lazy"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>
         </div>`;
-      document.getElementById('video-caption').textContent = 'Відеоматеріал про захисника.';
+      document.getElementById('video-caption').textContent = _CAT_VIDEO_CAPTION[cat] || _CAT_VIDEO_CAPTION.military;
     } else {
       vidCont.innerHTML =
         `<a class="video-placeholder" href="${h(p.video_url)}" target="_blank" rel="noopener">

@@ -24,13 +24,42 @@ def make_slug(first: str, last: str, record_id: int) -> str:
     raw = f'{raw}-{record_id}' if raw else f'memorial-{record_id}'
     return raw
 
+_CAT_SEO_SUFFIX = {
+    'military': "Герой України",
+    'civilian_war': "Пам'ять про загиблого",
+    'civilian': "Сторінка пам'яті",
+}
+_CAT_SEO_NAME_FALLBACK = {
+    'military': 'Захисник України',
+    'civilian_war': 'Загиблий від війни',
+    'civilian': "Світла пам'ять",
+}
+_CAT_SEO_DEATH_VERB = {
+    'military': 'загинув',
+    'civilian_war': "загинув(ла)",
+    'civilian': "помер(ла)",
+}
+_CAT_SEO_DESC_FALLBACK = {
+    'military': "Герой України, захисник рідної землі.",
+    'civilian_war': "Цивільна жертва війни. Світла пам'ять.",
+    'civilian': "Сторінка пам'яті. Світла пам'ять.",
+}
+_CAT_SEO_KEYWORDS_TAIL = {
+    'military': ["Герой України", "Захисник України", "загиблий захисник", "пам'ять героя"],
+    'civilian_war': ["цивільна жертва війни", "загиблий від війни", "пам'ять про загиблого"],
+    'civilian': ["сторінка пам'яті", "світла пам'ять"],
+}
+
 def gen_seo_title(row: dict, site_name: str = "Зоряна Пам'ять") -> str:
+    cat = row.get('category') or 'military'
     full = ' '.join(filter(None, [row.get('last'), row.get('first'), row.get('mid')])).strip()
     if not full:
-        full = 'Захисник України'
-    return f"{full} — Герой України | {site_name}"
+        full = _CAT_SEO_NAME_FALLBACK.get(cat, _CAT_SEO_NAME_FALLBACK['military'])
+    suffix = _CAT_SEO_SUFFIX.get(cat, _CAT_SEO_SUFFIX['military'])
+    return f"{full} — {suffix} | {site_name}"
 
 def gen_seo_description(row: dict) -> str:
+    cat = row.get('category') or 'military'
     parts = []
     full = ' '.join(filter(None, [row.get('last'), row.get('first'), row.get('mid')])).strip()
     if full:
@@ -50,7 +79,8 @@ def gen_seo_description(row: dict) -> str:
         parts.append(f"позивний «{row['grp']}»")
     death = str(row.get('death') or '').strip()
     if death:
-        parts.append(f"загинув {death}")
+        verb = _CAT_SEO_DEATH_VERB.get(cat, _CAT_SEO_DEATH_VERB['military'])
+        parts.append(f"{verb} {death}")
     if row.get('loc'):
         parts.append(f"поблизу {row['loc']}")
     elif row.get('bury'):
@@ -60,7 +90,7 @@ def gen_seo_description(row: dict) -> str:
     desc = '. '.join(parts)
     if len(desc) > 160:
         desc = desc[:157] + '...'
-    return desc or "Герой України, захисник рідної землі."
+    return desc or _CAT_SEO_DESC_FALLBACK.get(cat, _CAT_SEO_DESC_FALLBACK['military'])
 
 def gen_seo_keywords(row: dict) -> str:
     """Generate comma-separated keyword string for <meta name="keywords">."""
@@ -92,8 +122,8 @@ def gen_seo_keywords(row: dict) -> str:
     death = str(row.get('death') or '').strip()
     if death and len(death) >= 4:
         kw.append(death[:4])
-    kw += ["Герой України", "Захисник України", "загиблий захисник",
-           "пам'ять героя", "Зоряна Пам'ять"]
+    cat = row.get('category') or 'military'
+    kw += _CAT_SEO_KEYWORDS_TAIL.get(cat, _CAT_SEO_KEYWORDS_TAIL['military']) + ["Зоряна Пам'ять"]
     # Deduplicate preserving order
     seen, result = set(), []
     for k in kw:

@@ -54,12 +54,7 @@ def sec_log(event: str, ip: str, detail: str = ""):
 # ── OAuth Config (з .env) ────────────────────────────────
 GOOGLE_CLIENT_ID     = os.getenv("GOOGLE_CLIENT_ID", "")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
-DIIA_CLIENT_ID       = os.getenv("DIIA_CLIENT_ID", "")
-DIIA_CLIENT_SECRET   = os.getenv("DIIA_CLIENT_SECRET", "")
 OAUTH_REDIRECT_BASE  = os.getenv("OAUTH_REDIRECT_BASE", "http://127.0.0.1:8000")
-DIIA_AUTH_URL        = os.getenv("DIIA_AUTH_URL",      "https://id.diia.gov.ua/oauth/authorize")
-DIIA_TOKEN_URL       = os.getenv("DIIA_TOKEN_URL",     "https://id.diia.gov.ua/oauth/token")
-DIIA_USERINFO_URL    = os.getenv("DIIA_USERINFO_URL",  "https://id.diia.gov.ua/oauth/userinfo")
 
 # ── MySQL Config (з .env) ────────────────────────────────
 _DB_CFG = {
@@ -2615,6 +2610,12 @@ class PersonIn(BaseModel):
     world_lng: Optional[float] = None
     grp:      Optional[str] = Field("", max_length=100)
     added_by: Optional[str] = Field("", max_length=100)
+    category:     Optional[str] = Field("military", max_length=20)
+    death_reason: Optional[str] = Field("", max_length=40)
+    war_related:  Optional[int] = Field(1)
+    citizenship:  Optional[str] = Field("", max_length=30)
+    nationality:  Optional[str] = Field("", max_length=30)
+    show_creator: Optional[int] = Field(0)
     awards:   List[AwardSimple] = []
 
 class PersonUpdate(BaseModel):
@@ -2629,6 +2630,9 @@ class PersonUpdate(BaseModel):
     rank: Optional[str] = None; position: Optional[str] = None
     unit: Optional[str] = None; world_lat: Optional[float] = None
     world_lng: Optional[float] = None
+    category: Optional[str] = None; death_reason: Optional[str] = None
+    war_related: Optional[int] = None; citizenship: Optional[str] = None
+    nationality: Optional[str] = None; show_creator: Optional[int] = None
 
 class SendCodeReq(BaseModel):
     last_name: str
@@ -2802,6 +2806,72 @@ def require_moder(request: Request):
     return u
 
 
+def _get_optional_user(request: Request) -> Optional[dict]:
+    """Повертає users-рядок якщо юзер залогинений через admin_session cookie
+    (будь-яка роль, включно з 'user'). None якщо не залогинений/сесія
+    застаріла/забанений. НЕ кидає HTTPException — на відміну від require_*."""
+    if not request:
+        return None
+    token = request.cookies.get("admin_session")
+    if not token:
+        return None
+    sess = _session_get(token)
+    if not sess:
+        return None
+    u = _get_user_by_id(sess["user_id"])
+    if u and not u.get("is_banned"):
+        return u
+    return None
+
+
+def _get_optional_user_id(request: Request) -> Optional[int]:
+    u = _get_optional_user(request)
+    return u["id"] if u else None
+
+
+# ── Універсальна сторінка пам'яті: категорії/причини смерті ──────
+_CATEGORIES = {'military', 'civilian_war', 'civilian'}
+_DEATH_REASONS_MILITARY = {
+    'combat', 'missile', 'shahed', 'artillery', 'direct_contact',
+    'sniper', 'airbomb', 'captivity', 'other', 'unknown',
+}
+_DEATH_REASONS_CIVILIAN_WAR = {
+    'missile', 'shahed', 'artillery', 'airstrike', 'mine', 'shelling',
+    'occupation', 'torture', 'violent_death', 'other', 'unknown',
+}
+_DEATH_REASONS_CIVILIAN = {
+    'illness', 'old_age', 'accident', 'other', 'unknown',
+}
+_CITIZENSHIP_CODES = {
+    'ukraine', 'poland', 'usa', 'canada', 'uk', 'germany', 'moldova',
+    'belarus', 'georgia', 'armenia', 'other', '',
+}
+_NATIONALITY_CODES = {
+    'ukrainian', 'polish', 'russian', 'belarusian', 'moldovan', 'jewish',
+    'crimean_tatar', 'bulgarian', 'hungarian', 'romanian', 'armenian',
+    'georgian', 'german', 'other', '',
+}
+
+def _validate_category_fields(category: str, death_reason: str, war_related):
+    """Єдина точка правди для category/death_reason/war_related.
+    Не довіряє клієнту: war_related похідне від category, death_reason
+    звіряється з допустимим набором саме для цієї category."""
+    category = category if category in _CATEGORIES else 'military'
+    if category == 'military':
+        war_related = 1
+        allowed = _DEATH_REASONS_MILITARY
+    elif category == 'civilian_war':
+        war_related = 1
+        allowed = _DEATH_REASONS_CIVILIAN_WAR
+    else:  # civilian
+        war_related = 0
+        allowed = _DEATH_REASONS_CIVILIAN
+    death_reason = (death_reason or '').strip()
+    if death_reason and death_reason not in allowed:
+        death_reason = 'other'
+    return category, death_reason, war_related
+
+
 # ── Пошук: нормалізація та scoring ───────────────────────
 def _normalize(s: str) -> str:
     s = (s or "").lower().strip()
@@ -2887,7 +2957,8 @@ def get_people(page: int = 1, limit: int = 50, request: Request = None):
             c.execute(
                 "SELECT id,last,first,mid,birth,death,bury,loc,photo,color,pos_x,pos_y,"
                 "grp,`rank`,`position`,unit,likes,rating,video_url,approved,added_by,slug,"
-                "world_lat,world_lng "
+                "world_lat,world_lng,category,death_reason,war_related,citizenship,"
+                "nationality,show_creator,created_by_uid "
                 "FROM memorials WHERE approved=1 ORDER BY rating DESC, likes DESC "
                 "LIMIT %s OFFSET %s",
                 (limit, offset)
@@ -3340,6 +3411,17 @@ def admin_delete_partner(pid: int, request: Request):
 @app.post("/api/people")
 def add_person(p: PersonIn, request: Request):
     ip = _get_ip(request)
+    # Режим "по заявці" — самостійне додавання заблоковано на сервері для
+    # звичайних відвідувачів; admin/moder (require_moder-рівень) завжди можуть.
+    current_user = _get_optional_user(request)
+    is_staff = bool(current_user and current_user.get("role") in ("admin", "moder"))
+    if _get_color_val("add_person_mode", "free") == "request" and not is_staff:
+        raise HTTPException(403, {
+            "code": "add_person_request_mode",
+            "message_uk": _get_color_val("callcenter_msg_uk", "Додавання доступне за заявкою."),
+            "message_en": _get_color_val("callcenter_msg_en", "Adding is available by request."),
+            "phone": _get_color_val("callcenter_phone", ""),
+        })
     # 5 заявок / год з одного IP
     if not _rl.check(f"addperson:{ip}", 5, 3600):
         raise HTTPException(429, "Забагато заявок. Спробуйте пізніше.")
@@ -3366,6 +3448,12 @@ def add_person(p: PersonIn, request: Request):
     pos   = _sanitize_text(p.position or '', 100)
     unit  = _sanitize_text(p.unit or '', 200)
     descr = (p.descr or '')[:5000]
+    category, death_reason, war_related = _validate_category_fields(
+        p.category or 'military', p.death_reason or '', p.war_related)
+    citizenship = p.citizenship if (p.citizenship or '') in _CITIZENSHIP_CODES else ''
+    nationality = p.nationality if (p.nationality or '') in _NATIONALITY_CODES else ''
+    created_by_uid = current_user["id"] if current_user else None
+    show_creator = 1 if (p.show_creator and current_user) else 0
     # Якщо передано world_lat/lng — автообчислити pos_x/pos_y
     pos_x, pos_y = p.pos_x, p.pos_y
     world_lat = p.world_lat
@@ -3376,12 +3464,16 @@ def add_person(p: PersonIn, request: Request):
     with db.cursor() as c:
         c.execute("""
             INSERT INTO memorials
-            (last,first,mid,birth,death,loc,bury,circ,descr,photo,color,video_url,`rank`,`position`,`unit`,pos_x,pos_y,world_lat,world_lng,grp,added_by,approved)
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,0)
+            (last,first,mid,birth,death,loc,bury,circ,category,death_reason,war_related,
+             citizenship,nationality,descr,photo,color,video_url,`rank`,`position`,`unit`,
+             pos_x,pos_y,world_lat,world_lng,grp,added_by,created_by_uid,show_creator,approved)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,0)
         """, (last, first, mid, birth, death, loc, bury,
-              circ, descr, photo, color, video_url,
+              circ, category, death_reason, war_related, citizenship, nationality,
+              descr, photo, color, video_url,
               rank, pos, unit,
-              pos_x, pos_y, world_lat, world_lng, grp, p.added_by))
+              pos_x, pos_y, world_lat, world_lng, grp, p.added_by,
+              created_by_uid, show_creator))
         new_id = c.lastrowid
         for aw in p.awards[:10]:
             aw_name = _sanitize_text(aw.name, 200)
@@ -4561,66 +4653,6 @@ def auth_google_callback(code: str = None, error: str = None, state: str = None)
     return _oauth_set_session(resp, user["id"])
 
 
-# ── Дія OAuth ─────────────────────────────────────────────
-
-@app.get("/api/auth/diia")
-def auth_diia(next: str = None):
-    if not DIIA_CLIENT_ID:
-        return RedirectResponse("/?oauth_error=diia_not_configured", status_code=302)
-    params = {
-        "client_id":     DIIA_CLIENT_ID,
-        "redirect_uri":  f"{OAUTH_REDIRECT_BASE}/api/auth/diia/callback",
-        "response_type": "code",
-        "scope":         "openid email profile",
-    }
-    if next in _OAUTH_NEXT_TARGETS:
-        params["state"] = next
-    return RedirectResponse(f"{DIIA_AUTH_URL}?{urllib.parse.urlencode(params)}", status_code=302)
-
-
-@app.get("/api/auth/diia/callback")
-def auth_diia_callback(code: str = None, error: str = None, state: str = None):
-    target = _oauth_redirect_target(state)
-    if error or not code:
-        return RedirectResponse(f"{target}?oauth_error=diia_cancelled", status_code=302)
-    token_data = urllib.parse.urlencode({
-        "code":          code,
-        "client_id":     DIIA_CLIENT_ID,
-        "client_secret": DIIA_CLIENT_SECRET,
-        "redirect_uri":  f"{OAUTH_REDIRECT_BASE}/api/auth/diia/callback",
-        "grant_type":    "authorization_code",
-    }).encode()
-    try:
-        req = urllib.request.Request(
-            DIIA_TOKEN_URL,
-            data=token_data,
-            headers={"Content-Type": "application/x-www-form-urlencoded"}
-        )
-        with urllib.request.urlopen(req, timeout=10) as r:
-            token_json = json.loads(r.read())
-    except Exception:
-        return RedirectResponse(f"{target}?oauth_error=diia_token", status_code=302)
-    access_token = token_json.get("access_token")
-    if not access_token:
-        return RedirectResponse(f"{target}?oauth_error=diia_token", status_code=302)
-    try:
-        req2 = urllib.request.Request(
-            DIIA_USERINFO_URL,
-            headers={"Authorization": f"Bearer {access_token}"}
-        )
-        with urllib.request.urlopen(req2, timeout=10) as r:
-            info = json.loads(r.read())
-    except Exception:
-        return RedirectResponse(f"{target}?oauth_error=diia_userinfo", status_code=302)
-    email = info.get("email", "").lower()
-    if not email:
-        return RedirectResponse(f"{target}?oauth_error=diia_no_email", status_code=302)
-    name = info.get("name") or info.get("rnokpp") or email.split("@")[0]
-    user = _oauth_login_or_create(email, name)
-    resp = RedirectResponse(f"{target}?oauth=success", status_code=302)
-    return _oauth_set_session(resp, user["id"])
-
-
 @app.get("/api/admin/me")
 def admin_me(request: Request):
     u = require_moder(request)
@@ -5254,21 +5286,29 @@ def unapprove(mid: int, request: Request):
 
 @app.post("/api/admin/memorial")
 def admin_add_person(p: PersonIn, request: Request):
-    require_moder(request)
+    me = require_moder(request)
     # Якщо передано world_lat/lng — автообчислити pos_x/pos_y
     pos_x, pos_y = p.pos_x, p.pos_y
     if p.world_lat is not None and p.world_lng is not None:
         pos_x, pos_y = _latLngToSvg(p.world_lat, p.world_lng)
+    category, death_reason, war_related = _validate_category_fields(
+        p.category or 'military', p.death_reason or '', p.war_related)
+    citizenship = p.citizenship if (p.citizenship or '') in _CITIZENSHIP_CODES else ''
+    nationality = p.nationality if (p.nationality or '') in _NATIONALITY_CODES else ''
     db = get_db()
     with db.cursor() as c:
         c.execute("""
             INSERT INTO memorials
-            (last,first,mid,birth,death,loc,bury,circ,descr,photo,color,`rank`,`position`,`unit`,pos_x,pos_y,world_lat,world_lng,grp,added_by,approved)
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,1)
+            (last,first,mid,birth,death,loc,bury,circ,category,death_reason,war_related,
+             citizenship,nationality,descr,photo,color,`rank`,`position`,`unit`,pos_x,pos_y,
+             world_lat,world_lng,grp,added_by,created_by_uid,show_creator,approved)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,1)
         """, (p.last.strip(), p.first.strip(), p.mid or '', p.birth or None, p.death or None,
-              p.loc or '', p.bury or '', p.circ or '', p.descr or '', p.photo or '',
+              p.loc or '', p.bury or '', p.circ or '', category, death_reason, war_related,
+              citizenship, nationality, p.descr or '', p.photo or '',
               p.color or '#4fc3f7', p.rank or '', p.position or '', p.unit or '',
-              pos_x, pos_y, p.world_lat, p.world_lng, p.grp or '', 'admin'))
+              pos_x, pos_y, p.world_lat, p.world_lng, p.grp or '', 'admin',
+              me.get("id"), 1 if p.show_creator else 0))
         new_id = c.lastrowid
         sl = make_slug(p.first.strip(), p.last.strip(), new_id)
         try:
@@ -5671,6 +5711,12 @@ _MEMORIAL_COL_MAP = {
     'unit':      '`unit`=%s',
     'world_lat': '`world_lat`=%s',
     'world_lng': '`world_lng`=%s',
+    'category':      '`category`=%s',
+    'death_reason':  '`death_reason`=%s',
+    'war_related':   '`war_related`=%s',
+    'citizenship':   '`citizenship`=%s',
+    'nationality':   '`nationality`=%s',
+    'show_creator':  '`show_creator`=%s',
 }
 _MEMORIAL_ALLOWED_FIELDS = set(_MEMORIAL_COL_MAP)
 
@@ -5682,8 +5728,31 @@ def update_memorial(mid: int, p: PersonUpdate, request: Request):
         'last':100,'first':100,'mid':100,'loc':300,'bury':300,
         'circ':200,'grp':100,'rank':100,'position':100,'unit':200,
     }
+    update_data = p.model_dump(exclude_none=True)
+    # category/death_reason/war_related взаємопов'язані — якщо хоч одне з
+    # них передане, обробляємо їх разом через єдину точку правди, а не
+    # довільно по одному в загальному циклі нижче.
+    if 'category' in update_data or 'death_reason' in update_data or 'war_related' in update_data:
+        db_cat, db_reason = 'military', ''
+        if 'category' not in update_data or 'death_reason' not in update_data:
+            with db.cursor() as c:
+                c.execute("SELECT category, death_reason FROM memorials WHERE id=%s", (mid,))
+                cur_row = c.fetchone()
+            if cur_row:
+                db_cat = cur_row.get('category') or 'military'
+                db_reason = cur_row.get('death_reason') or ''
+        cat_in = update_data.get('category', db_cat)
+        reason_in = update_data.get('death_reason', db_reason)
+        cat_out, reason_out, war_out = _validate_category_fields(cat_in, reason_in, update_data.get('war_related'))
+        update_data['category'] = cat_out
+        update_data['death_reason'] = reason_out
+        update_data['war_related'] = war_out
+    if 'citizenship' in update_data and update_data['citizenship'] not in _CITIZENSHIP_CODES:
+        update_data['citizenship'] = ''
+    if 'nationality' in update_data and update_data['nationality'] not in _NATIONALITY_CODES:
+        update_data['nationality'] = ''
     fields, vals = [], []
-    for f, v in p.model_dump(exclude_none=True).items():
+    for f, v in update_data.items():
         if f not in _MEMORIAL_COL_MAP:
             raise HTTPException(400, f"Поле '{f}' не дозволено")
         if f in _TEXT_MAXLEN and v is not None:
@@ -5708,7 +5777,6 @@ def update_memorial(mid: int, p: PersonUpdate, request: Request):
         db.close()
         return {"ok": False}
     # Якщо передано world_lat/lng — автообчислити pos_x/pos_y
-    update_data = p.model_dump(exclude_none=True)
     if p.world_lat is not None and p.world_lng is not None:
         svx, svy = _latLngToSvg(p.world_lat, p.world_lng)
         for fname, fval in [('pos_x', svx), ('pos_y', svy)]:
@@ -6748,9 +6816,20 @@ def _google_index_notify(url: str, notification_type: str = "URL_UPDATED"):
         return {"ok": False, "reason": str(e)}
 
 
+_SEO_CAT_NAME_FALLBACK = {'military': 'Захисник', 'civilian_war': 'Загиблий', 'civilian': "Пам'ять"}
+_SEO_CAT_PHOTO_DESC = {
+    'military': ' — фото захисника України',
+    'civilian_war': ' — фото загиблого',
+    'civilian': ' — фото',
+}
+_CAT_SEO_DEATH_LABEL = {'military': 'Загинув', 'civilian_war': 'Загинув(ла)', 'civilian': 'Помер(ла)'}
+_CAT_SEO_LOC_LABEL   = {'military': 'Місце загибелі', 'civilian_war': 'Місце загибелі', 'civilian': 'Місце смерті'}
+
 def _build_memorial_seo(row: dict) -> dict:
     """Build full SEO context dict from a memorial row."""
-    full_name = ' '.join(filter(None, [row.get('last'), row.get('first'), row.get('mid')])).strip() or 'Захисник'
+    category  = row.get('category') or 'military'
+    full_name = ' '.join(filter(None, [row.get('last'), row.get('first'), row.get('mid')])).strip() \
+        or _SEO_CAT_NAME_FALLBACK.get(category, _SEO_CAT_NAME_FALLBACK['military'])
     slug      = row.get('slug') or str(row['id'])
     canonical_url = f"{_SITE_BASE_URL}/memorial/{slug}"
 
@@ -6773,7 +6852,7 @@ def _build_memorial_seo(row: dict) -> dict:
             "@type":       "ImageObject",
             "url":         photo_abs,
             "contentUrl":  photo_abs,
-            "description": f"{full_name} — фото захисника України",
+            "description": full_name + _SEO_CAT_PHOTO_DESC.get(category, _SEO_CAT_PHOTO_DESC['military']),
         }
 
     # ── Person JSON-LD ────────────────────────────────────
@@ -6801,9 +6880,14 @@ def _build_memorial_seo(row: dict) -> dict:
         person_ld["deathDate"] = row['death']
     if row.get('loc'):
         person_ld["deathPlace"] = {"@type": "Place", "name": row['loc']}
-    if row.get('unit'):
+    if row.get('unit') and category == 'military':
         person_ld["memberOf"] = {"@type": "MilitaryOrganization", "name": row['unit']}
-    person_ld["nationality"] = {"@type": "Country", "name": "Україна"}
+    _citizenship_names = {
+        'ukraine': 'Україна', 'poland': 'Польща', 'usa': 'США', 'canada': 'Канада',
+        'uk': 'Велика Британія', 'germany': 'Німеччина', 'moldova': 'Молдова',
+        'belarus': 'Білорусь', 'georgia': 'Грузія', 'armenia': 'Вірменія',
+    }
+    person_ld["nationality"] = {"@type": "Country", "name": _citizenship_names.get(row.get('citizenship'), 'Україна')}
 
     # ── Article JSON-LD ───────────────────────────────────
     article_ld: dict = {
@@ -6861,6 +6945,8 @@ def _build_memorial_seo(row: dict) -> dict:
         "loc":           row.get('loc')      or '',
         "bury":          row.get('bury')     or '',
         "descr":         row.get('descr')    or '',
+        "death_label":   _CAT_SEO_DEATH_LABEL.get(category, _CAT_SEO_DEATH_LABEL['military']),
+        "loc_label":     _CAT_SEO_LOC_LABEL.get(category, _CAT_SEO_LOC_LABEL['military']),
     }
 
 
@@ -6918,7 +7004,7 @@ def sitemap():
     db = get_db()
     with db.cursor() as c:
         c.execute(
-            "SELECT slug, last, first, death, photo, video_url, descr FROM memorials "
+            "SELECT slug, last, first, death, photo, video_url, descr, category FROM memorials "
             "WHERE approved=1 AND slug IS NOT NULL AND slug!='' ORDER BY id"
         )
         rows = c.fetchall()
@@ -6949,12 +7035,17 @@ def sitemap():
         img_block = ""
         photo = (r.get('photo') or '').strip()
         if photo and len(photo) > 5:
+            r_cat = r.get('category') or 'military'
+            img_title   = name + _SEO_CAT_PHOTO_DESC.get(r_cat, _SEO_CAT_PHOTO_DESC['military'])
+            img_caption = f"{name}, " + {
+                'military': 'Захисник України', 'civilian_war': 'загиблий від війни', 'civilian': 'світла пам\'ять',
+            }.get(r_cat, 'Захисник України')
             photo_abs = photo if photo.startswith('http') else f"{_SITE_BASE_URL}{photo}"
             img_block = (
                 f"\n    <image:image>"
                 f"<image:loc>{photo_abs}</image:loc>"
-                f"<image:title>{name} — фото захисника України</image:title>"
-                f"<image:caption>{name}, Захисник України</image:caption>"
+                f"<image:title>{img_title}</image:title>"
+                f"<image:caption>{img_caption}</image:caption>"
                 f"</image:image>"
             )
         # Video tag if YouTube URL

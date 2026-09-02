@@ -2451,16 +2451,6 @@ body{visibility:hidden}
         </svg>
         Продовжити з Google
       </a>
-      <a href="/api/auth/diia" class="oauth-btn oauth-diia">
-        <span class="diia-row">
-          <svg width="20" height="20" viewBox="0 0 32 32" aria-hidden="true" fill="none">
-            <circle cx="16" cy="16" r="16" fill="#fff" opacity=".1"/>
-            <text x="16" y="22" text-anchor="middle" font-size="13" font-weight="700" fill="#fff" font-family="sans-serif">Дія</text>
-          </svg>
-          Продовжити з Дія
-        </span>
-        <span class="diia-unavail">тимчасово не працює</span>
-      </a>
     </div>
   </div>
 </div>
@@ -5011,11 +5001,6 @@ async function checkOAuthCallback(){
       google_token:'Помилка отримання токена Google.',
       google_userinfo:'Помилка отримання даних Google.',
       google_no_email:'Google не надав email адресу.',
-      diia_not_configured:'Дія OAuth не налаштовано — зверніться до адміністратора.',
-      diia_cancelled:'Авторизацію через Дія скасовано.',
-      diia_token:'Помилка отримання токена Дія.',
-      diia_userinfo:'Помилка отримання даних Дія.',
-      diia_no_email:'Дія не надала email адресу.',
     };
     showN(msgs[p.get('oauth_error')]||'Помилка авторизації',true);
     history.replaceState({},'','/');

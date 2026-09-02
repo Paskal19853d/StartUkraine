@@ -26,7 +26,7 @@
 | Prod Server | Gunicorn + UvicornWorker | 8 воркерів, `gunicorn.conf.py` |
 | Database | MySQL/MariaDB | utf8mb4_unicode_ci, DB: `zoryana_pamyat` |
 | Кеш | Redis | Опціональний, TTL 60с, авто-деградація якщо відсутній |
-| Auth | bcrypt (12 rounds) + Google OAuth + Дія | Cookies 7 днів |
+| Auth | bcrypt (12 rounds) + Google OAuth | Cookies 7 днів |
 | Frontend | HTML5 + Vanilla JS | Без фреймворків |
 | CSS | CSS Custom Properties | Темна/світла теми |
 | Анімація | WebGL (fluid simulation) | Дим, хвилі, ефекти |
@@ -213,7 +213,6 @@ INDEX idx_visitor_seen (visitor_id, seen_at)
 | GET | `/api/auth/me` | Поточний користувач (повертає розширені поля) |
 | PUT | `/api/auth/profile` | Оновити профіль (нік, email, телефон, пароль — не ФІО) |
 | GET | `/api/auth/google` | Google OAuth |
-| GET | `/api/auth/diia` | Дія OAuth |
 
 ### Профіль користувача (публічний)
 | Метод | Endpoint | Опис |
@@ -277,7 +276,6 @@ INDEX idx_visitor_seen (visitor_id, seen_at)
 ### Методи входу
 1. **Email + пароль** → bcrypt 12 rounds, cookie `admin_session` (7 днів)
 2. **Google OAuth 2.0** → auto-create/login
-3. **Дія (UA eID)** → державна авторизація
 
 ### Захист від атак
 | Механізм | Реалізація |
@@ -368,7 +366,6 @@ start-redis.bat
 DB_HOST, DB_USER, DB_PASS, DB_NAME=zoryana_pamyat
 REDIS_URL=redis://localhost:6379
 GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
-DIIA_CLIENT_ID, DIIA_CLIENT_SECRET
 OAUTH_REDIRECT_BASE=http://127.0.0.1:8000
 SECRET_KEY=...
 ```
@@ -618,6 +615,33 @@ sudo systemctl reload nginx
 ---
 
 ## 15. ЖУРНАЛ ЗМІН
+
+### v3.22 (2026-09-02) — Повне видалення інтеграції «Дія» (Diia eID)
+- **Причина**: авторизація/реєстрація через Дія більше не використовується — видалено повністю з коду, конфігурації та БД
+- `Paskal.py`: видалено ендпоінти `GET /api/auth/diia` та `GET /api/auth/diia/callback` (весь OAuth-flow: обмін коду на токен, запит userinfo, `_oauth_login_or_create`), видалено конфіг-змінні `DIIA_CLIENT_ID`, `DIIA_CLIENT_SECRET`, `DIIA_AUTH_URL`, `DIIA_TOKEN_URL`, `DIIA_USERINFO_URL`
+- `index.html`, `mobile.html`: видалено кнопку «Продовжити з Дія» в модалці авторизації (`#mauth`) та обробку `oauth_error` кодів `diia_*`
+- `admin.html`: оновлено коментар (згадка «Google/Дія» → «Google»); власної кнопки Дія в адмінці не було
+- `Style.css`, `img/Style.css`: видалено CSS-класи `.oauth-diia`, `.diia-row`, `.diia-unavail`
+- `.env.example`: видалено рядки `DIIA_CLIENT_ID=`/`DIIA_CLIENT_SECRET=`
+- Нова SQL-міграція `migrations_remove_diia.sql` — видаляє 7 мертвих i18n-ключів (`auth.continue_diia`, `diia.unavailable`, `errors.oauth_diia_*`) з таблиці `i18n_translations` (uk+en). Старі міграції (`migrations_i18n_index_pass2.sql`, `migrations_i18n_index_full_coverage.sql`), де ці ключі вперше додавались, НЕ редагувались — це історичний журнал, вже виконаний на проді
+- Не чіпались: історичний запис `### v3.3` нижче в цьому журналі (згадує Дія в контексті OAuth-редіректу `?next=admin` — це опис вже виконаної роботи минулої сесії, не поточний стан коду); слово «дія»/«Дія користувача» в інших місцях документації — звичайне українське слово («дія» = «дозвіл»/«ужиток»), не бренд Diia
+- Синтаксис перевірено (`ast.parse` для Paskal.py, `node -c` для inline JS index.html/admin.html/mobile.html) — помилок нема
+- **Дія користувача**: виконати `migrations_remove_diia.sql` в PhpMyAdmin після заливки файлів; додатково опційно — прибрати `DIIA_CLIENT_ID`/`DIIA_CLIENT_SECRET` з `.env` на проді (не обов'язково, код їх більше не читає)
+
+### v3.21 (2026-09-02) — Універсалізація: категорії людей (військовий/цивільний/поза війною) + режим додавання free/request
+- **Мета**: розширити систему з «картки загиблого військовослужбовця» до «універсальної сторінки пам'яті людини» — підтримка військових, цивільних загиблих від війни, і людей, які померли з інших причин (хвороба, старість, нещасний випадок). Паралельно — перемикач в адмінці «безкоштовне самостійне додавання / додавання по заявці через кол-центр» з реальним серверним блокуванням
+- Технічне завдання користувача — `StepbyStep.md` (написане під WordPress+Polylang; реалізовано через наявні аналоги проєкту — FastAPI+MySQL, власна i18n-система, універсальна таблиця `colors`, без нових зовнішніх залежностей)
+- **Нові колонки `memorials`** (SQL-міграція `migrations_universal_memory.sql`): `category` VARCHAR(20) default `'military'` (`military`/`civilian_war`/`civilian`), `death_reason` VARCHAR(40) — код причини (залежить від category), `war_related` TINYINT default 1 (похідне від category, але зберігається окремо), `citizenship`/`nationality` VARCHAR(30) — коди країн/національностей, `created_by_uid` INT NULL — user_id визначається СЕРВЕРОМ з `admin_session` cookie (ніколи з тіла запиту), `show_creator` TINYINT default 0. Стара колонка `added_by` (VARCHAR, вільний текст) НЕ чіпалась — лишається для сумісності. Явний `UPDATE` проставляє існуючим записам `category='military', war_related=1` — старі військові картки виглядають ідентично до змін
+- **Довідники причин смерті/громадянства/національності** — прості строкові коди зашиті в `<select>` (як вже було для поля `circ`), без нових lookup-таблиць. Онлайн-оплата НЕ реалізована (лише toggle free/request)
+- **Backend (Paskal.py)**: нова функція `_validate_category_fields()` — єдина точка правди: перевіряє category, приводить war_related, звіряє death_reason з допустимим набором саме для цієї category (інакше → `'other'`). Нові хелпери `_get_optional_user()`/`_get_optional_user_id()` — читають `admin_session` cookie без вимоги ролі admin/moder (на відміну від `require_moder`), не кидають виняток якщо не залогинений. `POST /api/people` — на початку перевіряє `add_person_mode` з `colors`; якщо `request` і користувач не admin/moder → `HTTPException(403, {code, message_uk, message_en, phone})`. `_MEMORIAL_COL_MAP`, `PersonIn`/`PersonUpdate`, `update_memorial`, `admin_add_person` розширені новими полями. Explicit SELECT у `GET /api/people` розширено
+- **Адмінка (admin.html)**: нова секція «Додавання людей» (`sec-addmode`, deferred-save за зразком `sec-device` — toggle free/request, поле телефону, 2 textarea uk/en). Нова іконка `#ico-phone` в SVG-спрайті. Edit/create-modal розширені полями категорії/причини/громадянства/національності/show_creator + read-only «Додав / Автор (uid)». Список «Всі записи» — нова колонка «Категорія» + dropdown-фільтр (`#mem-f-category`). «На модерації» — бейджі нових полів у превью
+- **Публічна форма (index.html, `#madd`)**: нові поля категорія/причина смерті (динамічний список залежно від категорії)/громадянство/національність/toggle «показувати моє ім'я» (видимий лише залогиненим). `openAdd()` перевіряє режим free/request — при `request` форма замінюється повідомленням+кнопкою `tel:`. `submitAdd()` обробляє 403 з об'єктом (`detail.code==='add_person_request_mode'`)
+- **card.html універсалізація** (`fillPage()`, 6 місць): фолбек імені, рядок звання (приховується повністю для non-military замість військового фолбеку), лейбл+sub-текст дати смерті, лейбл місця, timeline title, video-caption — всі умовні за `category`
+- **SEO** (`seo_utils.py`, `_build_memorial_seo` в Paskal.py, `templates/memorial.html`, sitemap.xml): `gen_seo_title`/`gen_seo_description`/`gen_seo_keywords` — умовні формулювання/фолбеки за category (military="Герой України", civilian_war="Пам'ять про загиблого", civilian="Сторінка пам'яті"). JSON-LD `memberOf: MilitaryOrganization` лише для military; `nationality` в JSON-LD тепер бере реальне `citizenship` замість завжди "Україна". `templates/memorial.html` — лейбл «Загинув»/«Місце загибелі» став умовним (`death_label`/`loc_label` з контексту). sitemap.xml — `image:title`/`image:caption` умовні за категорією
+- **i18n**: нова SQL-міграція `migrations_i18n_universal_memory.sql` — ~90 ключів (uk+en): category.*, death_reason.* (військові+цивільні-від-війни+невоєнні), citizenship.*, nationality.* (14 значень), show_creator.label, adm.addmode.*, nav.addmode, adm.mem.col_category
+- Файли: `Paskal.py`, `index.html`, `admin.html`, `card.html`, `seo_utils.py`, `templates/memorial.html`, нові `migrations_universal_memory.sql` + `migrations_i18n_universal_memory.sql`
+- Синтаксис перевірено: `ast.parse` (Paskal.py, seo_utils.py), `node -c` для всіх inline-скриптів index.html/admin.html/card.html — помилок нема
+- **Не перевірено функціонально/скріншотами** — потребує виконання SQL-міграцій на проді перед будь-яким тестуванням (весь backend спирається на нові колонки). Рекомендовано користувачу: 1) виконати `migrations_universal_memory.sql` і `migrations_i18n_universal_memory.sql` в PhpMyAdmin, 2) перевірити стару військову картку (має виглядати ідентично), 3) додати тестовий цивільний запис (`civilian_war`/`civilian`) і перевірити картку/SEO, 4) перевірити перемикач free/request в адмінці (розділ «Додавання людей»)
 
 ### v3.20 (2026-09-01) — Фікс: карта світу показувала "API KEY REQUIRED" (CARTO тепер вимагає ключ)
 - Проблема: CARTO (провайдер тайлів `basemaps.cartocdn.com` для стилів Dark Matter/Positron) з 2026 року вимагає безкоштовний API-ключ у query-параметрі URL — без нього тайли показують водяний знак "API KEY REQUIRED" замість карти. Зовнішня зміна політики CARTO, не баг коду

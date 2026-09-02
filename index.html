@@ -2464,16 +2464,6 @@ body{visibility:hidden}
         </svg>
         <span data-i18n="auth.continue_google">Продовжити з Google</span>
       </a>
-      <a href="/api/auth/diia" class="oauth-btn oauth-diia">
-        <span class="diia-row">
-          <svg width="20" height="20" viewBox="0 0 32 32" aria-hidden="true" fill="none">
-            <circle cx="16" cy="16" r="16" fill="#fff" opacity=".1"/>
-            <text x="16" y="22" text-anchor="middle" font-size="13" font-weight="700" fill="#fff" font-family="sans-serif">Дія</text>
-          </svg>
-          <span data-i18n="auth.continue_diia">Продовжити з Дія</span>
-        </span>
-        <span class="diia-unavail" data-i18n="diia.unavailable">тимчасово не працює</span>
-      </a>
     </div>
   </div>
 </div>
@@ -2484,6 +2474,11 @@ body{visibility:hidden}
   <div class="mo">
     <button class="moc" onclick="closeAdd()">&#10005;</button>
     <h2>&#10022; <span data-i18n="title.add">Додати загиблого</span></h2>
+    <div id="madd-request-block" style="display:none">
+      <p id="madd-request-msg" style="margin:16px 0;line-height:1.6"></p>
+      <a id="madd-request-phone" class="fsub" href="tel:" style="display:block;text-align:center;text-decoration:none">&#128222;</a>
+    </div>
+    <div id="madd-form-block">
     <p class="mo-sub" data-i18n="subtitle">Записи проходять модерацію. Вказуйте лише достовірні дані.</p>
     <div class="fr">
       <div class="fg"><label data-i18n="last.label">Прізвище *</label><input id="flast" data-i18n-placeholder="last.placeholder" placeholder="Шевченко" maxlength="50" oninput="this.value=this.value.replace(/[^а-яА-ЯіІїЇєЄґҐёЁa-zA-Z'\-]/gu,'')"></div>
@@ -2501,6 +2496,15 @@ body{visibility:hidden}
     <div class="fr full"><div class="fg"><label data-i18n="loc.label">Де загинув (текст)</label><input id="floc" data-i18n-placeholder="loc.placeholder" placeholder="Авдіївка, Донецька обл."></div></div>
     <div class="fr full"><div class="fg"><label data-i18n="bury.label">Де похований (текст)</label><input id="fbury" data-i18n-placeholder="bury.placeholder" placeholder="с. Березівка, Київська обл."></div></div>
     <div class="fr full">
+      <div class="fg"><label data-i18n="category.label">Категорія</label>
+        <select id="fcategory" onchange="_updateDeathReasonOptions()">
+          <option value="military" data-i18n="category.military">Військовослужбовець</option>
+          <option value="civilian_war" data-i18n="category.civilian_war">Цивільний, загиблий від війни</option>
+          <option value="civilian" data-i18n="category.civilian">Померлий (не пов'язано з війною)</option>
+        </select>
+      </div>
+    </div>
+    <div class="fr full">
       <div class="fg"><label data-i18n="circ.label">Обставини загибелі</label>
         <select id="fcirc">
           <option value="" data-i18n="circ.placeholder">— оберіть —</option>
@@ -2509,6 +2513,54 @@ body{visibility:hidden}
           <option>Авіабомба</option><option>Полон</option><option>Інше</option>
         </select>
       </div>
+    </div>
+    <div class="fr full">
+      <div class="fg"><label data-i18n="death_reason.label">Причина смерті</label>
+        <select id="fdeath_reason"></select>
+      </div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label data-i18n="citizenship.label">Громадянство</label>
+        <select id="fcitizenship">
+          <option value="">—</option>
+          <option value="ukraine" data-i18n="citizenship.ukraine">Україна</option>
+          <option value="poland" data-i18n="citizenship.poland">Польща</option>
+          <option value="usa" data-i18n="citizenship.usa">США</option>
+          <option value="canada" data-i18n="citizenship.canada">Канада</option>
+          <option value="uk" data-i18n="citizenship.uk">Велика Британія</option>
+          <option value="germany" data-i18n="citizenship.germany">Німеччина</option>
+          <option value="moldova" data-i18n="citizenship.moldova">Молдова</option>
+          <option value="belarus" data-i18n="citizenship.belarus">Білорусь</option>
+          <option value="georgia" data-i18n="citizenship.georgia">Грузія</option>
+          <option value="armenia" data-i18n="citizenship.armenia">Вірменія</option>
+          <option value="other" data-i18n="citizenship.other">Інше</option>
+        </select>
+      </div>
+      <div class="fg"><label data-i18n="nationality.label">Національність</label>
+        <select id="fnationality">
+          <option value="">—</option>
+          <option value="ukrainian" data-i18n="nationality.ukrainian">Українець/Українка</option>
+          <option value="polish" data-i18n="nationality.polish">Поляк/Полька</option>
+          <option value="russian" data-i18n="nationality.russian">Русский/Русская</option>
+          <option value="belarusian" data-i18n="nationality.belarusian">Білорус/Білоруска</option>
+          <option value="moldovan" data-i18n="nationality.moldovan">Молдаванин/Молдаванка</option>
+          <option value="jewish" data-i18n="nationality.jewish">Єврей/Єврейка</option>
+          <option value="crimean_tatar" data-i18n="nationality.crimean_tatar">Кримський татарин/татарка</option>
+          <option value="bulgarian" data-i18n="nationality.bulgarian">Болгарин/Болгарка</option>
+          <option value="hungarian" data-i18n="nationality.hungarian">Угорець/Угорка</option>
+          <option value="romanian" data-i18n="nationality.romanian">Румун/Румунка</option>
+          <option value="armenian" data-i18n="nationality.armenian">Вірменин/Вірменка</option>
+          <option value="georgian" data-i18n="nationality.georgian">Грузин/Грузинка</option>
+          <option value="german" data-i18n="nationality.german">Німець/Німка</option>
+          <option value="other" data-i18n="nationality.other">Інше</option>
+        </select>
+      </div>
+    </div>
+    <div class="fr full" id="fshow-creator-row" style="display:none">
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:400">
+        <input type="checkbox" id="fshow_creator" style="width:auto">
+        <span data-i18n="show_creator.label">Показувати моє ім'я як автора запису</span>
+      </label>
     </div>
     <div class="fr full"><div class="fg"><label data-i18n="descr.label">Опис</label><textarea id="fdesc" data-i18n-placeholder="descr.placeholder" placeholder="Хоробрий захисник…"></textarea></div></div>
     <div class="fg" style="margin-bottom:12px">
@@ -2543,6 +2595,7 @@ body{visibility:hidden}
     <input type="hidden" id="fpx"><input type="hidden" id="fpy">
     <input type="hidden" id="fwlat"><input type="hidden" id="fwlng">
     <button class="fsub" onclick="submitAdd()">&#10022; <span data-i18n="submit">НАДІСЛАТИ НА МОДЕРАЦІЮ</span></button>
+    </div><!-- /madd-form-block -->
   </div>
 </div>
 
@@ -5012,7 +5065,61 @@ function _maddMapSetPoint(lat, lng) {
   if (ps) { ps.textContent = 'lat: '+lat.toFixed(4)+', lng: '+lng.toFixed(4); ps.style.color='#4ade80'; }
 }
 
+const _DEATH_REASONS_BY_CAT = {
+  military: [['','circ.placeholder','— оберіть —'],['combat','death_reason.combat','Загинув у бою'],['missile','death_reason.missile','Ракетний удар'],
+    ['shahed','death_reason.shahed','Шахед/БПЛА'],['artillery','death_reason.artillery','Артилерія'],
+    ['direct_contact','death_reason.direct_contact','Прямий контакт'],['sniper','death_reason.sniper','Снайпер'],
+    ['airbomb','death_reason.airbomb','Авіабомба'],['captivity','death_reason.captivity','Полон'],
+    ['other','death_reason.other','Інше'],['unknown','death_reason.unknown','Невідомо']],
+  civilian_war: [['','circ.placeholder','— оберіть —'],['missile','death_reason.missile','Ракетний удар'],['shahed','death_reason.shahed','Шахед/БПЛА'],
+    ['artillery','death_reason.artillery','Артилерія'],['airstrike','death_reason.airstrike','Авіаудар'],
+    ['mine','death_reason.mine','Міна'],['shelling','death_reason.shelling','Обстріл'],
+    ['occupation','death_reason.occupation','Окупація'],['torture','death_reason.torture','Катування'],
+    ['violent_death','death_reason.violent_death','Насильницька смерть'],['other','death_reason.other_war','Інше воєнне'],
+    ['unknown','death_reason.unknown','Невідомо']],
+  civilian: [['','circ.placeholder','— оберіть —'],['illness','death_reason.illness','Хвороба'],['old_age','death_reason.old_age','Старість'],
+    ['accident','death_reason.accident','Нещасний випадок'],['other','death_reason.other_reason','Інша причина'],
+    ['unknown','death_reason.unknown_reason','Причина невідома']],
+};
+function _updateDeathReasonOptions(){
+  const catEl=document.getElementById('fcategory');
+  const cat=catEl?catEl.value:'military';
+  const sel=document.getElementById('fdeath_reason');
+  if(!sel)return;
+  const opts=_DEATH_REASONS_BY_CAT[cat]||_DEATH_REASONS_BY_CAT.military;
+  sel.innerHTML=opts.map(([v,key,fallback])=>`<option value="${v}" data-i18n="${key}">${fallback}</option>`).join('');
+  if(window.LANG&&typeof applyI18n==='function')applyI18n();
+  // Старе поле "Обставини загибелі" (fcirc) лишається видимим лише для military —
+  // для інших категорій структурований death_reason замінює його по суті.
+  const circRow=document.getElementById('fcirc')?.closest('.fr');
+  if(circRow) circRow.style.display = (cat==='military') ? '' : 'none';
+}
 function openAdd(){
+  const mode=getC('add_person_mode','free');
+  const formBlock=document.getElementById('madd-form-block');
+  const reqBlock=document.getElementById('madd-request-block');
+  if(mode==='request'){
+    if(formBlock)formBlock.style.display='none';
+    if(reqBlock){
+      reqBlock.style.display='';
+      const isEn=(window.LANG&&LANG.cur==='en');
+      const msg=getC(isEn?'callcenter_msg_en':'callcenter_msg_uk','');
+      const phone=getC('callcenter_phone','');
+      const msgEl=document.getElementById('madd-request-msg');
+      if(msgEl)msgEl.textContent=msg;
+      const phoneEl=document.getElementById('madd-request-phone');
+      if(phoneEl){
+        phoneEl.href='tel:'+phone.replace(/[^\d+]/g,'');
+        phoneEl.textContent='\u{1F4DE} '+phone;
+      }
+    }
+  }else{
+    if(formBlock)formBlock.style.display='';
+    if(reqBlock)reqBlock.style.display='none';
+  }
+  const showCreatorRow=document.getElementById('fshow-creator-row');
+  if(showCreatorRow)showCreatorRow.style.display=curUser?'':'none';
+  _updateDeathReasonOptions();
   document.getElementById('madd').classList.add('open');
   _validatePublicDates();
   setTimeout(function(){
@@ -5074,11 +5181,21 @@ async function submitAdd(){
   if(_b&&_d&&_b>_d){showN(LANG.t("errors.birth_after_death"),true);return;}
   const px=document.getElementById('fpx').value;
   const py=document.getElementById('fpy').value;
-  const body={last,first,mid:document.getElementById('fmid').value.trim(),birth:document.getElementById('fbirth').value||null,death:document.getElementById('fdeath').value||null,loc:document.getElementById('floc').value.trim(),bury:document.getElementById('fbury').value.trim(),circ:document.getElementById('fcirc').value,descr:document.getElementById('fdesc').value.trim(),photo:document.getElementById('fphoto').value.trim(),video_url:document.getElementById('fvideo').value.trim(),color:selColor,pos_x:+px,pos_y:+py,world_lat:+wlat,world_lng:+wlng,added_by:curUser?.name||'',awards:_userAwards.filter(a=>a.name).map(a=>({name:a.name,img_file:a.file||'',category:a.category||''}))};
+  const body={last,first,mid:document.getElementById('fmid').value.trim(),birth:document.getElementById('fbirth').value||null,death:document.getElementById('fdeath').value||null,loc:document.getElementById('floc').value.trim(),bury:document.getElementById('fbury').value.trim(),circ:document.getElementById('fcirc').value,descr:document.getElementById('fdesc').value.trim(),photo:document.getElementById('fphoto').value.trim(),video_url:document.getElementById('fvideo').value.trim(),color:selColor,pos_x:+px,pos_y:+py,world_lat:+wlat,world_lng:+wlng,added_by:curUser?.name||'',category:document.getElementById('fcategory')?.value||'military',death_reason:document.getElementById('fdeath_reason')?.value||'',citizenship:document.getElementById('fcitizenship')?.value||'',nationality:document.getElementById('fnationality')?.value||'',show_creator:document.getElementById('fshow_creator')?.checked?1:0,awards:_userAwards.filter(a=>a.name).map(a=>({name:a.name,img_file:a.file||'',category:a.category||''}))};
   try{
     const r=await fetch(API+'/api/people',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     const d=await r.json();
-    if(!r.ok){showN(d.detail||d.message||LANG.t("errors.submit_failed"),true);return;}
+    if(!r.ok){
+      const detail=d.detail;
+      if(detail&&typeof detail==='object'&&detail.code==='add_person_request_mode'){
+        const isEn=(window.LANG&&LANG.cur==='en');
+        const msg=isEn?detail.message_en:detail.message_uk;
+        showN(msg+(detail.phone?` (${detail.phone})`:''),true);
+      }else{
+        showN((typeof detail==='string'?detail:'')||d.message||LANG.t("errors.submit_failed"),true);
+      }
+      return;
+    }
     showN(d.message||LANG.t("errors.sent_for_moderation"));
   }catch{showN(LANG.t("network"),true);return;}
   _userAwards=[]; _renderUserAwards();
@@ -5301,11 +5418,6 @@ async function checkOAuthCallback(){
       google_token:           LANG.t("errors.oauth_google_token"),
       google_userinfo:       LANG.t("errors.oauth_google_userinfo"),
       google_no_email:       LANG.t("errors.oauth_google_no_email"),
-      diia_not_configured:   LANG.t("errors.oauth_diia_not_configured"),
-      diia_cancelled:        LANG.t("errors.oauth_diia_cancelled"),
-      diia_token:            LANG.t("errors.oauth_diia_token"),
-      diia_userinfo:         LANG.t("errors.oauth_diia_userinfo"),
-      diia_no_email:         LANG.t("errors.oauth_diia_no_email"),
     };
     showN(msgs[p.get('oauth_error')]||LANG.t("errors.oauth_generic"),true);
     history.replaceState({},'','/');

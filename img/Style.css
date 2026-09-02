@@ -1299,16 +1299,6 @@ input.f-err { border-color:#e53935 !important; }
   border-color: #dadce0;
 }
 .oauth-google:hover { box-shadow: 0 2px 12px rgba(0,0,0,.18); }
-.oauth-diia {
-  background: #000;
-  color: #fff;
-  border-color: rgba(255,255,255,.15);
-  flex-direction: column;
-  gap: 2px;
-}
-.oauth-diia:hover { box-shadow: 0 2px 14px rgba(0,0,0,.5); }
-.oauth-diia .diia-row { display:flex; align-items:center; gap:10px; }
-.oauth-diia .diia-unavail { font-size:10px; color:rgba(255,255,255,.45); letter-spacing:.02em; }
 .oauth-sep {
   display: flex; align-items: center; gap: 12px;
   margin-bottom: 16px;

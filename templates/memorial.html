@@ -68,8 +68,8 @@
           {% if unit %}<span><b>Підрозділ:</b> {{ unit }}</span>{% endif %}
           {% if grp %}<span><b>Позивний:</b> {{ grp }}</span>{% endif %}
           {% if birth %}<span><b>Народився:</b> {{ birth }}</span>{% endif %}
-          {% if death %}<span><b>Загинув:</b> {{ death }}</span>{% endif %}
-          {% if loc %}<span><b>Місце загибелі:</b> {{ loc }}</span>{% endif %}
+          {% if death %}<span><b>{{ death_label }}:</b> {{ death }}</span>{% endif %}
+          {% if loc %}<span><b>{{ loc_label }}:</b> {{ loc }}</span>{% endif %}
           {% if bury %}<span><b>Поховання:</b> {{ bury }}</span>{% endif %}
         </div>
       </div>
