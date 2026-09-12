@@ -233,7 +233,7 @@ body{visibility:hidden}
 <!-- Море — окремий SVG, поза #ukraine-svg, щоб drop-shadow країни не впливав -->
 <svg id="sea-svg" xmlns="http://www.w3.org/2000/svg"
      viewBox="0 0 14000 9500" preserveAspectRatio="xMidYMid meet"
-     style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:visible;display:none;transform-origin:0 0">
+     style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:visible;display:none;transform-origin:0 0;will-change:transform">
   <defs>
     <filter id="sea-filter" x="-5%" y="-5%" width="110%" height="110%" color-interpolation-filters="sRGB">
       <feTurbulence id="sea-turb" type="turbulence" baseFrequency="0.0012 0.0008" numOctaves="3" seed="4" result="turb"/>
@@ -2635,17 +2635,21 @@ let _dotPulseSpeed = 1.0, _dotPulseAmp = 0.35, _dotGlowInt = 0.40, _dotGlowR = 3
 /* ── Завантаження кольорів з БД ── */
 // ── Density algorithm ──────────────────────────────────────
 let _DENSITY_CFG_CACHE = null;
+let _DENSITY_BOOSTS_MAP = null; // Map(id → boost) — будується разом з кешем cfg,
+                                 // щоб _densityScore() не робив O(m) .find() на кожен виклик
+                                 // (викликається O(n) разів на кадр в _startCanvasLoop)
 function _densityCfg() {
   if (_DENSITY_CFG_CACHE) return _DENSITY_CFG_CACHE;
   try { _DENSITY_CFG_CACHE = JSON.parse(getC('density_config','{}') || '{}'); }
   catch { _DENSITY_CFG_CACHE = {}; }
+  _DENSITY_BOOSTS_MAP = new Map((_DENSITY_CFG_CACHE.boosts||[]).map(b => [b.id, b]));
   return _DENSITY_CFG_CACHE;
 }
 function _densityScore(p) {
   const cfg = _densityCfg();
   const w = cfg.weights || {};
   let score = (p.likes||0)*(w.likes??0.45) + (p.rating||0)*(w.rating??0.35);
-  const boost = (cfg.boosts||[]).find(b => b.id === p.id);
+  const boost = _DENSITY_BOOSTS_MAP && _DENSITY_BOOSTS_MAP.get(p.id);
   if (boost) {
     if (boost.m === 'pin') return Infinity;
     score *= (parseFloat(boost.m) || 1);
@@ -3251,15 +3255,26 @@ function _scheduleScaleCityLabels(){
   if(_scaleLabelRaf)return;
   _scaleLabelRaf=requestAnimationFrame(()=>{ _scaleLabelRaf=null; scaleCityLabels(); });
 }
+let _lastZoomCity=null, _lastZoomDeep=null;
 function applyTr() {
   _canvasDirty = true; // карта рухається → canvas має перемалюватись синхронно
   if(_elZoomScale) _elZoomScale.textContent='×'+tr.s.toFixed(1);
   updateMapSvgViewBox();
   const zc=tr.s>=(window.CITY_BORDER_ZOOM||2.5);
-  sl.classList.toggle('zoom-city',zc);
-  sl.classList.toggle('zoom-deep',tr.s>=5);
+  const zd=tr.s>=5;
+  // classList.toggle/style-запис лише коли поріг РЕАЛЬНО перетнуто — інакше
+  // щокадру форсується CSS re-match по всіх нащадках SVG (сотні path) навіть
+  // коли зум не наближається до жодного порогу
+  if(zc!==_lastZoomCity){
+    sl.classList.toggle('zoom-city',zc);
+    if(_cityOverlay)_cityOverlay.style.opacity=zc?'1':'0';
+    _lastZoomCity=zc;
+  }
+  if(zd!==_lastZoomDeep){
+    sl.classList.toggle('zoom-deep',zd);
+    _lastZoomDeep=zd;
+  }
   _scheduleScaleCityLabels();
-  if(_cityOverlay)_cityOverlay.style.opacity=zc?'1':'0';
 }
 // Throttle applyTr to one call per rAF frame — avoids SVG layout storm during drag/wheel
 let _applyTrPending = false;
@@ -3331,8 +3346,31 @@ function flyTo(xr,yr,ts) {
 
 function dotR(p) { return(1.5+(p._rn??0)*2.8)*_cachedSqrtS; }
 function hit(sx,sy) {
+  const grid=window._geoGrid;
+  if(!grid||!grid.size) return null; // до першого loadData() — даних ще нема
+  const b=getSvgBounds();
+  const w=s2w(sx,sy);
+  const cellSize=window._GEO_GRID_CELL;
+  // Верхня межа dotR(p)*3+10 (при p._rn=1) — оцінка максимального hit-радіуса
+  // в поточному zoom, переведена в world-одиниці окремо по X/Y (b.w може
+  // відрізнятись від b.h залежно від пропорцій canvas/SVG viewBox)
+  const maxHitPx=4.3*_cachedSqrtS*3+10;
+  const rWx=maxHitPx/(b.w*tr.s), rWy=maxHitPx/(b.h*tr.s);
+  const cx=Math.floor(w.x/cellSize), cy=Math.floor(w.y/cellSize);
+  const spanX=Math.max(1,Math.ceil(rWx/cellSize)), spanY=Math.max(1,Math.ceil(rWy/cellSize));
   let best=null,bd=Infinity;
-  for(const p of people){const pos=w2s(p.x,p.y);const d=Math.hypot(sx-pos.x,sy-pos.y);const r=dotR(p)*3+10;if(d<r&&d<bd){best=p;bd=d;}}
+  for(let gx=cx-spanX; gx<=cx+spanX; gx++){
+    for(let gy=cy-spanY; gy<=cy+spanY; gy++){
+      const bucket=grid.get(gx+','+gy);
+      if(!bucket)continue;
+      for(const p of bucket){
+        const pos=w2s(p.x,p.y);
+        const d=Math.hypot(sx-pos.x,sy-pos.y);
+        const r=dotR(p)*3+10;
+        if(d<r&&d<bd){best=p;bd=d;}
+      }
+    }
+  }
   return best;
 }
 
@@ -3343,8 +3381,8 @@ mw.addEventListener('mousedown',e=>{
   drag=true;dragS={x:e.clientX,y:e.clientY};trS={x:tr.x,y:tr.y};mw.classList.add('grabbing');
   // Тултіп ховаємо один раз тут (не на кожному mousemove під час драгу — зайві getElementById+style writes)
   const tipEl=document.getElementById('tip');if(tipEl)tipEl.style.display='none';
-  // Пауза WebGL-симуляції диму на час активного панорамування — той самий патерн, що й для zoom (wheel)
-  if(window._fluidConfig)window._fluidConfig.PAUSED=true;
+  // Пауза диму на час панорамування прибрана (аналогічно до zoom) — деякі
+  // пристрої давали хибне спрацювання, дим просто продовжує працювати.
 });
 let _mousePending=false,_lastMX=0,_lastMY=0;
 let _tipPid=null;
@@ -3464,11 +3502,6 @@ window.addEventListener('keydown',e=>{
 });
 window.addEventListener('mouseup',e=>{
   const was=drag;drag=false;mw.classList.remove('grabbing');
-  // Знімаємо паузу диму, поставлену в mousedown — панорамування завершено
-  if(was&&window._fluidConfig){
-    window._fluidConfig.PAUSED=false;
-    if(window._fluidResume)window._fluidResume();
-  }
   if(e.target.closest('#zoom,#count,#bottom-blocks,#micro-chat,#social-bar,#pick-bar,#topbar,.mov,.zbtn,.btn,button,[role="button"]'))return;
   if(document.querySelector('#dev-modal[style*="flex"],.mov.open'))return;
   if(was&&Math.hypot(e.clientX-dragS.x,e.clientY-dragS.y)>5)return;
@@ -3476,7 +3509,6 @@ window.addEventListener('mouseup',e=>{
   const p=hit(e.clientX-_mwRect.left,e.clientY-_mwRect.top);
   if(p&&!isPick&&_mapMode!=='world'){openCard(p);flyTo(p.x,p.y,Math.max(tr.s,3.5));}
 });
-let _zoomPauseTimer = null;
 mw.addEventListener('wheel',e=>{
   e.preventDefault();
   const now=performance.now();
@@ -3495,15 +3527,9 @@ mw.addEventListener('wheel',e=>{
   // На мінімумі + прокрутка вниз → скок на x1
   if(dy>0 && tr.s<=(window.ZOOM_MIN||0.4)+0.01){resetView();return;}
   const f=Math.pow(0.999,dy);
-  // Тимчасово зупиняємо WebGL-симуляцію під час zoom — звільняє GPU для SVG
-  if(window._fluidConfig&&!window._fluidConfig.PAUSED){
-    window._fluidConfig.PAUSED=true;
-    if(_zoomPauseTimer)clearTimeout(_zoomPauseTimer);
-    _zoomPauseTimer=setTimeout(()=>{
-      if(window._fluidConfig)window._fluidConfig.PAUSED=false;
-      if(window._fluidResume)window._fluidResume();
-    },120);
-  }
+  // Пауза диму на zoom прибрана — деякі пристрої (сенсорне/нахильне колесо миші,
+  // чутливі трекпади) шлють wheel-події навіть від легкого випадкового дотику,
+  // через що дим "заморожувався" без реального наміру користувача зумувати.
   wheelZoom(e.clientX-r.left,e.clientY-r.top,f);
 },{passive:false});
 document.getElementById('zin').onclick  =()=>{
@@ -3636,22 +3662,33 @@ function drawDotFX(p, pos, pulse) {
     ctx.beginPath();ctx.arc(0,0,gr,0,Math.PI*2);ctx.fillStyle=grd;ctx.fill();
     ctx.restore();
   }
-  // ── хрест-промені без ctx.filter (градієнтні прямокутники) ─
+  // ── хрест-промені без ctx.filter (градієнтні прямокутники, з кешем) ─
   if(gr>0&&isFinite(gr)){
     const gl=gr*0.82;
     const alpha=Math.min(0.45,0.18*pulse*_dotGlowInt*(isH||isS?2:1));
-    // Вертикальний промінь — градієнт зверху вниз
-    const vg=ctx.createLinearGradient(pos.x,pos.y-gl,pos.x,pos.y+gl);
-    vg.addColorStop(0,`rgba(${p._r},${p._g},${p._b},0)`);
-    vg.addColorStop(0.5,`rgba(${p._r},${p._g},${p._b},${alpha.toFixed(2)})`);
-    vg.addColorStop(1,`rgba(${p._r},${p._g},${p._b},0)`);
-    ctx.fillStyle=vg;ctx.fillRect(pos.x-0.8,pos.y-gl,1.6,gl*2);
-    // Горизонтальний промінь
-    const hg=ctx.createLinearGradient(pos.x-gl,pos.y,pos.x+gl,pos.y);
-    hg.addColorStop(0,`rgba(${p._r},${p._g},${p._b},0)`);
-    hg.addColorStop(0.5,`rgba(${p._r},${p._g},${p._b},${alpha.toFixed(2)})`);
-    hg.addColorStop(1,`rgba(${p._r},${p._g},${p._b},0)`);
-    ctx.fillStyle=hg;ctx.fillRect(pos.x-gl,pos.y-0.8,gl*2,1.6);
+    // Кешуємо в ЛОКАЛЬНИХ координатах (як glow вище) — раніше промені-градієнти
+    // будувались напряму у світових pos.x/pos.y, тому кожен маркер отримував
+    // унікальний градієнт і кеш був неможливий; тепер малюємо через ctx.translate,
+    // градієнт кешується по color+gl+alpha так само як glow.
+    const rayKey=`${p.color}|${gl.toFixed(1)}|${alpha.toFixed(2)}`;
+    let rayG=_glowCache.get('ray:'+rayKey);
+    if(!rayG){
+      rayG={};
+      rayG.v=ctx.createLinearGradient(0,-gl,0,gl);
+      rayG.v.addColorStop(0,`rgba(${p._r},${p._g},${p._b},0)`);
+      rayG.v.addColorStop(0.5,`rgba(${p._r},${p._g},${p._b},${alpha.toFixed(2)})`);
+      rayG.v.addColorStop(1,`rgba(${p._r},${p._g},${p._b},0)`);
+      rayG.h=ctx.createLinearGradient(-gl,0,gl,0);
+      rayG.h.addColorStop(0,`rgba(${p._r},${p._g},${p._b},0)`);
+      rayG.h.addColorStop(0.5,`rgba(${p._r},${p._g},${p._b},${alpha.toFixed(2)})`);
+      rayG.h.addColorStop(1,`rgba(${p._r},${p._g},${p._b},0)`);
+      _glowCache.set('ray:'+rayKey,rayG);
+    }
+    ctx.save();
+    ctx.translate(pos.x,pos.y);
+    ctx.fillStyle=rayG.v;ctx.fillRect(-0.8,-gl,1.6,gl*2);
+    ctx.fillStyle=rayG.h;ctx.fillRect(-gl,-0.8,gl*2,1.6);
+    ctx.restore();
   }
   // ── неонове кільце для дублікатів ───────────────────────
   if(p._hasDupe){const ringR=r*4.5+Math.sin(animT*2.5+(p.id||0))*r*.5;ctx.beginPath();ctx.arc(pos.x,pos.y,ringR,0,Math.PI*2);ctx.strokeStyle=`rgba(0,200,255,${(.12+.08*Math.sin(animT*2)).toFixed(2)})`;ctx.lineWidth=1;ctx.stroke();}
@@ -3705,20 +3742,53 @@ function _startCanvasLoop() {
     let _minS=0; try{_minS=_densityMinScore(tr.s);}catch(_){}
     let _denCount=0;
     const _vis=[];
-    for(const p of people){
-      if(!p||!isFinite(p.x)||!isFinite(p.y))continue;
-      if(_minS>0){try{if(_densityScore(p)<_minS)continue;}catch(_){}}
-      _denCount++;
-      const pos=w2s(p.x,p.y);
-      if(!isFinite(pos.x)||!isFinite(pos.y))continue;
-      if(pos.x<-60||pos.x>W+60||pos.y<-60||pos.y>H+60)continue;
-      // Псевдо-випадкові фаза і швидкість — кожна зірка мерехтить незалежно
-      const _pid=(p.id||0);
-      const phase=((_pid*2654435761)>>>0)%6283/1000;           // 0..2π унікальна фаза
-      const spd=0.7+0.6*(((_pid*1103515245+12345)>>>0)%1000)/1000; // 0.7..1.3×
-      const sp=_dotPulseSpeed*spd*(1+(p._rn??0)*0.3);
-      const pulse=(1-_dotPulseAmp)+_dotPulseAmp*((Math.sin(animT*sp+phase)+1)/2);
-      _vis.push({p,pos,pulse});
+    // Viewport culling через просторовий grid-індекс (window._geoGrid, вже
+    // побудований у loadData() для hit()) — замість перебору ВСІХ people щокадру
+    // ітеруємось лише по ячейках, що потрапляють у видиму world-space область
+    // екрану (+запас на розмір маркера). При великій кількості записів і
+    // помітному zoom-in це основна точка масштабування рендер-циклу.
+    const _grid=window._geoGrid, _gridCell=window._GEO_GRID_CELL;
+    const _iterList = (_grid&&_grid.size) ? null : people; // фолбек — до першого loadData()
+    if(_iterList===null){
+      const wTL=s2w(-60,-60), wBR=s2w(W+60,H+60);
+      const gx0=Math.floor(Math.min(wTL.x,wBR.x)/_gridCell)-1, gx1=Math.ceil(Math.max(wTL.x,wBR.x)/_gridCell)+1;
+      const gy0=Math.floor(Math.min(wTL.y,wBR.y)/_gridCell)-1, gy1=Math.ceil(Math.max(wTL.y,wBR.y)/_gridCell)+1;
+      for(let gx=gx0; gx<=gx1; gx++){
+        for(let gy=gy0; gy<=gy1; gy++){
+          const bucket=_grid.get(gx+','+gy);
+          if(!bucket)continue;
+          for(const p of bucket){
+            if(!p||!isFinite(p.x)||!isFinite(p.y))continue;
+            if(_minS>0){try{if(_densityScore(p)<_minS)continue;}catch(_){}}
+            _denCount++;
+            const pos=w2s(p.x,p.y);
+            if(!isFinite(pos.x)||!isFinite(pos.y))continue;
+            if(pos.x<-60||pos.x>W+60||pos.y<-60||pos.y>H+60)continue;
+            const _pid=(p.id||0);
+            const phase=((_pid*2654435761)>>>0)%6283/1000;
+            const spd=0.7+0.6*(((_pid*1103515245+12345)>>>0)%1000)/1000;
+            const sp=_dotPulseSpeed*spd*(1+(p._rn??0)*0.3);
+            const pulse=(1-_dotPulseAmp)+_dotPulseAmp*((Math.sin(animT*sp+phase)+1)/2);
+            _vis.push({p,pos,pulse});
+          }
+        }
+      }
+    } else {
+      for(const p of _iterList){
+        if(!p||!isFinite(p.x)||!isFinite(p.y))continue;
+        if(_minS>0){try{if(_densityScore(p)<_minS)continue;}catch(_){}}
+        _denCount++;
+        const pos=w2s(p.x,p.y);
+        if(!isFinite(pos.x)||!isFinite(pos.y))continue;
+        if(pos.x<-60||pos.x>W+60||pos.y<-60||pos.y>H+60)continue;
+        // Псевдо-випадкові фаза і швидкість — кожна зірка мерехтить незалежно
+        const _pid=(p.id||0);
+        const phase=((_pid*2654435761)>>>0)%6283/1000;           // 0..2π унікальна фаза
+        const spd=0.7+0.6*(((_pid*1103515245+12345)>>>0)%1000)/1000; // 0.7..1.3×
+        const sp=_dotPulseSpeed*spd*(1+(p._rn??0)*0.3);
+        const pulse=(1-_dotPulseAmp)+_dotPulseAmp*((Math.sin(animT*sp+phase)+1)/2);
+        _vis.push({p,pos,pulse});
+      }
     }
     // Лінії зв'язку — тільки між зірками, що пройшли фільтр щільності
     drawNeonThreads(new Set(_vis.map(v=>v.p.id)));
@@ -3995,6 +4065,22 @@ async function loadData() {
     const _grpMap={};
     people.forEach(p=>{if(p._hasDupe){if(!_grpMap[p._dupKey])_grpMap[p._dupKey]=[];_grpMap[p._dupKey].push(p);}});
     window._neonGroups=Object.values(_grpMap).filter(g=>g.length>=2);
+    // Просторовий grid-індекс (world-space 0..1) для швидкого hit-test —
+    // будується раз при завантаженні даних, не залежить від pan/zoom
+    // (p.x/p.y незмінні координати). Прибирає O(n) перебір усіх маркерів
+    // на кожен рух миші над картою (основна причина лагу при hover).
+    const GRID_CELL=0.05; // ~20×20 комірок на весь world-простір 0..1
+    const _grid=new Map(); // "cx,cy" → [people...]
+    people.forEach(p=>{
+      if(!isFinite(p.x)||!isFinite(p.y))return;
+      const cx=Math.floor(p.x/GRID_CELL), cy=Math.floor(p.y/GRID_CELL);
+      const key=cx+','+cy;
+      let bucket=_grid.get(key);
+      if(!bucket){bucket=[];_grid.set(key,bucket);}
+      bucket.push(p);
+    });
+    window._geoGrid=_grid;
+    window._GEO_GRID_CELL=GRID_CELL;
     document.getElementById('sttotal').textContent=stats.total||people.length;
     document.getElementById('stlikes').textContent=stats.likes||0;
     document.getElementById('btotal').textContent=stats.total||people.length;

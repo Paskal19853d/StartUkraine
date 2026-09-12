@@ -58,6 +58,11 @@ let config = {
   FREQ_MULTI: 0.1,
   CUSTOM_COLOR: true
 };
+// Об'єкт передається за посиланням — зовнішній код (index.html) керує PAUSED
+// напряму через window._fluidConfig. Без цього рядка top-level `let config`
+// НЕ стає властивістю window (на відміну від var/function), і вся логіка паузи
+// диму в index.html (zoom/drag/admin toggle) — мертвий код, що ніколи не спрацьовує.
+window._fluidConfig = config;
 
 var timer = setInterval(randomSplat, 3500);
 var _runRandom = true;
