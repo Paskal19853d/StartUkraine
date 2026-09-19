@@ -611,6 +611,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
     <div class="nav-item"        draggable="true" onclick="showSec('social')"    data-s="social">    <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-share"/></svg></span><span data-i18n="nav.social">Соцмережі</span></div>
     <div class="nav-item"        draggable="true" onclick="showSec('colors')"    data-s="colors">    <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-palette"/></svg></span><span data-i18n="nav.colors">Кольори</span></div>
     <div class="nav-item"        draggable="true" onclick="showSec('smoke')"     data-s="smoke">     <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-smoke"/></svg></span><span data-i18n="nav.smoke">Ефект диму</span></div>
+    <div class="nav-item"        draggable="true" onclick="showSec('ghosts')"    data-s="ghosts">    <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-eye"/></svg></span><span data-i18n="nav.ghosts">Привиди в диму</span></div>
     <div class="nav-item"        draggable="true" onclick="showSec('photo')"     data-s="photo">     <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-photo"/></svg></span><span data-i18n="nav.photo">Фото на карті</span></div>
     <div class="nav-item"        draggable="true" onclick="showSec('sea')"       data-s="sea">       <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-waves"/></svg></span><span data-i18n="nav.sea">Хвилі морів</span></div>
     <div class="nav-item"        draggable="true" onclick="showSec('icons')"     data-s="icons">     <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-star"/></svg></span><span data-i18n="nav.icons">Іконки</span></div>
@@ -3726,6 +3727,30 @@ tr:hover td{background:rgba(255,255,255,.02)}
         <div id="smoke-grid"></div>
       </div>
 
+      <!-- GHOSTS SECTION -->
+      <div id="sec-ghosts" class="section">
+        <div class="sec-title"><svg class="adm-ico"><use href="#ico-eye"/></svg> <span data-i18n="nav.ghosts">Привиди в диму</span></div>
+        <div style="display:flex;gap:10px;margin-bottom:16px">
+          <button class="btn btn-p" onclick="saveAllColors()"><i class="fi-rr-disk"></i><span data-i18n="btn.save">Зберегти</span></button>
+          <button class="btn" onclick="loadColors()"><i class="fi-rr-refresh"></i><span data-i18n="btn.cancel">Скасувати</span></button>
+        </div>
+        <div id="ghost-settings-grid"></div>
+
+        <div class="sec-title" style="margin-top:24px;font-size:13px">SVG-привиди (2-6 файлів)</div>
+        <div style="margin-bottom:12px">
+          <input type="file" id="ghost-upload-input" accept=".svg" style="display:none" onchange="uploadGhostFace(this.files[0])">
+          <button class="btn btn-p" onclick="document.getElementById('ghost-upload-input').click()">
+            <svg class="adm-ico"><use href="#ico-plus"/></svg> Завантажити SVG
+          </button>
+        </div>
+        <div class="tbl-wrap">
+          <table id="ghost-faces-table">
+            <thead><tr><th style="width:36px">#</th><th style="width:56px">Прев'ю</th><th>Назва</th><th style="width:100px">Увімкнено</th><th style="width:80px">Порядок</th><th style="width:90px"></th></tr></thead>
+            <tbody id="ghost-faces-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
       <!-- SEA SECTION -->
       <div id="sec-sea" class="section">
         <div class="sec-title"><svg class="adm-ico"><use href="#ico-waves"/></svg> <span data-i18n="nav.sea">Хвилі морів</span></div>
@@ -6274,6 +6299,7 @@ function showSec(id) {
   if(id==='colors')    loadColors();
   if(id==='social')  { if(Object.keys(COLORS).length>0) renderSocialGrid();   else loadColors(); }
   if(id==='smoke')   { if(Object.keys(COLORS).length>0) renderSmokeSection(); else loadColors(); }
+  if(id==='ghosts')  { if(Object.keys(COLORS).length>0) renderGhostSection(); else loadColors(); loadGhostFacesAdmin(); }
   if(id==='photo')   { if(Object.keys(COLORS).length>0) renderPhotoSection(); else loadColors(); }
   if(id==='sea')     { if(Object.keys(COLORS).length>0) renderSeaSection();   else loadColors(); }
   if(id==='icons')   { if(Object.keys(COLORS).length>0) renderIconsSection(); else loadColors(); }
@@ -10125,6 +10151,380 @@ function renderSmokeSection(){
 
     </div></div><!-- /smoke-settings-body -->
   </div>`;
+}
+
+/* ── Привиди в диму ── */
+let _ghostFacesData = [];
+
+function renderGhostSection(){
+  const g = k => COLORS[k]?.value;
+  const enabled   = (g('ghost_enabled') ?? '1') !== '0';
+  const selMode   = g('ghost_selection_mode') || 'random_no_repeat';
+  const imgFreq   = g('ghost_image_change_frequency_sec') || '45';
+  const posDelay  = g('ghost_position_change_delay_sec')  || '6';
+  const sizeMin   = g('ghost_size_min_px') || '220';
+  const sizeMax   = g('ghost_size_max_px') || '420';
+  const sizeFixed = (g('ghost_size_fixed') ?? '0') === '1';
+  const margin    = g('ghost_edge_margin_percent') || '12';
+  const threshold = g('ghost_reveal_threshold_px') || '280';
+  const maxOp     = g('ghost_max_opacity') || '0.55';
+  const curve     = g('ghost_reveal_curve') || '2.2';
+  const fadeIn    = g('ghost_fade_in_speed')  || '0.06';
+  const fadeOut   = g('ghost_fade_out_speed') || '0.03';
+  const holdDur   = g('ghost_hold_duration_sec') || '0';
+  const blur      = g('ghost_blur_amount_px') || '6';
+  const glowStr   = g('ghost_glow_strength')  || '0.35';
+  const glowRad   = g('ghost_glow_radius_px') || '18';
+  const glowSoft  = g('ghost_glow_softness')  || '0.5';
+  const mouseRec  = g('ghost_mouse_recency_threshold_ms') || '450';
+  const devMode   = (g('ghost_dev_mode') ?? '0') === '1';
+  const permeab   = g('ghost_obstacle_permeability') || '0';
+  const attractS  = g('ghost_obstacle_attract_strength') || '6000';
+  const edgeEn    = (g('ghost_edge_highlight_enabled') ?? '1') === '1';
+  const edgeRad   = g('ghost_edge_highlight_radius_px') || '35';
+  const edgeWidth = g('ghost_edge_highlight_width_px') || '3';
+  const edgeBlur  = g('ghost_edge_highlight_blur_px') || '3';
+  const edgeStr   = g('ghost_edge_highlight_strength') || '0.9';
+  const tintColor = g('ghost_tint_color') || '#e8f4ff';
+  const tintOp    = g('ghost_tint_opacity') || '1';
+
+  const grid = document.getElementById('ghost-settings-grid');
+  if (!grid) return;
+
+  const sl = (id, min, max, step, val, key, lbl, sfx='') => `
+    <div>
+      <div style="font-size:11px;color:var(--text2);margin-bottom:6px">${lbl}</div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <input type="range" min="${min}" max="${max}" step="${step}" value="${val}"
+          style="width:130px;accent-color:#4fc3f7"
+          oninput="document.getElementById('${id}').textContent=this.value+'${sfx}';onClrChange('${key}',this.value);applyGhostSettings()">
+        <span id="${id}" style="font-size:12px;color:var(--text);min-width:48px">${val}${sfx}</span>
+      </div>
+    </div>`;
+
+  grid.innerHTML = `
+  <div style="background:rgba(79,195,247,.06);border:1px solid rgba(79,195,247,.2);border-radius:10px;padding:20px 22px;display:flex;flex-direction:column;gap:22px">
+
+    <!-- Головний перемикач -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:14px;border-bottom:1px solid rgba(79,195,247,.15)">
+      <div>
+        <div style="font-size:13px;font-weight:700;color:${enabled?'#4fc3f7':'var(--muted)'}">Привиди в диму</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">SVG-силуети проявляються там, де дим активний</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span id="ghost-enabled-lbl" style="font-size:12px;color:${enabled?'#4fc3f7':'var(--muted)'}">${enabled?'Увімкнено':'Вимкнено'}</span>
+        <div id="ghost-enabled-tog" onclick="adminToggleGhosts()"
+          style="width:44px;height:24px;background:${enabled?'rgba(79,195,247,.25)':'rgba(255,255,255,.08)'};
+                 border:1px solid ${enabled?'rgba(79,195,247,.55)':'var(--border2)'};
+                 border-radius:12px;position:relative;cursor:pointer;transition:all .25s;
+                 ${enabled?'box-shadow:0 0 10px rgba(79,195,247,.2)':''}">
+          <div style="position:absolute;top:3px;left:${enabled?'18':'3'}px;width:16px;height:16px;
+                      background:${enabled?'#4fc3f7':'var(--muted)'};border-radius:50%;transition:all .25s"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Режим розробки: жовтий підпис позиції привида на сайті -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:14px;border-bottom:1px solid rgba(79,195,247,.15)">
+      <div>
+        <div style="font-size:13px;font-weight:700;color:${devMode?'#ffdd00':'var(--muted)'}">Режим розробки (підсвітка)</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">Привид завжди видимий, з жовтим підписом — щоб бачити де він на сайті</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span id="ghost-devmode-lbl" style="font-size:12px;color:${devMode?'#ffdd00':'var(--muted)'}">${devMode?'Увімкнено':'Вимкнено'}</span>
+        <div id="ghost-devmode-tog" onclick="adminToggleGhostDevMode()"
+          style="width:44px;height:24px;background:${devMode?'rgba(255,221,0,.25)':'rgba(255,255,255,.08)'};
+                 border:1px solid ${devMode?'rgba(255,221,0,.6)':'var(--border2)'};
+                 border-radius:12px;position:relative;cursor:pointer;transition:all .25s;
+                 ${devMode?'box-shadow:0 0 10px rgba(255,221,0,.25)':''}">
+          <div style="position:absolute;top:3px;left:${devMode?'18':'3'}px;width:16px;height:16px;
+                      background:${devMode?'#ffdd00':'var(--muted)'};border-radius:50%;transition:all .25s"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Підсвічена кромка (обводка) — окремий перемикач, за прямим запитом користувача,
+         замість numeric-слайдера 0/1 у загальному ряду налаштувань -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:14px;border-bottom:1px solid rgba(79,195,247,.15)">
+      <div>
+        <div style="font-size:13px;font-weight:700;color:${edgeEn?'#b4e2fd':'var(--muted)'}">Підсвічена кромка (обводка SVG)</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">Розмита обводка кольору диму, видима поруч з курсором вздовж краю силуету</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span id="ghost-edgehl-lbl" style="font-size:12px;color:${edgeEn?'#b4e2fd':'var(--muted)'}">${edgeEn?'Увімкнено':'Вимкнено'}</span>
+        <div id="ghost-edgehl-tog" onclick="adminToggleGhostEdgeHighlight()"
+          style="width:44px;height:24px;background:${edgeEn?'rgba(180,226,253,.25)':'rgba(255,255,255,.08)'};
+                 border:1px solid ${edgeEn?'rgba(180,226,253,.6)':'var(--border2)'};
+                 border-radius:12px;position:relative;cursor:pointer;transition:all .25s;
+                 ${edgeEn?'box-shadow:0 0 10px rgba(180,226,253,.3)':''}">
+          <div style="position:absolute;top:3px;left:${edgeEn?'18':'3'}px;width:16px;height:16px;
+                      background:${edgeEn?'#b4e2fd':'var(--muted)'};border-radius:50%;transition:all .25s"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="ghost-settings-body" style="${enabled?'':'opacity:.35;pointer-events:none'}">
+    <div style="display:flex;flex-direction:column;gap:22px">
+
+    <div style="font-size:11px;color:#4fc3f7;font-weight:700;text-transform:uppercase;letter-spacing:.07em">Вибір і зміна</div>
+    <div style="display:flex;flex-wrap:wrap;gap:18px;align-items:flex-end">
+      <div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:6px">Режим вибору SVG</div>
+        <select onchange="onClrChange('ghost_selection_mode',this.value);applyGhostSettings()"
+          style="background:var(--bg2);color:var(--text);border:1px solid var(--border2);border-radius:6px;padding:6px 10px;font-size:12px">
+          <option value="random_no_repeat" ${selMode==='random_no_repeat'?'selected':''}>Випадково без повторів</option>
+          <option value="random" ${selMode==='random'?'selected':''}>Випадково</option>
+          <option value="sequential" ${selMode==='sequential'?'selected':''}>По черзі</option>
+        </select>
+      </div>
+      ${sl('gh-imgfreq-v', 5, 300, 1, imgFreq, 'ghost_image_change_frequency_sec', 'Частота зміни SVG', 'с')}
+      ${sl('gh-posdelay-v', 1, 60, 1, posDelay, 'ghost_position_change_delay_sec', 'Затримка перед переміщенням', 'с')}
+    </div>
+
+    <div style="font-size:11px;color:#4fc3f7;font-weight:700;text-transform:uppercase;letter-spacing:.07em">Розмір і позиція</div>
+    <div style="display:flex;flex-wrap:wrap;gap:18px;align-items:flex-end">
+      ${sl('gh-szmin-v', 60, 800, 10, sizeMin, 'ghost_size_min_px', 'Мін. розмір', 'px')}
+      ${sl('gh-szmax-v', 60, 1000, 10, sizeMax, 'ghost_size_max_px', 'Макс. розмір', 'px')}
+      ${sl('gh-margin-v', 0, 40, 1, margin, 'ghost_edge_margin_percent', 'Відступ від країв', '%')}
+      <div style="display:flex;align-items:center;gap:8px">
+        <input type="checkbox" id="gh-sizefixed" ${sizeFixed?'checked':''}
+          onchange="onClrChange('ghost_size_fixed',this.checked?'1':'0');applyGhostSettings()">
+        <label for="gh-sizefixed" style="font-size:11px;color:var(--text2)">Фіксований розмір (мін.)</label>
+      </div>
+    </div>
+
+    <div style="font-size:11px;color:#4fc3f7;font-weight:700;text-transform:uppercase;letter-spacing:.07em">Проявлення</div>
+    <div style="display:flex;flex-wrap:wrap;gap:18px;align-items:flex-end">
+      ${sl('gh-thresh-v', 50, 800, 10, threshold, 'ghost_reveal_threshold_px', 'Радіус проявлення', 'px')}
+      ${sl('gh-maxop-v', 0.05, 0.9, 0.01, maxOp, 'ghost_max_opacity', 'Максимальна видимість')}
+      ${sl('gh-curve-v', 0.5, 5, 0.1, curve, 'ghost_reveal_curve', 'Крива проявлення')}
+      ${sl('gh-fadein-v', 0.005, 0.3, 0.005, fadeIn, 'ghost_fade_in_speed', 'Швидкість появи')}
+      ${sl('gh-fadeout-v', 0.005, 0.3, 0.005, fadeOut, 'ghost_fade_out_speed', 'Швидкість зникнення')}
+      ${sl('gh-hold-v', 0, 10, 0.5, holdDur, 'ghost_hold_duration_sec', 'Утримання на піку', 'с')}
+      ${sl('gh-mouserec-v', 100, 2000, 50, mouseRec, 'ghost_mouse_recency_threshold_ms', 'Поріг активності диму', 'мс')}
+      ${sl('gh-permeab-v', 0, 1, 0.05, permeab, 'ghost_obstacle_permeability', 'Проникність привида (0=тверда стіна, 1=немає перешкоди)')}
+      ${sl('gh-attract-v', 0, 20000, 500, attractS, 'ghost_obstacle_attract_strength', 'Примагнічування диму вздовж контуру (0=вимкнено)')}
+    </div>
+
+    <div style="font-size:11px;color:#4fc3f7;font-weight:700;text-transform:uppercase;letter-spacing:.07em">Підсвічена кромка (курсор-залежна) — параметри</div>
+    <div style="display:flex;flex-wrap:wrap;gap:18px;align-items:flex-end">
+      ${sl('gh-edgerad-v', 3, 60, 1, edgeRad, 'ghost_edge_highlight_radius_px', 'Радіус активації від курсора', 'px')}
+      ${sl('gh-edgewidth-v', 1, 20, 0.5, edgeWidth, 'ghost_edge_highlight_width_px', 'Товщина кромки', 'px')}
+      ${sl('gh-edgeblur-v', 0, 25, 1, edgeBlur, 'ghost_edge_highlight_blur_px', 'Розмиття кромки', 'px')}
+      ${sl('gh-edgestr-v', 0, 1, 0.05, edgeStr, 'ghost_edge_highlight_strength', 'Максимальна яскравість кромки')}
+    </div>
+
+    <div style="font-size:11px;color:#4fc3f7;font-weight:700;text-transform:uppercase;letter-spacing:.07em">Зовнішній вигляд</div>
+    <div style="display:flex;flex-wrap:wrap;gap:18px;align-items:flex-end">
+      ${sl('gh-blur-v', 0, 30, 1, blur, 'ghost_blur_amount_px', 'Розмиття', 'px')}
+      ${sl('gh-glowstr-v', 0, 1, 0.05, glowStr, 'ghost_glow_strength', 'Сила підсвітки')}
+      ${sl('gh-glowrad-v', 0, 60, 2, glowRad, 'ghost_glow_radius_px', 'Радіус підсвітки', 'px')}
+      ${sl('gh-glowsoft-v', 0, 1, 0.05, glowSoft, 'ghost_glow_softness', "М'якість підсвітки")}
+    </div>
+
+    <!-- Тонування силуету: без цього чорні SVG-іконки НІКОЛИ не видимі на
+         #ghost-layer (mix-blend-mode:screen робить чорний повністю прозорим
+         візуально) — за прямим запитом користувача колір і сила тонування
+         тепер регулюються через адмінку, а не захардкожені. -->
+    <div style="font-size:11px;color:#4fc3f7;font-weight:700;text-transform:uppercase;letter-spacing:.07em">Тонування силуету</div>
+    <div style="display:flex;flex-wrap:wrap;gap:18px;align-items:flex-end">
+      <div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:6px">Колір тонування</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <input type="color" value="${tintColor}"
+            style="width:38px;height:32px;border:1px solid var(--border2);border-radius:6px;background:none;cursor:pointer;padding:2px"
+            oninput="document.getElementById('gh-tint-hex').textContent=this.value;onClrChange('ghost_tint_color',this.value);applyGhostSettings()">
+          <span id="gh-tint-hex" style="font-size:11px;color:var(--muted);font-family:monospace">${tintColor}</span>
+        </div>
+      </div>
+      ${sl('gh-tintop-v', 0, 1, 0.05, tintOp, 'ghost_tint_opacity', 'Сила тонування (0=колір SVG як є, 1=повна заміна)')}
+    </div>
+
+    </div></div><!-- /ghost-settings-body -->
+  </div>`;
+}
+
+async function adminToggleGhosts() {
+  const cur = pendColors['ghost_enabled'] ?? COLORS['ghost_enabled']?.value ?? '1';
+  const next = cur === '0' ? '1' : '0';
+
+  const tog  = document.getElementById('ghost-enabled-tog');
+  const lbl  = document.getElementById('ghost-enabled-lbl');
+  const body = document.getElementById('ghost-settings-body');
+  const on   = next === '1';
+  if (tog) {
+    tog.style.background  = on ? 'rgba(79,195,247,.25)' : 'rgba(255,255,255,.08)';
+    tog.style.border      = `1px solid ${on ? 'rgba(79,195,247,.55)' : 'var(--border2)'}`;
+    tog.style.boxShadow   = on ? '0 0 10px rgba(79,195,247,.2)' : '';
+    tog.querySelector('div').style.left       = on ? '18px' : '3px';
+    tog.querySelector('div').style.background = on ? '#4fc3f7' : 'var(--muted)';
+  }
+  if (lbl)  { lbl.textContent = on ? 'Увімкнено' : 'Вимкнено'; lbl.style.color = on ? '#4fc3f7' : 'var(--muted)'; }
+  if (body) { body.style.opacity = on ? '' : '.35'; body.style.pointerEvents = on ? '' : 'none'; }
+
+  try {
+    await fetch(`${API}/api/admin/colors/batch`, {
+      method: 'PUT', credentials: 'include',
+      headers: { 'Content-Type': 'application/json', ...authH() },
+      body: JSON.stringify([{ key: 'ghost_enabled', value: next }])
+    });
+    if (!COLORS['ghost_enabled']) COLORS['ghost_enabled'] = { value: next, label: '' };
+    else COLORS['ghost_enabled'].value = next;
+    delete pendColors['ghost_enabled'];
+    applyGhostSettings();
+  } catch (e) { showN('Помилка збереження', true); }
+}
+
+async function adminToggleGhostDevMode() {
+  const cur = pendColors['ghost_dev_mode'] ?? COLORS['ghost_dev_mode']?.value ?? '0';
+  const next = cur === '1' ? '0' : '1';
+
+  const tog = document.getElementById('ghost-devmode-tog');
+  const lbl = document.getElementById('ghost-devmode-lbl');
+  const on  = next === '1';
+  if (tog) {
+    tog.style.background = on ? 'rgba(255,221,0,.25)' : 'rgba(255,255,255,.08)';
+    tog.style.border     = `1px solid ${on ? 'rgba(255,221,0,.6)' : 'var(--border2)'}`;
+    tog.style.boxShadow  = on ? '0 0 10px rgba(255,221,0,.25)' : '';
+    tog.querySelector('div').style.left       = on ? '18px' : '3px';
+    tog.querySelector('div').style.background = on ? '#ffdd00' : 'var(--muted)';
+  }
+  if (lbl) { lbl.textContent = on ? 'Увімкнено' : 'Вимкнено'; lbl.style.color = on ? '#ffdd00' : 'var(--muted)'; }
+
+  try {
+    await fetch(`${API}/api/admin/colors/batch`, {
+      method: 'PUT', credentials: 'include',
+      headers: { 'Content-Type': 'application/json', ...authH() },
+      body: JSON.stringify([{ key: 'ghost_dev_mode', value: next }])
+    });
+    if (!COLORS['ghost_dev_mode']) COLORS['ghost_dev_mode'] = { value: next, label: '' };
+    else COLORS['ghost_dev_mode'].value = next;
+    delete pendColors['ghost_dev_mode'];
+    applyGhostSettings();
+  } catch (e) { showN('Помилка збереження', true); }
+}
+
+async function adminToggleGhostEdgeHighlight() {
+  const cur = pendColors['ghost_edge_highlight_enabled'] ?? COLORS['ghost_edge_highlight_enabled']?.value ?? '1';
+  const next = cur === '0' ? '1' : '0';
+
+  const tog = document.getElementById('ghost-edgehl-tog');
+  const lbl = document.getElementById('ghost-edgehl-lbl');
+  const on  = next === '1';
+  if (tog) {
+    tog.style.background = on ? 'rgba(180,226,253,.25)' : 'rgba(255,255,255,.08)';
+    tog.style.border     = `1px solid ${on ? 'rgba(180,226,253,.6)' : 'var(--border2)'}`;
+    tog.style.boxShadow  = on ? '0 0 10px rgba(180,226,253,.3)' : '';
+    tog.querySelector('div').style.left       = on ? '18px' : '3px';
+    tog.querySelector('div').style.background = on ? '#b4e2fd' : 'var(--muted)';
+  }
+  if (lbl) { lbl.textContent = on ? 'Увімкнено' : 'Вимкнено'; lbl.style.color = on ? '#b4e2fd' : 'var(--muted)'; }
+
+  try {
+    await fetch(`${API}/api/admin/colors/batch`, {
+      method: 'PUT', credentials: 'include',
+      headers: { 'Content-Type': 'application/json', ...authH() },
+      body: JSON.stringify([{ key: 'ghost_edge_highlight_enabled', value: next }])
+    });
+    if (!COLORS['ghost_edge_highlight_enabled']) COLORS['ghost_edge_highlight_enabled'] = { value: next, label: '' };
+    else COLORS['ghost_edge_highlight_enabled'].value = next;
+    delete pendColors['ghost_edge_highlight_enabled'];
+    applyGhostSettings();
+  } catch (e) { showN('Помилка збереження', true); }
+}
+
+function applyGhostSettings() {
+  const keys = ['ghost_enabled','ghost_dev_mode','ghost_selection_mode','ghost_image_change_frequency_sec',
+    'ghost_position_change_delay_sec','ghost_size_min_px','ghost_size_max_px','ghost_size_fixed',
+    'ghost_edge_margin_percent','ghost_reveal_threshold_px','ghost_max_opacity','ghost_reveal_curve',
+    'ghost_fade_in_speed','ghost_fade_out_speed','ghost_hold_duration_sec','ghost_blur_amount_px',
+    'ghost_glow_strength','ghost_glow_radius_px','ghost_glow_softness','ghost_mouse_recency_threshold_ms',
+    'ghost_obstacle_permeability','ghost_obstacle_attract_strength',
+    'ghost_edge_highlight_enabled','ghost_edge_highlight_radius_px','ghost_edge_highlight_width_px',
+    'ghost_edge_highlight_blur_px','ghost_edge_highlight_strength',
+    'ghost_tint_color','ghost_tint_opacity'];
+  const colors = {};
+  keys.forEach(k => { colors[k] = pendColors[k] ?? COLORS[k]?.value ?? ''; });
+  const msg = { type: 'colors_update', colors };
+  try { const bc = new BroadcastChannel('zoryana_colors'); bc.postMessage(msg); bc.close(); } catch(_) {}
+  _lsBC('zoryana_colors', msg);
+}
+
+async function loadGhostFacesAdmin() {
+  try {
+    const res = await fetch(`${API}/api/admin/ghost-faces`, { credentials: 'include', headers: authH() });
+    _ghostFacesData = res.ok ? await res.json() : [];
+  } catch (e) { _ghostFacesData = []; }
+  renderGhostFacesTable();
+}
+
+function renderGhostFacesTable() {
+  const tbody = document.getElementById('ghost-faces-tbody');
+  if (!tbody) return;
+  if (!_ghostFacesData.length) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:16px">Немає завантажених SVG. Мінімум 2 для роботи ефекту.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = _ghostFacesData.map((g, idx) => `
+    <tr>
+      <td>${idx + 1}</td>
+      <td><img src="/img/ghosts/${g.svg_file}" style="width:36px;height:36px;object-fit:contain;background:rgba(255,255,255,.08);border-radius:4px" alt=""></td>
+      <td>${_escHtml(g.name || '(без назви)')}</td>
+      <td>
+        <input type="checkbox" ${g.is_enabled ? 'checked' : ''} onchange="toggleGhostFace(${g.id}, this.checked)">
+      </td>
+      <td>${g.sort_order}</td>
+      <td><button class="btn btn-r" style="padding:4px 10px;font-size:11px" onclick="deleteGhostFace(${g.id})">Видалити</button></td>
+    </tr>
+  `).join('');
+}
+
+function _escHtml(s) {
+  const d = document.createElement('div');
+  d.textContent = String(s ?? '');
+  return d.innerHTML;
+}
+
+async function uploadGhostFace(file) {
+  if (!file) return;
+  if (_ghostFacesData.length >= 6) {
+    showN('Максимум 6 привидів', true);
+    return;
+  }
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('name', file.name.replace(/\.svg$/i, ''));
+  try {
+    const res = await fetch(`${API}/api/admin/ghost-faces/upload`, {
+      method: 'POST', credentials: 'include', headers: authH(), body: fd
+    });
+    const data = await res.json();
+    if (!res.ok) { showN(data.detail || 'Помилка завантаження', true); return; }
+    showN('Привид завантажений');
+    await loadGhostFacesAdmin();
+  } catch (e) { showN('Помилка завантаження', true); }
+  document.getElementById('ghost-upload-input').value = '';
+}
+
+async function toggleGhostFace(id, enabled) {
+  try {
+    await fetch(`${API}/api/admin/ghost-faces/${id}`, {
+      method: 'PUT', credentials: 'include',
+      headers: { 'Content-Type': 'application/json', ...authH() },
+      body: JSON.stringify({ is_enabled: enabled ? 1 : 0 })
+    });
+    await loadGhostFacesAdmin();
+  } catch (e) { showN('Помилка збереження', true); }
+}
+
+async function deleteGhostFace(id) {
+  if (!confirm('Видалити цього привида?')) return;
+  try {
+    await fetch(`${API}/api/admin/ghost-faces/${id}`, {
+      method: 'DELETE', credentials: 'include', headers: authH()
+    });
+    await loadGhostFacesAdmin();
+  } catch (e) { showN('Помилка видалення', true); }
 }
 
 function renderPhotoSection(){

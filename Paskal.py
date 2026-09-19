@@ -28,7 +28,7 @@ try:
 except ImportError:
     _HAS_PSUTIL = False
 
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Depends, UploadFile, File, Query, Request
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Depends, UploadFile, File, Form, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, StreamingResponse, RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
@@ -350,6 +350,20 @@ def init_db():
             c.execute("ALTER TABLE partners ADD COLUMN caption_url VARCHAR(500) NOT NULL DEFAULT ''")
         except Exception:
             pass  # column already exists
+
+        # ── ghost_faces (модуль «Привиди в диму»: список SVG-силуетів, 2-6 файлів) ──
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS ghost_faces (
+                id                  INT PRIMARY KEY AUTO_INCREMENT,
+                svg_file            VARCHAR(300) NOT NULL DEFAULT '',
+                name                VARCHAR(100) NOT NULL DEFAULT '',
+                is_enabled          TINYINT NOT NULL DEFAULT 1,
+                sort_order          INT NOT NULL DEFAULT 0,
+                individual_size_px  INT NULL DEFAULT NULL,
+                created_at          INT NOT NULL DEFAULT 0,
+                INDEX idx_enabled (is_enabled, sort_order)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        """)
 
         # ── ad_video_views (модуль «Відео-попап»: сервер-перевірене «показано сьогодні») ──
         c.execute("""
@@ -2703,6 +2717,12 @@ class PartnerUpdate(BaseModel):
     is_visible: Optional[int] = None
     sort_order: Optional[int] = None
 
+class GhostFaceUpdate(BaseModel):
+    name: Optional[str] = None
+    is_enabled: Optional[int] = None
+    sort_order: Optional[int] = None
+    individual_size_px: Optional[int] = None
+
 class BanRequest(BaseModel):
     duration: int = 0   # seconds; 0 = permanent
     reason: str = ""
@@ -3404,6 +3424,129 @@ def admin_delete_partner(pid: int, request: Request):
         with db.cursor() as c:
             c.execute("DELETE FROM partners WHERE id=%s", (pid,))
         db.commit()
+        return {"ok": True}
+    finally:
+        db.close()
+
+# ── Привиди в диму (ghost_faces) ────────────────────────────────
+_GHOST_MAX_FILES = 6
+_GHOST_MAX_SVG_BYTES = 300_000
+
+@app.get("/api/ghost-faces")
+def public_ghost_faces(request: Request):
+    ip = _get_ip(request)
+    if not _rl.check(f"pub:{ip}", 60, 60):
+        raise HTTPException(429, "Забагато запитів")
+    cached = cache_get("ghost_faces")
+    if cached:
+        return json.loads(cached)
+    db = get_db()
+    try:
+        with db.cursor() as c:
+            c.execute(
+                "SELECT id, svg_file, name, individual_size_px FROM ghost_faces "
+                "WHERE is_enabled=1 ORDER BY sort_order, id"
+            )
+            rows = c.fetchall()
+    finally:
+        db.close()
+    cache_set("ghost_faces", json.dumps(rows), ttl=300)
+    return rows
+
+@app.get("/api/admin/ghost-faces")
+def admin_get_ghost_faces(request: Request):
+    require_admin(request)
+    db = get_db()
+    try:
+        with db.cursor() as c:
+            c.execute("SELECT * FROM ghost_faces ORDER BY sort_order, id")
+            return c.fetchall()
+    finally:
+        db.close()
+
+@app.post("/api/admin/ghost-faces/upload")
+async def admin_upload_ghost_face(request: Request, file: UploadFile = File(...), name: str = Form("")):
+    require_admin(request)
+    db = get_db()
+    try:
+        with db.cursor() as c:
+            c.execute("SELECT COUNT(*) AS n FROM ghost_faces")
+            count = c.fetchone()["n"]
+        if count >= _GHOST_MAX_FILES:
+            raise HTTPException(400, f"Максимум {_GHOST_MAX_FILES} привидів")
+
+        ext = os.path.splitext(file.filename or "")[1].lower()
+        if ext != ".svg":
+            raise HTTPException(400, "Дозволений лише формат .svg")
+        raw = await file.read()
+        if len(raw) > _GHOST_MAX_SVG_BYTES:
+            raise HTTPException(400, "SVG занадто великий (макс 300 КБ)")
+        if not _check_image_magic(raw, ".svg"):
+            raise HTTPException(400, "Невалідний SVG")
+        try:
+            svg_text = raw.decode("utf-8")
+        except UnicodeDecodeError:
+            raise HTTPException(400, "SVG має бути у кодуванні UTF-8")
+
+        svg_text = _sanitize_svg(svg_text)
+
+        safe_name = f"ghost_{int(time.time())}_{secrets.token_hex(4)}.svg"
+        os.makedirs("img/ghosts", exist_ok=True)
+        with open(os.path.join("img", "ghosts", safe_name), "w", encoding="utf-8") as fh:
+            fh.write(svg_text)
+
+        clean_name = _sanitize_text(name)[:100]
+        with db.cursor() as c:
+            c.execute(
+                "INSERT INTO ghost_faces (svg_file, name, is_enabled, sort_order, created_at) "
+                "VALUES (%s,%s,1,%s,%s)",
+                (safe_name, clean_name, count, int(time.time()))
+            )
+            new_id = c.lastrowid
+        db.commit()
+        cache_delete("ghost_faces")
+        sec_log("GHOST_UPLOAD", _get_ip(request), f"id={new_id} file={safe_name}")
+        return {"ok": True, "id": new_id, "svg_file": safe_name, "url": f"/img/ghosts/{safe_name}"}
+    finally:
+        db.close()
+
+@app.put("/api/admin/ghost-faces/{gid}")
+def admin_update_ghost_face(gid: int, u: GhostFaceUpdate, request: Request):
+    require_admin(request)
+    fields, vals = [], []
+    if u.name is not None:               fields.append("name=%s");               vals.append(_sanitize_text(u.name)[:100])
+    if u.is_enabled is not None:         fields.append("is_enabled=%s");         vals.append(1 if u.is_enabled else 0)
+    if u.sort_order is not None:         fields.append("sort_order=%s");         vals.append(u.sort_order)
+    if u.individual_size_px is not None: fields.append("individual_size_px=%s"); vals.append(max(40, min(1200, u.individual_size_px)))
+    if not fields:
+        raise HTTPException(400, "Нічого оновлювати")
+    vals.append(gid)
+    db = get_db()
+    try:
+        with db.cursor() as c:
+            c.execute(f"UPDATE ghost_faces SET {','.join(fields)} WHERE id=%s", vals)
+        db.commit()
+        cache_delete("ghost_faces")
+        return {"ok": True}
+    finally:
+        db.close()
+
+@app.delete("/api/admin/ghost-faces/{gid}")
+def admin_delete_ghost_face(gid: int, request: Request):
+    require_admin(request)
+    db = get_db()
+    try:
+        with db.cursor() as c:
+            c.execute("SELECT svg_file FROM ghost_faces WHERE id=%s", (gid,))
+            row = c.fetchone()
+            c.execute("DELETE FROM ghost_faces WHERE id=%s", (gid,))
+        db.commit()
+        if row and row.get("svg_file"):
+            try:
+                os.remove(os.path.join("img", "ghosts", row["svg_file"]))
+            except OSError:
+                pass
+        cache_delete("ghost_faces")
         return {"ok": True}
     finally:
         db.close()

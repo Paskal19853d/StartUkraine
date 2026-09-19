@@ -737,7 +737,8 @@ mark.shl {
   position: absolute;
   top: 0; left: 0;
   pointer-events: none;
-  will-change: contents;
+  will-change: contents, transform;
+  transform: translateZ(0);
   z-index: 5;                    /* над фото, під димом (#fluid z:900) */
 }
 
@@ -1228,6 +1229,8 @@ mark.shl {
 /* Tooltip */
 #tip {
   position: absolute;
+  left: 0;
+  top: 0;
   pointer-events: none;
   background: rgba(7,13,26,.97);
   border: 1px solid var(--border2);
@@ -1238,8 +1241,13 @@ mark.shl {
   z-index: 120;
   max-width: 200px;
   box-shadow: 0 4px 20px rgba(0,0,0,.5);
-  animation: fadeIn .15s var(--ease);
+  animation: tipFadeIn .15s var(--ease);
+  will-change: transform;
 }
+/* Окрема (не спільна fadeIn) анімація — та анімує transform:scale, який
+   перебивав би inline transform:translate(), що JS використовує для позиції
+   тултіпа (без layout reflow) — звідси видимий "стрибок" у лівий верхній кут. */
+@keyframes tipFadeIn { from{opacity:0} to{opacity:1} }
 .tn { font-weight: 500; font-size: 12px; margin-bottom: 2px; color: var(--text); }
 .tl { color: var(--text2); }
 .ts { color: var(--star); margin-top: 4px; }
@@ -1939,7 +1947,8 @@ input.f-err { border-color:#e53935 !important; }
   position: absolute;
   top: 0; left: 0;
   pointer-events: none;
-  will-change: contents;
+  will-change: contents, transform;
+  transform: translateZ(0);
   z-index: 5;
 }
 

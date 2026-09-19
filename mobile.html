@@ -19,7 +19,7 @@
 <link rel="dns-prefetch" href="https://img.youtube.com">
 <link rel="dns-prefetch" href="https://www.youtube-nocookie.com">
 <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700&family=Geologica:wght@300;400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="Style.css">
+<link rel="stylesheet" href="Style.css?v=20260919">
 <link rel="stylesheet" href="fonts/uicons/uicons.css">
 <link rel="stylesheet" href="silence-module.css">
 <link rel="stylesheet" href="mobile.css">
@@ -42,6 +42,7 @@ body{visibility:hidden}
 <body>
 <!-- (мобільний блокувальник видалено — це і є мобільна версія) -->
 <canvas id="fluid"></canvas>
+<canvas id="ghost-layer"></canvas>
 <script src="js/dat.gui.min.js"></script>
     <style>
       * {
@@ -81,8 +82,24 @@ body{visibility:hidden}
 		background: transparent;
 		transition: opacity .4s ease;
 		touch-action: none;
+		will-change: opacity;
+		transform: translateZ(0);
 		}
-		
+		#ghost-layer {
+		position: fixed;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		z-index: 901;
+		pointer-events: none;
+		mix-blend-mode: screen;
+		background: transparent;
+		touch-action: none;
+		will-change: opacity;
+		transform: translateZ(0);
+		}
+
 		eoBackground {
         position: absolute;
         z-index: -1;
@@ -2997,6 +3014,7 @@ function applyColors() {
 
   // Застосовуємо smoke-налаштування до fluid simulation
   applySmokeConfig();
+  if (window.applyGhostConfig) applyGhostConfig();
 
   // Фото на карті
   applyMapPhoto();
@@ -3311,7 +3329,7 @@ window.addEventListener('mousemove',e=>{
     const p=hit(sx,sy);const tip=document.getElementById('tip');
     if(p){
       hovId=p.id;mw.style.cursor='pointer';tip.style.display='block';
-      tip.style.left=(sx+16)+'px';tip.style.top=(sy-10)+'px';
+      tip.style.transform=`translate(${sx+16}px,${sy-10}px)`;
       if(p.id!==_tipPid){
         _tipPid=p.id;
         const dupes=people.filter(x=>x._dupKey&&x._dupKey===p._dupKey&&x.id!==p.id);
@@ -4963,6 +4981,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 // Після повного завантаження — синхронізуємо стан з WebGL + будуємо SVG clip
 window.addEventListener('load', () => {
   _applySmokeState();
+  if (window._ghostSyncState) window._ghostSyncState();
   setupMapPhotoClip();
 });
 
@@ -5102,7 +5121,8 @@ async function checkDeviceAccess() {
     <canvas></canvas>
     <video id="videoBackground" muted loop></video>
     <div id="overlay"></div>
-    <script src="js/script.js?v=20260419"></script>
+    <script src="js/script.js?v=20260919"></script>
+    <script src="js/ghost-faces.js?v=16"></script>
     <script src="js/sea.js?v=20260424b"></script>
 
 <!-- INFO MODALS -->

@@ -25,6 +25,33 @@ SOFTWARE.
 "use strict";
 
 const canvas = document.getElementById("fluid");
+
+// Кешовані CSS-розміри canvas — оновлюються подієво через ResizeObserver,
+// а не читанням clientWidth/clientHeight щокадру всередині update() (rAF-цикл).
+// Пряме читання clientWidth форсує синхронний layout recalculation щоразу, коли
+// DOM "забруднений" (напр. записом style/innerHTML тултіпа карти в тому ж кадрі) —
+// підтверджено CPU-профілем (forced reflow, ~4% self-time саме на цьому читанні).
+let _cachedClientWidth = canvas.clientWidth || window.innerWidth;
+let _cachedClientHeight = canvas.clientHeight || window.innerHeight;
+if (typeof ResizeObserver !== "undefined") {
+  new ResizeObserver((entries) => {
+    for (const entry of entries) {
+      const box = entry.contentBoxSize && entry.contentBoxSize[0];
+      if (box) {
+        _cachedClientWidth = box.inlineSize;
+        _cachedClientHeight = box.blockSize;
+      } else {
+        _cachedClientWidth = canvas.clientWidth || window.innerWidth;
+        _cachedClientHeight = canvas.clientHeight || window.innerHeight;
+      }
+    }
+  }).observe(canvas);
+}
+window.addEventListener("resize", () => {
+  _cachedClientWidth = canvas.clientWidth || window.innerWidth;
+  _cachedClientHeight = canvas.clientHeight || window.innerHeight;
+});
+
 resizeCanvas();
 
 let config = {
@@ -56,7 +83,21 @@ let config = {
   SOUND_SENSITIVITY: 0,
   FREQ_RANGE: 0,
   FREQ_MULTI: 0.1,
-  CUSTOM_COLOR: true
+  CUSTOM_COLOR: true,
+  // М'яка перешкода в полі швидкості — читається зовнішнім модулем
+  // (js/ghost-faces.js) за pull-патерном, як CURL/SPLAT_RADIUS вище.
+  // OBSTACLE_PERMEABILITY: 1.0 = немає перешкоди, 0.0 = повністю тверда,
+  // 0.4-0.6 = частина потоку проходить, частина "розділяється"/огинає.
+  OBSTACLE_ENABLED: false,
+  OBSTACLE_RECT: { x: 0, y: 0, w: 0, h: 0 },
+  OBSTACLE_PERMEABILITY: 0.4,
+  // true щойно ghost-faces.js реально завантажив маску форми SVG через
+  // window._fluidUpdateObstacleMask() — до цього перешкода фолбечиться на
+  // простий прямокутник (safe default, доки текстура ще не готова).
+  OBSTACLE_MASK_READY: false,
+  // "Примагнічування" вздовж контуру привида — тангенціальна сила в
+  // прикордонній смузі навколо силуету (obstacleAttractShader). 0 = вимкнено.
+  OBSTACLE_ATTRACT_STRENGTH: 0
 };
 // Об'єкт передається за посиланням — зовнішній код (index.html) керує PAUSED
 // напряму через window._fluidConfig. Без цього рядка top-level `let config`
@@ -1041,6 +1082,26 @@ const divergenceShader = compileShader(
     varying highp vec2 vT;
     varying highp vec2 vB;
     uniform sampler2D uVelocity;
+    uniform vec4 uObstacleRect;    // x, y, w, h — normalized texcoord [0,1]
+    uniform float uObstaclePermeability; // 0=повністю тверда, 1=немає перешкоди
+    uniform sampler2D uObstacleMask;     // альфа-канал розрастрованого SVG привида
+    uniform bool uObstacleUseMask;       // false = проста прямокутна перешкода (фолбек)
+
+    // Реальний контур привида, не bounding box — читає альфа-канал того самого
+    // offscreen canvas, який ghost-faces.js вже малює на #ghost-layer. Точка
+    // всередині прямокутника, але в прозорій частині SVG (кути/вигини форми),
+    // тепер НЕ вважається перешкодою — дим впирається точно у форму силуету.
+    bool insideRect(vec2 uv) {
+        bool inBounds = uv.x > uObstacleRect.x && uv.x < uObstacleRect.x + uObstacleRect.z
+            && uv.y > uObstacleRect.y && uv.y < uObstacleRect.y + uObstacleRect.w;
+        if (!inBounds) return false;
+        if (!uObstacleUseMask) return true;
+        vec2 localUv = vec2(
+            (uv.x - uObstacleRect.x) / max(uObstacleRect.z, 0.0001),
+            (uv.y - uObstacleRect.y) / max(uObstacleRect.w, 0.0001)
+        );
+        return texture2D(uObstacleMask, localUv).a > 0.15;
+    }
 
     void main () {
         float L = texture2D(uVelocity, vL).x;
@@ -1054,7 +1115,29 @@ const divergenceShader = compileShader(
         if (vT.y > 1.0) { T = -C.y; }
         if (vB.y < 0.0) { B = -C.y; }
 
+        // Межа прямокутника привида як "внутрішня стінка" — той самий прийом,
+        // що й межі canvas вище (заміна сусіда на -C дає zero-normal-flow, тобто
+        // потік реально не проходить крізь межу), але застосований до контуру
+        // привида, а не тільки до країв екрана. bool selfInside визначає, з
+        // якого боку межі перебуває сам поточний тексель — інвертуємо швидкість
+        // лише там, де сусід і центр по РІЗНІ боки межі (перетин контуру),
+        // інакше суцільна внутрішня/зовнішня область не чіпається.
+        bool selfInside = insideRect(vUv);
+        float wall = 1.0 - uObstaclePermeability; // 0=як було (м'яко), 1=повна стіна
+        if (insideRect(vL) != selfInside) { L = mix(L, -C.x, wall); }
+        if (insideRect(vR) != selfInside) { R = mix(R, -C.x, wall); }
+        if (insideRect(vT) != selfInside) { T = mix(T, -C.y, wall); }
+        if (insideRect(vB) != selfInside) { B = mix(B, -C.y, wall); }
+
         float div = 0.5 * (R - L + T - B);
+
+        // Додатково — м'яке "стиснення" дивергенції всередині прямокутника
+        // (та сама логіка, що була раніше) — прибирає залишковий потік, який
+        // встиг проникнути всередину до того, як межа його відбила.
+        if (selfInside) {
+            div *= uObstaclePermeability;
+        }
+
         gl_FragColor = vec4(div, 0.0, 0.0, 1.0);
     }
 `
@@ -1113,6 +1196,81 @@ const vorticityShader = compileShader(
         force.y *= -1.0;
 
         vec2 vel = texture2D(uVelocity, vUv).xy;
+        gl_FragColor = vec4(vel + force * dt, 0.0, 1.0);
+    }
+`
+);
+
+// "Примагнічування" диму до контуру привида — за прямим запитом користувача,
+// додатково до стінки в divergenceShader (яка не пропускає дим ВСЕРЕДИНУ
+// контуру). Цей прохід додає до velocity тангенціальну силу вздовж краю
+// силуету в вузькій прикордонній смузі навколо нього — дим, що опиняється
+// поруч з контуром, "стікає" вздовж його форми замість того, щоб просто
+// зупинитись/розсіятись, роблячи форму візуально набагато помітнішою.
+// Технічно: напрямок "вздовж контуру" — це перпендикуляр до градієнта
+// альфа-маски (∇alpha вказує впоперек контуру, від прозорого до непрозорого;
+// поворот на 90° дає дотичну вздовж краю). Сила масштабується найбільше
+// саме там, де градієнт найрізкіший (на самому краю), і згасає далі від
+// нього — так самé, як інші сили в цьому пайплайні (vorticity вище).
+const obstacleAttractShader = compileShader(
+  gl.FRAGMENT_SHADER,
+  `
+    precision highp float;
+    precision highp sampler2D;
+
+    varying vec2 vUv;
+    varying vec2 vL;
+    varying vec2 vR;
+    varying vec2 vT;
+    varying vec2 vB;
+    uniform sampler2D uVelocity;
+    uniform sampler2D uObstacleMask;
+    uniform vec4 uObstacleRect;
+    uniform float uAttractStrength;
+    uniform float dt;
+
+    void main () {
+        vec2 vel = texture2D(uVelocity, vUv).xy;
+
+        bool inBounds = vUv.x > uObstacleRect.x && vUv.x < uObstacleRect.x + uObstacleRect.z
+            && vUv.y > uObstacleRect.y && vUv.y < uObstacleRect.y + uObstacleRect.w;
+        if (!inBounds || uAttractStrength <= 0.0) {
+            gl_FragColor = vec4(vel, 0.0, 1.0);
+            return;
+        }
+
+        vec2 localUv = vec2(
+            (vUv.x - uObstacleRect.x) / max(uObstacleRect.z, 0.0001),
+            (vUv.y - uObstacleRect.y) / max(uObstacleRect.w, 0.0001)
+        );
+        vec2 localL = vec2((vL.x - uObstacleRect.x) / max(uObstacleRect.z, 0.0001), localUv.y);
+        vec2 localR = vec2((vR.x - uObstacleRect.x) / max(uObstacleRect.z, 0.0001), localUv.y);
+        vec2 localT = vec2(localUv.x, (vT.y - uObstacleRect.y) / max(uObstacleRect.w, 0.0001));
+        vec2 localB = vec2(localUv.x, (vB.y - uObstacleRect.y) / max(uObstacleRect.w, 0.0001));
+
+        float aL = texture2D(uObstacleMask, localL).a;
+        float aR = texture2D(uObstacleMask, localR).a;
+        float aT = texture2D(uObstacleMask, localT).a;
+        float aB = texture2D(uObstacleMask, localB).a;
+
+        vec2 grad = vec2(aR - aL, aT - aB);
+        float gradMag = length(grad);
+        // Поза вузькою прикордонною смугою (градієнт майже нульовий —
+        // суцільна прозора/непрозора область) сили немає взагалі.
+        if (gradMag < 0.02) {
+            gl_FragColor = vec4(vel, 0.0, 1.0);
+            return;
+        }
+        vec2 normal = grad / gradMag;
+        vec2 tangent = vec2(-normal.y, normal.x);
+
+        // Зберігаємо існуючий напрямок руху вздовж контуру (dot з поточною
+        // швидкістю) — дим "підхоплюється" в той бік, куди вже рухався,
+        // замість того щоб завжди тягнути в одну випадкову сторону.
+        float alongSign = sign(dot(vel, tangent));
+        if (alongSign == 0.0) alongSign = 1.0;
+
+        vec2 force = tangent * alongSign * uAttractStrength * gradMag;
         gl_FragColor = vec4(vel + force * dt, 0.0, 1.0);
     }
 `
@@ -1212,6 +1370,7 @@ const advectionProgram = new Program(baseVertexShader, advectionShader);
 const divergenceProgram = new Program(baseVertexShader, divergenceShader);
 const curlProgram = new Program(baseVertexShader, curlShader);
 const vorticityProgram = new Program(baseVertexShader, vorticityShader);
+const obstacleAttractProgram = new Program(baseVertexShader, obstacleAttractShader);
 const pressureProgram = new Program(baseVertexShader, pressureShader);
 const gradienSubtractProgram = new Program(baseVertexShader, gradientSubtractShader);
 
@@ -1417,6 +1576,58 @@ function createTextureAsync(url) {
   return obj;
 }
 
+// Текстура-маска форми привида (js/ghost-faces.js) — альфа-канал вже
+// розрастрованого SVG (offscreen canvas з тим самим силуетом, який
+// малюється на #ghost-layer). Дозволяє divergenceShader перевіряти
+// реальний контур привида замість прямокутного bounding box — дим впирається
+// точно у форму силуету, не в порожні кути прямокутника навколо нього.
+// Викликається ззовні через window._fluidUpdateObstacleMask(canvas) —
+// той самий pull/push гібрид, що вже є для OBSTACLE_RECT/PERMEABILITY
+// (запис у window._fluidConfig), але створення GL-текстури обов'язково
+// відбувається тут, бо лише тут є доступ до контексту gl.
+let obstacleMaskTexture = null;
+function ensureObstacleMaskTexture() {
+  if (obstacleMaskTexture) return obstacleMaskTexture;
+  const texture = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, texture);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  // 1x1 прозорий піксель за замовчуванням — поки реальна маска не завантажена,
+  // insideRect() у шейдері деградує до "нема перешкоди" (safe default).
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([0, 0, 0, 0]));
+  obstacleMaskTexture = {
+    texture,
+    attach(id) {
+      gl.activeTexture(gl.TEXTURE0 + id);
+      gl.bindTexture(gl.TEXTURE_2D, texture);
+      return id;
+    },
+  };
+  return obstacleMaskTexture;
+}
+window._fluidUpdateObstacleMask = function (sourceCanvas) {
+  if (!sourceCanvas || !sourceCanvas.width || !sourceCanvas.height) return;
+  const tex = ensureObstacleMaskTexture();
+  gl.bindTexture(gl.TEXTURE_2D, tex.texture);
+  try {
+    // WebGL текстури за замовчуванням читаються знизу-вгору (GL-конвенція)
+    // відносно того, як Canvas2D малює зверху-вниз — без цього прапорця
+    // маска була б вертикально віддзеркалена відносно того, де реально
+    // малюється силует через ctx.drawImage у ghost-faces.js.
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, sourceCanvas);
+    config.OBSTACLE_MASK_READY = true;
+  } catch (e) {
+    // CORS/decode/tainted canvas — деградуємо тихо, привид просто не матиме
+    // точної маски (фолбек на прямокутник лишається у config.OBSTACLE_RECT).
+    config.OBSTACLE_MASK_READY = false;
+  } finally {
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+  }
+};
+
 function updateKeywords() {
   let displayKeywords = [];
   if (config.SHADING) displayKeywords.push("SHADING");
@@ -1438,6 +1649,16 @@ let colorUpdateTimer = 0.0;
 // у невидимий canvas щокадру, витрачаючи GPU/батарею даремно.
 let _fluidLoopRunning = false;
 
+// Троттлінг до ~30fps (замість 60) — CDP Performance trace підтвердив, що GPU
+// зайнятий ~30% часу ПОСТІЙНО (не лише при hover) через сам fluid-pipeline
+// (pressure+divergence+curl+bloom+sunrays на кожному з 60 кадрів/сек). Симуляція
+// не втрачає помітної якості при 30fps (плавний потік диму), а GPU-навантаження
+// падає вдвічі. requestAnimationFrame й далі викликається на повній частоті
+// екрана (потрібно для точного вимірювання часу rAF API), але тіло update()
+// пропускає кожен другий кадр.
+const TARGET_FRAME_MS = 1000 / 30;
+let _lastFrameTime = 0;
+
 // Перший кадр малюємо синхронно (як і раніше), далі цикл продовжує сам себе через rAF.
 update();
 
@@ -1447,6 +1668,12 @@ function update() {
     return; // не плануємо requestAnimationFrame — цикл "засинає" до _fluidResume()
   }
   _fluidLoopRunning = true;
+  const now = performance.now();
+  if (now - _lastFrameTime < TARGET_FRAME_MS) {
+    requestAnimationFrame(update);
+    return; // пропускаємо цей кадр — ще не настав час наступного кроку симуляції
+  }
+  _lastFrameTime = now;
   const dt = calcDeltaTime();
   if (resizeCanvas()) initFramebuffers();
   updateColors(dt);
@@ -1462,6 +1689,7 @@ function _fluidResume() {
   if (_fluidLoopRunning || config.PAUSED || document.hidden) return;
   _fluidLoopRunning = true;
   lastUpdateTime = Date.now(); // уникнути "стрибка" dt після довгої паузи
+  _lastFrameTime = 0; // форсує негайне виконання першого кадру після резюму
   requestAnimationFrame(update);
 }
 window._fluidResume = _fluidResume;
@@ -1473,14 +1701,18 @@ document.addEventListener('visibilitychange', () => {
 function calcDeltaTime() {
   let now = Date.now();
   let dt = (now - lastUpdateTime) / 1000;
-  dt = Math.min(dt, 0.016666);
+  // Cap піднято з 1/60с до 1/30с — узгоджено з новим TARGET_FRAME_MS у update().
+  // Якщо капнути реальний ~33мс інтервал (30fps) до старих 16.6мс, симуляція
+  // рахувала б крок так, ніби минуло вдвічі менше часу — дим рухався б вдвічі
+  // повільніше за реальний час, замість збереження тієї самої видимої швидкості.
+  dt = Math.min(dt, 0.033333);
   lastUpdateTime = now;
   return dt;
 }
 
 function resizeCanvas() {
-  let width = scaleByPixelRatio(canvas.clientWidth || window.innerWidth);
-  let height = scaleByPixelRatio(canvas.clientHeight || window.innerHeight);
+  let width = scaleByPixelRatio(_cachedClientWidth || window.innerWidth);
+  let height = scaleByPixelRatio(_cachedClientHeight || window.innerHeight);
   if (canvas.width != width || canvas.height != height) {
     canvas.width = width;
     canvas.height = height;
@@ -1530,9 +1762,34 @@ function step(dt) {
   blit(velocity.write.fbo);
   velocity.swap();
 
+  if (config.OBSTACLE_ENABLED && config.OBSTACLE_MASK_READY && config.OBSTACLE_ATTRACT_STRENGTH > 0) {
+    obstacleAttractProgram.bind();
+    gl.uniform2f(obstacleAttractProgram.uniforms.texelSize, velocity.texelSizeX, velocity.texelSizeY);
+    gl.uniform1i(obstacleAttractProgram.uniforms.uVelocity, velocity.read.attach(0));
+    gl.uniform1i(obstacleAttractProgram.uniforms.uObstacleMask, ensureObstacleMaskTexture().attach(1));
+    const ar = config.OBSTACLE_RECT;
+    gl.uniform4f(obstacleAttractProgram.uniforms.uObstacleRect, ar.x, ar.y, ar.w, ar.h);
+    gl.uniform1f(obstacleAttractProgram.uniforms.uAttractStrength, config.OBSTACLE_ATTRACT_STRENGTH);
+    gl.uniform1f(obstacleAttractProgram.uniforms.dt, dt);
+    blit(velocity.write.fbo);
+    velocity.swap();
+  }
+
   divergenceProgram.bind();
   gl.uniform2f(divergenceProgram.uniforms.texelSize, velocity.texelSizeX, velocity.texelSizeY);
   gl.uniform1i(divergenceProgram.uniforms.uVelocity, velocity.read.attach(0));
+  if (config.OBSTACLE_ENABLED) {
+    const r = config.OBSTACLE_RECT;
+    gl.uniform4f(divergenceProgram.uniforms.uObstacleRect, r.x, r.y, r.w, r.h);
+    gl.uniform1f(divergenceProgram.uniforms.uObstaclePermeability, config.OBSTACLE_PERMEABILITY);
+    const hasMask = !!obstacleMaskTexture && config.OBSTACLE_MASK_READY;
+    gl.uniform1i(divergenceProgram.uniforms.uObstacleUseMask, hasMask ? 1 : 0);
+    gl.uniform1i(divergenceProgram.uniforms.uObstacleMask, ensureObstacleMaskTexture().attach(1));
+  } else {
+    gl.uniform4f(divergenceProgram.uniforms.uObstacleRect, 0, 0, 0, 0);
+    gl.uniform1f(divergenceProgram.uniforms.uObstaclePermeability, 1.0);
+    gl.uniform1i(divergenceProgram.uniforms.uObstacleUseMask, 0);
+  }
   blit(divergence.fbo);
 
   clearProgram.bind();
