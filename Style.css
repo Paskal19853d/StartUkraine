@@ -2,6 +2,22 @@
    Зоряна Памʼять — style.css
    ═══════════════════════════════════════════════════════ */
 
+@font-face {
+  font-family: 'KharkivTone';
+  src: url('/fonts/KharkivTone-regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'AeroMaticsStencil';
+  src: url('/fonts/Aero_Matics_Stencil_Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   --bg:        #03070e;
   --surface:   #070d1a;
@@ -64,8 +80,8 @@ html, body {
 }
 
 #logo {
-  font-family: 'Unbounded', sans-serif;
-  font-size: 12px;
+  font-family: 'AeroMaticsStencil', 'KharkivTone', 'Yeseva One', 'Unbounded', sans-serif;
+  font-size: 20px;
   font-weight: 700;
   color: var(--yellow2);
   white-space: nowrap;

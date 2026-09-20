@@ -18,8 +18,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="dns-prefetch" href="https://img.youtube.com">
 <link rel="dns-prefetch" href="https://www.youtube-nocookie.com">
-<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700&family=Geologica:wght@300;400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="Style.css?v=20260919">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700&family=Geologica:wght@300;400;500&family=Yeseva+One&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="Style.css?v=20260920c">
 <link rel="stylesheet" href="/fonts/uicons/uicons.css">
 <link rel="stylesheet" href="/silence-module.css">
 <style id="dynamic-colors">
@@ -185,7 +185,7 @@ body{visibility:hidden}
 </div>
 <canvas width="1365" height="953"></canvas>
 <header id="topbar">
-  <a id="logo" href="/promo/" class="zp-hint zp-hint--down" data-i18n-hint="logo.hint" data-hint="Про проєкт" style="text-decoration:none;color:inherit;cursor:pointer"><span id="logo-star">&#9733;</span> <em id="logo-em" data-i18n="brand.name_em">Зоряна</em> <span data-i18n="brand.name_rest">Памʼять</span><span id="app-version" style="font-size:9px;color:#4a5a6a;margin-left:7px;font-weight:400;letter-spacing:.04em;vertical-align:middle">v2.42 beta</span></a>
+  <a id="logo" href="/promo/" class="zp-hint zp-hint--down" data-i18n-hint="logo.hint" data-hint="Про проєкт" style="text-decoration:none;color:inherit;cursor:pointer"><span id="logo-star">&#9733;</span> <em id="logo-em" data-i18n="brand.name_em">Зоряна</em> <span data-i18n="brand.name_rest">Памʼять</span></a><a id="app-version" href="/update_v/uddate_history.html" style="font-size:13px;color:#4a5a6a;margin-left:7px;font-weight:400;letter-spacing:.04em;vertical-align:middle;text-decoration:none;cursor:pointer">v2.42 beta</a>
   <div class="tstat"><span id="icon-people">👥</span> <strong id="sttotal">0</strong><span class="tstat-word" data-i18n="people">&nbsp;людей</span></div>
   <div class="tstat"><span id="icon-likes">⭐</span> <strong id="stlikes">0</strong><span class="tstat-word" data-i18n="stars">&nbsp;зірок</span></div>
   <div class="tstat zp-hint zp-hint--down" data-i18n-hint="visitors.hint" data-hint="Відвідувачів за 24 години"><i class="fi fi-rr-user" style="opacity:.5;filter:grayscale(1)"></i> <strong id="stvisitors">—</strong></div>
@@ -5906,6 +5906,14 @@ function closeInfo(id){document.getElementById('m-'+id).classList.remove('open')
 <div id="partners-layer"></div>
 <script>
 (function initPartners() {
+  function _hexToRgb(hex) {
+    var m = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(hex || '');
+    if (!m) return '255,255,255';
+    var h = m[1];
+    if (h.length === 3) h = h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
+    var r = parseInt(h.slice(0,2),16), g = parseInt(h.slice(2,4),16), b = parseInt(h.slice(4,6),16);
+    return r + ',' + g + ',' + b;
+  }
   function renderPartners(list) {
     const layer = document.getElementById('partners-layer');
     if (!layer) return;
@@ -5917,33 +5925,47 @@ function closeInfo(id){document.getElementById('m-'+id).classList.remove('open')
       // бо картинка і підпис можуть вести на РІЗНІ посилання (вкладати <a> в <a> не можна).
       const box = document.createElement('div');
       var baseOpacity = p.opacity != null ? p.opacity : 0.82;
+      var borderCss = (p.border_enabled ? '1px solid ' + (p.border_color || '#ffffff') : '1px solid rgba(255,255,255,.1)');
+      var baseShadow = '0 4px 18px rgba(0,0,0,.45)';
+      var hoverShadow = '0 6px 28px rgba(0,0,0,.7)';
+      if (p.border_enabled && p.border_glow > 0) {
+        var g = p.border_glow;
+        var gc = _hexToRgb(p.border_color || '#ffffff');
+        var blur = Math.round(g * 0.3);
+        var spread = Math.round(g * 0.08);
+        var alpha = (0.15 + g * 0.0075).toFixed(2);
+        var glowShadow = '0 0 ' + blur + 'px ' + spread + 'px rgba(' + gc + ',' + alpha + ')';
+        baseShadow = baseShadow + ', ' + glowShadow;
+        hoverShadow = hoverShadow + ', 0 0 ' + Math.round(blur * 1.3) + 'px ' + Math.round(spread * 1.3) + 'px rgba(' + gc + ',' + Math.min(1, alpha * 1.25).toFixed(2) + ')';
+      }
       box.style.cssText =
         'position:fixed;left:' + p.pos_x + 'px;top:' + p.pos_y + 'px;' +
         'display:inline-flex;flex-direction:column;align-items:center;gap:3px;' +
         'z-index:' + (window.matchMedia('(pointer:coarse)').matches ? 1580 : 890) + ';width:fit-content;' +
-        'background:rgba(8,10,14,.82);border:1px solid rgba(255,255,255,.1);' +
+        'background:rgba(8,10,14,.82);border:' + borderCss + ';' +
         'border-radius:8px;padding:3px;box-sizing:border-box;' +
         'backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);' +
-        'box-shadow:0 4px 18px rgba(0,0,0,.45);' +
+        'box-shadow:' + baseShadow + ';' +
         'opacity:' + baseOpacity + ';' +
         'transition:opacity 0.25s ease,box-shadow 0.25s ease;';
       box.addEventListener('mouseenter', function() {
         this.style.opacity = '1';
-        this.style.boxShadow = '0 6px 28px rgba(0,0,0,.7)';
+        this.style.boxShadow = hoverShadow;
       });
       box.addEventListener('mouseleave', function() {
         this.style.opacity = baseOpacity;
-        this.style.boxShadow = '0 4px 18px rgba(0,0,0,.45)';
+        this.style.boxShadow = baseShadow;
       });
 
+      const displayWidth = Math.round(p.width * 0.85);
       const img = document.createElement('img');
       img.src = p.image_url;
       img.alt = p.name || '';
-      img.style.cssText = 'width:' + p.width + 'px;height:auto;display:block;object-fit:contain;margin:0;padding:0;';
+      img.style.cssText = 'width:' + displayWidth + 'px;height:auto;display:block;object-fit:contain;margin:0;padding:0;';
       img.onerror = function() {
         const fb = document.createElement('div');
         fb.style.cssText =
-          'width:' + p.width + 'px;min-height:36px;' +
+          'width:' + displayWidth + 'px;min-height:36px;' +
           'background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);' +
           'border-radius:6px;display:flex;align-items:center;justify-content:center;' +
           'font-size:11px;color:#ccc;padding:6px;text-align:center;box-sizing:border-box';
@@ -5966,8 +5988,8 @@ function closeInfo(id){document.getElementById('m-'+id).classList.remove('open')
       if (p.caption) {
         const capUrl = p.caption_url || p.link_url;
         const capStyle =
-          'font-size:10px;color:rgba(255,255,255,.5);letter-spacing:.04em;' +
-          'text-align:center;display:block;width:' + p.width + 'px;line-height:1.3;box-sizing:border-box;';
+          'font-size:12px;color:rgba(255,255,255,.5);letter-spacing:.04em;' +
+          'text-align:center;display:block;width:' + displayWidth + 'px;line-height:1.3;box-sizing:border-box;';
         if (capUrl) {
           const cap = document.createElement('a');
           cap.href = capUrl;

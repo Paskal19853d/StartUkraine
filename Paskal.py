@@ -350,6 +350,19 @@ def init_db():
             c.execute("ALTER TABLE partners ADD COLUMN caption_url VARCHAR(500) NOT NULL DEFAULT ''")
         except Exception:
             pass  # column already exists
+        # Migration: індивідуальна рамка блоку (увімкнення + колір) для кожного партнера окремо
+        try:
+            c.execute("ALTER TABLE partners ADD COLUMN border_enabled TINYINT NOT NULL DEFAULT 0")
+        except Exception:
+            pass  # column already exists
+        try:
+            c.execute("ALTER TABLE partners ADD COLUMN border_color VARCHAR(20) NOT NULL DEFAULT '#ffffff'")
+        except Exception:
+            pass  # column already exists
+        try:
+            c.execute("ALTER TABLE partners ADD COLUMN border_glow INT NOT NULL DEFAULT 40")
+        except Exception:
+            pass  # column already exists
 
         # ── ghost_faces (модуль «Привиди в диму»: список SVG-силуетів, 2-6 файлів) ──
         c.execute("""
@@ -1746,6 +1759,8 @@ os.makedirs("promo",     exist_ok=True)
 os.makedirs("portfolio", exist_ok=True)
 app.mount("/promo",     StaticFiles(directory="promo",     html=True), name="promo")
 app.mount("/portfolio", StaticFiles(directory="portfolio", html=True), name="portfolio")
+os.makedirs("update_v", exist_ok=True)
+app.mount("/update_v", StaticFiles(directory="update_v", html=True), name="update_v")
 
 # Jinja2 templates (for SEO SSR pages)
 _TEMPLATES = Jinja2Templates(directory="templates")
@@ -2703,6 +2718,9 @@ class PartnerCreate(BaseModel):
     pos_y: int = 20
     is_visible: int = 1
     sort_order: int = 0
+    border_enabled: int = 0
+    border_color: str = '#ffffff'
+    border_glow: int = 40
 
 class PartnerUpdate(BaseModel):
     name: Optional[str] = None
@@ -2716,6 +2734,9 @@ class PartnerUpdate(BaseModel):
     pos_y: Optional[int] = None
     is_visible: Optional[int] = None
     sort_order: Optional[int] = None
+    border_enabled: Optional[int] = None
+    border_color: Optional[str] = None
+    border_glow: Optional[int] = None
 
 class GhostFaceUpdate(BaseModel):
     name: Optional[str] = None
@@ -3366,12 +3387,14 @@ def admin_get_partners(request: Request):
 @app.post("/api/admin/partner")
 def admin_create_partner(u: PartnerCreate, request: Request):
     require_admin(request)
+    border_color = u.border_color if _HEX_COLOR_RE.match(u.border_color or '') else '#ffffff'
+    border_glow = max(0, min(100, u.border_glow))
     db = get_db()
     try:
         with db.cursor() as c:
             c.execute(
-                "INSERT INTO partners (name,image_url,link_url,caption,caption_url,width,opacity,pos_x,pos_y,is_visible,sort_order)"
-                " VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                "INSERT INTO partners (name,image_url,link_url,caption,caption_url,width,opacity,pos_x,pos_y,is_visible,sort_order,border_enabled,border_color,border_glow)"
+                " VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
                 (
                     _sanitize_text(u.name)[:100],
                     u.image_url[:500],
@@ -3381,6 +3404,7 @@ def admin_create_partner(u: PartnerCreate, request: Request):
                     max(20, min(800, u.width)),
                     round(max(0.0, min(1.0, u.opacity)), 2),
                     u.pos_x, u.pos_y, u.is_visible, u.sort_order,
+                    1 if u.border_enabled else 0, border_color, border_glow,
                 )
             )
             new_id = c.lastrowid
@@ -3404,6 +3428,11 @@ def admin_update_partner(pid: int, u: PartnerUpdate, request: Request):
     if u.pos_y is not None:      fields.append("pos_y=%s");      vals.append(u.pos_y)
     if u.is_visible is not None: fields.append("is_visible=%s"); vals.append(u.is_visible)
     if u.sort_order is not None: fields.append("sort_order=%s"); vals.append(u.sort_order)
+    if u.border_enabled is not None: fields.append("border_enabled=%s"); vals.append(1 if u.border_enabled else 0)
+    if u.border_color is not None:
+        fields.append("border_color=%s")
+        vals.append(u.border_color if _HEX_COLOR_RE.match(u.border_color or '') else '#ffffff')
+    if u.border_glow is not None: fields.append("border_glow=%s"); vals.append(max(0, min(100, u.border_glow)))
     if not fields:
         raise HTTPException(400, "Нічого оновлювати")
     vals.append(pid)

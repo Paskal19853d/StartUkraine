@@ -210,7 +210,11 @@
       "Bash(curl -s http://127.0.0.1:9333/json/list)",
       "Bash(jobs -l)",
       "Bash(kill -9 1167)",
-      "Bash(taskkill //F //PID 1167)"
+      "Bash(taskkill //F //PID 1167)",
+      "Bash(find . -type f '\\(' -iname *.html -o -iname *.js -o -iname *.css -o -iname *.py -o -iname *.md -o -iname *.txt -o -iname *.json -o -iname *.sh -o -iname *.php -o -iname *.bat -o -iname *.yml -o -iname *.ini -o -iname *.conf -o -iname *.service -o -iname *.example '\\)' -not -path */.git/* -not -path */venv/* -not -path */venv-*/* -not -path */node_modules/* -not -path */__pycache__/* -not -path */Temo_rec/* -print0)",
+      "Bash(xargs -0 wc -l)",
+      "Read(//tmp/**)",
+      "Bash(node -c \"C:\\\\Users\\\\Paskal\\\\AppData\\\\Local\\\\Temp\\\\uh_check.js\")"
     ],
     "additionalDirectories": [
       "C:\\Users\\Paskal\\Downloads"

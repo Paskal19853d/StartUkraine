@@ -13295,6 +13295,26 @@ function openPartnerModal(id) {
           <input id="pm-visible" type="checkbox" ${(p?.is_visible ?? 1) ? 'checked' : ''} style="accent-color:var(--accent)">
           Видимо на головній сторінці
         </label>
+        <div style="border-top:1px solid var(--border2);padding-top:12px;display:flex;flex-direction:column;gap:10px">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--text)">
+            <input id="pm-border-en" type="checkbox" ${(p?.border_enabled ?? 0) ? 'checked' : ''} style="accent-color:var(--accent)"
+                   onchange="document.getElementById('pm-border-extra').style.display=this.checked?'flex':'none'">
+            Рамка блоку (індивідуально для цього партнера)
+          </label>
+          <div id="pm-border-extra" style="display:${(p?.border_enabled ?? 0) ? 'flex' : 'none'};flex-direction:column;gap:10px">
+            <div style="display:flex;align-items:center;gap:10px">
+              <div style="font-size:10px;color:var(--muted)">Колір рамки</div>
+              <input id="pm-border-color" type="color" value="${(p?.border_color || '#ffffff')}"
+                     style="width:44px;height:30px;padding:0;border:1px solid var(--border2);border-radius:6px;background:var(--bg);cursor:pointer">
+            </div>
+            <div>
+              <div style="font-size:10px;color:var(--muted);margin-bottom:4px">Сила світіння: <span id="pm-border-glow-val">${p?.border_glow ?? 40}</span>%</div>
+              <input id="pm-border-glow" type="range" min="0" max="100" step="5" value="${p?.border_glow ?? 40}"
+                     oninput="document.getElementById('pm-border-glow-val').textContent=this.value"
+                     style="width:100%;accent-color:var(--accent)">
+            </div>
+          </div>
+        </div>
       </div>
       <div style="display:flex;gap:10px;margin-top:20px">
         <button class="btn btn-p" onclick="savePartner(${id ?? 'null'})">
@@ -13322,6 +13342,9 @@ async function savePartner(id) {
     pos_y:      +(document.getElementById('pm-y')?.value || 20),
     is_visible: document.getElementById('pm-visible')?.checked ? 1 : 0,
     sort_order: +(document.getElementById('pm-order')?.value || 0),
+    border_enabled: document.getElementById('pm-border-en')?.checked ? 1 : 0,
+    border_color: document.getElementById('pm-border-color')?.value || '#ffffff',
+    border_glow: +(document.getElementById('pm-border-glow')?.value ?? 40),
   };
   try {
     const isEdit = id != null;

@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Журнал оновлень — Зоряна Пам'ять</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #07080A; color: #E8EAED; font-family: 'Onest', system-ui, sans-serif; overflow-x: hidden; position: relative; min-height: 100vh; }
+  a { color: #8FE388; text-decoration: none; }
+  a:hover { color: #B6F0B0; }
+
+  @keyframes zp-pulse { 0%,100% { box-shadow: 0 0 0 4px rgba(143,227,136,.10), 0 0 18px rgba(143,227,136,.35); } 50% { box-shadow: 0 0 0 9px rgba(143,227,136,.04), 0 0 26px rgba(143,227,136,.55); } }
+  @keyframes zp-blink { 0%,49% { opacity: 1; } 50%,100% { opacity: 0; } }
+  @keyframes zp-scan { 0% { transform: translateX(-100%); } 100% { transform: translateX(350%); } }
+  @keyframes zp-cell { 0%, 100% { opacity: 0; } 45%, 62% { opacity: 1; } }
+  @keyframes zp-stream { 0% { left: -18%; } 100% { left: 102%; } }
+  @keyframes zp-spark-f { 0% { left: -8%; opacity: 0; } 3% { opacity: 1; } 30% { opacity: 1; } 34% { left: 106%; opacity: 0; } 100% { left: 106%; opacity: 0; } }
+  @keyframes zp-spark-b { 0% { left: 106%; opacity: 0; } 4% { opacity: 1; } 38% { opacity: 1; } 42% { left: -8%; opacity: 0; } 100% { left: -8%; opacity: 0; } }
+  @keyframes zp-vspark { 0% { top: -6%; opacity: 0; } 12% { opacity: 1; } 40% { opacity: 1; } 48% { top: 100%; opacity: 0; } 100% { top: 100%; opacity: 0; } }
+  @keyframes zp-vspark-up { 0% { top: 100%; opacity: 0; } 12% { opacity: 1; } 40% { opacity: 1; } 48% { top: -6%; opacity: 0; } 100% { top: -6%; opacity: 0; } }
+
+  .bg-grid { position: absolute; inset: -96px; pointer-events: none; background-image: linear-gradient(rgba(143,227,136,.045) 1px, transparent 1px), linear-gradient(90deg, rgba(143,227,136,.045) 1px, transparent 1px); background-size: 64px 64px; mask-image: radial-gradient(ellipse 80% 55% at 50% 8%, #000 0%, transparent 75%); -webkit-mask-image: radial-gradient(ellipse 80% 55% at 50% 8%, #000 0%, transparent 75%); transition: transform .35s cubic-bezier(.22,.61,.36,1); will-change: transform; }
+  .bg-cell { position: absolute; width: 64px; height: 64px; }
+  .bg-stars { position: absolute; inset: 0; pointer-events: none; background-image: radial-gradient(1.5px 1.5px at 12% 18%, rgba(255,255,255,.5), transparent), radial-gradient(1.5px 1.5px at 78% 12%, rgba(255,255,255,.4), transparent), radial-gradient(1px 1px at 34% 44%, rgba(255,255,255,.35), transparent), radial-gradient(1.5px 1.5px at 62% 68%, rgba(255,255,255,.3), transparent), radial-gradient(1px 1px at 88% 52%, rgba(255,255,255,.35), transparent), radial-gradient(1px 1px at 22% 78%, rgba(255,255,255,.25), transparent); }
+
+  .head-wrap { position: relative; max-width: 1440px; margin: 0 auto; padding: 56px 28px 72px; }
+  .head-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
+  .term-line { display: flex; align-items: center; gap: 10px; font-family: 'Fira Code', monospace; font-size: 12.5px; color: #8A929C; }
+  .caret { display: inline-block; width: 7px; height: 14px; background: #8FE388; animation: zp-blink 1.1s step-end infinite; }
+
+  .loc-box { position: relative; flex: 0 0 auto; }
+  .loc-label { position: relative; display: flex; align-items: center; gap: 8px; font-family: 'Fira Code', monospace; font-size: 10px; letter-spacing: .11em; text-transform: uppercase; color: #8A929C; }
+  .dot-pulse { width: 6px; height: 6px; border-radius: 50%; background: #8FE388; animation: zp-pulse 2.4s ease-in-out infinite; }
+  .loc-num { position: relative; margin-top: 8px; font-family: 'Fira Code', monospace; font-size: 26px; font-weight: 500; color: #8FE388; letter-spacing: .02em; font-variant-numeric: tabular-nums; text-shadow: 0 0 18px rgba(143,227,136,.45); }
+  .loc-bar { position: relative; margin-top: 6px; height: 2px; background: #171B21; border-radius: 2px; overflow: hidden; }
+  .loc-bar-fill { width: 40%; height: 100%; background: linear-gradient(90deg, transparent, #8FE388, transparent); animation: zp-scan 2.6s linear infinite; }
+
+  h1 { margin: 22px 0 0; font-size: clamp(36px,5.4vw,64px); line-height: 1.04; font-weight: 700; letter-spacing: -.025em; text-wrap: balance; }
+  h1 span { color: #5E6771; }
+  .lede { margin: 18px 0 0; max-width: 620px; font-size: 17px; line-height: 1.55; color: #98A1AB; text-wrap: pretty; }
+
+  .stat-row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+  .stat-card { flex: 1 1 180px; min-width: 0; border: 1px solid #171B21; background: #0B0D11; border-radius: 10px; padding: 16px 18px; }
+  .stat-title { font-family: 'Fira Code', monospace; font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: #8A929C; }
+  .stat-val { display: flex; align-items: center; gap: 9px; margin-top: 9px; }
+  .stat-val-plain { font-family: 'Fira Code', monospace; font-size: 22px; font-weight: 500; margin-top: 9px; }
+  .sq { width: 7px; height: 7px; background: #8FE388; border-radius: 2px; box-shadow: 0 0 10px rgba(143,227,136,.8); }
+  .circ { width: 7px; height: 7px; background: #8FE388; border-radius: 50%; animation: zp-pulse 2.4s ease-in-out infinite; }
+
+  .route-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; flex-wrap: wrap; margin: 64px 0 6px; }
+  .route-head h2 { margin: 0; font-size: 20px; font-weight: 600; letter-spacing: -.01em; }
+  .route-sub { margin-top: 7px; font-family: 'Fira Code', monospace; font-size: 12px; color: #8A929C; }
+
+  .controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .seg { display: flex; gap: 4px; padding: 4px; border: 1px solid #1E232A; background: #0B0D11; border-radius: 9px; }
+  .seg button { border: 1px solid transparent; background: none; color: #8A929C; border-radius: 6px; padding: 7px 12px; font-family: 'Fira Code', monospace; font-size: 11px; letter-spacing: .05em; cursor: pointer; }
+  .seg button:hover { color: #E8EAED; border-color: #232830; }
+  .seg button.active { border-color: rgba(143,227,136,.35); background: rgba(143,227,136,.10); color: #8FE388; }
+  .seg button.active:hover { color: #8FE388; }
+  .arrow-btn { width: 40px; height: 40px; display: grid; place-items: center; border: 1px solid #1E232A; background: #0B0D11; color: #98A1AB; border-radius: 8px; cursor: pointer; font-size: 15px; font-family: 'Fira Code', monospace; }
+  .arrow-btn:hover { border-color: #8FE388; color: #8FE388; }
+
+  .rail-wrap { position: relative; overflow-x: auto; overflow-y: hidden; padding-bottom: 8px; }
+  .rail { position: relative; display: flex; width: max-content; gap: 26px; padding: 0 max(28px, calc((100vw - 1440px) / 2 + 28px)) 0 max(28px, calc((100vw - 1440px) / 2 + 28px)); }
+
+  .timeline-strip { position: absolute; left: 0; right: 0; top: 421px; height: 19px; overflow: hidden; pointer-events: none; }
+  .timeline-strip .line { position: absolute; left: 0; right: 0; top: 9px; height: 1px; background: linear-gradient(90deg, rgba(143,227,136,.55), rgba(143,227,136,.18) 60%, rgba(143,227,136,.06)); }
+  .timeline-strip .bits { position: absolute; top: 8px; font-family: 'Fira Code', monospace; font-size: 8px; letter-spacing: .22em; color: rgba(143,227,136,.3); white-space: nowrap; }
+  .timeline-strip .spark { position: absolute; height: 2px; border-radius: 2px; }
+
+  .entry { position: relative; width: 302px; height: 860px; flex: 0 0 auto; }
+  .card { border: 1px solid #1B1F26; background: #0C0E12; border-radius: 12px; padding: 18px; }
+  .card:hover { border-color: #2B333C; }
+  .card-tags { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .cat-tag { font-family: 'Fira Code', monospace; font-size: 10px; letter-spacing: .09em; text-transform: uppercase; color: #8A929C; border: 1px solid #232830; border-radius: 4px; padding: 3px 8px; }
+  .ver-tag { font-family: 'Fira Code', monospace; font-size: 11px; color: #8FE388; background: rgba(143,227,136,.07); border: 1px solid rgba(143,227,136,.22); border-radius: 4px; padding: 3px 8px; }
+  .card h3 { margin: 13px 0 0; font-size: 17px; font-weight: 600; line-height: 1.3; letter-spacing: -.01em; text-wrap: pretty; }
+  .card p.summary { margin: 9px 0 0; font-size: 13.5px; line-height: 1.55; color: #8A929C; text-wrap: pretty; }
+  .card-detail { display: none; flex-direction: column; gap: 7px; margin-top: 13px; padding-top: 13px; border-top: 1px solid #171B21; }
+  .card-detail.open { display: flex; }
+  .card-detail div { display: flex; gap: 9px; font-size: 13px; line-height: 1.45; color: #A8B0BA; }
+  .card-detail div span.dash { color: #8FE388; flex: 0 0 auto; }
+  .toggle-btn { display: block; width: 100%; text-align: left; margin-top: 14px; padding-top: 12px; border: 0; border-top: 1px dashed #1E232A; background: none; color: #8A929C; font-family: 'Fira Code', monospace; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; cursor: pointer; }
+  .toggle-btn:hover { color: #8FE388; }
+
+  .stem { position: absolute; left: 50%; width: 1px; background: linear-gradient(180deg, #1E232A, rgba(143,227,136,.5)); }
+  .stem.up { background: linear-gradient(0deg, #1E232A, rgba(143,227,136,.5)); }
+  .stem-spark { position: absolute; left: -1px; width: 3px; height: 14px; border-radius: 2px; background: linear-gradient(180deg, transparent, rgba(255,255,255,.92), transparent); box-shadow: 0 0 10px rgba(255,255,255,.55); }
+
+  .date-label { position: absolute; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 7px; }
+  .date-label.bottom { flex-direction: column-reverse; }
+  .date-text { font-family: 'Fira Code', monospace; font-size: 13px; color: #E8EAED; letter-spacing: .02em; }
+  .current-pill { font-family: 'Fira Code', monospace; font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: #8FE388; border: 1px solid rgba(143,227,136,.3); background: rgba(143,227,136,.07); border-radius: 4px; padding: 3px 8px; white-space: nowrap; }
+
+  .node { position: absolute; left: 50%; top: 423px; transform: translateX(-50%); width: 15px; height: 15px; border-radius: 3px; border: 2px solid #8FE388; background: #07080A; }
+  .node.current { border: none; background: #8FE388; animation: zp-pulse 2.4s ease-in-out infinite; }
+
+  .end-slot { position: relative; width: 240px; height: 860px; flex: 0 0 auto; }
+  .load-more-btn { border: 1px solid rgba(143,227,136,.35); background: rgba(143,227,136,.07); color: #8FE388; border-radius: 8px; padding: 12px 18px; font-family: 'Fira Code', monospace; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; cursor: pointer; }
+  .load-more-btn:hover { background: rgba(143,227,136,.14); border-color: #8FE388; }
+  .end-marker { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .end-marker .sqr { width: 11px; height: 11px; border-radius: 2px; background: #2B333C; }
+  .end-marker .lbl { font-family: 'Fira Code', monospace; font-size: 11px; letter-spacing: .09em; text-transform: uppercase; color: #8A929C; }
+
+  .footer-wrap { position: relative; max-width: 1440px; margin: 0 auto; padding: 56px 28px 80px; }
+  .footer-box { display: flex; align-items: center; justify-content: space-between; gap: 24px; flex-wrap: wrap; border: 1px solid #171B21; background: #0B0D11; border-radius: 12px; padding: 24px 26px; }
+  .footer-box-title { font-size: 16px; font-weight: 600; }
+  .footer-box-sub { margin-top: 7px; font-size: 14px; color: #8A929C; text-wrap: pretty; }
+  .report-btn { flex: 0 0 auto; border: 1px solid rgba(143,227,136,.35); background: rgba(143,227,136,.07); color: #8FE388; border-radius: 8px; padding: 13px 20px; font-family: 'Fira Code', monospace; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; }
+  .report-btn:hover { background: rgba(143,227,136,.14); border-color: #8FE388; }
+  .footer-meta { margin-top: 22px; font-family: 'Fira Code', monospace; font-size: 11.5px; color: #7A838E; }
+</style>
+</head>
+<body>
+
+  <div class="bg-grid" id="bgGrid">
+    <div class="bg-cell" style="left:128px; top:192px; background:rgba(143,227,136,.07); animation:zp-cell 7s ease-in-out infinite"></div>
+    <div class="bg-cell" style="left:384px; top:128px; background:rgba(143,227,136,.05); animation:zp-cell 9.5s ease-in-out infinite; animation-delay:-3s"></div>
+    <div class="bg-cell" style="left:640px; top:320px; background:rgba(255,255,255,.035); animation:zp-cell 6.2s ease-in-out infinite; animation-delay:-1.4s"></div>
+    <div class="bg-cell" style="left:896px; top:64px; background:rgba(143,227,136,.06); animation:zp-cell 11s ease-in-out infinite; animation-delay:-5.5s"></div>
+    <div class="bg-cell" style="left:1152px; top:256px; background:rgba(255,59,48,.05); animation:zp-cell 13s ease-in-out infinite; animation-delay:-8s"></div>
+    <div class="bg-cell" style="left:1408px; top:128px; background:rgba(143,227,136,.05); animation:zp-cell 8.4s ease-in-out infinite; animation-delay:-2.2s"></div>
+    <div class="bg-cell" style="left:256px; top:448px; background:rgba(255,255,255,.03); animation:zp-cell 10.2s ease-in-out infinite; animation-delay:-6.1s"></div>
+    <div class="bg-cell" style="left:768px; top:512px; background:rgba(143,227,136,.055); animation:zp-cell 7.8s ease-in-out infinite; animation-delay:-4.3s"></div>
+    <div class="bg-cell" style="left:1024px; top:384px; background:rgba(143,227,136,.04); animation:zp-cell 12.5s ease-in-out infinite; animation-delay:-9.4s"></div>
+    <div class="bg-cell" style="left:1600px; top:320px; background:rgba(255,255,255,.028); animation:zp-cell 9s ease-in-out infinite; animation-delay:-7.2s"></div>
+    <div class="bg-cell" style="left:512px; top:64px; background:rgba(143,227,136,.045); animation:zp-cell 14s ease-in-out infinite; animation-delay:-11s"></div>
+    <div class="bg-cell" style="left:1280px; top:512px; background:rgba(143,227,136,.05); animation:zp-cell 6.8s ease-in-out infinite; animation-delay:-0.8s"></div>
+  </div>
+  <div class="bg-stars"></div>
+
+  <div class="head-wrap">
+    <div class="head-top">
+      <div class="term-line">
+        <span style="color:#8FE388">$</span>
+        <span>git log --oneline --since="2026-07-02"</span>
+        <span class="caret"></span>
+      </div>
+      <div class="loc-box">
+        <div class="loc-label"><span class="dot-pulse"></span><span>рядків коду в проєкті</span></div>
+        <div class="loc-num" id="locNum">0</div>
+        <div class="loc-bar"><div class="loc-bar-fill"></div></div>
+      </div>
+    </div>
+
+    <h1>Що нового<br /><span>на сайті</span></h1>
+    <p class="lede">Зміни, адаптація, оновлення проєкту. Повний маршрут розвитку сайту зоряна-пам'ять.укр — від запуску до поточної версії.</p>
+
+    <div class="stat-row">
+      <div class="stat-card">
+        <div class="stat-title">Поточна версія</div>
+        <div class="stat-val"><span class="sq"></span><span style="font-family:'Fira Code',monospace; font-size:22px; font-weight:500; color:#8FE388">v3.33.0</span></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-title">Записів у журналі</div>
+        <div class="stat-val-plain" id="entryCountStat">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-title">Останнє оновлення</div>
+        <div class="stat-val-plain">18.09.2026</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-title">Статус системи</div>
+        <div class="stat-val"><span class="circ"></span><span style="font-family:'Fira Code',monospace; font-size:15px; color:#98A1AB">стабільно</span></div>
+      </div>
+    </div>
+
+    <div class="route-head">
+      <div>
+        <h2>Маршрут оновлень</h2>
+        <div class="route-sub" id="counterText">показано 0 з 0 · прокрутіть маршрут праворуч →</div>
+      </div>
+      <div class="controls">
+        <div class="seg">
+          <button type="button" id="btnNewest" class="active">нові → старі</button>
+          <button type="button" id="btnOldest">старі → нові</button>
+        </div>
+        <button type="button" class="arrow-btn" id="btnPrev">←</button>
+        <button type="button" class="arrow-btn" id="btnNext">→</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="rail-wrap" id="railWrap">
+    <div class="rail" id="rail">
+
+      <div class="timeline-strip">
+        <div class="line"></div>
+        <div class="bits" style="width:340px; color:rgba(143,227,136,.3); animation:zp-stream 44s linear infinite">01001101 0x7F 11010 0xA3 100110 0x1C 011010 0xE2 1001</div>
+        <div class="bits" style="width:300px; color:rgba(143,227,136,.22); animation:zp-stream 61s linear infinite; animation-delay:-14s">11010010 0x4B 001101 0xD9 110011 0x08 101001</div>
+        <div class="spark" style="width:150px; top:7px; height:3px; background:linear-gradient(90deg, transparent, rgba(255,70,60,.75), #FF3B30, rgba(255,70,60,.75), transparent); box-shadow:0 0 16px rgba(255,59,48,.85); animation:zp-spark-f 11s linear infinite"></div>
+        <div class="spark" style="width:110px; background:linear-gradient(90deg, transparent, rgba(255,255,255,.95), transparent); box-shadow:0 0 12px rgba(255,255,255,.7); animation:zp-spark-f 6.5s linear infinite; animation-delay:-2.1s"></div>
+        <div class="spark" style="width:64px; background:linear-gradient(90deg, transparent, rgba(255,255,255,.8), transparent); box-shadow:0 0 10px rgba(255,255,255,.55); animation:zp-spark-b 9.4s linear infinite; animation-delay:-5.3s"></div>
+        <div class="spark" style="width:140px; background:linear-gradient(90deg, transparent, rgba(255,255,255,.65), transparent); box-shadow:0 0 14px rgba(255,255,255,.45); animation:zp-spark-b 15s linear infinite; animation-delay:-8.7s"></div>
+        <div class="spark" style="width:80px; top:9px; height:1px; background:linear-gradient(90deg, transparent, rgba(255,255,255,.9), transparent); box-shadow:0 0 8px rgba(255,255,255,.6); animation:zp-spark-f 4.8s linear infinite; animation-delay:-3.6s"></div>
+      </div>
+
+      <!-- entries вставляються сюди через JS -->
+
+      <div class="end-slot" id="endSlot"></div>
+    </div>
+  </div>
+
+  <div class="footer-wrap">
+    <div class="footer-box">
+      <div style="min-width:0">
+        <div class="footer-box-title">Помітили помилку або зміну, якої тут немає?</div>
+        <div class="footer-box-sub">Напишіть нам — виправимо та додамо запис до журналу оновлень.</div>
+      </div>
+      <a href="#report" class="report-btn">Повідомити про помилку</a>
+    </div>
+    <div class="footer-meta">зоряна-пам'ять.укр · журнал оновлень · оновлено 18.09.2026</div>
+  </div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ── Дані журналу (найновіше перше) ──────────────────────────────
+  var entries = [
+    { v:"v3.33", d:"18.09.2026", c:"Продуктивність", t:"Карта більше не підвисає при наведенні на зірку",
+      s:"Прибрано короткочасні затримки анімації диму, які з'являлися при наведенні курсора на маркер загиблого.",
+      b:["Плавніше відображення при наведенні на зірку","Менше навантаження на пристрій під час перегляду карти","Однаково стабільно на слабших комп'ютерах"] },
+    { v:"v3.32", d:"16.09.2026", c:"Дизайн", t:"Плавніша поява привидів у диму",
+      s:"Меморіальний ефект силуетів у диму тепер з'являється і зникає рівномірно, без різких стрибків.",
+      b:["Рівномірна швидкість появи й згасання","Без ривків при зміні положення курсора"] },
+    { v:"v3.31", d:"16.09.2026", c:"Нова функція", t:"Колір підсвітки привидів у диму",
+      s:"У налаштуваннях сайту можна обирати колір і прозорість тонування силуетів у диму.",
+      b:["Гнучке налаштування вигляду ефекту","Живе попереднє відображення при зміні"] },
+    { v:"v3.30", d:"14.09.2026", c:"Нова функція", t:"Світлий контур привидів, що реагує на курсор",
+      s:"Силуети в диму отримали тонку світну кромку, яка проступає саме там, де перебуває курсор.",
+      b:["Ефект «дим торкається форми»","Кромка кольору диму, що плавно змінюється"] },
+    { v:"v3.29", d:"13.09.2026", c:"Нова функція", t:"Дим тепер обтікає силуети привидів",
+      s:"Анімація диму фізично реагує на привидів у ньому — обтікає та закручується навколо їхньої форми.",
+      b:["Дим відштовхується від контуру силуету","Додатковий ефект «примагнічування» вздовж країв","Привид завжди з'являється над картою України"] },
+    { v:"v3.27", d:"12.09.2026", c:"Продуктивність", t:"Плавніший рух картою",
+      s:"Панорамування та наближення карти працюють помітно швидше, особливо в місцях з великою кількістю зірок.",
+      b:["Швидша прорисовка видимих зірок","Менше навантаження при щільному скупченні міток"] },
+    { v:"v3.26", d:"12.09.2026", c:"Виправлення", t:"Дим більше не зависає при простому наведенні",
+      s:"Усунено ситуацію, коли анімація диму ненадовго завмирала від випадкового руху миші чи колеса.",
+      b:["Стабільніша поведінка на різних пристроях введення"] },
+    { v:"v3.25", d:"03.09.2026", c:"Продуктивність", t:"Швидший відгук карти при масштабуванні",
+      s:"Наближення та наведення на зірки стали значно чутливішими завдяки внутрішній оптимізації пошуку міток.",
+      b:["Миттєвіший відгук на наведення курсора","Плавніше масштабування карти"] },
+    { v:"v3.24", d:"02.09.2026", c:"Виправлення", t:"Налаштування чату тепер надійно зберігаються",
+      s:"Виправлено ситуацію, коли зміни в налаштуваннях чату могли не зберегтися після оновлення сторінки.",
+      b:["Надійне збереження параметрів чату"] },
+    { v:"v3.23", d:"02.09.2026", c:"Виправлення", t:"Кнопка чату коректно ховається на мобільних",
+      s:"Якщо чат вимкнено, плаваюча кнопка чату на телефоні тепер теж зникає, а не залишається неактивною.",
+      b:["Узгоджена поведінка на мобільних і десктопі"] },
+    { v:"v3.21", d:"02.09.2026", c:"Нова функція", t:"Підтримка цивільних загиблих і різних причин смерті",
+      s:"Платформа тепер приймає записи не лише про військових — можна додати також цивільну особу, загиблу внаслідок війни, чи людину, яка пішла з життя з інших причин.",
+      b:["Категорії: військовий / цивільний від війни / інша причина","Окремі поля громадянства та національності","Можливість анонімного додавання запису"] },
+    { v:"v3.20", d:"01.09.2026", c:"Виправлення", t:"Карта світу знову відображається коректно",
+      s:"Виправлено показ підкладки карти світу на сторінці вибору місця для нового запису.",
+      b:["Коректне відображення тайлів карти"] },
+    { v:"v3.18", d:"23.08.2026", c:"Нова функція", t:"Окремий перемикач відео-інструкції",
+      s:"Відео-підказку для нових відвідувачів тепер можна вмикати чи вимикати незалежно від основного туру.",
+      b:["Гнучке керування показом навчального відео"] },
+    { v:"v3.17", d:"22.08.2026", c:"Нова функція", t:"Покращення показу відео-контенту",
+      s:"Додано новий формат демонстрації відео на головній сторінці з мʼяким, ненав'язливим показом.",
+      b:["Показ не частіше заданого інтервалу для одного відвідувача","Звук вмикається лише після натискання"] },
+    { v:"v3.16", d:"22.08.2026", c:"Виправлення", t:"Промо-сторінка показує актуальну статистику",
+      s:"Кількість записів пам'яті та лайків на промо-сторінці тепер завжди відповідає реальним даним сайту.",
+      b:["Автоматичне оновлення цифр без втручання вручну"] },
+    { v:"v3.15", d:"22.08.2026", c:"Виправлення", t:"Модальні вікна більше нічим не перекриваються",
+      s:"Форма додавання загиблого та інші спливаючі вікна більше не ховаються за іншими елементами сайту.",
+      b:["Коректне відображення поверх усіх блоків карти","Виправлено на десктопі й мобільних"] },
+    { v:"v3.12", d:"22.08.2026", c:"Нова функція", t:"Підказки для нових відвідувачів",
+      s:"При першому візиті сайт може показати коротку відео-інструкцію замість інтерактивного туру — за бажанням адміністрації.",
+      b:["Гнучкий вибір формату знайомства із сайтом"] },
+    { v:"v3.9", d:"22.08.2026", c:"Дизайн", t:"Покращений інтерактивний тур по сайту",
+      s:"Вступний тур тепер працює однаково добре на комп'ютері, планшеті й телефоні, з підказками для кожної кнопки.",
+      b:["Повний тур доступний на мобільних пристроях","Підказки точно вказують на потрібну кнопку","Додано пояснення про перемикач мови"] },
+    { v:"v3.8", d:"15.08.2026", c:"Продуктивність", t:"Дим з'являється одразу при відкритті сайту",
+      s:"Раніше дим міг не проявитися одразу, якщо курсор лишався нерухомим після завантаження сторінки — тепер він завжди активний із самого початку.",
+      b:["Гарантована поява ефекту диму при вході на сайт"] },
+    { v:"v3.7", d:"15.08.2026", c:"Продуктивність", t:"Дим на карті працює швидше",
+      s:"Суттєво знижено навантаження анімації диму на пристрій, особливо на телефонах і при тривалому перегляді.",
+      b:["Менше споживання ресурсів пристрою","Плавніша робота на мобільних телефонах","Без втрати візуальної якості ефекту"] },
+    { v:"v3.6", d:"13.08.2026", c:"Нова функція", t:"Окреме посилання для підпису партнера",
+      s:"У блоці «Друзі та партнери» підпис під зображенням тепер може вести на власне посилання, відмінне від посилання картинки.",
+      b:["Гнучкіше оформлення партнерських блоків"] },
+    { v:"v3.5", d:"11.08.2026", c:"Контент", t:"Інструкція «Як додати загиблого»",
+      s:"З'явилася покрокова сторінка з поясненнями та скріншотами — як через сайт додати меморіальний запис.",
+      b:["5 простих кроків із поясненнями","Приклади заповнення форми","Пояснення про модерацію запису"] },
+    { v:"v3.4", d:"15.07.2026", c:"Мобільна адаптація", t:"Виправлено підказки в шапці на телефонах",
+      s:"Підказки біля кнопок у верхній панелі більше не обрізаються на телефонах і планшетах.",
+      b:["Коректне відображення підказок при дотику"] },
+    { v:"v3.3", d:"15.07.2026", c:"Виправлення", t:"Вхід через Google коректно повертає в адмін-панель",
+      s:"Якщо адміністратор заходив через Google з панелі керування, його більше не перекидає на публічну головну сторінку.",
+      b:["Коректний редирект після входу через Google"] },
+    { v:"v3.2", d:"15.07.2026", c:"Виправлення", t:"Лічильник відвідувачів рахує за київську добу",
+      s:"Кількість відвідувачів «за 24 години» тепер рахується від опівночі за київським часом, а не як плаваюче вікно.",
+      b:["Точніша, зрозуміліша статистика активності"] },
+    { v:"v3.1", d:"14.07.2026", c:"Нова функція", t:"Сайт заговорив англійською",
+      s:"Додано повноцінну підтримку кількох мов інтерфейсу з перемикачем у шапці сайту.",
+      b:["Перемикач мови в шапці сайту","Синхронізація вибору між вкладками браузера"] },
+    { v:"v2.2", d:"02.07.2026", c:"Нова функція", t:"Розділ «Вартість проєкту» та дрібні виправлення",
+      s:"Додано прозорий розрахунок вартості підтримки проєкту, а також виправлено кілька дрібних недоліків форм і карток.",
+      b:["Прозорий розрахунок витрат на утримання сайту","Виправлено обрізання фото на картці меморіалу","Виправлено відображення пошти у контактах"] }
+  ];
+
+  var currentVersion = entries[0].v;
+  var batch = 8;
+  var railEl = document.getElementById("rail");
+  var railWrap = document.getElementById("railWrap");
+  var endSlot = document.getElementById("endSlot");
+  var counterText = document.getElementById("counterText");
+  var btnNewest = document.getElementById("btnNewest");
+  var btnOldest = document.getElementById("btnOldest");
+  var openState = {};
+
+  var sparkDurs = [5.5, 7.6, 4.3, 9.1, 6.4];
+  var sparkDelays = [0, -2.4, -1.1, -3.7, -5.2];
+  var sparkAnims = ["zp-vspark", "zp-vspark-up", "zp-vspark-up", "zp-vspark", "zp-vspark-up"];
+
+  var state = { order: "newest", shown: batch };
+
+  function esc(s){
+    var d = document.createElement("div");
+    d.textContent = s;
+    return d.innerHTML;
+  }
+
+  function cardHtml(item){
+    var tagsHtml = '<div class="card-tags"><span class="cat-tag">' + esc(item.c) + '</span><span class="ver-tag">' + esc(item.v) + '</span></div>';
+    var detailLines = item.b.map(function(line){
+      return '<div><span class="dash">—</span><span>' + esc(line) + '</span></div>';
+    }).join("");
+    return '<article class="card">' + tagsHtml +
+      '<h3>' + esc(item.t) + '</h3>' +
+      '<p class="summary">' + esc(item.s) + '</p>' +
+      '<div class="card-detail" data-v="' + esc(item.v) + '">' + detailLines + '</div>' +
+      '<button type="button" class="toggle-btn" data-v="' + esc(item.v) + '">детальніше ↓</button>' +
+      '</article>';
+  }
+
+  function renderEntries(){
+    var ordered = state.order === "newest" ? entries : entries.slice().reverse();
+    var shown = Math.min(state.shown, ordered.length);
+    var items = ordered.slice(0, shown);
+
+    // прибрати попередні .entry, залишити timeline-strip
+    var olds = railEl.querySelectorAll(".entry");
+    for (var i = 0; i < olds.length; i++) olds[i].remove();
+
+    var frag = document.createDocumentFragment();
+    items.forEach(function(item, idx){
+      var isTop = idx % 2 === 0;
+      var isCurrent = item.v === currentVersion;
+      var k = idx % 5;
+      var sparkStyle = "animation:" + sparkAnims[k] + " " + sparkDurs[k] + "s linear infinite; animation-delay:" + sparkDelays[k] + "s";
+
+      var wrap = document.createElement("div");
+      wrap.className = "entry";
+
+      var currentPillHtml = isCurrent ? '<span class="current-pill">поточна версія</span>' : "";
+
+      if (isTop){
+        wrap.innerHTML =
+          '<div style="position:absolute; left:0; right:0; bottom:500px">' + cardHtml(item) + '</div>' +
+          '<div class="stem" style="bottom:432px; height:54px"><div class="stem-spark" style="' + sparkStyle + '"></div></div>' +
+          '<div class="date-label" style="top:442px">' +
+            '<span class="date-text">' + esc(item.d) + '</span>' + currentPillHtml +
+          '</div>';
+      } else {
+        wrap.innerHTML =
+          '<div class="date-label bottom" style="bottom:452px">' +
+            '<span class="date-text">' + esc(item.d) + '</span>' + currentPillHtml +
+          '</div>' +
+          '<div class="stem up" style="top:442px; height:58px"><div class="stem-spark" style="' + sparkStyle + '"></div></div>' +
+          '<div style="position:absolute; left:0; right:0; top:500px">' + cardHtml(item) + '</div>';
+      }
+
+      var node = document.createElement("div");
+      node.className = "node" + (isCurrent ? " current" : "");
+      wrap.appendChild(node);
+
+      frag.appendChild(wrap);
+    });
+
+    railEl.insertBefore(frag, endSlot);
+
+    // застосувати вже відкриті картки
+    Object.keys(openState).forEach(function(v){
+      if (openState[v]){
+        var det = railEl.querySelector('.card-detail[data-v="' + CSS.escape(v) + '"]');
+        var btn = railEl.querySelector('.toggle-btn[data-v="' + CSS.escape(v) + '"]');
+        if (det) det.classList.add("open");
+        if (btn) btn.textContent = "згорнути ↑";
+      }
+    });
+
+    var rest = ordered.length - shown;
+    counterText.textContent = "показано " + shown + " з " + ordered.length + " · прокрутіть маршрут праворуч →";
+
+    endSlot.innerHTML = "";
+    if (rest > 0){
+      endSlot.innerHTML =
+        '<div style="position:absolute; left:0; right:0; top:396px; display:flex; flex-direction:column; align-items:center; gap:12px">' +
+          '<button type="button" class="load-more-btn" id="loadMoreBtn">Завантажити ще ' + Math.min(batch, rest) + '</button>' +
+          '<span style="font-family:\'Fira Code\',monospace; font-size:11px; color:#8A929C">маршрут продовжується</span>' +
+        '</div>';
+      document.getElementById("loadMoreBtn").addEventListener("click", function(){
+        state.shown += batch;
+        renderEntries();
+        setTimeout(function(){ scrollByStep(1.2); }, 60);
+      });
+    } else {
+      endSlot.innerHTML =
+        '<div class="end-marker" style="position:absolute; left:0; right:0; top:410px">' +
+          '<span class="sqr"></span><span class="lbl">початок маршруту</span>' +
+        '</div>';
+    }
+  }
+
+  railEl.addEventListener("click", function(e){
+    var btn = e.target.closest(".toggle-btn");
+    if (!btn) return;
+    var v = btn.getAttribute("data-v");
+    var det = railEl.querySelector('.card-detail[data-v="' + CSS.escape(v) + '"]');
+    if (!det) return;
+    var willOpen = !det.classList.contains("open");
+    det.classList.toggle("open", willOpen);
+    openState[v] = willOpen;
+    btn.textContent = willOpen ? "згорнути ↑" : "детальніше ↓";
+  });
+
+  function setOrder(order){
+    if (state.order === order) return;
+    state.order = order;
+    state.shown = batch;
+    railWrap.scrollLeft = 0;
+    btnNewest.classList.toggle("active", order === "newest");
+    btnOldest.classList.toggle("active", order === "oldest");
+    renderEntries();
+  }
+  btnNewest.addEventListener("click", function(){ setOrder("newest"); });
+  btnOldest.addEventListener("click", function(){ setOrder("oldest"); });
+
+  var scrollRaf = null;
+  function scrollByStep(dir){
+    var el = railWrap;
+    var max = el.scrollWidth - el.clientWidth;
+    var target = Math.max(0, Math.min(max, el.scrollLeft + dir * 328));
+    var from = el.scrollLeft;
+    var start = performance.now();
+    cancelAnimationFrame(scrollRaf);
+    function step(now){
+      var p = Math.min(1, (now - start) / 380);
+      var e = 1 - Math.pow(1 - p, 3);
+      el.scrollLeft = from + (target - from) * e;
+      if (p < 1) scrollRaf = requestAnimationFrame(step);
+    }
+    scrollRaf = requestAnimationFrame(step);
+  }
+  document.getElementById("btnPrev").addEventListener("click", function(){ scrollByStep(-1); });
+  document.getElementById("btnNext").addEventListener("click", function(){ scrollByStep(1); });
+
+  // ── Лічильник рядків коду ──────────────────────────────
+  var locTarget = 58314;
+  var locEl = document.getElementById("locNum");
+  var locRaf = null;
+  function runLocCount(){
+    var start = performance.now();
+    function tick(now){
+      var p = Math.min(1, (now - start) / 1800);
+      var e = 1 - Math.pow(1 - p, 4);
+      locEl.textContent = String(Math.round(locTarget * e)).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+      if (p < 1) locRaf = requestAnimationFrame(tick);
+    }
+    cancelAnimationFrame(locRaf);
+    locRaf = requestAnimationFrame(tick);
+  }
+  runLocCount();
+  setInterval(runLocCount, 9000);
+
+  // ── Паралакс фонової сітки ──────────────────────────────
+  var bgGrid = document.getElementById("bgGrid");
+  var moveRaf = null;
+  window.addEventListener("mousemove", function(e){
+    if (moveRaf) return;
+    var x = e.clientX, y = e.clientY;
+    moveRaf = requestAnimationFrame(function(){
+      moveRaf = null;
+      var dx = (x / window.innerWidth - 0.5) * -56;
+      var dy = (y / window.innerHeight - 0.5) * -40;
+      bgGrid.style.transform = "translate3d(" + dx.toFixed(1) + "px," + dy.toFixed(1) + "px,0)";
+    });
+  }, { passive: true });
+
+  // ── Ініціалізація ──────────────────────────────
+  document.getElementById("entryCountStat").textContent = String(entries.length);
+  renderEntries();
+})();
+</script>
+</body>
+</html>
