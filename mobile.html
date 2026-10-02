@@ -19,7 +19,7 @@
 <link rel="dns-prefetch" href="https://img.youtube.com">
 <link rel="dns-prefetch" href="https://www.youtube-nocookie.com">
 <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700&family=Geologica:wght@300;400;500&family=Yeseva+One&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="Style.css?v=20260920c">
+<link rel="stylesheet" href="Style.css?v=20261002">
 <link rel="stylesheet" href="fonts/uicons/uicons.css">
 <link rel="stylesheet" href="silence-module.css">
 <link rel="stylesheet" href="mobile.css">
@@ -2259,6 +2259,7 @@ body{visibility:hidden}
       <a class="sr-link" href="/rules.html" target="_blank" rel="noopener noreferrer">📋 Правила сайту</a>
       <a class="sr-link" href="/terms.html" target="_blank" rel="noopener noreferrer">📄 Правила використання</a>
       <a class="sr-link" href="/faq.html" target="_blank" rel="noopener noreferrer">❓ Питання — відповідь</a>
+      <a class="sr-link" href="/pricing/" target="_blank" rel="noopener noreferrer">💎 Тарифи</a>
     </div>
   </div>
   <div id="tip"></div>
@@ -3813,7 +3814,7 @@ async function loadData() {
     const stats=await rs.json();cities=await rc.json();
     // Передобчислюємо нормалізовані назви для пошуку
     cities.forEach(c=>{ c._nameNorm=(c.name||'').toLowerCase(); c._nameLat=_cityTranslit(c.name); });
-    _setPL(20, 'Список захисників...');
+    _plStep('statscities', 'Список захисників...');
     // Пагіноване завантаження всіх записів (по 100 за раз)
     let allPeople=[];
     let page=1;
@@ -3824,13 +3825,14 @@ async function loadData() {
       const items=pd.items||pd; // fallback для старого формату
       allPeople=allPeople.concat(items);
       if(pd.pages) totalPages=pd.pages;
-      const pct=totalPages ? 20 + Math.round((page/totalPages)*65) : 20;
-      _setPL(pct);
+      const frac=totalPages ? page/totalPages : 1;
+      _plSub('people', frac);
       if(pd.pages && page>=pd.pages) break;
       if(!pd.items && !Array.isArray(pd)) break; // старий формат — масив
       if(!pd.items || pd.items.length===0) break;
       page++;
     }
+    _plStep('people');
     const raw=allPeople;
     people=raw.map(p=>({...p,x:parseFloat(p.pos_x??p.x??0.5),y:parseFloat(p.pos_y??p.y??0.5),grp:p.grp||''}));
     // Ключ зв'язку: ПІБ + дата нар. + дата смерті (незалежно від поля grp)
@@ -5036,6 +5038,20 @@ function _setPL(pct, label) {
   if (bEl) bEl.style.width = p + '%';
   if (tEl && label) tEl.textContent = label;
 }
+/* Зважений розрахунок прогресу — кожен реальний крок завантаження важить
+   пропорційно своєму типовому обсягу/тривалості (список записів — найважчий,
+   потенційно тисячі записів на кількох сторінках; colors/device — легкі
+   довідники), замість довільних контрольних точок. */
+const _PL_WEIGHTS = { colors: 8, device: 4, statscities: 10, people: 58, labels: 15, render: 5 };
+let _plDone = 0;
+function _plStep(key, label) {
+  _plDone += _PL_WEIGHTS[key] || 0;
+  _setPL(_plDone, label);
+}
+function _plSub(key, frac, label) {
+  const w = _PL_WEIGHTS[key] || 0;
+  _setPL(_plDone + w * frac, label);
+}
 
 /* ── View Switcher ── */
 function vsSetCookie(v){
@@ -5088,16 +5104,15 @@ async function checkDeviceAccess() {
 (async()=>{
   _setPL(0, 'Завантаження...');
   await loadColors();
+  _plStep('colors', 'Налаштування...');
   await checkDeviceAccess();
-  _setPL(15, 'Налаштування...');
+  _plStep('device');
   await loadData();
-  _setPL(88, 'Підписи карти...');
   await loadLabels();
-  _setPL(94, 'Рендер карти...');
+  _plStep('labels', 'Рендер карти...');
   renderCityLabels();
-  _setPL(97);
   initSVGBorders();
-  _setPL(100, 'Готово');
+  _plStep('render', 'Готово');
   updateAuthUI();
   connectWS();
   checkOAuthCallback();
@@ -5121,7 +5136,7 @@ async function checkDeviceAccess() {
     <canvas></canvas>
     <video id="videoBackground" muted loop></video>
     <div id="overlay"></div>
-    <script src="js/script.js?v=20260919"></script>
+    <script src="js/script.js?v=20260924"></script>
     <script src="js/ghost-faces.js?v=16"></script>
     <script src="js/sea.js?v=20260424b"></script>
 

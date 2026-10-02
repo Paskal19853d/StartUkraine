@@ -364,6 +364,23 @@ def init_db():
         except Exception:
             pass  # column already exists
 
+        # ── pricing_leads (заявки з /pricing/ — воронка вибору тарифу) ──
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS pricing_leads (
+                id          INT PRIMARY KEY AUTO_INCREMENT,
+                plan        VARCHAR(20)  NOT NULL,
+                price_label VARCHAR(40)  NOT NULL DEFAULT '',
+                name        VARCHAR(150) NOT NULL DEFAULT '',
+                contact     VARCHAR(150) NOT NULL,
+                memorial_id INT NULL,
+                comment     TEXT,
+                status      VARCHAR(20)  NOT NULL DEFAULT 'new',
+                ip          VARCHAR(64)  NOT NULL DEFAULT '',
+                created_at  INT NOT NULL DEFAULT 0,
+                INDEX idx_status (status, created_at)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        """)
+
         # ── ghost_faces (модуль «Привиди в диму»: список SVG-силуетів, 2-6 файлів) ──
         c.execute("""
             CREATE TABLE IF NOT EXISTS ghost_faces (
@@ -1761,10 +1778,14 @@ app.mount("/promo",     StaticFiles(directory="promo",     html=True), name="pro
 app.mount("/portfolio", StaticFiles(directory="portfolio", html=True), name="portfolio")
 os.makedirs("update_v", exist_ok=True)
 app.mount("/update_v", StaticFiles(directory="update_v", html=True), name="update_v")
+os.makedirs("pricing", exist_ok=True)
+app.mount("/pricing", StaticFiles(directory="pricing", html=True), name="pricing")
 
 # Jinja2 templates (for SEO SSR pages)
 _TEMPLATES = Jinja2Templates(directory="templates")
 _SITE_BASE_URL = os.getenv("SITE_BASE_URL", "http://127.0.0.1:8000").rstrip("/")
+# Адреса, куди йдуть службові сповіщення (нові заявки на тарифи тощо)
+ADMIN_NOTIFY_EMAIL = os.getenv("ADMIN_NOTIFY_EMAIL", "treetex.g.ads@gmail.com")
 
 # ── Чат-боти ─────────────────────────────────────────────────
 _bot_online_count: int = 0
@@ -2738,6 +2759,17 @@ class PartnerUpdate(BaseModel):
     border_color: Optional[str] = None
     border_glow: Optional[int] = None
 
+class PricingLeadCreate(BaseModel):
+    plan: str
+    price_label: str = ''
+    name: str
+    contact: str
+    comment: str = ''
+    memorial_id: Optional[int] = None
+
+class PricingLeadUpdate(BaseModel):
+    status: str
+
 class GhostFaceUpdate(BaseModel):
     name: Optional[str] = None
     is_enabled: Optional[int] = None
@@ -3452,6 +3484,105 @@ def admin_delete_partner(pid: int, request: Request):
     try:
         with db.cursor() as c:
             c.execute("DELETE FROM partners WHERE id=%s", (pid,))
+        db.commit()
+        return {"ok": True}
+    finally:
+        db.close()
+
+# ── Заявки на тарифи (/pricing/) ────────────────────────────────────────────
+_PRICING_PLANS = {"bronze", "silver", "gold", "platinum"}
+_PRICING_STATUSES = {"new", "contacted", "closed"}
+_LEAD_EMAIL_RE = re.compile(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
+
+def _pricing_lead_notify_html(lead: dict) -> str:
+    plan = _html.escape(lead["plan"])
+    name = _html.escape(lead["name"] or "—")
+    contact = _html.escape(lead["contact"])
+    comment = _html.escape(lead["comment"] or "—")
+    price = _html.escape(lead["price_label"] or "")
+    return f"""<!DOCTYPE html>
+<html lang="uk"><head><meta charset="utf-8"></head>
+<body style="font-family:Arial,sans-serif;color:#222">
+<h2>Нова заявка на тариф «{plan}» {price}</h2>
+<p><b>Імʼя:</b> {name}</p>
+<p><b>Контакт:</b> {contact}</p>
+<p><b>Коментар:</b> {comment}</p>
+<p style="color:#888;font-size:12px">Керувати заявками: /admin → «Заявки на тарифи»</p>
+</body></html>"""
+
+@app.post("/api/pricing-lead")
+def create_pricing_lead(u: PricingLeadCreate, request: Request):
+    ip = _get_ip(request)
+    if not _rl.check(f"pricinglead:{ip}", 3, 3600):
+        raise HTTPException(429, "Забагато заявок. Спробуйте пізніше.")
+
+    plan = (u.plan or "").strip().lower()
+    if plan not in _PRICING_PLANS:
+        raise HTTPException(400, "Невідомий тарифний план")
+    name = _sanitize_text(u.name, 150)
+    contact = _sanitize_text(u.contact, 150)
+    if not contact:
+        raise HTTPException(400, "Вкажіть email або телефон для звʼязку")
+    comment = _sanitize_text(u.comment, 2000)
+    price_label = _sanitize_text(u.price_label, 40)
+
+    db = get_db()
+    try:
+        with db.cursor() as c:
+            c.execute(
+                "INSERT INTO pricing_leads (plan,price_label,name,contact,memorial_id,comment,status,ip,created_at)"
+                " VALUES (%s,%s,%s,%s,%s,%s,'new',%s,%s)",
+                (plan, price_label, name, contact, u.memorial_id, comment, ip, int(time.time()))
+            )
+            new_id = c.lastrowid
+        db.commit()
+    finally:
+        db.close()
+
+    # Email-сповіщення адміну — не критичне для успіху запиту: лід вже
+    # збережений в БД вище незалежно від того, чи вдасться надіслати лист.
+    try:
+        lead = {"plan": plan, "price_label": price_label, "name": name,
+                "contact": contact, "comment": comment}
+        _send_email(ADMIN_NOTIFY_EMAIL, f"Нова заявка на тариф «{plan}»", _pricing_lead_notify_html(lead))
+    except Exception:
+        logging.warning(f"[pricing_lead] не вдалось надіслати email-сповіщення для заявки id={new_id}")
+
+    return {"ok": True, "id": new_id}
+
+@app.get("/api/admin/pricing-leads")
+def admin_get_pricing_leads(request: Request):
+    require_moder(request)
+    db = get_db()
+    try:
+        with db.cursor() as c:
+            c.execute("SELECT * FROM pricing_leads ORDER BY created_at DESC")
+            return c.fetchall()
+    finally:
+        db.close()
+
+@app.put("/api/admin/pricing-lead/{lid}")
+def admin_update_pricing_lead(lid: int, u: PricingLeadUpdate, request: Request):
+    require_moder(request)
+    status = (u.status or "").strip().lower()
+    if status not in _PRICING_STATUSES:
+        raise HTTPException(400, "Невідомий статус")
+    db = get_db()
+    try:
+        with db.cursor() as c:
+            c.execute("UPDATE pricing_leads SET status=%s WHERE id=%s", (status, lid))
+        db.commit()
+        return {"ok": True}
+    finally:
+        db.close()
+
+@app.delete("/api/admin/pricing-lead/{lid}")
+def admin_delete_pricing_lead(lid: int, request: Request):
+    require_moder(request)
+    db = get_db()
+    try:
+        with db.cursor() as c:
+            c.execute("DELETE FROM pricing_leads WHERE id=%s", (lid,))
         db.commit()
         return {"ok": True}
     finally:

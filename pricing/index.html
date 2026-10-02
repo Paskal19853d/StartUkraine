@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Зоряна Памʼять — Тарифи</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy-0:#04060f;
+    --navy-1:#0a1020;
+    --navy-2:#0f1830;
+    --gold:#ffc01e;
+    --gold-soft:#f5b800;
+    --cyan:#2bb8f0;
+    --cyan-deep:#1a6fd6;
+    --ink:#eaf0ff;
+    --muted:#8a97b8;
+    --muted-dim:#5d6a88;
+    --bronze:#c88a4a;
+    --silver:#c7d0e0;
+    --platinum:#c9a8ff;
+    --card-bg:rgba(255,255,255,.035);
+    --card-border:rgba(255,255,255,.10);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html{-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+  body{
+    font-family:'Manrope',system-ui,sans-serif;
+    background:var(--navy-0);
+    color:var(--ink);
+    overflow-x:hidden;
+  }
+
+  /* ── starfield / glow backdrop ───────────────────────────── */
+  .stage{
+    position:relative;
+    min-height:100vh;
+    background:
+      radial-gradient(120% 80% at 50% 118%, rgba(255,192,30,0.14) 0%, rgba(255,192,30,0.03) 32%, transparent 60%),
+      radial-gradient(90% 70% at 50% -10%, rgba(43,184,240,0.10) 0%, transparent 55%),
+      linear-gradient(180deg, var(--navy-0) 0%, var(--navy-1) 45%, var(--navy-0) 100%);
+    overflow:hidden;
+  }
+
+  /* ── Чумацький Шлях: рухома діагональна смуга зоряного пилу ─────────── */
+  .milky-way{
+    position:absolute;inset:-20% -30%;pointer-events:none;z-index:0;
+    background:
+      radial-gradient(1.5px 1.5px at 12% 18%, rgba(255,255,255,.85), transparent),
+      radial-gradient(1px 1px at 34% 62%, rgba(255,255,255,.6), transparent),
+      radial-gradient(2px 2px at 58% 30%, rgba(255,255,255,.75), transparent),
+      radial-gradient(1px 1px at 71% 75%, rgba(255,255,255,.55), transparent),
+      radial-gradient(1.5px 1.5px at 88% 45%, rgba(255,255,255,.8), transparent),
+      radial-gradient(1px 1px at 47% 10%, rgba(255,255,255,.5), transparent),
+      radial-gradient(1px 1px at 20% 85%, rgba(255,255,255,.6), transparent),
+      radial-gradient(1.5px 1.5px at 95% 88%, rgba(255,255,255,.7), transparent),
+      linear-gradient(115deg, transparent 28%, rgba(200,220,255,.05) 42%, rgba(180,210,255,.11) 48%, rgba(200,220,255,.05) 54%, transparent 68%);
+    background-size: 260px 260px, 260px 260px, 260px 260px, 260px 260px, 260px 260px, 260px 260px, 260px 260px, 260px 260px, 220% 220%;
+    transform: rotate(-18deg);
+    opacity:.6;
+    animation: milkyDrift 140s linear infinite;
+    mix-blend-mode: screen;
+  }
+  @keyframes milkyDrift{
+    0%{background-position:0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0% 50%;}
+    100%{background-position:520px 260px, 520px 260px, 520px 260px, 520px 260px, 520px 260px, 520px 260px, 520px 260px, 520px 260px, 100% 50%;}
+  }
+
+  .stars{position:absolute;inset:0;pointer-events:none;opacity:.85;z-index:0;}
+  .stars span{
+    position:absolute;width:2px;height:2px;border-radius:50%;
+    background:#fff;box-shadow:0 0 6px 1px rgba(255,255,255,.6);
+    animation:tw 4s ease-in-out infinite;
+  }
+  @keyframes tw{0%,100%{opacity:.25}50%{opacity:1}}
+
+  /* ── падаючі зірки (метеори) ─────────────────────────────── */
+  /* 3 вкладені шари, бо rotate() і translate()-анімація не можуть жити в
+     одному transform без конфлікту: .shooting-star — позиція старту;
+     .spin — статичний поворот під кут польоту; .trail — сама рухома точка
+     (translate вздовж вже повернутої осі) з хвостом на ::before. */
+  .shooting-stars{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:0;}
+  .shooting-star{position:absolute;top:0;left:0;width:0;height:0;}
+  .shooting-star .spin{position:absolute;top:0;left:0;width:0;height:0;}
+  .shooting-star .trail{
+    position:absolute;top:0;left:0;width:2px;height:2px;border-radius:50%;
+    background:#fff;
+    box-shadow:0 0 6px 1px rgba(255,255,255,.9);
+    opacity:0;
+    animation-name: shoot;
+    animation-timing-function: cubic-bezier(.2,.6,.2,1);
+    animation-iteration-count: infinite;
+  }
+  .shooting-star .trail::before{
+    /* Головна крапка рухається вліво (translate по від'ємному X), тому хвіст
+       має тягнутись праворуч від неї (звідки вона щойно прилетіла) — не
+       навпаки. Градієнт іде від прозорого (кінчик хвоста) до білого
+       (з'єднання з головою, зліва). */
+    content:'';position:absolute;top:50%;left:0;width:90px;height:1px;
+    background:linear-gradient(90deg, rgba(255,255,255,.85), transparent);
+    transform:translateY(-50%);
+  }
+  @keyframes shoot{
+    0%{opacity:0;transform:translate(0,0);}
+    3%{opacity:1;}
+    18%{opacity:1;transform:translate(var(--shoot-len,-380px), 0);}
+    22%{opacity:0;transform:translate(var(--shoot-len,-380px), 0);}
+    100%{opacity:0;}
+  }
+
+  .wrap{position:relative;z-index:2;max-width:1240px;margin:0 auto;padding:0 40px;}
+
+  /* ── top brand bar ───────────────────────────────────────── */
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:34px 0 6px;}
+  .brand{display:flex;align-items:center;gap:12px;font-family:'Unbounded';font-weight:700;font-size:22px;letter-spacing:.2px;text-decoration:none;}
+  .brand .star{color:var(--gold);font-size:18px;filter:drop-shadow(0 0 8px rgba(255,192,30,.7));}
+  .brand .b1{color:var(--cyan);}
+  .brand .b2{color:var(--gold);}
+  .npo{font-family:'Manrope';font-size:12px;letter-spacing:2.5px;color:var(--muted);text-transform:uppercase;}
+  .npo b{color:var(--ink);font-weight:800;}
+
+  /* ── hero ────────────────────────────────────────────────── */
+  .hero{text-align:center;padding:56px 0 20px;max-width:760px;margin:0 auto;}
+  .eyebrow{
+    display:inline-flex;align-items:center;gap:9px;
+    font-size:12.5px;letter-spacing:2.5px;text-transform:uppercase;color:var(--cyan);font-weight:700;
+    border:1px solid rgba(43,184,240,.32);border-radius:999px;padding:8px 16px;background:rgba(43,184,240,.06);
+  }
+  .eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--gold);box-shadow:0 0 8px 1px var(--gold);}
+  h1.head{
+    font-family:'Unbounded';font-weight:800;line-height:1.1;letter-spacing:-.5px;
+    font-size:clamp(32px,4.4vw,52px);margin:24px 0 0;
+    /* Блок .hero лишається по центру сторінки (успадковане text-align:center
+       не чіпаємо на .hero/.eyebrow/.sub), але сам заголовок — по лівому
+       краю, "книжковим" рядком, а не симетрично по центру кожного рядка. */
+    text-align:left;text-wrap:pretty;
+  }
+  h1.head .g{color:var(--gold);}
+  h1.head .c{color:var(--cyan);}
+  .sub{margin-top:18px;font-size:16.5px;line-height:1.65;color:var(--muted);max-width:34em;margin-left:auto;margin-right:auto;text-wrap:pretty;}
+
+  /* ── billing note ───────────────────────────────────────── */
+  .billing-note{
+    display:inline-flex;align-items:center;gap:8px;margin-top:26px;
+    font-size:13px;color:var(--muted-dim);
+  }
+  .billing-note svg{width:15px;height:15px;flex:none;color:var(--cyan);}
+
+  /* ── pricing grid ───────────────────────────────────────── */
+  .plans{
+    display:grid;grid-template-columns:repeat(4,1fr);gap:22px;
+    padding:46px 0 20px;align-items:stretch;
+  }
+  /* Кожен тариф має власний тематичний колір (--tier) — рамка, фон, ціна,
+     кнопка й галочки картки забарвлені під метал/камінь свого рівня, а не
+     лише маленький індикатор біля назви. */
+  .plan{
+    --tier: var(--cyan);
+    --tier-ink: #0a1220;
+    position:relative;
+    background:linear-gradient(160deg, color-mix(in srgb, var(--tier) 7%, transparent), color-mix(in srgb, var(--tier) 2%, transparent));
+    border:1px solid color-mix(in srgb, var(--tier) 32%, var(--card-border));
+    border-radius:18px;
+    padding:30px 24px 26px;
+    display:flex;flex-direction:column;
+    transition:border-color .2s ease, transform .2s ease;
+  }
+  .plan:hover{border-color:color-mix(in srgb, var(--tier) 55%, var(--card-border));transform:translateY(-3px);}
+  .plan[data-tier="bronze"]  {--tier: var(--bronze);}
+  .plan[data-tier="silver"]  {--tier: var(--silver);}
+  .plan[data-tier="gold"]    {--tier: var(--gold); --tier-ink:#231400;}
+  .plan[data-tier="platinum"]{--tier: var(--platinum); --tier-ink:#1a0d33;}
+  .plan.featured{
+    border-color:color-mix(in srgb, var(--tier) 55%, transparent);
+    background:linear-gradient(160deg, color-mix(in srgb, var(--tier) 16%, transparent), color-mix(in srgb, var(--tier) 3%, transparent));
+    transform:scale(1.035);
+  }
+  .plan.featured:hover{transform:scale(1.035) translateY(-3px);}
+  .plan-badge{
+    position:absolute;top:-13px;left:50%;transform:translateX(-50%);
+    background:var(--tier);color:var(--tier-ink);font-family:'Unbounded';font-weight:700;
+    font-size:11px;letter-spacing:.06em;text-transform:uppercase;
+    padding:6px 14px;border-radius:999px;white-space:nowrap;
+    box-shadow:0 4px 14px color-mix(in srgb, var(--tier) 40%, transparent);
+  }
+  .plan-tier{
+    display:inline-flex;align-items:center;gap:7px;
+    font-family:'Unbounded';font-weight:700;font-size:15px;letter-spacing:.02em;
+    color:var(--tier);
+  }
+  .plan-tier .swatch{width:9px;height:9px;border-radius:50%;flex:none;background:var(--tier);box-shadow:0 0 8px 1px var(--tier);}
+  .plan-desc{margin-top:9px;font-size:13px;color:var(--muted);line-height:1.5;min-height:34px;}
+  .plan-price{margin-top:20px;display:flex;align-items:baseline;gap:6px;}
+  .plan-price .amt{font-family:'Unbounded';font-weight:800;font-size:34px;color:var(--tier);}
+  .plan-price .cur{font-family:'Unbounded';font-weight:700;font-size:17px;color:var(--muted);}
+  .plan-price .per{font-size:12.5px;color:var(--muted-dim);}
+  .plan-cta{
+    margin-top:22px;
+    display:flex;align-items:center;justify-content:center;gap:8px;
+    font-family:'Unbounded';font-weight:600;font-size:13.5px;
+    padding:12px 18px;border-radius:10px;cursor:pointer;
+    border:1px solid color-mix(in srgb, var(--tier) 45%, var(--card-border));
+    background:color-mix(in srgb, var(--tier) 10%, transparent);color:var(--ink);
+    transition:all .15s ease;
+  }
+  .plan-cta:hover{background:color-mix(in srgb, var(--tier) 22%, transparent);border-color:var(--tier);}
+  .plan.featured .plan-cta{
+    background:linear-gradient(135deg, var(--tier), color-mix(in srgb, var(--tier) 75%, white));
+    color:var(--tier-ink);border-color:transparent;
+  }
+  .plan.featured .plan-cta:hover{filter:brightness(1.07);}
+  .plan-features{list-style:none;margin-top:24px;display:flex;flex-direction:column;gap:11px;flex:1;}
+  .plan-features li{display:flex;align-items:flex-start;gap:9px;font-size:13.5px;color:var(--ink);line-height:1.45;}
+  .plan-features li svg{width:16px;height:16px;flex:none;margin-top:1px;color:var(--tier);}
+
+  /* ── Platinum: 3D-перевертання картки на hover (за мотивами Uiverse.io
+     by ElSombrero2, "tricky-robin-67" — обертова неонова рамка на back-стороні),
+     адаптовано під тарифну картку: front — увесь звичний вміст без змін,
+     back — акцентна фраза + власна кнопка "Обрати", щоб CTA лишався
+     доступним з обох сторін. ─────────────────────────────────────────── */
+  /* display:flex на самій .plan-flip — інакше grid-контейнер .plans
+     (align-items:stretch) розтягує лише прямого child (.plan-flip), а
+     вкладена в нього .plan лишається природної висоти й картка Platinum
+     виходить нижчою за сусідні.
+
+     Структура: .plan-flip (perspective) > .flip-inner (той самий елемент,
+     що реально обертається на hover, preserve-3d) > .plan (front, сестра)
+     + .plan-back (back, сестра, статично повернута на 180°). Раніше .plan
+     сама оберталась і МІСТИЛА .plan-back усередині себе — подвійне
+     вкладення 3D-трансформацій (preserve-3d в preserve-3d) ламало
+     hit-testing реальної миші в деяких браузерах: клік на кнопку
+     back-сторони не долітав до неї, хоча елемент був візуально на місці
+     (підтверджено живим тестом — document.elementFromPoint() повертав
+     сам .plan-flip замість .plan-back). Плоска структура (back — сестра
+     front, не нащадок) — стандартний надійний flip-card патерн. */
+  .plan-flip{perspective:1400px;display:flex;}
+  .flip-inner{
+    position:relative;width:100%;transform-style:preserve-3d;
+    transition:transform .6s cubic-bezier(.4,.2,.2,1);
+  }
+  .plan-flip:hover .flip-inner{transform:rotateY(180deg);}
+  .flip-inner .plan{
+    position:relative;backface-visibility:hidden;width:100%;
+    transition:border-color .2s ease;
+  }
+  .flip-inner .plan-back{
+    position:absolute;inset:0;
+    transform:rotateY(180deg);backface-visibility:hidden;
+    border-radius:18px;overflow:hidden;
+    background:linear-gradient(160deg, color-mix(in srgb, var(--platinum) 14%, #0a0a14), #0a0a14);
+    border:1px solid color-mix(in srgb, var(--platinum) 45%, var(--card-border));
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:18px;padding:30px 24px;text-align:center;
+  }
+  .plan-back::before{
+    position:absolute;content:'';display:block;
+    width:160%;height:70px;left:-30%;top:50%;margin-top:-35px;
+    background:linear-gradient(90deg, transparent, var(--platinum), var(--platinum), var(--platinum), transparent);
+    animation:platinumSpin 5000ms infinite linear;
+    opacity:.35;
+  }
+  @keyframes platinumSpin{
+    0%{transform:rotate(0deg);}
+    100%{transform:rotate(360deg);}
+  }
+  .plan-back-inner{
+    position:relative;z-index:1;
+    display:flex;flex-direction:column;align-items:center;gap:16px;
+    background:rgba(10,10,20,.85);border-radius:14px;padding:22px 18px;
+    width:100%;
+  }
+  .plan-back-inner svg{width:38px;height:38px;color:var(--platinum);filter:drop-shadow(0 0 10px color-mix(in srgb, var(--platinum) 60%, transparent));}
+  .plan-back-inner strong{font-family:'Unbounded';font-size:14px;font-weight:700;color:var(--ink);line-height:1.4;}
+  .plan-back-inner span{font-size:12px;color:var(--muted);}
+  .plan-back .plan-cta{width:100%;}
+
+  @media (max-width:980px){
+    .plans{grid-template-columns:repeat(2,1fr);}
+    .plan.featured{transform:none;}
+    .plan.featured:hover{transform:translateY(-3px);}
+  }
+  @media (max-width:560px){
+    .plans{grid-template-columns:1fr;}
+  }
+  /* hover недоступний на тач-пристроях — flip замінюємо на статичний вигляд */
+  @media (pointer:coarse){
+    .plan-flip:hover .flip-inner{transform:none;}
+    .plan-back{display:none;}
+  }
+
+  /* ── mini FAQ ───────────────────────────────────────────── */
+  .section-h{text-align:center;padding:38px 0 6px;}
+  .section-h .k{font-size:12.5px;letter-spacing:3px;text-transform:uppercase;color:var(--cyan);font-weight:700;}
+  .section-h h2{font-family:'Unbounded';font-weight:700;font-size:clamp(24px,2.6vw,32px);margin-top:14px;}
+  .faq-mini{max-width:760px;margin:34px auto 10px;display:flex;flex-direction:column;gap:14px;}
+  .faq-mini details{
+    border:1px solid var(--card-border);border-radius:12px;
+    background:var(--card-bg);padding:16px 20px;
+  }
+  .faq-mini summary{
+    cursor:pointer;font-family:'Unbounded';font-weight:600;font-size:14.5px;
+    list-style:none;display:flex;align-items:center;justify-content:space-between;gap:12px;
+  }
+  .faq-mini summary::-webkit-details-marker{display:none;}
+  .faq-mini summary::after{
+    content:'+';font-size:20px;font-weight:400;color:var(--muted);flex:none;
+    transition:transform .2s ease;
+  }
+  .faq-mini details[open] summary::after{transform:rotate(45deg);}
+  .faq-mini p{margin-top:12px;font-size:13.5px;line-height:1.6;color:var(--muted);}
+
+  /* ── footer ──────────────────────────────────────────────── */
+  .footer{border-top:1px solid var(--card-border);margin-top:50px;padding:30px 0 46px;text-align:center;color:var(--muted-dim);font-size:13.5px;}
+  .footer b{color:var(--ink);}
+  .footer .sm{margin-top:8px;color:var(--muted-dim);}
+  .footer a.back{
+    display:inline-flex;align-items:center;gap:6px;margin-bottom:16px;
+    color:var(--muted);text-decoration:none;font-size:13px;
+  }
+  .footer a.back:hover{color:var(--cyan);}
+
+  /* ── confirmation modal ───────────────────────────────────── */
+  .modal-overlay{
+    position:fixed;inset:0;z-index:9000;
+    background:rgba(2,4,10,.72);backdrop-filter:blur(3px);
+    display:none;align-items:center;justify-content:center;padding:20px;
+  }
+  .modal-overlay.open{display:flex;}
+  .modal-box{
+    width:420px;max-width:100%;
+    background:linear-gradient(160deg,#0d1428,#080d1c);
+    border:1px solid var(--card-border);border-radius:16px;
+    padding:30px 26px 26px;text-align:center;
+    box-shadow:0 30px 80px -20px rgba(0,0,0,.7);
+  }
+  .modal-icon{
+    width:52px;height:52px;border-radius:50%;margin:0 auto 18px;
+    display:flex;align-items:center;justify-content:center;
+    background:rgba(255,192,30,.12);color:var(--gold);
+  }
+  .modal-icon svg{width:26px;height:26px;}
+  .modal-box h3{font-family:'Unbounded';font-weight:700;font-size:18px;color:var(--ink);}
+  .modal-box .plan-line{margin-top:8px;font-size:14px;color:var(--cyan);font-weight:600;}
+  .modal-box p{margin-top:14px;font-size:13.5px;line-height:1.6;color:var(--muted);}
+  .modal-actions{display:flex;gap:10px;margin-top:22px;}
+  .modal-actions button, .modal-actions a{
+    flex:1;padding:11px 14px;border-radius:9px;font-size:13px;font-weight:600;
+    font-family:'Manrope';cursor:pointer;text-decoration:none;text-align:center;
+    border:1px solid var(--card-border);background:rgba(255,255,255,.04);color:var(--ink);
+    transition:all .15s ease;
+  }
+  .modal-actions button:hover, .modal-actions a:hover{background:rgba(255,255,255,.09);}
+  .modal-actions .primary{background:var(--cyan);border-color:transparent;color:#04101c;}
+  .modal-actions .primary:hover{filter:brightness(1.08);}
+  .modal-actions .primary:disabled{opacity:.6;cursor:default;filter:none;}
+
+  /* ── lead form (inside modal) ───────────────────────────── */
+  .modal-box{--tier: var(--cyan);}
+  .lead-form{text-align:left;margin-top:18px;display:flex;flex-direction:column;gap:14px;}
+  .lead-form label{font-size:12px;color:var(--muted);font-weight:600;letter-spacing:.02em;display:block;margin-bottom:6px;}
+  .lead-form input, .lead-form textarea{
+    width:100%;padding:11px 13px;border-radius:9px;font-size:13.5px;font-family:'Manrope';
+    background:rgba(255,255,255,.04);border:1px solid var(--card-border);color:var(--ink);
+    transition:border-color .15s ease;
+  }
+  .lead-form input:focus, .lead-form textarea:focus{outline:none;border-color:var(--tier);}
+  .lead-form textarea{resize:vertical;min-height:64px;font-family:'Manrope';}
+  .lead-form .req{color:#ff8080;}
+  .lead-error{margin-top:12px;font-size:12.5px;color:#ff8a8a;display:none;}
+  .lead-error.show{display:block;}
+
+  @media (max-width:920px){
+    .wrap{padding:0 24px;}
+  }
+  @media (max-width:560px){
+    .wrap{padding:0 20px;}
+    .npo{display:none;}
+  }
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="milky-way"></div>
+  <div class="stars" id="stars"></div>
+  <div class="shooting-stars" id="shooting-stars"></div>
+  <div class="wrap">
+
+    <!-- brand bar -->
+    <header class="topbar">
+      <a href="/" class="brand"><span class="star">★</span><span class="b1">Зоряна</span><span class="b2">Пам’ять</span></a>
+      <div class="npo">© 2026 <a href="/portfolio/" style="color:inherit;text-decoration:none">ТМ «<b>ЗОРЯНА ПАМ'ЯТЬ</b>»</a></div>
+    </header>
+
+    <!-- hero -->
+    <section class="hero">
+      <span class="eyebrow"><span class="dot"></span>Тарифні плани</span>
+      <h1 class="head">Оберіть, як вшанувати <span class="g">памʼять</span></h1>
+      <p class="sub">Базова сторінка пам’яті завжди безкоштовна. Платні плани додають більше простору для історії, фото та відео — і підтримують роботу платформи для всіх родин.</p>
+      <div class="billing-note">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.4 7.2H22l-6 4.6 2.3 7.2L12 16.4 5.7 21l2.3-7.2-6-4.6h7.6z"/></svg>
+        Одноразовий платіж — без щомісячних списань
+      </div>
+    </section>
+
+    <!-- pricing grid -->
+    <section class="plans" id="plans">
+
+      <article class="plan" data-tier="bronze">
+        <div class="plan-tier"><span class="swatch"></span>Bronze</div>
+        <div class="plan-desc">Проста, гідна сторінка пам’яті — назавжди безкоштовно.</div>
+        <div class="plan-price"><span class="amt">Безкоштовно</span></div>
+        <button class="plan-cta" data-plan="Bronze" data-price="Безкоштовно">Обрати Bronze</button>
+        <ul class="plan-features">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>ПІБ, дати, місце загибелі</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>1 фотографія</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Короткий опис і обставини</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Позначка на карті України</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Стандартна модерація (7–30 днів)</li>
+        </ul>
+      </article>
+
+      <article class="plan" data-tier="silver">
+        <div class="plan-tier"><span class="swatch"></span>Silver</div>
+        <div class="plan-desc">Більше простору для історії — фото, відео, нагороди.</div>
+        <div class="plan-price"><span class="amt">299</span><span class="cur">₴</span><span class="per">одноразово</span></div>
+        <button class="plan-cta" data-plan="Silver" data-price="299 ₴">Обрати Silver</button>
+        <ul class="plan-features">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Усе з Bronze</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>До 5 фотографій</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Відео (YouTube)</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Розширений опис і хронологія</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Нагороди та відзнаки</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Пришвидшена модерація</li>
+        </ul>
+      </article>
+
+      <article class="plan featured" data-tier="gold">
+        <div class="plan-badge">Рекомендовано</div>
+        <div class="plan-tier"><span class="swatch"></span>Gold</div>
+        <div class="plan-desc">Повноцінна сторінка пам’яті з розширеною спадщиною.</div>
+        <div class="plan-price"><span class="amt">799</span><span class="cur">₴</span><span class="per">одноразово</span></div>
+        <button class="plan-cta" data-plan="Gold" data-price="799 ₴">Обрати Gold</button>
+        <ul class="plan-features">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Усе з Silver</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Необмежена галерея фото</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Пріоритетне відображення на карті</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Вкладка «Спадщина памʼяті»</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Бейдж підтвердженої сторінки</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Без реклами на сторінці</li>
+        </ul>
+      </article>
+
+      <div class="plan-flip">
+        <div class="flip-inner">
+          <article class="plan" data-tier="platinum">
+            <div class="plan-tier"><span class="swatch"></span>Platinum</div>
+            <div class="plan-desc">Максимальна турбота — з особистою підтримкою.</div>
+            <div class="plan-price"><span class="amt">1999</span><span class="cur">₴</span><span class="per">одноразово</span></div>
+            <button class="plan-cta" data-plan="Platinum" data-price="1999 ₴">Обрати Platinum</button>
+            <ul class="plan-features">
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Усе з Gold</li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Персональний менеджер сторінки</li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Друковані матеріали для родини</li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Індивідуальне оформлення (колір, рамка, світіння)</li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Пріоритетна технічна підтримка назавжди</li>
+            </ul>
+          </article>
+          <div class="plan-back">
+            <div class="plan-back-inner">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8.5 7 11l5-7 5 7 4.5-2.5-2 10h-15z"/><path d="M5.5 19h13"/></svg>
+              <strong>Найвища турбота про памʼять</strong>
+              <span>Персональний супровід родини на кожному кроці</span>
+              <button class="plan-cta" data-plan="Platinum" data-price="1999 ₴">Обрати Platinum</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- mini FAQ -->
+    <section>
+      <div class="section-h">
+        <div class="k">Питання</div>
+        <h2>Коротко про тарифи</h2>
+      </div>
+      <div class="faq-mini">
+        <details>
+          <summary>Чи можна змінити план пізніше?</summary>
+          <p>Так. Ви завжди можете перейти на вищий план — доплата становитиме різницю між тарифами. Пониження плану не видаляє вже додані матеріали.</p>
+        </details>
+        <details>
+          <summary>Що станеться з безкоштовною сторінкою Bronze?</summary>
+          <p>Нічого — вона залишається на карті пам’яті назавжди, так само як і платні сторінки. Платні плани лише додають більше можливостей розповісти історію.</p>
+        </details>
+        <details>
+          <summary>Куди йдуть кошти від платних планів?</summary>
+          <p>На підтримку сервера, модерації та розвитку платформи — щоб «Зоряна Пам’ять» залишалась доступною безкоштовно для всіх родин.</p>
+        </details>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <a href="/" class="back">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        На головну
+      </a>
+      <div>© 2026 <a href="/portfolio/" style="color:inherit;text-decoration:none">ТМ «<b>ЗОРЯНА ПАМ'ЯТЬ</b>»</a> · All rights reserved</div>
+      <div class="sm">Denys KOSHELENKO</div>
+    </footer>
+
+  </div>
+</div>
+
+<!-- lead form modal — заявка на обраний тариф -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal-box" id="modal-box">
+
+    <!-- екран 1: форма заявки -->
+    <div id="modal-screen-form">
+      <h3>Заявка на тариф</h3>
+      <div class="plan-line" id="modal-plan-line">Тариф — ціна</div>
+      <p>Залиште контакт — ми звʼяжемось, щоб оформити цей план. Оплата поки що не автоматична.</p>
+      <form class="lead-form" id="lead-form">
+        <div>
+          <label for="lead-name">Ваше імʼя <span class="req">*</span></label>
+          <input type="text" id="lead-name" name="name" required maxlength="150" autocomplete="name">
+        </div>
+        <div>
+          <label for="lead-contact">Email або телефон <span class="req">*</span></label>
+          <input type="text" id="lead-contact" name="contact" required maxlength="150" autocomplete="email" placeholder="you@mail.com або +380XXXXXXXXX">
+        </div>
+        <div>
+          <label for="lead-comment">Коментар (необовʼязково)</label>
+          <textarea id="lead-comment" name="comment" maxlength="2000" placeholder="Наприклад, посилання на сторінку пам'яті, яку хочете розширити"></textarea>
+        </div>
+        <div class="lead-error" id="lead-error"></div>
+        <div class="modal-actions">
+          <button type="button" onclick="closePricingModal()">Скасувати</button>
+          <button type="submit" class="primary" id="lead-submit">Надіслати заявку</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- екран 2: підтвердження -->
+    <div id="modal-screen-done" style="display:none">
+      <div class="modal-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+      </div>
+      <h3>Дякуємо за заявку</h3>
+      <div class="plan-line" id="modal-plan-line-done">Тариф — ціна</div>
+      <p>Ми отримали вашу заявку і звʼяжемось найближчим часом, щоб оформити план. Дякуємо, що підтримуєте «Зоряну Памʼять».</p>
+      <div class="modal-actions">
+        <button type="button" class="primary" onclick="closePricingModal()" style="flex:none;margin:0 auto;padding-left:26px;padding-right:26px">Закрити</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // sprinkle a soft starfield
+  (function(){
+    const box=document.getElementById('stars');
+    const n=70;
+    let html='';
+    for(let i=0;i<n;i++){
+      const x=Math.random()*100, y=Math.random()*100;
+      const d=(Math.random()*4+2).toFixed(2);
+      const delay=(Math.random()*4).toFixed(2);
+      const s=(Math.random()*1.4+0.6).toFixed(2);
+      html+=`<span style="left:${x}%;top:${y}%;width:${s}px;height:${s}px;animation-duration:${d}s;animation-delay:${delay}s"></span>`;
+    }
+    box.innerHTML=html;
+  })();
+
+  // падаючі зірки — випадкова позиція старту, кут польоту, затримка й тривалість,
+  // щоб метеори не з'являлись синхронно рядами
+  (function(){
+    const box=document.getElementById('shooting-stars');
+    if(!box) return;
+    const reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if(reduce) return;
+    const n=6;
+    let html='';
+    for(let i=0;i<n;i++){
+      const startX=Math.random()*90+5;   // % зліва
+      const startY=Math.random()*40;     // % зверху (верхня половина екрана)
+      const angle=25+Math.random()*20;   // кут падіння, градусів від горизонталі (напрямок польоту — вниз-вліво)
+      const dist=260+Math.random()*220;  // довжина шляху, px
+      const dur=(Math.random()*2.5+2.5).toFixed(2);
+      const delay=(Math.random()*14).toFixed(2);
+      const rot=(-angle).toFixed(1); // trail рухається по -X (вліво); поворот на -angle (CSS: Y росте вниз) дає підсумковий напрямок вниз-вліво
+      html+=`<span class="shooting-star" style="left:${startX}%;top:${startY}%">`
+          + `<span class="spin" style="transform:rotate(${rot}deg)">`
+          + `<span class="trail" style="--shoot-len:${-dist.toFixed(0)}px;animation-duration:${dur}s;animation-delay:${delay}s"></span>`
+          + `</span></span>`;
+    }
+    box.innerHTML=html;
+  })();
+
+  // lead form modal — заявка на обраний тариф, реальний POST на бекенд
+  (function(){
+    const overlay=document.getElementById('modal-overlay');
+    const modalBox=document.getElementById('modal-box');
+    const screenForm=document.getElementById('modal-screen-form');
+    const screenDone=document.getElementById('modal-screen-done');
+    const planLine=document.getElementById('modal-plan-line');
+    const planLineDone=document.getElementById('modal-plan-line-done');
+    const form=document.getElementById('lead-form');
+    const errEl=document.getElementById('lead-error');
+    const submitBtn=document.getElementById('lead-submit');
+    let currentTier='', currentPlan='', currentPrice='';
+
+    const EMAIL_RE=/^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+    const PHONE_RE=/^\+?3?8?0?\d{9,10}$/;
+
+    document.querySelectorAll('.plan-cta').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        // Кнопка на back-стороні Platinum — сестра .plan (не нащадок, для
+        // надійного hit-testing 3D-flip), тому якщо кнопка не всередині
+        // .plan напряму (звичайні картки), шукаємо .plan як сусіда через
+        // спільного батька .plan-flip.
+        const article=btn.closest('.plan')||btn.closest('.plan-flip')?.querySelector('.plan');
+        currentTier=article?article.dataset.tier:'';
+        currentPlan=btn.dataset.plan||'';
+        currentPrice=btn.dataset.price||'';
+        modalBox.style.setProperty('--tier', currentTier?`var(--${currentTier})`:'var(--cyan)');
+        planLine.textContent=currentPlan+' — '+currentPrice;
+        errEl.classList.remove('show'); errEl.textContent='';
+        form.reset();
+        screenForm.style.display='';
+        screenDone.style.display='none';
+        overlay.classList.add('open');
+        setTimeout(()=>document.getElementById('lead-name')?.focus(),50);
+      });
+    });
+
+    form.addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      const name=document.getElementById('lead-name').value.trim();
+      const contact=document.getElementById('lead-contact').value.trim();
+      const comment=document.getElementById('lead-comment').value.trim();
+      errEl.classList.remove('show'); errEl.textContent='';
+
+      if(!name){ showErr('Вкажіть, будь ласка, ваше імʼя'); return; }
+      if(!contact || !(EMAIL_RE.test(contact) || PHONE_RE.test(contact.replace(/[\s()-]/g,'')))){
+        showErr('Вкажіть коректний email або телефон'); return;
+      }
+
+      submitBtn.disabled=true; submitBtn.textContent='Надсилаємо…';
+      try{
+        const r=await fetch('/api/pricing-lead',{
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({plan:currentTier||currentPlan.toLowerCase(), price_label:currentPrice, name, contact, comment})
+        });
+        if(!r.ok){
+          const d=await r.json().catch(()=>({}));
+          throw new Error(d.detail || 'Не вдалося надіслати заявку. Спробуйте ще раз.');
+        }
+        planLineDone.textContent=currentPlan+' — '+currentPrice;
+        screenForm.style.display='none';
+        screenDone.style.display='';
+      }catch(err){
+        showErr(typeof err.message==='string'?err.message:'Не вдалося надіслати заявку. Спробуйте ще раз.');
+      }finally{
+        submitBtn.disabled=false; submitBtn.textContent='Надіслати заявку';
+      }
+    });
+
+    function showErr(msg){ errEl.textContent=msg; errEl.classList.add('show'); }
+
+    overlay.addEventListener('click',e=>{ if(e.target===overlay) closePricingModal(); });
+    document.addEventListener('keydown',e=>{ if(e.key==='Escape') closePricingModal(); });
+  })();
+  function closePricingModal(){
+    document.getElementById('modal-overlay').classList.remove('open');
+  }
+</script>
+</body>
+</html>

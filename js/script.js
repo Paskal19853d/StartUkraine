@@ -52,6 +52,19 @@ window.addEventListener("resize", () => {
   _cachedClientHeight = canvas.clientHeight || window.innerHeight;
 });
 
+// Дим — розмитий by design (bloom+blur), тому фізичний рендер трохи нижчого
+// розміру canvas (canvas.width/height, розтягнутого назад через CSS
+// width:100%/height:100%) не дає помітної різниці на око, але напряму зменшує
+// вартість найважчого проходу (drawDisplay — fullscreen quad, малюється щокадру
+// в розмір drawingBuffer) — основна економія GPU на слабких/вбудованих картах
+// (напр. AMD Radeon 610M), підтверджена живими замірами (GPUTask ~83% навіть
+// без hover). 0.7 ⇒ площа ×0.49 (майже вдвічі менше пікселів у display-проході).
+// Оголошено тут, ПЕРЕД першим викликом resizeCanvas() на наступному рядку —
+// той виклик синхронно веде до scaleByPixelRatio(), тому const, оголошений
+// нижче за файлом (де раніше й стояв scaleByPixelRatio()), потрапляв у
+// Temporal Dead Zone і кидав ReferenceError при самому першому рендері.
+const SMOKE_CANVAS_SCALE = 0.7;
+
 resizeCanvas();
 
 let config = {
@@ -1673,7 +1686,13 @@ function update() {
     requestAnimationFrame(update);
     return; // пропускаємо цей кадр — ще не настав час наступного кроку симуляції
   }
-  _lastFrameTime = now;
+  // Просуваємо ціль на рівний крок (не перезаписуємо поточним now) — прибирає
+  // накопичення vsync-джиттеру, яке раніше давало нерівне чергування 33мс/50мс
+  // між реальними кроками симуляції замість стабільних ~33.3мс. Якщо кадр сильно
+  // запізнився (вкладка була у фоні/лаг) — підтягуємо ціль до now, інакше update()
+  // почав би виконуватись підряд без пауз, намагаючись "наздогнати" пропущені кроки.
+  _lastFrameTime += TARGET_FRAME_MS;
+  if (now - _lastFrameTime > TARGET_FRAME_MS) _lastFrameTime = now;
   const dt = calcDeltaTime();
   if (resizeCanvas()) initFramebuffers();
   updateColors(dt);
@@ -2277,7 +2296,7 @@ function scaleByPixelRatio(input) {
   // Капаємо жорсткіше на мобільних (де GPU слабший), м'якше на десктопі.
   let maxDpr = isMobile() ? 1.5 : 2;
   let pixelRatio = Math.min(window.devicePixelRatio || 1, maxDpr);
-  return Math.floor(input * pixelRatio);
+  return Math.floor(input * pixelRatio * SMOKE_CANVAS_SCALE);
 }
 
 function hashCode(s) {

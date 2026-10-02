@@ -697,6 +697,14 @@ mark.shl {
 }
 #map-wrap.grabbing { cursor: grabbing !important; }
 #map-wrap.picking  { cursor: crosshair !important; }
+/* cursor — успадковувана властивість, а JS перемикає його на #map-wrap
+   (grab↔pointer при наведенні на точку, grabbing при драгу, crosshair при виборі).
+   Без цього правила кожне перемикання перераховувало стилі ~1560 нащадків (SVG-карта,
+   підписи міст) і змушувало перемальовувати весь шар #map-wrap — GPU-растеризація
+   до ~200 мс, через що підвисав дим. Ці шари pointer-events:none і ніколи не є
+   ціллю hit-test (курсор завжди береться з самого #map-wrap), тож фіксоване
+   значення нічого не змінює візуально — лише обриває успадкування. */
+#svg-layer, #city-overlay { cursor: default; }
 
 #svg-layer {
   position: absolute;

@@ -214,7 +214,21 @@
       "Bash(find . -type f '\\(' -iname *.html -o -iname *.js -o -iname *.css -o -iname *.py -o -iname *.md -o -iname *.txt -o -iname *.json -o -iname *.sh -o -iname *.php -o -iname *.bat -o -iname *.yml -o -iname *.ini -o -iname *.conf -o -iname *.service -o -iname *.example '\\)' -not -path */.git/* -not -path */venv/* -not -path */venv-*/* -not -path */node_modules/* -not -path */__pycache__/* -not -path */Temo_rec/* -print0)",
       "Bash(xargs -0 wc -l)",
       "Read(//tmp/**)",
-      "Bash(node -c \"C:\\\\Users\\\\Paskal\\\\AppData\\\\Local\\\\Temp\\\\uh_check.js\")"
+      "Bash(node -c \"C:\\\\Users\\\\Paskal\\\\AppData\\\\Local\\\\Temp\\\\uh_check.js\")",
+      "Bash(\"/c/Program Files/Google/Chrome/Application/chrome.exe\" --headless=new --use-gl=angle --use-angle=d3d11 --remote-debugging-port=9336 --user-data-dir=\"C:\\\\Users\\\\Paskal\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\cdp_smoke_fix_test\" --window-size=1400,900 about:blank)",
+      "Bash(node cdp_verify_fixes.js)",
+      "Bash(curl -s http://127.0.0.1:8000/js/script.js -o /tmp/none)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" \"http://127.0.0.1:8000/js/script.js\")",
+      "Bash(kill 326)",
+      "Bash(taskkill //F //PID 326)",
+      "Bash(node cdp_debug_fluid.js)",
+      "Bash(\"/c/Program Files/Google/Chrome/Application/chrome.exe\" --headless=new --use-gl=angle --use-angle=d3d11 --remote-debugging-port=9336 --user-data-dir=\"C:\\\\Users\\\\Paskal\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\cdp_smoke_fix_test2\" --window-size=1400,900 about:blank)",
+      "Bash(kill -9 384)",
+      "Bash(taskkill //F //PID 384)",
+      "Bash(node cdp_verify_fix1_clean.js)",
+      "Bash(node cdp_check_raf_rate.js)",
+      "Bash(node cdp_check_raf_on_site.js)",
+      "Bash(node cdp_verify_fix1_passive.js)"
     ],
     "additionalDirectories": [
       "C:\\Users\\Paskal\\Downloads"
