@@ -2406,6 +2406,9 @@ input.f-err { border-color:#e53935 !important; }
 
 /* City overlay lives outside #svg-layer — never CSS-scaled, always crisp */
 #city-overlay { font-family: Arial, sans-serif; }
+/* Під час драгу шар підписів міст зсувається однією CSS-трансформацією (index.html, scaleCityLabels) —
+   окремий композитний шар, щоб зсув не перемальовував сотні підписів (v3.67) */
+#city-overlay { will-change: transform; }
 
 /* Canvas */
 #canvas-layer {

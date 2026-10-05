@@ -21,7 +21,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700&family=Geologica:wght@300;400;500&family=Yeseva+One&display=swap" rel="stylesheet">
 <!-- Назва тарифного плану в боковій панелі: Cinzel лише з потрібних літер (~5 КБ), без блокування рендеру -->
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&text=BRONZESILVGDPATUMbronzesilvgdpatum&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
-<link rel="stylesheet" href="Style.css?v=20261005c">
+<link rel="stylesheet" href="Style.css?v=20261005d">
 <link rel="stylesheet" href="fonts/uicons/uicons.css">
 <link rel="stylesheet" href="silence-module.css">
 <link rel="stylesheet" href="mobile.css?v=20261005">
@@ -3358,8 +3358,9 @@ function _applyZoomClasses() {
   // коли зум не наближається до жодного порогу
   if(zc!==_lastZoomCity){
     sl.classList.toggle('zoom-city',zc);
-    if(_cityOverlay)_cityOverlay.style.opacity=zc?'1':'0';
     _lastZoomCity=zc;
+    if(zc) scaleCityLabels();   // поки підписи були приховані, їх не розставляли — до появи (v3.67)
+    if(_cityOverlay)_cityOverlay.style.opacity=zc?'1':'0';
   }
   if(zd!==_lastZoomDeep){
     sl.classList.toggle('zoom-deep',zd);
@@ -3407,6 +3408,52 @@ function scheduleApplyTr() {
   _applyTrPending = true;
   requestAnimationFrame(() => { _applyTrPending = false; applyTr(); });
 }
+// ── Жести: драг мишею чи пальцем, pinch, flyTo (v3.67) ─────────────────────────────────────
+// Як плавний зум (v3.42): під час руху — лише CSS-трансформація шару карти (_applyTrVisual), viewBox
+// не змінюється. Кожна зміна viewBox — повна перерастеризація карти (свічення, фото, ~1400 фігур):
+// на слабких GPU ~200 мс на кадр, через що карта рухалась ривками (4–5 кадрів/с). Карту за межами
+// екрана браузер уже намалював (SVG з overflow: visible), тож зсув показує готову карту без порожніх країв.
+// viewBox комітиться, коли рух закінчився (відпустили, кінець польоту, 400 мс без руху), а посеред жесту —
+// лише як запас: зсув від останнього коміту понад 1.5 екрана, віддалення нижче ×0.5 чи наближення понад
+// ×2.5 від закоміченого растру (інакше розмито), не частіше ніж раз на 300 мс.
+// Зірки, лінії звʼязку, підписи міст і море рахуються від tr — рухаються разом із картою
+const _GEST_SETTLE = 400, _GEST_MIN_GAP = 300;
+let _gestActive = false, _gestPending = false, _gestSettleT = 0, _gestLastCommit = 0, _gestLastInput = 0;
+// «Після зупинки» рахуємо від останнього вводу (рух миші / пальця, кадр польоту), а не від кадру:
+// на повільних кадрах таймер інакше спрацьовував би посеред руху
+function _gestSettleCheck() {
+  _gestSettleT = 0;
+  const idle = performance.now() - _gestLastInput;
+  if (idle >= _GEST_SETTLE - 5) _gestureEnd();
+  else _gestSettleT = setTimeout(_gestSettleCheck, _GEST_SETTLE - idle);
+}
+function _gestureFrame() {
+  _gestActive = true;
+  if (_za.raf) _zoomAnimStop(false);   // жест перебиває плавний зум (як і раніше applyTr)
+  const k = tr.s / _trC.s, now = performance.now();
+  const dx = Math.abs(tr.x - _trC.x * k), dy = Math.abs(tr.y - _trC.y * k);
+  if ((dx > W * 1.5 || dy > H * 1.5 || k < 0.5 || k > _ZOOM_MAX_BLUR) && now - _gestLastCommit > _GEST_MIN_GAP) {
+    _syncCommitted(tr);                // проміжний коміт; пороги зуму (класи) — у кінці жесту
+    _gestLastCommit = now;
+  }
+  _applyTrVisual();
+  if (!_gestSettleT) _gestSettleT = setTimeout(_gestSettleCheck, _GEST_SETTLE);  // відпустили поза вікном чи тримають на місці
+}
+function scheduleGesture() {           // не частіше кадру — як scheduleApplyTr
+  _gestLastInput = performance.now();
+  _canvasDirty = true;
+  if (_gestPending) return;
+  _gestPending = true;
+  requestAnimationFrame(() => { _gestPending = false; _gestureFrame(); });
+}
+function _gestureEnd() {               // кінець жесту — один коміт viewBox
+  clearTimeout(_gestSettleT); _gestSettleT = 0;
+  if (!_gestActive) return;
+  _gestActive = false;
+  _commitTr();
+  _scheduleScaleCityLabels();          // підписи міст — точне розставлення замість зсуву шару
+  _gestLastCommit = performance.now();
+}
 // Межі зуму. Мінімум не вищий за ×1: стартовий вигляд (вся карта, ×1) завжди досяжний плавно.
 // zoom_min в адмінці стоїть 2 — раніше через це перший крок зуму стрибав ×1→×2, а на «мінімумі»
 // карта стрибала назад на ×1.
@@ -3429,7 +3476,7 @@ function zoomAt(cx,cy,f) {
   tr.x=cx-(cx-tr.x)*af;
   tr.y=cy-(cy-tr.y)*af;
   tr.s=newS;
-  clampTr();scheduleApplyTr();
+  clampTr();scheduleGesture();   // zoomAt — лише pinch пальцями: жест без viewBox щокадру
 }
 
 // ── Плавний зум, як у Google Maps ─────────────────────────────────────────────
@@ -3561,8 +3608,8 @@ function flyTo(xr,yr,ts) {
   (function a(now){
     const p=ease(Math.min((now-t0)/dur,1));
     tr.x=sx+(tx-sx)*p; tr.y=sy+(ty-sy)*p; tr.s=ss+(ts-ss)*p;
-    clampTr(); applyTr();
-    if(p<1) requestAnimationFrame(a);
+    clampTr(); _gestLastInput=now; _gestureFrame();   // політ — жест: viewBox у кінці (і проміжний, якщо треба)
+    if(p<1) requestAnimationFrame(a); else _gestureEnd();
   })(t0);
 }
 
@@ -3590,7 +3637,7 @@ function _ytExtractId(url){
 }
 window.addEventListener('mousemove',e=>{
   if(typeof SilenceModule!=='undefined')SilenceModule._primeAudio();
-  if(drag){tr.x=trS.x+(e.clientX-dragS.x);tr.y=trS.y+(e.clientY-dragS.y);clampTr();scheduleApplyTr();document.getElementById('tip').style.display='none';return;}
+  if(drag){tr.x=trS.x+(e.clientX-dragS.x);tr.y=trS.y+(e.clientY-dragS.y);clampTr();scheduleGesture();document.getElementById('tip').style.display='none';return;}
   _lastMX=e.clientX;_lastMY=e.clientY;
   if(_mapMode==='world'){document.getElementById('tip').style.display='none';return;}
   if(_mousePending)return;
@@ -3698,6 +3745,7 @@ window.addEventListener('keydown',e=>{
 });
 window.addEventListener('mouseup',e=>{
   const was=drag;drag=false;mw.classList.remove('grabbing');
+  if(was)_gestureEnd();   // кінець драгу — один коміт viewBox (до будь-яких return нижче)
   if(was&&Math.hypot(e.clientX-dragS.x,e.clientY-dragS.y)>5)return;
   if(!_mwRect) _mwRect=mw.getBoundingClientRect();
   const p=hit(e.clientX-_mwRect.left,e.clientY-_mwRect.top);
@@ -3758,7 +3806,7 @@ mw.addEventListener('touchmove',e=>{
   e.preventDefault();
   // У режимі «Світ» жести обробляє Leaflet: приховану карту України не зумимо й не рухаємо (дим від пальця лишається)
   if(e.touches.length===2){if(_mapMode==='world')return;const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);const r=mw.getBoundingClientRect();zoomAt(lC.x-r.left,lC.y-r.top,d/lD);lD=d;}
-  else if(drag){if(_mapMode!=='world'){tr.x=trS.x+(e.touches[0].clientX-dragS.x);tr.y=trS.y+(e.touches[0].clientY-dragS.y);clampTr();scheduleApplyTr();}
+  else if(drag){if(_mapMode!=='world'){tr.x=trS.x+(e.touches[0].clientX-dragS.x);tr.y=trS.y+(e.touches[0].clientY-dragS.y);clampTr();scheduleGesture();}
     // Дим при свайпі одним пальцем
     if(window._fluidConfig&&!window._fluidConfig.PAUSED){
       const t=e.touches[0];
@@ -3766,7 +3814,7 @@ mw.addEventListener('touchmove',e=>{
     }
   }
 },{passive:false});
-mw.addEventListener('touchend',()=>{drag=false;});
+mw.addEventListener('touchend',()=>{drag=false;_gestureEnd();});   // кінець жесту пальцями — коміт viewBox
 
 /* ── Canvas draw ── */
 function h2r(h,a){
@@ -3837,7 +3885,9 @@ function _startCanvasLoop() {
   if(_canvasLoopRunning) return;
   _canvasLoopRunning = true;
   (function loop(ts){
-    if(document.hidden){_canvasLoopRunning=false;return;}
+    // у режимі «Світ» канвас зірок прихований — цикл зупиняється (раніше малював далі й після кожного
+    // повернення на карту України запускався ще один); setMapMode('ukraine') запустить знову
+    if(document.hidden||_mapMode==='world'){_canvasLoopRunning=false;return;}
     requestAnimationFrame(loop);
     // При русі карти — 30fps, в стані спокою — 20fps
     const _dirty=_canvasDirty; _canvasDirty=false;
@@ -4017,7 +4067,7 @@ function renderCityLabels(){
   const svgEl=document.getElementById('ukraine-svg');
   const old=svgEl&&svgEl.querySelector('#city-labels');
   if(old)old.remove();
-  _cityLabelGroups=[];
+  _cityLabelGroups=[]; _cityAt=null;
 
   // Sizes in CSS pixels (overlay has no viewBox → 1 unit = 1 screen pixel).
   // These are constant regardless of map zoom.
@@ -4075,8 +4125,20 @@ function renderCityLabels(){
   scaleCityLabels();
 }
 
+// Підписи міст (v3.67). Кожен — окрема група з атрибутом transform; переписувати сотні атрибутів щокадру
+// дорого (з усіма містами з адмінки — ~460 підписів, драг ~6 кадрів/с). Тому:
+// — підписи приховані (зум нижче порогу меж міст) — не розставляємо; розставимо, коли зʼявляться (_applyZoomClasses);
+// — жест без зміни масштабу (драг) — весь шар зсувається однією CSS-трансформацією, точне розставлення — після жесту;
+// — зміна масштабу (щипок, політ, колесо) — як і раніше, кожен кадр
+let _cityAt=null;   // tr, для якого розставлено підписи
 function scaleCityLabels(){
   if(!_cityLabelGroups.length) return;
+  const ov=_cityOverlay;
+  if(!_lastZoomCity){ _cityAt=null; if(ov&&ov.style.transform) ov.style.transform=''; return; }
+  if(_gestActive && _cityAt && Math.abs(_cityAt.s-tr.s)<1e-6){
+    ov.style.transform=`translate(${(tr.x-_cityAt.x).toFixed(2)}px,${(tr.y-_cityAt.y).toFixed(2)}px)`;
+    return;
+  }
   const b=getSvgBounds();
   _cityLabelGroups.forEach(lg=>{
     const cx=+lg.dataset.cx, cy=+lg.dataset.cy;
@@ -4084,6 +4146,8 @@ function scaleCityLabels(){
     const sy=((b.y + cy/9500 *b.h) * tr.s + tr.y).toFixed(1);
     lg.setAttribute('transform',`translate(${sx},${sy})`);
   });
+  _cityAt={x:tr.x, y:tr.y, s:tr.s};
+  if(ov&&ov.style.transform) ov.style.transform='';
 }
 
 /* ── Data ── */
