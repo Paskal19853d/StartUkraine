@@ -711,6 +711,10 @@ mark.shl {
   top: 0; left: 0;
   width: 100%; height: 100%;
   pointer-events: none;
+  /* Окремий композитний шар: під час плавного зуму карта масштабується CSS-трансформацією
+     (GPU, без перерастеризації), а чіткий viewBox комітиться після зупинки (index.html, _commitTr) */
+  will-change: transform;
+  transform-origin: 0 0;
 }
 
 /* Море — canvas під SVG, хвилі без заливки */
@@ -961,6 +965,65 @@ mark.shl {
 .sr-link--highlight:hover,
 .bb-link--highlight:hover { animation-play-state: paused; color: #00e5ff; text-shadow: none; }
 
+/* ── «Нові надходження» (v3.58): над блоками статистики (на місці вимкненого чату), той самий стиль.
+   Відступ знизу ставить _rbPlace(). Сяйво рамки — окремий шар ::before, анімується лише opacity ── */
+#recent-block {
+  position: absolute;
+  left: clamp(12px, 2.2vw, 2px);
+  bottom: 130px;
+  width: 248px;
+  box-sizing: border-box;
+  z-index: 650;
+  background: rgba(7,13,26,.92);
+  border: 1px solid rgba(240,192,48,.35);
+  border-radius: var(--radius);
+  padding: clamp(8px, 1.2vw, 12px) clamp(10px, 1.6vw, 18px);
+  animation: fadeIn .5s .2s var(--ease) both;
+}
+#recent-block[hidden] { display: none; }
+#recent-block::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  border: 1px solid rgba(255,213,79,.9);
+  box-shadow: 0 0 18px rgba(240,192,48,.45), inset 0 0 10px rgba(240,192,48,.12);
+  pointer-events: none;
+  opacity: .15;
+  animation: rbGlow 3.2s ease-in-out infinite;
+}
+@keyframes rbGlow { 0%, 100% { opacity: .15; } 50% { opacity: 1; } }
+.rb-title {
+  display: flex; align-items: center; justify-content: space-between; gap: 6px;
+  font-family: 'Unbounded', sans-serif;
+  font-size: clamp(7px, 1vw, 8px);
+  font-weight: 700;
+  color: var(--yellow2);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  margin-bottom: clamp(3px, .5vw, 6px);
+}
+.rb-count { font-weight: 400; letter-spacing: 0; color: var(--muted); }
+.rb-list { display: flex; flex-direction: column; gap: 2px; transition: opacity .35s ease; }
+.rb-list.rb-fade { opacity: 0; }
+.rb-item {
+  display: flex; align-items: baseline; gap: 6px;
+  font-size: clamp(9px, 1.2vw, 11px);
+  line-height: 1.5;
+  color: var(--text2);
+  text-decoration: none;
+  cursor: pointer;
+  animation: rbItemIn .45s var(--ease) both;
+}
+.rb-star { color: var(--yellow2); font-size: .85em; text-shadow: 0 0 6px rgba(240,192,48,.6); }
+.rb-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; transition: color .18s; }
+.rb-item:hover .rb-name { color: #ffd54f; }
+.rb-added { flex-shrink: 0; font-size: .85em; color: var(--yellow2); opacity: .75; }
+@keyframes rbItemIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+/* на тач-пристроях лівий нижній кут займають FAB-кнопки — блоку там немає, як і статистики */
+@media (pointer: coarse) { #recent-block { display: none !important; } }
+@media (prefers-reduced-motion: reduce) { #recent-block::before, #bb-fab.bb-fab-new::after { animation: none; opacity: .6; } .rb-item { animation: none; } }
+
 /* Мобільна адаптація блоків */
 @media (max-width: 480px) {
   #bottom-blocks { gap: 5px; }
@@ -1155,6 +1218,51 @@ mark.shl {
   }
   #bb-popup .bb-link:hover { color: #00e5ff; }
 
+  /* «Нові надходження» на телефоні (v3.60): розділ угорі попапу ★, золотий, як блок на ПК */
+  #bbp-recent[hidden] { display: none; }
+  #bb-popup .bb-recent-title {
+    display: flex; justify-content: space-between; gap: 6px;
+    font-family: 'Unbounded', sans-serif;
+    font-size: 8px;
+    font-weight: 700;
+    color: var(--yellow2);
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  #bbp-recent-count { font-weight: 400; letter-spacing: 0; color: var(--muted); }
+  #bbp-recent-list { max-height: 150px; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+  #bbp-recent-list .rb-item { font-size: 11px; line-height: 1.9; }
+  /* Значок кількості нових на кнопці ★ (як у кнопки чату) і мʼяке сяйво — доки попап не відкривали */
+  #bb-fab-badge {
+    position: absolute;
+    top: -4px; right: -4px;
+    min-width: 16px; height: 16px;
+    background: var(--yellow2);
+    border-radius: 8px;
+    font-size: 9px;
+    font-weight: 700;
+    color: #111;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 0 3px;
+    line-height: 1;
+    pointer-events: none;
+  }
+  #bb-fab-badge.show { display: flex; }
+  #bb-fab.bb-fab-new::after {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    border-radius: 50%;
+    border: 1px solid rgba(255,213,79,.9);
+    box-shadow: 0 0 14px rgba(240,192,48,.55);
+    opacity: .15;
+    animation: rbGlow 3.2s ease-in-out infinite;
+    pointer-events: none;
+  }
+
   /* partners-layer — нижче за FAB щоб не перекривав кнопки */
   #partners-layer { z-index: 1580 !important; }
 }
@@ -1169,6 +1277,8 @@ mark.shl {
   #micro-chat { bottom: 58px; left: 12px; max-height: min(220px, calc(100vh - 80px)); }
   /* bb-popup — спливає вгору над bb-fab */
   #bb-popup   { bottom: 58px; left: 12px; }
+  /* у ландшафті екран низький — список нових коротший (3 рядки), щоб попап уміщався */
+  #bbp-recent-list { max-height: 64px; }
 }
 
 
@@ -1249,6 +1359,44 @@ mark.shl {
   0%   { opacity: 0.65; transform: scale(0.88); }
   100% { opacity: 1;    transform: scale(1.12); }
 }
+/* Під час зуму карти Світу (клас ставить _lfSmoothWheel на zoomstart/zoomend) пульсацію
+   1168 SVG-зірок призупиняємо — менше роботи щокадру, на око пауза ~пів секунди непомітна */
+.leaflet-container.zp-zooming .leaflet-marker-icon g { animation-play-state: paused; }
+/* Зірка відкритої картки (пошук чи клік) на карті Світу — той самий фокус, що на карті України
+   (drawDotFX, isS; r ≈ 3.7 px): золоте кільце 5.5r, м'яке свічення 3r→18r, три кільця-маяки,
+   що розходяться до 18r / 23r / 28r і гаснуть. Розмітку .wm-beacon додає _worldPick() (v3.56) */
+.leaflet-marker-icon.wm-picked svg { position: relative; z-index: 1; transform: scale(1.6); filter: drop-shadow(0 0 5px rgba(255,220,80,.95)); }
+.wm-beacon { position: absolute; left: 50%; top: 50%; width: 0; height: 0; pointer-events: none; }
+.wm-beacon i { position: absolute; left: 0; top: 0; box-sizing: border-box; border-radius: 50%; transform: translate(-50%, -50%); }
+.wm-beacon .wm-glow { width: 134px; height: 134px; background: radial-gradient(circle closest-side, rgba(255,210,40,.3) 17%, rgba(255,210,40,0) 100%);
+  animation: wm-glow 1.05s ease-in-out infinite alternate; }
+.wm-beacon .wm-ring { width: 41px; height: 41px; border: 2.5px solid rgb(255,230,60); animation: wm-ring .79s ease-in-out infinite alternate; }
+.wm-beacon .wm-b { width: 30px; height: 30px; border: 2.5px solid rgb(255,220,80); opacity: 0; }
+.wm-beacon .wm-b0 { animation: wm-b0 3.5s ease-out infinite; }
+.wm-beacon .wm-b1 { border-width: 2px; animation: wm-b1 3.5s ease-out .61s infinite; }
+.wm-beacon .wm-b2 { border-width: 1.5px; animation: wm-b2 3.5s ease-out 1.22s infinite; }
+@keyframes wm-glow { from { opacity: .47; } to { opacity: 1; } }
+@keyframes wm-ring { from { opacity: .7; } to { opacity: 1; } }
+@keyframes wm-b0 { 0% { width: 30px; height: 30px; opacity: .55; } 50%, 100% { width: 134px; height: 134px; opacity: 0; } }
+@keyframes wm-b1 { 0% { width: 30px; height: 30px; opacity: .43; } 50%, 100% { width: 170px; height: 170px; opacity: 0; } }
+@keyframes wm-b2 { 0% { width: 30px; height: 30px; opacity: .31; } 50%, 100% { width: 208px; height: 208px; opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .wm-beacon .wm-b { display: none; } .wm-beacon .wm-glow, .wm-beacon .wm-ring { animation: none; } }
+/* «Зірка памʼяті» на карті Світу (v3.62) — як на карті України: ⭐ над точкою здіймається на 55 px,
+   зменшується з 19 до 13 px і згасає. Низ зірочки — у точці загибелі */
+.wm-like-star {
+  position: absolute;
+  z-index: 20000;
+  font-size: 19px;
+  line-height: 1;
+  pointer-events: none;
+  transform-origin: 50% 100%;
+  transform: translate(-50%, -100%);
+  animation: wmLikeStar .76s linear forwards;
+}
+@keyframes wmLikeStar {
+  from { transform: translate(-50%, -100%) scale(1);    opacity: 1; }
+  to   { transform: translate(-50%, calc(-100% - 55px)) scale(.68); opacity: 0; }
+}
 
 /* Tooltip */
 #tip {
@@ -1300,11 +1448,12 @@ mark.shl {
 #card.open { transform: translateX(0); visibility: visible; transition: transform .38s var(--ease), visibility 0s 0s; }
 #card-shield { display: none; }
 
+/* Червоний стиль — як у кнопки «НАГОРОДИ» (#awards-btn) на цій же панелі */
 #cclose {
   position: absolute;
   top: 13px; right: 13px;
-  background: rgba(255,255,255,.06);
-  border: 1px solid var(--border);
+  background: rgba(139,15,15,.82);
+  border: 1px solid #e53935;
   border-radius: 7px;
   width: 28px; height: 28px;
   cursor: pointer;
@@ -1312,14 +1461,259 @@ mark.shl {
   align-items: center;
   justify-content: center;
   font-size: 14px;
-  color: var(--muted);
+  color: #f5d0d0;
+  box-shadow: 0 2px 8px rgba(139,0,0,.4);
   z-index: 5;
-  transition: background .2s, color .2s, transform .15s;
+  transition: background .2s, color .2s, border-color .2s, box-shadow .2s, transform .15s;
 }
 #cclose:hover {
-  background: rgba(255,255,255,.12);
-  color: var(--text);
+  background: rgba(30,0,0,1);
+  border-color: #ff5252;
+  color: #fff;
+  box-shadow: 0 3px 14px rgba(139,0,0,.6);
   transform: scale(1.1) rotate(90deg);
+}
+
+/* ── Тарифний план погибшого: металева кромка бокової панелі ──────────────────
+   Адмін задає план (memorials.tier) → openCard() ставить #card[data-tier].
+   Кромка — шар #ctier: маска-рамка 3px зі статичним металевим градієнтом.
+   Перелив — світла смуга ::after, що рухається лише transform-анімацією
+   (композитор, без перемальовки панелі) і лише поки картка відкрита. */
+#ctier { display: none; }
+#card[data-tier="bronze"] {
+  --tier-metal: linear-gradient(160deg, #5a3214 0%, #c88a4a 18%, #f6cfa2 34%, #9a5a26 52%, #e0a066 70%, #f8d7b0 84%, #6b3c17 100%);
+  --tier-edge: #a8672e;
+  --tier-glow: rgba(200,138,74,.45);
+  --tier-text: linear-gradient(180deg, #fbe2c4 0%, #e9ac70 40%, #a8672e 56%, #e0a066 74%, #f8d7b0 100%);
+}
+#card[data-tier="silver"] {
+  --tier-metal: linear-gradient(160deg, #545c68 0%, #c7d0e0 18%, #ffffff 34%, #8b94a3 52%, #dde3ec 70%, #ffffff 84%, #5f6672 100%);
+  --tier-edge: #9aa3b2;
+  --tier-glow: rgba(199,208,224,.38);
+  --tier-text: linear-gradient(180deg, #ffffff 0%, #e4e9f1 40%, #8f98a8 56%, #dde3ec 74%, #ffffff 100%);
+}
+#card[data-tier="gold"] {
+  --tier-metal: linear-gradient(160deg, #6e4a00 0%, #ffc01e 18%, #fff2bf 34%, #c48800 52%, #ffd65a 70%, #fff6d6 84%, #7a5200 100%);
+  --tier-edge: #d9a000;
+  --tier-glow: rgba(255,192,30,.45);
+  --tier-text: linear-gradient(180deg, #fff7dc 0%, #ffd65a 40%, #c48800 56%, #ffcf3f 74%, #fff2bf 100%);
+}
+/* Платина — біла з крижано-бузковим переливом, щоб не плутати зі сріблом */
+#card[data-tier="platinum"] {
+  --tier-metal: linear-gradient(160deg, #7f7aa3 0%, #e9e4ff 16%, #c9a8ff 30%, #ffffff 42%, #a8d8ff 56%, #f1ecff 70%, #c9a8ff 84%, #7f7aa3 100%);
+  --tier-edge: #b9a6ef;
+  --tier-glow: rgba(201,168,255,.45);
+  --tier-text: linear-gradient(180deg, #ffffff 0%, #ece6ff 36%, #a8d8ff 54%, #c9a8ff 72%, #f4f0ff 100%);
+}
+#card[data-tier] {
+  border-color: var(--tier-edge);
+  /* світіння назовні від лівого краю + м'який відсвіт усередині вздовж кромки */
+  box-shadow: -10px 0 28px -10px var(--tier-glow), inset 0 0 26px -10px var(--tier-glow);
+}
+#card[data-tier] #ctier {
+  display: block;
+  position: absolute;
+  inset: 0;
+  padding: 2px;                      /* тонка металева лінія (v3.66) */
+  border-radius: inherit;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 6;
+  container-type: size;              /* cqw / cqh — довжина шляху відблиску */
+  /* кільце content-box / border-box — повторює й заокруглені кути листа. Маска статична,
+     тож відблиск (лише transform) не перемальовує панель */
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+          mask-composite: exclude;
+}
+/* Кнопка закриття — над рамкою й іскрами (табличка плану й так вище) */
+#card[data-tier] #cclose { z-index: 8; }
+#ctier::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--tier-metal);
+}
+/* Відблиск рамки (v3.66): спалахує в лівому верхньому куті й біжить рамкою в обидва боки —
+   верхом і правим боком та лівим боком і низом — до правого нижнього кута, де дві половини зустрічаються.
+   Як діагональна смуга світла, що проходить панеллю: c = x + y росте від −gr до W + H + gr, тож швидкість
+   на всіх сторонах однакова й кути передаються без розривів (у всіх смуг ті самі відсотки й easing).
+   Кожен відблиск — яскрава смуга в кільці 2 px (.ctg у #ctier) + мʼякий ореол, що виходить у панель
+   (.ctf у #ctier-spark, без маски). Лише transform. Довжина шляху — з розміру рамки: cqw / cqh рахуються
+   від content-box (рамка − 2 × 2 px, тому обидва контейнери мають padding 2 px), звідси + 4 / 8 px */
+#ctier, #ctier-spark { --gr: 70px; }                /* запас шляху за кутами — більший за пів довжини відблиску */
+#ctier .ctg, #ctier-spark .ctf {
+  position: absolute;
+  top: 0; left: 0;
+  opacity: 0;
+}
+#ctier .ctg {
+  --gl: 130px;                         /* довжина яскравої смуги */
+  width: var(--gl); height: 3px;
+  background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,.55) 30%, #fff 50%, rgba(255,255,255,.55) 70%, rgba(255,255,255,0));
+}
+#ctier .ctg-l, #ctier .ctg-r {
+  width: 3px; height: var(--gl);
+  background: linear-gradient(180deg, rgba(255,255,255,0), rgba(255,255,255,.55) 30%, #fff 50%, rgba(255,255,255,.55) 70%, rgba(255,255,255,0));
+}
+#ctier-spark .ctf {                   /* ореол: половина за краєм панелі обрізається, видно світло всередину */
+  --gl: 70px;
+  width: var(--gl); height: 18px;
+  margin-top: -8px;
+  background: radial-gradient(closest-side, rgba(255,255,255,.6), var(--tier-glow) 50%, transparent);
+}
+#ctier-spark .ctf-b { margin: 0 0 -8px; }
+#ctier-spark .ctf-l { width: 18px; height: var(--gl); margin: 0 0 0 -8px; }
+#ctier-spark .ctf-r { width: 18px; height: var(--gl); margin: 0 -8px 0 0; }
+#ctier .ctg-r, #ctier-spark .ctf-r { left: auto; right: 0; }
+#ctier .ctg-b, #ctier-spark .ctf-b { top: auto; bottom: 0; }
+#card.open[data-tier] #ctier .ctg,
+#card.open[data-tier] #ctier-spark .ctf {
+  opacity: 1;
+  animation: 7s ease-in-out infinite;
+  will-change: transform;
+}
+#card.open[data-tier] #ctier .ctg-t, #card.open[data-tier] #ctier-spark .ctf-t { animation-name: ctgTop; }
+#card.open[data-tier] #ctier .ctg-l, #card.open[data-tier] #ctier-spark .ctf-l { animation-name: ctgLeft; }
+#card.open[data-tier] #ctier .ctg-r, #card.open[data-tier] #ctier-spark .ctf-r { animation-name: ctgRight; }
+#card.open[data-tier] #ctier .ctg-b, #card.open[data-tier] #ctier-spark .ctf-b { animation-name: ctgBottom; }
+/* 0–36 % циклу (≈2.5 с) — пробіг, далі пауза. Зсув = c − (початок сторони) − gl / 2 */
+@keyframes ctgTop {
+  0%        { transform: translateX(calc(-1 * var(--gr) - var(--gl) / 2)); }
+  36%, 100% { transform: translateX(calc(100cqw + 100cqh + 8px + var(--gr) - var(--gl) / 2)); }
+}
+@keyframes ctgLeft {
+  0%        { transform: translateY(calc(-1 * var(--gr) - var(--gl) / 2)); }
+  36%, 100% { transform: translateY(calc(100cqw + 100cqh + 8px + var(--gr) - var(--gl) / 2)); }
+}
+@keyframes ctgRight {
+  0%        { transform: translateY(calc(-1 * var(--gr) - var(--gl) / 2 - 100cqw - 4px)); }
+  36%, 100% { transform: translateY(calc(100cqh + 4px + var(--gr) - var(--gl) / 2)); }
+}
+@keyframes ctgBottom {
+  0%        { transform: translateX(calc(-1 * var(--gr) - var(--gl) / 2 - 100cqh - 4px)); }
+  36%, 100% { transform: translateX(calc(100cqw + 4px + var(--gr) - var(--gl) / 2)); }
+}
+@supports not (width: 1cqw) { #ctier .ctg, #ctier-spark .ctf { display: none; } }
+/* Іскри (v3.66): спалах у лівому верхньому куті, звідки виходить відблиск (~5 % циклу), і в правому нижньому,
+   де дві його половини зустрічаються (~31 %). Хрестик світла з яскравим центром і світінням плану;
+   лише transform / opacity */
+#ctier-spark { display: none; }
+#card[data-tier] #ctier-spark {
+  display: block;
+  position: absolute;
+  inset: 0;
+  padding: 2px;                        /* як у #ctier — однакові cqw / cqh для ореолів */
+  container-type: size;
+  pointer-events: none;
+  z-index: 7;
+}
+#card[data-tier] #ctier-spark::before,
+#card[data-tier] #ctier-spark::after {
+  content: "";
+  position: absolute;
+  width: 22px; height: 22px;
+  background:
+    radial-gradient(circle, #fff 0 1.5px, rgba(255,255,255,.75) 2.5px, transparent 4.5px),
+    linear-gradient(90deg, transparent, #fff 50%, transparent) center / 100% 1.5px no-repeat,
+    linear-gradient(180deg, transparent, #fff 50%, transparent) center / 1.5px 100% no-repeat,
+    radial-gradient(circle, var(--tier-glow) 0, transparent 65%);
+  opacity: 0;
+  transform: scale(.2);
+}
+#card[data-tier] #ctier-spark::before { left: -6px; top: -6px; }        /* центр — у куті рамки */
+#card[data-tier] #ctier-spark::after  { right: -6px; bottom: -6px; }
+#card.open[data-tier] #ctier-spark::before { animation: ctierSparkStart 7s ease-out infinite; }
+#card.open[data-tier] #ctier-spark::after  { animation: ctierSparkMeet 7s ease-out infinite; }
+@keyframes ctierSparkStart {
+  0%        { opacity: 0; transform: scale(.2) rotate(0deg); }
+  5%        { opacity: 1; transform: scale(1) rotate(25deg); }
+  12%, 100% { opacity: 0; transform: scale(.2) rotate(70deg); }
+}
+@keyframes ctierSparkMeet {
+  0%, 27%   { opacity: 0; transform: scale(.2) rotate(0deg); }
+  31%       { opacity: 1; transform: scale(1.15) rotate(30deg); }
+  41%, 100% { opacity: 0; transform: scale(.2) rotate(80deg); }
+}
+/* Розділювачі в панелі — у тон плану */
+#card[data-tier] #cbody hr {
+  border-top-color: transparent;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--tier-edge), transparent);
+}
+/* Назва плану в лівому верхньому куті панелі (v3.64): «GOLD» тощо.
+   Темна табличка з металевою рамкою, ромб і текст шрифтом Cinzel у металі плану (--tier-text).
+   Відблиск пробігає табличкою одразу після переливу кромки — лише transform, як і перелив */
+#ctier-badge { display: none; }
+#card[data-tier] #ctier-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: absolute;
+  top: 13px; left: 13px;               /* на одному рівні з кнопкою закриття */
+  z-index: 7;
+  height: 28px;
+  padding: 0 11px 0 10px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background:
+    linear-gradient(180deg, rgba(16,18,28,.9), rgba(4,6,12,.94)) padding-box,
+    var(--tier-metal) border-box;
+  box-shadow: 0 2px 10px rgba(0,0,0,.45), 0 0 14px -3px var(--tier-glow);
+  overflow: hidden;
+  pointer-events: none;
+  -webkit-user-select: none;
+          user-select: none;
+}
+#card[data-tier] #ctier-badge::before {      /* ромб-орнамент */
+  content: "";
+  width: 6px; height: 6px;
+  flex-shrink: 0;
+  background: var(--tier-metal);
+  transform: rotate(45deg);
+  box-shadow: 0 0 6px var(--tier-glow);
+}
+#ctier-name {
+  font-family: 'Cinzel', 'Yeseva One', Georgia, serif;
+  font-weight: 700;
+  font-size: 13px;
+  line-height: 1;
+  letter-spacing: .22em;
+  margin-right: -.22em;                 /* без зайвого відступу після останньої літери */
+  text-transform: uppercase;
+  white-space: nowrap;
+  background: var(--tier-text);
+  -webkit-background-clip: text;
+          background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 1px 1px rgba(0,0,0,.7));
+}
+#card[data-tier] #ctier-badge::after {       /* відблиск */
+  content: "";
+  position: absolute;
+  top: 0; bottom: 0; left: 0;
+  width: 46%;
+  background: linear-gradient(100deg, transparent 20%, rgba(255,255,255,.5) 50%, transparent 80%);
+  transform: translateX(-120%);
+}
+#card.open[data-tier] #ctier-badge::after {
+  animation: ctierBadgeGlint 7s ease-in-out infinite;    /* той самий цикл, що й відблиск рамки */
+  will-change: transform;
+}
+@keyframes ctierBadgeGlint {
+  0%, 5%    { transform: translateX(-120%); }
+  17%, 100% { transform: translateX(240%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  #card.open[data-tier] #ctier .ctg,
+  #card.open[data-tier] #ctier-spark .ctf,
+  #card.open[data-tier] #ctier-spark::before,
+  #card.open[data-tier] #ctier-spark::after,
+  #card.open[data-tier] #ctier-badge::after { animation: none; }
+  #card.open[data-tier] #ctier .ctg,
+  #card.open[data-tier] #ctier-spark .ctf { opacity: 0; }
 }
 
 #cphoto {
@@ -1372,6 +1766,44 @@ mark.shl {
   margin-bottom: 3px;
 }
 .cv { font-size: 12px; line-height: 1.6; color: var(--text); }
+
+/* «Опис» у боковій панелі (v3.63): довгий текст згорнуто до ~40 % висоти (на 60 % коротше),
+   під ним «Розгорнути / Згорнути». Висоту (ціле число рядків) задає JS — _descLayout() */
+#cdesc { display: block; }
+#cdesc-row.desc-long #cdesc { overflow: hidden; }
+#cdesc-row.desc-long:not(.desc-expanded) #cdesc {
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 2.6em), transparent);
+          mask-image: linear-gradient(to bottom, #000 calc(100% - 2.6em), transparent);
+}
+#cdesc.desc-anim { transition: max-height .35s var(--ease); }
+.cdesc-more {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  padding: 4px 0;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  font-family: 'Unbounded', sans-serif;
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: #f0b54a;
+  opacity: .85;
+  transition: opacity .2s;
+}
+.cdesc-more[hidden] { display: none; }
+.cdesc-more:hover, .cdesc-more:focus-visible { opacity: 1; }
+.cdesc-more:focus-visible { outline: 1px solid rgba(240,181,74,.6); outline-offset: 3px; border-radius: 4px; }
+.cdesc-more svg { flex-shrink: 0; transition: transform .3s var(--ease); }
+.cdesc-more .cdm-less { display: none; }
+#cdesc-row.desc-expanded .cdesc-more .cdm-more { display: none; }
+#cdesc-row.desc-expanded .cdesc-more .cdm-less { display: inline; }
+#cdesc-row.desc-expanded .cdesc-more svg { transform: rotate(180deg); }
+@media (pointer: coarse) { .cdesc-more { padding: 10px 0; margin-top: 2px; } }
+@media (prefers-reduced-motion: reduce) { #cdesc.desc-anim, .cdesc-more svg { transition: none; } }
 
 .badge {
   display: inline-block;
@@ -1912,6 +2344,15 @@ input.f-err { border-color:#e53935 !important; }
   #card { width: 100%; }
   .fr   { grid-template-columns: 1fr; }
   .mo   { padding: 18px 14px; }
+}
+
+/* Коли картка на весь екран (ті самі умови, що тут і в landscape ≤400px нижче), оверлеї
+   з вищим z-index (партнери 1580, соцпанель 1000, годинник 890; картка — 800)
+   лягали поверх опису загиблого. Клас ставлять openCard()/чат/інфо-попап (index.html). */
+@media (pointer: coarse) and (max-width: 700px), (orientation: landscape) and (max-height: 400px) {
+  body.zp-panel-open #partners-layer,
+  body.zp-panel-open #social-bar,
+  body.zp-panel-open #kyiv-clock { visibility: hidden !important; pointer-events: none !important; }
 }
 
 /* ── UTILITY ANIMATIONS ────────────────────────────── */

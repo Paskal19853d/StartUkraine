@@ -153,7 +153,7 @@
     <div class="stat-row">
       <div class="stat-card">
         <div class="stat-title">Поточна версія</div>
-        <div class="stat-val"><span class="sq"></span><span style="font-family:'Fira Code',monospace; font-size:22px; font-weight:500; color:#8FE388">v3.33.0</span></div>
+        <div class="stat-val"><span class="sq"></span><span style="font-family:'Fira Code',monospace; font-size:22px; font-weight:500; color:#8FE388">v3.33.1</span></div>
       </div>
       <div class="stat-card">
         <div class="stat-title">Записів у журналі</div>
@@ -161,7 +161,7 @@
       </div>
       <div class="stat-card">
         <div class="stat-title">Останнє оновлення</div>
-        <div class="stat-val-plain">18.09.2026</div>
+        <div class="stat-val-plain">02.10.2026</div>
       </div>
       <div class="stat-card">
         <div class="stat-title">Статус системи</div>
@@ -213,7 +213,7 @@
       </div>
       <a href="#report" class="report-btn">Повідомити про помилку</a>
     </div>
-    <div class="footer-meta">зоряна-пам'ять.укр · журнал оновлень · оновлено 18.09.2026</div>
+    <div class="footer-meta">зоряна-пам'ять.укр · журнал оновлень · оновлено 02.10.2026</div>
   </div>
 
 <script>
@@ -222,6 +222,9 @@
 
   // ── Дані журналу (найновіше перше) ──────────────────────────────
   var entries = [
+    { v:"v3.33.1", d:"02.10.2026", c:"Продуктивність", t:"Дим більше не завмирає при наведенні на зірку",
+      s:"Усунено основну причину коротких завмирань диму в момент наведення курсора на зірку загиблого.",
+      b:["Плавно, як і на вільній частині карти","Менше навантаження на відеокарту","Без ривка при перетягуванні карти"] },
     { v:"v3.33", d:"18.09.2026", c:"Продуктивність", t:"Карта більше не підвисає при наведенні на зірку",
       s:"Прибрано короткочасні затримки анімації диму, які з'являлися при наведенні курсора на маркер загиблого.",
       b:["Плавніше відображення при наведенні на зірку","Менше навантаження на пристрій під час перегляду карти","Однаково стабільно на слабших комп'ютерах"] },

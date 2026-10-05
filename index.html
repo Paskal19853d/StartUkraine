@@ -19,7 +19,9 @@
 <link rel="dns-prefetch" href="https://img.youtube.com">
 <link rel="dns-prefetch" href="https://www.youtube-nocookie.com">
 <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700&family=Geologica:wght@300;400;500&family=Yeseva+One&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="Style.css?v=20261002">
+<!-- Назва тарифного плану в боковій панелі: Cinzel лише з потрібних літер (~5 КБ), без блокування рендеру -->
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&text=BRONZESILVGDPATUMbronzesilvgdpatum&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<link rel="stylesheet" href="Style.css?v=20261005c">
 <link rel="stylesheet" href="/fonts/uicons/uicons.css">
 <link rel="stylesheet" href="/silence-module.css">
 <style id="dynamic-colors">
@@ -2358,6 +2360,13 @@ body{visibility:hidden}
     </div>
   </div>
 
+  <!-- ── «Нові надходження» (v3.58): загиблі, що зʼявились на сайті за останні дні (адмінка → «Нові надходження»).
+       Над блоками статистики — на місці вимкненого чату; якщо чат увімкнено — над ним (_rbPlace) ── -->
+  <div id="recent-block" hidden>
+    <div class="rb-title"><span data-i18n="recent.title">Нові надходження</span><span class="rb-count" id="rb-count"></span></div>
+    <div class="rb-list" id="rb-list"></div>
+  </div>
+
   <div id="bottom-blocks">
     <div id="count"><strong id="btotal">0</strong><span data-i18n="count_label">у памʼяті</span></div>
     <div id="site-rules">
@@ -2366,7 +2375,7 @@ body{visibility:hidden}
       <a class="sr-link" href="/terms.html" target="_blank" rel="noopener noreferrer">📄 <span data-i18n="terms">Правила використання</span></a>
       <a class="sr-link" href="/faq.html" target="_blank" rel="noopener noreferrer" style="display:none">❓ <span data-i18n="faq">Питання — відповідь</span></a>
       <a class="sr-link sr-link--highlight" href="/how-to-add.html" target="_blank" rel="noopener noreferrer">➕ <span data-i18n="doc.howto_nav">Як додати загиблого</span></a>
-      <a class="sr-link" href="/pricing/" target="_blank" rel="noopener noreferrer">💎 <span data-i18n="pricing_nav">Тарифи</span></a>
+      <a class="sr-link" href="/pricing/" target="_blank" rel="noopener noreferrer" style="display: none;">💎 <span data-i18n="pricing_nav">Тарифи</span></a>
     </div>
   </div>
 
@@ -2377,10 +2386,16 @@ body{visibility:hidden}
   </button>
 
   <!-- FAB кнопка bottom-blocks (тільки мобільний) -->
-  <button id="bb-fab" data-i18n-aria="info_title" aria-label="Інформація" data-i18n-title="info_title" title="Інформація">★</button>
+  <button id="bb-fab" data-i18n-aria="info_title" aria-label="Інформація" data-i18n-title="info_title" title="Інформація">★<span id="bb-fab-badge"></span></button>
 
   <!-- Попап bottom-blocks (тільки мобільний) -->
   <div id="bb-popup">
+    <!-- «Нові надходження» на телефоні (v3.60): той самий список, що в блоці над статистикою на ПК -->
+    <div id="bbp-recent" hidden>
+      <div class="bb-recent-title"><span data-i18n="recent.title">Нові надходження</span><span id="bbp-recent-count"></span></div>
+      <div id="bbp-recent-list"></div>
+      <hr class="bb-divider">
+    </div>
     <div class="bb-count-num" id="bb-total">0</div>
     <div class="bb-count-lbl" data-i18n="count_label">у памʼяті</div>
     <hr class="bb-divider">
@@ -2389,13 +2404,17 @@ body{visibility:hidden}
     <a class="bb-link" href="/terms.html" target="_blank" rel="noopener noreferrer">📄 <span data-i18n="terms">Правила використання</span></a>
     <a class="bb-link" href="/faq.html" target="_blank" rel="noopener noreferrer" style="display:none">❓ <span data-i18n="faq">Питання — відповідь</span></a>
     <a class="bb-link bb-link--highlight" href="/how-to-add.html" target="_blank" rel="noopener noreferrer">➕ <span data-i18n="doc.howto_nav">Як додати загиблого</span></a>
-    <a class="bb-link" href="/pricing/" target="_blank" rel="noopener noreferrer">💎 <span data-i18n="pricing_nav">Тарифи</span></a>
+    <!-- «Тарифи» тимчасово приховано (v3.61); повернути — прибрати style="display:none" -->
+    <a class="bb-link" href="/pricing/" target="_blank" rel="noopener noreferrer" style="display:none">💎 <span data-i18n="pricing_nav">Тарифи</span></a>
   </div>
   <div id="tip"></div>
 </div>
 
 
 <aside id="card">
+  <div id="ctier" aria-hidden="true"><span class="ctg ctg-t"></span><span class="ctg ctg-r"></span><span class="ctg ctg-b"></span><span class="ctg ctg-l"></span></div>
+  <div id="ctier-spark" aria-hidden="true"><span class="ctf ctf-t"></span><span class="ctf ctf-r"></span><span class="ctf ctf-b"></span><span class="ctf ctf-l"></span></div>
+  <div id="ctier-badge"><span id="ctier-name"></span></div>
   <button id="cclose" onclick="closeCard()">&#10005;</button>
   <div id="cphoto"><img id="cimg" src="" alt=""><div id="cgrad"></div></div>
   <div id="cbody">
@@ -2426,7 +2445,7 @@ body{visibility:hidden}
 	</div>
 	<div class="cf" id="cpos-row"><span class="cl">💼 <span data-i18n="position">Посада</span></span><span class="cv" id="cpos"></span></div>
 	<div class="cf"><span class="cl" data-i18n="circumstances">Обставини</span><span class="cv" id="ccirc"></span></div>
-	<div class="cf" id="cdesc-row" style="display:none;align-items:flex-start"><span class="cl" data-i18n="description">Опис</span><span class="cv" id="cdesc" style="font-size:11px;line-height:1.55;white-space:pre-wrap"></span></div>
+	<div class="cf" id="cdesc-row" style="display:none;align-items:flex-start"><span class="cl" data-i18n="description">Опис</span><span class="cv" id="cdesc" style="font-size:11px;line-height:1.55;white-space:pre-wrap"></span><button type="button" id="cdesc-more" class="cdesc-more" hidden aria-controls="cdesc" aria-expanded="false" onclick="_descToggle()"><span class="cdm-more" data-i18n="card.desc_more">Розгорнути</span><span class="cdm-less" data-i18n="card.desc_less">Згорнути</span><svg viewBox="0 0 24 24" width="11" height="11" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
     <hr>
     <div class="cf" id="dupes-section" style="display:none">
       <span class="cl">&#128279; <span data-i18n="card.also_added">Також додали</span></span>
@@ -2643,10 +2662,15 @@ let people = [], curUser = JSON.parse(localStorage.getItem('mu')||'null');
 let selColor = '#4fc3f7', isPick = false, pickCb = null, activePerson = null;
 let W = 0, H = 0, animT = 0, particles = [];
 const tr = {x:0, y:0, s:1};
-let _vZoom = 1.0; // virtual (unclamped) zoom — fixes min/max clamp asymmetry on wheel scroll
+// Гібридний рендер зуму: _trC — стан, для якого зараз виставлено viewBox SVG-карти (і transform
+// моря). Під час анімації зуму #svg-layer масштабується CSS-трансформацією від _trC до tr (GPU,
+// без перерастеризації карти), а viewBox «комітиться» лише коли зум зупинився (_commitTr).
+let _trC = {x:0, y:0, s:1};
+// Стан плавного зуму: ціль масштабу, точка прив'язки (курсор/центр), rAF анімації, таймер коміту
+const _za = {raf:0, mode:'', target:1, ax:0, ay:0, last:0, settle:0, lastCommit:0, reset:false};
+let _lastZoomCity=null, _lastZoomDeep=null;
 let drag = false, dragS = {x:0,y:0}, trS = {x:0,y:0};
 let _lastVbKey = '';   // debounce: останній viewBox key для уникнення reflow
-let _lastWheel = 0;    // throttle: timestamp останнього wheel event
 let hovId = null, selId = null;
 let COLORS = {};
 let _dotPulseSpeed = 1.0, _dotPulseAmp = 0.35, _dotGlowInt = 0.40, _dotGlowR = 3.0;
@@ -2692,6 +2716,68 @@ let _worldMap = null;
 let _worldMapReady = false;
 let _mapMode = 'ukraine';
 let _worldMarkersLayer = null;
+// Карта «Світ»: маркери за id і підсвічена зірка відкритої картки (як selId на карті України)
+const _worldMarkerById = new Map();
+let _worldPickedId = null;
+
+// ── Дробовий плавний зум Leaflet (карта «Світ», вибір точки у формі) ─────────────
+// Штатно Leaflet крокує цілими рівнями (zoomSnap 1: 5→6→7), а його колесо ще й ігнорує
+// оберти під час власної анімації (250 мс). zoomSnap 0 — дробовий зум (pinch/подвійний
+// клік/клавіатура без округлення), zoomDelta 0.5 — кнопки +/− на пів-рівня зі штатною
+// анімацією, штатне колесо вимкнене — його замінює _lfSmoothWheel.
+const _LF_ZOOM_OPTS = { zoomSnap: 0, zoomDelta: 0.5, scrollWheelZoom: false };
+// Плавне колесо на тому самому безперервному механізмі, що й штатний pinch Leaflet:
+// _moveStart → _move(center, zoom, {pinch:true}) щокадру → _moveEnd (тайли довантажуються
+// після зупинки). Кроки накопичуються в ціль, зум плавно її наздоганяє, точка під курсором
+// лишається на місці — як у Google Maps.
+function _lfSmoothWheel(map) {
+  const cont = map.getContainer();
+  const S = {active:false, raf:0, timer:0, goal:0, z:0, pos:null, anchor:null, last:0, lastCenter:null};
+  const finish = () => {
+    if (S.raf) { cancelAnimationFrame(S.raf); S.raf = 0; }
+    clearTimeout(S.timer);
+    if (S.active) { S.active = false; map._moveEnd(true); }
+  };
+  const frame = now => {
+    S.raf = 0;
+    // Карту змінили ззовні (кнопки, flyTo, драг) — завершуємо, не перебиваючи їх
+    if (map.getZoom() !== S.z || !map.getCenter().equals(S.lastCenter)) { finish(); return; }
+    // dt до 250 мс: на повільних кадрах (1168 DOM-маркерів) зум іде в реальному часі, а не «тягнеться»
+    const dt = Math.min(250, Math.max(1, now - S.last)); S.last = now;
+    let z = S.z + (S.goal - S.z) * (1 - Math.exp(-dt / 80));
+    const settled = Math.abs(S.goal - z) < 0.001;
+    if (settled) z = S.goal;
+    const half = map.getSize().divideBy(2);
+    map._move(map.unproject(map.project(S.anchor, z).subtract(S.pos.subtract(half)), z), z, {pinch: true, round: false});
+    S.z = map.getZoom(); S.lastCenter = map.getCenter();
+    if (settled) S.timer = setTimeout(finish, 120);  // ціль досягнута — після паузи довантажити тайли
+    else S.raf = requestAnimationFrame(frame);
+  };
+  cont.addEventListener('wheel', e => {
+    e.preventDefault(); e.stopPropagation();
+    if (map._animatingZoom) return;  // ще йде штатна анімація Leaflet (кнопки +/−)
+    let dy = e.deltaY;
+    if (e.deltaMode === 1) dy *= 33; else if (e.deltaMode === 2) dy *= (cont.clientHeight || 800);
+    if (!dy) return;
+    if (!S.active) {
+      map._stop();
+      S.active = true; S.z = S.goal = map.getZoom(); S.lastCenter = map.getCenter(); S.last = performance.now();
+      map._moveStart(true, false);
+    }
+    // миша ~0.25 рівня за «клік», тачпад — пропорційно, pinch тачпада (ctrlKey) — швидше
+    S.goal = Math.max(map.getMinZoom(), Math.min(map.getMaxZoom(), S.goal - dy * (e.ctrlKey ? 0.01 : 0.0025)));
+    S.pos = map.mouseEventToContainerPoint(e);
+    S.anchor = map.containerPointToLatLng(S.pos);
+    clearTimeout(S.timer);
+    if (!S.raf) { S.last = performance.now(); S.raf = requestAnimationFrame(frame); }
+  }, {passive: false});
+  cont.addEventListener('mousedown', finish);
+  cont.addEventListener('touchstart', finish, {passive: true});
+  // Під час будь-якого зуму пульсацію зірок призупиняємо — менше роботи щокадру (1168 SVG-маркерів)
+  map.on('zoomstart', () => cont.classList.add('zp-zooming'));
+  map.on('zoomend', () => cont.classList.remove('zp-zooming'));
+  map._zpWheelStop = finish;
+}
 
 // pos_x/pos_y (0..1 відносно SVG України) → географічні [lat, lng]
 function _p2ll(px, py) {
@@ -2720,6 +2806,8 @@ function _renderWorldMarkers() {
   } else {
     _worldMarkersLayer = L.featureGroup().addTo(_worldMap);
   }
+  _worldMarkerById.clear();
+  _worldPickedId = null;
   if (!people || !people.length) return;
 
   // Унікальна фаза анімації для кожного маркера (offset затримки)
@@ -2766,15 +2854,69 @@ function _renderWorldMarkers() {
     marker.on('click', () => {
       openCard(p);
     });
+    _worldMarkerById.set(p.id, marker);
     _worldMarkersLayer.addLayer(marker);
   });
+  if (selId != null) _worldPick(selId);   // картка відкрита — її зірка підсвічена й після перемальовування
+}
+
+// Зірка відкритої картки на карті «Світ» — той самий фокус, що на карті України (drawDotFX, isS):
+// м'яке золоте свічення, золоте кільце й три кільця-маяки (Style.css .wm-beacon), поверх сусідів.
+// Аналог виділення selId; id = null — зняти
+const _WM_BEACON = '<span class="wm-beacon"><i class="wm-glow"></i><i class="wm-b wm-b0"></i><i class="wm-b wm-b1"></i><i class="wm-b wm-b2"></i><i class="wm-ring"></i></span>';
+function _worldPick(id) {
+  const prev = _worldPickedId != null ? _worldMarkerById.get(_worldPickedId) : null;
+  if (prev && _worldPickedId !== id) {
+    prev.setZIndexOffset(0);
+    const el = prev.getElement();
+    if (el) { el.classList.remove('wm-picked'); const b = el.querySelector('.wm-beacon'); if (b) b.remove(); }
+    prev.closeTooltip();
+  }
+  _worldPickedId = id;
+  const m = id != null ? _worldMarkerById.get(id) : null;
+  if (!m) return;
+  m.setZIndexOffset(10000);
+  const el = m.getElement();
+  if (el) {
+    el.classList.add('wm-picked');
+    if (!el.querySelector('.wm-beacon')) el.insertAdjacentHTML('afterbegin', _WM_BEACON);
+  }
+}
+
+// Пошук у режимі «Світ»: летимо до зірки по карті світу (а не по прихованій карті України)
+function _worldFlyTo(p) {
+  const m = _worldMarkerById.get(p.id);
+  const ll = m ? m.getLatLng() : L.latLng((p.world_lat != null && p.world_lng != null)
+    ? [parseFloat(p.world_lat), parseFloat(p.world_lng)] : _p2ll(p.x, p.y));
+  if (_worldMap._zpWheelStop) _worldMap._zpWheelStop();
+  _worldMap.flyTo(ll, Math.max(_worldMap.getZoom(), 9), {duration: 0.9});
+}
+
+// «Зірка памʼяті» на карті «Світ» — той самий ефект, що на карті України (particles у канвасі):
+// ⭐ здіймається з точки загибелі на 55 px, зменшується й згасає (~0.76 с). Елемент — у шарі маркерів,
+// тож рухається разом із картою; після анімації прибирається
+function _worldLikeBurst(p) {
+  if (!_worldMap) return;
+  const m = _worldMarkerById.get(p.id);
+  const ll = m ? m.getLatLng() : L.latLng((p.world_lat != null && p.world_lng != null)
+    ? [parseFloat(p.world_lat), parseFloat(p.world_lng)] : _p2ll(p.x, p.y));
+  const pt = _worldMap.latLngToLayerPoint(ll);
+  const el = document.createElement('span');
+  el.className = 'wm-like-star';
+  el.textContent = '⭐';
+  el.style.left = pt.x + 'px';
+  el.style.top = pt.y + 'px';
+  _worldMap.getPanes().markerPane.appendChild(el);
+  const done = () => el.remove();
+  el.addEventListener('animationend', done);
+  setTimeout(done, 1500);
 }
 
 function _initWorldMap() {
   if (_worldMapReady || typeof L === 'undefined') return;
   const tileUrl = getC('worldmap_tile_url') ||
     'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
-  _worldMap = L.map('world-map-container', {
+  _worldMap = L.map('world-map-container', Object.assign({
     center: [49.0, 32.0],
     zoom: 5,
     zoomControl: false,
@@ -2782,7 +2924,8 @@ function _initWorldMap() {
     minZoom: 2,
     maxZoom: 18,
     renderer: L.canvas()
-  });
+  }, _LF_ZOOM_OPTS));
+  _lfSmoothWheel(_worldMap);
   L.tileLayer(tileUrl, {
     attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/">CARTO</a>',
     subdomains: 'abcd',
@@ -3213,7 +3356,7 @@ const sl  = document.getElementById('svg-layer');
 const cv  = document.getElementById('canvas-layer');
 const ctx = cv.getContext('2d');
 
-function resize() { const r=mw.getBoundingClientRect(); W=cv.width=r.width; H=cv.height=r.height; _svgBoundsCache=null; updateMapSvgViewBox(); }
+function resize() { const r=mw.getBoundingClientRect(); W=cv.width=r.width; H=cv.height=r.height; _svgBoundsCache=null; _zoomAnimStop(false); _syncCommitted(); }
 let _svgBoundsCache = null;
 function getSvgBounds() {
   if (_svgBoundsCache) return _svgBoundsCache;
@@ -3245,15 +3388,14 @@ const _elZoomScale=document.getElementById('zoom-scale');
 let _mwRect=null;
 window.addEventListener('resize',()=>{ _svgBoundsCache=null; _mwRect=null; });
 
-// Update Ukraine+sea SVG viewBoxes to match the current tr (pan/zoom).
-// This replaces CSS transform on #svg-layer — SVG paths render at full
-// screen resolution at any zoom level instead of being rasterized at
-// layout size and then scaled up.
-function updateMapSvgViewBox() {
+// Update Ukraine+sea SVG viewBoxes to match state t (pan/zoom; за замовчуванням — tr).
+// viewBox дає чіткі контури на будь-якому зумі, але кожна його зміна — повна перерастеризація
+// карти, тому під час анімації зуму використовується CSS-transform #svg-layer (див. _commitTr).
+function updateMapSvgViewBox(t = tr) {
   const b=getSvgBounds();
-  const s=tr.s;
-  const vbx=(-(b.x*(s-1)+tr.x)*14000/(b.w*s)).toFixed(2);
-  const vby=(-(b.y*(s-1)+tr.y)*9500 /(b.h*s)).toFixed(2);
+  const s=t.s;
+  const vbx=(-(b.x*(s-1)+t.x)*14000/(b.w*s)).toFixed(2);
+  const vby=(-(b.y*(s-1)+t.y)*9500 /(b.h*s)).toFixed(2);
   const vbw=(14000/s).toFixed(2);
   const vbh=(9500 /s).toFixed(2);
   const vbKey=`${vbx}_${vby}_${vbw}_${vbh}`;
@@ -3267,7 +3409,7 @@ function updateMapSvgViewBox() {
   }
   // Sea SVG використовує CSS transform (GPU) замість viewBox —
   // feTurbulence фільтр не перераховується при кожному pan/zoom
-  if(seaSvg)seaSvg.style.transform=`translate(${tr.x.toFixed(1)}px,${tr.y.toFixed(1)}px) scale(${tr.s})`;
+  if(seaSvg)seaSvg.style.transform=`translate(${t.x.toFixed(1)}px,${t.y.toFixed(1)}px) scale(${t.s})`;
 }
 
 let _scaleLabelRaf=null;
@@ -3275,11 +3417,7 @@ function _scheduleScaleCityLabels(){
   if(_scaleLabelRaf)return;
   _scaleLabelRaf=requestAnimationFrame(()=>{ _scaleLabelRaf=null; scaleCityLabels(); });
 }
-let _lastZoomCity=null, _lastZoomDeep=null;
-function applyTr() {
-  _canvasDirty = true; // карта рухається → canvas має перемалюватись синхронно
-  if(_elZoomScale) _elZoomScale.textContent='×'+tr.s.toFixed(1);
-  updateMapSvgViewBox();
+function _applyZoomClasses() {
   const zc=tr.s>=(window.CITY_BORDER_ZOOM||2.5);
   const zd=tr.s>=5;
   // classList.toggle/style-запис лише коли поріг РЕАЛЬНО перетнуто — інакше
@@ -3294,6 +3432,38 @@ function applyTr() {
     sl.classList.toggle('zoom-deep',zd);
     _lastZoomDeep=zd;
   }
+}
+// CSS-трансформація #svg-layer, що переводить закомічений стан _trC у поточний tr
+function _setLayerTransform() {
+  const k=tr.s/_trC.s;
+  if(Math.abs(k-1)<1e-6 && Math.abs(tr.x-_trC.x)<0.01 && Math.abs(tr.y-_trC.y)<0.01){
+    if(sl.style.transform) sl.style.transform='';
+    return;
+  }
+  sl.style.transform=`translate(${(tr.x-_trC.x*k).toFixed(2)}px,${(tr.y-_trC.y*k).toFixed(2)}px) scale(${k.toFixed(5)})`;
+}
+// Закомітити стан t: viewBox карти + море під t, решту різниці до tr покриває transform
+function _syncCommitted(t = tr) {
+  updateMapSvgViewBox(t);
+  _trC={x:t.x, y:t.y, s:t.s};
+  _setLayerTransform();
+}
+function _commitTr(t = tr) {
+  _syncCommitted(t);
+  _applyZoomClasses();   // пороги зуму — лише при коміті, не посеред анімації
+}
+// Швидкий шлях кадру анімації: лише GPU-трансформація, без зміни viewBox
+function _applyTrVisual() {
+  _canvasDirty = true;
+  if(_elZoomScale) _elZoomScale.textContent='×'+tr.s.toFixed(1);
+  _setLayerTransform();
+  _scheduleScaleCityLabels();
+}
+function applyTr() {
+  _zoomAnimStop(false);  // драг/pinch/flyTo перебивають плавний зум
+  _canvasDirty = true; // карта рухається → canvas має перемалюватись синхронно
+  if(_elZoomScale) _elZoomScale.textContent='×'+tr.s.toFixed(1);
+  _commitTr();
   _scheduleScaleCityLabels();
 }
 // Throttle applyTr to one call per rAF frame — avoids SVG layout storm during drag/wheel
@@ -3304,33 +3474,133 @@ function scheduleApplyTr() {
   _applyTrPending = true;
   requestAnimationFrame(() => { _applyTrPending = false; applyTr(); });
 }
-function clampTr() {
-  const zMin = window.ZOOM_MIN || 0.4;
-  const zMax = window.ZOOM_MAX || 12;
-  tr.s=Math.max(zMin,Math.min(zMax,tr.s));
-  tr.x=Math.max(W*(1-tr.s)-W*.3,Math.min(W*.3,tr.x));
-  tr.y=Math.max(H*(1-tr.s)-H*.3,Math.min(H*.3,tr.y));
+// Межі зуму. Мінімум не вищий за ×1: стартовий вигляд (вся карта, ×1) завжди досяжний плавно.
+// zoom_min в адмінці стоїть 2 — раніше через це перший крок зуму стрибав ×1→×2, а на «мінімумі»
+// карта стрибала назад на ×1.
+function _zoomLimits() {
+  const min=Math.min(window.ZOOM_MIN||0.4, 1);
+  return {min, max:Math.max(min, window.ZOOM_MAX||12)};
 }
-function resetView() { _vZoom=1;tr.x=0;tr.y=0;tr.s=1;applyTr(); }
+function _clampState(t) {
+  const L=_zoomLimits();
+  t.s=Math.max(L.min,Math.min(L.max,t.s));
+  t.x=Math.max(W*(1-t.s)-W*.3,Math.min(W*.3,t.x));
+  t.y=Math.max(H*(1-t.s)-H*.3,Math.min(H*.3,t.y));
+}
+function clampTr() { _clampState(tr); }
+function resetView() { tr.x=0;tr.y=0;tr.s=1;applyTr(); }
 function zoomAt(cx,cy,f) {
-  const zMin=window.ZOOM_MIN||0.4, zMax=window.ZOOM_MAX||12;
-  const newS=Math.max(zMin,Math.min(zMax,tr.s*f));
-  _vZoom=newS;                 // кнопки/дотик скидають борг _vZoom негайно
+  const L=_zoomLimits();
+  const newS=Math.max(L.min,Math.min(L.max,tr.s*f));
   const af=newS/tr.s;
   tr.x=cx-(cx-tr.x)*af;
   tr.y=cy-(cy-tr.y)*af;
   tr.s=newS;
   clampTr();scheduleApplyTr();
 }
-function wheelZoom(cx,cy,f) {
-  const zMin=window.ZOOM_MIN||0.4, zMax=window.ZOOM_MAX||12;
-  _vZoom*=f;   // без floor — ідеальна симетрія: N↓ + N↑ = повернення до старту
-  const newS=Math.max(zMin,Math.min(zMax,_vZoom));
-  const af=newS/tr.s;
-  tr.x=cx-(cx-tr.x)*af;
-  tr.y=cy-(cy-tr.y)*af;
-  tr.s=newS;
-  clampTr();scheduleApplyTr();
+
+// ── Плавний зум, як у Google Maps ─────────────────────────────────────────────
+// Кожен крок (клік колеса, кнопка) множить ЦІЛЬ масштабу; масштаб плавно її наздоганяє
+// (експоненційно в log-просторі), точка під курсором лишається на місці. Під час руху карта
+// масштабується CSS-трансформацією (GPU), чіткий viewBox комітиться через ~120 мс після зупинки.
+const _ZOOM_TAU = 80;        // мс — швидкість наздоганяння цілі (крок осідає за ~250 мс)
+const _ZOOM_HEADROOM = 0.6;  // при віддаленні комітимо стан на 40% «далі» за ціль — без порожніх країв
+const _ZOOM_MAX_BLUR = 2.5;  // при довгому наближенні оновити чіткість, коли растр збільшено >2.5×
+function _visRect(t) {       // видима ділянка карти у світових координатах (0..1)
+  const b=getSvgBounds();
+  return {x0:(-t.x/t.s-b.x)/b.w, x1:((W-t.x)/t.s-b.x)/b.w, y0:(-t.y/t.s-b.y)/b.h, y1:((H-t.y)/t.s-b.y)/b.h};
+}
+function _coveredByCommit(t) {
+  const v=_visRect(t), c=_visRect(_trC), e=0.002;
+  const x0=Math.max(v.x0,0), x1=Math.min(v.x1,1), y0=Math.max(v.y0,0), y1=Math.min(v.y1,1);
+  if(x0>=x1||y0>=y1) return true;  // у кадрі немає карти
+  return x0>=c.x0-e && x1<=c.x1+e && y0>=c.y0-e && y1<=c.y1+e;
+}
+function _ensureCoverage(now) {
+  if(!_coveredByCommit(tr)){
+    // Віддалення відкрило ділянки, яких немає в растрі — комітимо стан із запасом відносно ЦІЛІ,
+    // щоб на весь жест вистачило однієї перемальовки (кожна — повна растеризація карти)
+    // Але не далі ніж ×1/2.5 від поточного: сильніше збільшений растр (k>2.5) Chrome перерастеризовує
+    // щокадру — великі віддалення (і ⌂) робимо кількома проміжними комітами
+    const L=_zoomLimits(), base=Math.min(tr.s,_za.target||tr.s);
+    const hs=Math.max(L.min,base*_ZOOM_HEADROOM,tr.s/_ZOOM_MAX_BLUR), af=hs/tr.s;
+    const t={x:_za.ax-(_za.ax-tr.x)*af, y:_za.ay-(_za.ay-tr.y)*af, s:hs};
+    _clampState(t);
+    // ⌂: щойно запас дійшов до ×1 — комітимо одразу точний фінальний вигляд (зайвий коміт не потрібен)
+    if(_za.reset && hs<=1+1e-6){ t.x=0; t.y=0; t.s=1; }
+    _syncCommitted(t);
+    if(!_coveredByCommit(tr)) _syncCommitted(tr);  // край карти / клемп — комітимо поточний
+    _za.lastCommit=now;
+  } else if(tr.s/_trC.s>_ZOOM_MAX_BLUR && now-_za.lastCommit>300){
+    _syncCommitted(tr);
+    _za.lastCommit=now;
+  }
+}
+function _zoomAnimStop(commit) {
+  if(_za.raf){ cancelAnimationFrame(_za.raf); _za.raf=0; }
+  _za.mode=''; _za.reset=false;
+  clearTimeout(_za.settle);
+  if(commit) _commitTr();
+}
+function _zoomStart() {
+  clearTimeout(_za.settle);
+  if(!_za.raf){ _za.mode='zoom'; _za.last=performance.now(); _za.raf=requestAnimationFrame(_zoomFrame); }
+}
+function _zoomBy(f,ax,ay) {
+  if(_za.raf && _za.mode!=='zoom'){ cancelAnimationFrame(_za.raf); _za.raf=0; }  // перебити ⌂-зсув
+  const L=_zoomLimits();
+  const base=_za.raf?_za.target:tr.s;  // кроки накопичуються, поки анімація триває
+  _za.target=Math.max(L.min,Math.min(L.max,base*f));
+  _za.ax=ax; _za.ay=ay; _za.reset=false;
+  _zoomStart();
+}
+function _zoomFrame(now) {
+  const dt=Math.min(64,Math.max(1,now-_za.last)); _za.last=now;
+  const ls=Math.log(tr.s), lt=Math.log(_za.target);
+  let nls=ls+(lt-ls)*(1-Math.exp(-dt/_ZOOM_TAU));
+  const done=Math.abs(lt-nls)<0.0015;
+  if(done) nls=lt;
+  const ns=Math.exp(nls), af=ns/tr.s;
+  tr.x=_za.ax-(_za.ax-tr.x)*af;
+  tr.y=_za.ay-(_za.ay-tr.y)*af;
+  tr.s=ns;
+  clampTr();
+  _ensureCoverage(now);
+  _applyTrVisual();
+  if(done){
+    if(_za.reset){ tr.x=0; tr.y=0; tr.s=1; _za.reset=false; _applyTrVisual(); }  // точно в стартовий вигляд
+    _za.raf=0; _za.mode='';
+    _za.settle=setTimeout(()=>{ if(!_za.raf) _commitTr(); },120);
+  } else _za.raf=requestAnimationFrame(_zoomFrame);
+}
+// ⌂ — плавне повернення до стартового вигляду (×1, вся карта, по центру)
+function _animateReset() {
+  if(_za.raf && _za.mode!=='zoom'){ cancelAnimationFrame(_za.raf); _za.raf=0; }
+  const s0=tr.s;
+  if(Math.abs(s0-1)>0.01){
+    // Зум навколо нерухомої точки перетворення (s0,x0,y0)→(1,0,0): той самий плавний рушій, що
+    // й колесо, рівно приводить у стартовий вигляд
+    _za.target=1; _za.ax=-tr.x/(s0-1); _za.ay=-tr.y/(s0-1); _za.reset=true;
+    _zoomStart();
+    return;
+  }
+  if(Math.abs(tr.x)<0.5 && Math.abs(tr.y)<0.5){ applyTr(); return; }
+  // Масштаб уже ×1, лише зсув: комітимо кінцевий стан (вся карта) і анімуємо зсув трансформацією
+  _zoomAnimStop(false);
+  const x0=tr.x, y0=tr.y, dur=350, ease=t=>1-Math.pow(1-t,3);
+  _syncCommitted({x:0,y:0,s:1});
+  let el=0, last=0;
+  _za.mode='pan';
+  const step=now=>{
+    if(last) el+=Math.min(50,now-last);  // після паузи на растеризацію — без «перескоку»
+    last=now;
+    const p=ease(Math.min(1,el/dur));
+    tr.x=x0*(1-p); tr.y=y0*(1-p);
+    _applyTrVisual();
+    if(p<1) _za.raf=requestAnimationFrame(step);
+    else { _za.raf=0; _za.mode=''; _commitTr(); }
+  };
+  _za.raf=requestAnimationFrame(step);
 }
 function w2s(xr, yr) {
   const b = getSvgBounds();
@@ -3360,7 +3630,6 @@ function flyTo(xr,yr,ts) {
     tr.x=sx+(tx-sx)*p; tr.y=sy+(ty-sy)*p; tr.s=ss+(ts-ss)*p;
     clampTr(); applyTr();
     if(p<1) requestAnimationFrame(a);
-    else _vZoom=tr.s; // sync virtual zoom after flyTo so wheel starts from correct base
   })(t0);
 }
 
@@ -3395,9 +3664,11 @@ function hit(sx,sy) {
 }
 
 mw.addEventListener('mousedown',e=>{
-  if(e.target.closest('#zoom,#count,#bottom-blocks,#micro-chat,#social-bar,#pick-bar,#topbar,.mov,.zbtn,.btn,button,[role="button"]'))return;
+  if(e.target.closest('#zoom,#count,#bottom-blocks,#recent-block,#micro-chat,#social-bar,#pick-bar,#topbar,.mov,.zbtn,.btn,button,[role="button"]'))return;
   if(document.querySelector('#dev-modal[style*="flex"],.mov.open'))return;
   if(isPick){const r=mw.getBoundingClientRect();const w=s2w(e.clientX-r.left,e.clientY-r.top);if(pickCb)pickCb(w);return;}
+  if(_mapMode==='world')return;  // драг карти «Світ» веде Leaflet — приховану карту України не панорамуємо
+  if(_za.raf) _zoomAnimStop(true);  // плавний зум ще йде — фіксуємо поточний стан перед драгом
   drag=true;dragS={x:e.clientX,y:e.clientY};trS={x:tr.x,y:tr.y};mw.classList.add('grabbing');
   // Тултіп ховаємо один раз тут (не на кожному mousemove під час драгу — зайві getElementById+style writes)
   const tipEl=document.getElementById('tip');if(tipEl)tipEl.style.display='none';
@@ -3522,7 +3793,7 @@ window.addEventListener('keydown',e=>{
 });
 window.addEventListener('mouseup',e=>{
   const was=drag;drag=false;mw.classList.remove('grabbing');
-  if(e.target.closest('#zoom,#count,#bottom-blocks,#micro-chat,#social-bar,#pick-bar,#topbar,.mov,.zbtn,.btn,button,[role="button"]'))return;
+  if(e.target.closest('#zoom,#count,#bottom-blocks,#recent-block,#micro-chat,#social-bar,#pick-bar,#topbar,.mov,.zbtn,.btn,button,[role="button"]'))return;
   if(document.querySelector('#dev-modal[style*="flex"],.mov.open'))return;
   if(was&&Math.hypot(e.clientX-dragS.x,e.clientY-dragS.y)>5)return;
   if(!_mwRect) _mwRect=mw.getBoundingClientRect();
@@ -3531,39 +3802,35 @@ window.addEventListener('mouseup',e=>{
 });
 mw.addEventListener('wheel',e=>{
   e.preventDefault();
-  const now=performance.now();
-  if(now - _lastWheel < 8) return;  // throttle до ~120Hz
-  // Пауза > 1.5с → скидаємо «борг» _vZoom: наступний скрол реагує з поточного зуму
-  if(now - _lastWheel > 1500) _vZoom=tr.s;
-  _lastWheel = now;
   if(!_mwRect) _mwRect=mw.getBoundingClientRect();
   const r=_mwRect;
   let dy=e.deltaY;
-  if(e.deltaMode===1) dy*=30;
-  else if(e.deltaMode===2) dy*=300;
-  // Мишачий клік (|dy|≥50) → нормалізуємо до фіксованого ±100 для точної симетрії;
-  // трекпад (|dy|<50) → пропорційно залишаємо
-  if(Math.abs(dy)>=50) dy=Math.sign(dy)*100;
-  // На мінімумі + прокрутка вниз → скок на x1
-  if(dy>0 && tr.s<=(window.ZOOM_MIN||0.4)+0.01){resetView();return;}
-  const f=Math.pow(0.999,dy);
+  if(e.deltaMode===1) dy*=33;            // рядки → px
+  else if(e.deltaMode===2) dy*=(H||800); // сторінки → px
+  if(!dy) return;
+  let f;
+  if(e.ctrlKey) f=Math.exp(-dy*0.01);    // pinch на тачпаді (браузер шле як wheel + ctrlKey)
+  else if(e.deltaMode!==0 || Math.abs(dy)>=50){
+    // колесо миші: ×1.1 за «клік» (100 од.), не більше 3 кліків за одну подію
+    f=Math.pow(1.1,-Math.max(-3,Math.min(3,dy/100)));
+  } else f=Math.exp(-dy*0.0022);          // тачпад: пропорційно до прокрутки
   // Пауза диму на zoom прибрана — деякі пристрої (сенсорне/нахильне колесо миші,
   // чутливі трекпади) шлють wheel-події навіть від легкого випадкового дотику,
   // через що дим "заморожувався" без реального наміру користувача зумувати.
-  wheelZoom(e.clientX-r.left,e.clientY-r.top,f);
+  _zoomBy(f,e.clientX-r.left,e.clientY-r.top);
 },{passive:false});
+// Кнопки: дрібніший крок (×1.2), анімовано; на межах зум просто зупиняється, без стрибків
 document.getElementById('zin').onclick  =()=>{
-  if(_mapMode==='world'&&_worldMap){_worldMap.zoomIn();return;}
-  zoomAt(W/2,H/2,1.28);
+  if(_mapMode==='world'&&_worldMap){_worldMap._zpWheelStop&&_worldMap._zpWheelStop();_worldMap.zoomIn();return;}
+  _zoomBy(1.2,W/2,H/2);
 };
 document.getElementById('zout').onclick =()=>{
-  if(_mapMode==='world'&&_worldMap){_worldMap.zoomOut();return;}
-  if(tr.s<=(window.ZOOM_MIN||0.4)+0.01){resetView();return;}
-  zoomAt(W/2,H/2,0.78);
+  if(_mapMode==='world'&&_worldMap){_worldMap._zpWheelStop&&_worldMap._zpWheelStop();_worldMap.zoomOut();return;}
+  _zoomBy(1/1.2,W/2,H/2);
 };
 document.getElementById('zrst').onclick =()=>{
-  if(_mapMode==='world'&&_worldMap){_worldMap.setView([49.0,32.0],5);return;}
-  resetView();
+  if(_mapMode==='world'&&_worldMap){_worldMap._zpWheelStop&&_worldMap._zpWheelStop();_worldMap.flyTo([49.0,32.0],5,{duration:0.8});return;}
+  _animateReset();
 };
 
 function toggleFullscreen(){
@@ -3583,13 +3850,15 @@ document.addEventListener('fullscreenchange',()=>{
 
 let lD=0,lC={x:0,y:0};
 mw.addEventListener('touchstart',e=>{
+  if(_za.raf) _zoomAnimStop(true);
   if(e.touches.length===2){lD=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);lC={x:(e.touches[0].clientX+e.touches[1].clientX)/2,y:(e.touches[0].clientY+e.touches[1].clientY)/2};}
   else{drag=true;dragS={x:e.touches[0].clientX,y:e.touches[0].clientY};trS={x:tr.x,y:tr.y};}
 },{passive:true});
 mw.addEventListener('touchmove',e=>{
   e.preventDefault();
-  if(e.touches.length===2){const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);const r=mw.getBoundingClientRect();zoomAt(lC.x-r.left,lC.y-r.top,d/lD);lD=d;}
-  else if(drag){tr.x=trS.x+(e.touches[0].clientX-dragS.x);tr.y=trS.y+(e.touches[0].clientY-dragS.y);clampTr();scheduleApplyTr();
+  // У режимі «Світ» жести обробляє Leaflet: приховану карту України не зумимо й не рухаємо (дим від пальця лишається)
+  if(e.touches.length===2){if(_mapMode==='world')return;const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);const r=mw.getBoundingClientRect();zoomAt(lC.x-r.left,lC.y-r.top,d/lD);lD=d;}
+  else if(drag){if(_mapMode!=='world'){tr.x=trS.x+(e.touches[0].clientX-dragS.x);tr.y=trS.y+(e.touches[0].clientY-dragS.y);clampTr();scheduleApplyTr();}
     // Дим при свайпі одним пальцем
     if(window._fluidConfig&&!window._fluidConfig.PAUSED){
       const t=e.touches[0];
@@ -4132,13 +4401,94 @@ function _renderVideoBlock(videoUrl){
   }
 }
 
+// ── «Опис» у боковій панелі (v3.63): довгий текст згорнуто ──
+// Від 10 рядків видно ~40 % висоти (на 60 % коротше) із загасанням унизу, під текстом
+// «Розгорнути / Згорнути». Короткий опис — повністю, як раніше. Видима висота — ціле число рядків,
+// перераховується при зміні ширини вікна й після завантаження шрифтів. Нова картка — завжди згорнуто
+const _DESC_MIN_LINES = 10, _DESC_SHOW = 0.4;
+let _descRzT = 0;
+function _descStopAnim(el){
+  clearTimeout(el._descT);
+  if (el._descEnd) { el.removeEventListener('transitionend', el._descEnd); el._descEnd = null; }
+  el.classList.remove('desc-anim');
+}
+function _descReset(){
+  const el = document.getElementById('cdesc'), row = document.getElementById('cdesc-row');
+  if (!el || !row) return;
+  row.classList.remove('desc-expanded');
+  _descStopAnim(el);
+}
+function _descSet(text){
+  const el = document.getElementById('cdesc');
+  if (!el) return;
+  // фаза 2 тієї самої картки (текст той самий) стан «розгорнуто» не скидає
+  if (el.textContent !== text) _descReset();
+  el.textContent = text;
+}
+function _descLayout(tries){
+  const el = document.getElementById('cdesc'), row = document.getElementById('cdesc-row'),
+        btn = document.getElementById('cdesc-more');
+  if (!el || !row || !btn || row.style.display === 'none') return;
+  const full = el.scrollHeight;
+  if (!full) {                       // панель ще не розкладена — повторити в наступному кадрі
+    if ((tries | 0) < 3) requestAnimationFrame(() => _descLayout((tries | 0) + 1));
+    return;
+  }
+  const lh = parseFloat(getComputedStyle(el).lineHeight) || 17;
+  const lines = Math.round(full / lh);
+  const long = lines >= _DESC_MIN_LINES;
+  row.classList.toggle('desc-long', long);
+  btn.hidden = !long;
+  if (!long) { _descReset(); el.style.maxHeight = ''; return; }
+  const open = row.classList.contains('desc-expanded');
+  btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  el.dataset.clipH = Math.max(4, Math.round(lines * _DESC_SHOW)) * lh;
+  if (!el.classList.contains('desc-anim')) el.style.maxHeight = open ? 'none' : el.dataset.clipH + 'px';
+}
+function _descToggle(){
+  const el = document.getElementById('cdesc'), row = document.getElementById('cdesc-row'),
+        btn = document.getElementById('cdesc-more');
+  if (!el || !row || !btn) return;
+  const open = !row.classList.contains('desc-expanded');
+  const from = el.getBoundingClientRect().height;
+  row.classList.toggle('desc-expanded', open);
+  btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  if (!open) _descKeepTop(row);      // згортаємо — початок опису лишається на екрані
+  _descStopAnim(el);
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) { _descLayout(); return; }
+  el.style.maxHeight = from + 'px';
+  void el.offsetHeight;              // стартова висота анімації
+  el.classList.add('desc-anim');
+  el.style.maxHeight = (open ? el.scrollHeight : +el.dataset.clipH) + 'px';
+  // кінець анімації — transitionend; запасний таймер, якщо події не буде (висота не змінилась)
+  const done = () => { _descStopAnim(el); _descLayout(); };
+  el._descEnd = e => { if (e.target === el && e.propertyName === 'max-height') done(); };
+  el.addEventListener('transitionend', el._descEnd);
+  el._descT = setTimeout(done, 700);
+}
+// Якщо верх рядка «Опис» вище краю прокрутки панелі — прокрутити до нього
+function _descKeepTop(row){
+  let sc = row.parentElement;
+  while (sc && sc !== document.body) {
+    const oy = getComputedStyle(sc).overflowY;
+    if ((oy === 'auto' || oy === 'scroll') && sc.scrollHeight > sc.clientHeight) break;
+    sc = sc.parentElement;
+  }
+  if (!sc || sc === document.body) return;
+  const d = row.getBoundingClientRect().top - sc.getBoundingClientRect().top;
+  if (d < 0) sc.scrollTop += d - 8;
+}
+window.addEventListener('resize', () => { clearTimeout(_descRzT); _descRzT = setTimeout(() => _descLayout(), 150); });
+if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', () => _descLayout());
+
 function _renderCardDetails(p){
   _setText('cloc',  p.loc  || '—');
   _setHTML('ccirc', p.circ ? `<span class="badge">${h(p.circ)}</span>` : '—');
   const cdescRow = document.getElementById('cdesc-row');
   if(p.descr && p.descr.trim()){
-    _setText('cdesc', p.descr.trim());
+    _descSet(p.descr.trim());
     if(cdescRow) cdescRow.style.display = '';
+    _descLayout();
   } else {
     if(cdescRow) cdescRow.style.display = 'none';
   }
@@ -4171,9 +4521,44 @@ function _renderCardDetails(p){
   _renderVideoBlock(p.video_url);
 }
 
+// ── Декоративні оверлеї (партнери, соцпанель, годинник) поверх повноекранної картки ──
+// Визначено ДО openCard(): картка з посилання поста (/memorial/… → /?open=…) відкривається
+// на DOMContentLoaded, раніше за решту init — раніше ці функції ще не існували, і реклама
+// партнерів лишалась поверх опису загиблого. Ховаємо класом на <body> (CSS у Style.css,
+// лише коли картка на весь екран), бо #kyiv-clock створюється пізніше і щосекунди
+// переписує свої inline-стилі.
+(function(){
+  window._cardOpen = false;
+  window._partnersHide = function() {
+    document.body.classList.add('zp-panel-open');
+  };
+  window._partnersShow = function() {
+    if (window._cardOpen || window._mcOpen || window._bbOpen) return;
+    document.body.classList.remove('zp-panel-open');
+  };
+})();
+
+// Тарифний план погибшого (виставляє адмін): металева кромка бокової панелі.
+// Лише вигляд — #card[data-tier] + шар #ctier (стилі в Style.css);
+// назва плану («GOLD» тощо) — #ctier-badge у лівому верхньому куті
+const _CARD_TIERS = ['bronze', 'silver', 'gold', 'platinum'];
+function _applyCardTier(tier){
+  const card = document.getElementById('card');
+  if (!card) return;
+  const ok = _CARD_TIERS.includes(tier);
+  if (ok) card.dataset.tier = tier;
+  else delete card.dataset.tier;
+  const name = document.getElementById('ctier-name');
+  if (name) name.textContent = ok ? tier.charAt(0).toUpperCase() + tier.slice(1) : '';
+}
+// Шрифт назви плану (Cinzel, ~5 КБ) — підвантажити після старту, щоб при першому відкритті
+// картки з планом не мигнув запасний шрифт. Текст обовʼязковий: шрифт містить лише літери назв
+if (document.fonts && document.fonts.load) setTimeout(() => { document.fonts.load('700 13px Cinzel', 'GOLD').catch(() => {}); }, 3000);
 async function openCard(p){
   activePerson=p;
   selId=p.id;
+  _descReset();
+  if (_mapMode === 'world') _worldPick(p.id);
   const _dBtn=document.getElementById('detail-btn');
   if(_dBtn){const _slug=p.slug||String(p.id);_dBtn.href='/card?slug='+encodeURIComponent(_slug);}
 
@@ -4198,6 +4583,7 @@ async function openCard(p){
   // Фаза 1: photo/loc/rank/position/unit вже є в легкому списку — показуємо одразу
   // circ/descr/awards покажуть '—', фаза 2 оновить їх повними даними
   _renderCardDetails(p);
+  _applyCardTier(p.tier);
 
   document.getElementById('card').classList.add('open');
   window._cardOpen = true;
@@ -4221,6 +4607,7 @@ async function openCard(p){
     if(selId!==p.id) return; // користувач вже відкрив іншу картку
     Object.assign(activePerson,full);
     _renderCardDetails(full);
+    _applyCardTier(full.tier);
   }catch(e){}
 }
 function closeCard(){
@@ -4232,6 +4619,7 @@ function closeCard(){
   if (_svgL) _svgL.style.pointerEvents = '';
   if (_cvs)  _cvs.style.pointerEvents  = '';
   selId=null; activePerson=null;
+  _worldPick(null);
   _clearYtErrHandler();
   const cvCont=document.getElementById('cvideo-container');
   if(cvCont) cvCont.innerHTML='';
@@ -4311,7 +4699,7 @@ function _renderUserAwards() {
     const letter = _UA_CAT_LTR[a.category] || '★';
     const ph = `<div style="width:28px;height:28px;border-radius:4px;background:#1a1a2e;display:flex;align-items:center;justify-content:center;font-size:13px;color:#555;font-weight:700;flex-shrink:0">${letter}</div>`;
     const imgHtml = a.file
-      ? `<img src="/img/awards/${encodeURIComponent(a.file)}" style="width:28px;height:28px;object-fit:contain;flex-shrink:0" onerror="this.outerHTML='${ph.replace(/"/g,"'")}'">` : ph;
+      ? `<img src="/img/awards/${encodeURIComponent(a.file)}" style="width:28px;height:28px;object-fit:contain;flex-shrink:0" onerror="this.outerHTML='${h(ph)}'">` : ph;
     return `<div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.07)">
       ${imgHtml}
       <span style="flex:1;font-size:12px;color:#ccc">${h(a.name)}</span>
@@ -4398,7 +4786,10 @@ async function doLike(){
   if(lCD[id]&&now-lCD[id]<700)return;lCD[id]=now;
   activePerson.likes=(activePerson.likes||0)+1;
   document.getElementById('lcnt').textContent=activePerson.likes;
-  particles.push({x:activePerson.x,y:activePerson.y,age:0});
+  // режим «Світ»: та сама зірочка над точкою на карті світу (канвас України в цьому режимі зупинений —
+  // інакше зірочки накопичились би й вилетіли разом при поверненні на карту України)
+  if (_mapMode === 'world') _worldLikeBurst(activePerson);
+  else particles.push({x:activePerson.x,y:activePerson.y,age:0});
   const b=document.getElementById('lbtn');b.classList.add('burst');setTimeout(()=>b.classList.remove('burst'),400);
   try{await fetch(`${API}/api/like/${id}`,{method:'POST'});}catch{}
 }
@@ -4574,9 +4965,143 @@ function pickRes(idx) {
   const p = people.find(pp => pp.id === r.id);
   if (p) {
     highlightMap([r]);
-    flyTo(p.x, p.y, Math.max(tr.s, 3.5));
-    setTimeout(() => openCard(p), 350);
+    _focusPerson(p);
   }
+}
+
+/* --- Показати загиблого на карті й відкрити картку (пошук, «Нові надходження») --- */
+function _focusPerson(p) {
+  // режим «Світ»: летимо по карті світу, а не по прихованій карті України
+  if (_mapMode === 'world' && _worldMap) _worldFlyTo(p);
+  else flyTo(p.x, p.y, Math.max(tr.s, 3.5));
+  setTimeout(() => openCard(p), 350);
+}
+
+/* ── «Нові надходження» (v3.58): загиблі, що зʼявились на сайті за останні дні ─────────────
+   Дані — /api/recent-additions (сервер: схвалені, published_at за recent_days днів, до 30 записів).
+   До 5 записів на сторінці; більше — сторінки змінюються самі (пауза, поки курсор над блоком).
+   Клік — політ до точки й картка (як у пошуку); точки ще немає на карті — звичайне посилання */
+const _RB_PAGE = 5;
+let _rbItems = [], _rbPageNo = 0, _rbTimer = 0, _rbHover = false;
+async function _rbLoad() {
+  let d = null;
+  try { const r = await fetch(`${API}/api/recent-additions`); if (r.ok) d = await r.json(); } catch {}
+  if (!d) return;
+  _rbItems = (d.enabled && Array.isArray(d.items)) ? d.items : [];
+  _rbRender();
+}
+function _rbRender() {
+  const rb = document.getElementById('recent-block');
+  if (!rb) return;
+  clearInterval(_rbTimer); _rbTimer = 0;
+  _rbRenderMobile();
+  if (!_rbItems.length) { rb.hidden = true; return; }
+  rb.hidden = false;
+  document.getElementById('rb-count').textContent = _rbItems.length > 1 ? String(_rbItems.length) : '';
+  _rbPageNo = 0;
+  _rbShowPage();
+  _rbPlace();
+  if (_rbItems.length > _RB_PAGE) _rbTimer = setInterval(_rbNextPage, 6000);
+}
+function _rbItemHtml(it, i) {
+  return `<a class="rb-item" href="/memorial/${encodeURIComponent(it.slug || '')}" data-id="${+it.id}" style="animation-delay:${i * 90}ms">` +
+    `<span class="rb-star">★</span><span class="rb-name">${h(it.last)} ${h(it.first)}</span>` +
+    `<span class="rb-added" data-i18n="recent.added">додано</span></a>`;
+}
+function _rbShowPage() {
+  const list = document.getElementById('rb-list');
+  const items = _rbItems.slice(_rbPageNo * _RB_PAGE, (_rbPageNo + 1) * _RB_PAGE);
+  list.innerHTML = items.map(_rbItemHtml).join('');
+  if (window.LANG && LANG.applyI18n) LANG.applyI18n(list);
+}
+// Телефон (v3.60): розділ у попапі ★ — усі записи списком із прокруткою; на кнопці ★ значок і сяйво,
+// доки відвідувач не відкрив попап із цими записами (час найновішого побаченого — у localStorage)
+function _rbRenderMobile() {
+  const box = document.getElementById('bbp-recent'), list = document.getElementById('bbp-recent-list');
+  if (!box || !list) return;
+  box.hidden = !_rbItems.length;
+  document.getElementById('bbp-recent-count').textContent = _rbItems.length > 1 ? String(_rbItems.length) : '';
+  list.innerHTML = _rbItems.map((it, i) => _rbItemHtml(it, Math.min(i, 6))).join('');
+  if (window.LANG && LANG.applyI18n) LANG.applyI18n(list);
+  _rbBadge();
+}
+function _rbSeenTs() { try { return +localStorage.getItem('zp_recent_seen') || 0; } catch { return 0; } }
+function _rbBadge() {
+  const fab = document.getElementById('bb-fab'), badge = document.getElementById('bb-fab-badge');
+  if (!fab || !badge) return;
+  const seen = _rbSeenTs();
+  const n = _rbItems.filter(it => +it.ts > seen).length;
+  badge.textContent = n > 9 ? '9+' : String(n);
+  badge.classList.toggle('show', n > 0);
+  fab.classList.toggle('bb-fab-new', n > 0);
+}
+function _rbMarkSeen() {
+  if (!_rbItems.length) return;
+  const newest = Math.max(..._rbItems.map(it => +it.ts || 0));
+  try { if (newest > _rbSeenTs()) localStorage.setItem('zp_recent_seen', String(newest)); } catch {}
+  _rbBadge();
+}
+function _rbNextPage() {
+  if (_rbHover || document.hidden) return;
+  const list = document.getElementById('rb-list');
+  list.classList.add('rb-fade');
+  setTimeout(() => {
+    _rbPageNo = (_rbPageNo + 1) % Math.ceil(_rbItems.length / _RB_PAGE);
+    _rbShowPage();
+    list.classList.remove('rb-fade');
+  }, 350);
+}
+// Над блоками статистики (на місці вимкненого чату), а якщо чат увімкнено — над ним
+function _rbPlace() {
+  const rb = document.getElementById('recent-block'), bb = document.getElementById('bottom-blocks');
+  if (!rb || rb.hidden || !bb || !bb.offsetParent) return;
+  const host = bb.offsetParent;
+  let bottom = host.clientHeight - bb.offsetTop + 10;
+  const mc = document.getElementById('micro-chat');
+  if (mc && !mc.classList.contains('mc-hidden') && mc.offsetHeight) {
+    bottom = Math.max(bottom, host.getBoundingClientRect().bottom - mc.getBoundingClientRect().top + 10);
+  }
+  rb.style.bottom = Math.round(bottom) + 'px';
+}
+function _rbInit() {
+  const rb = document.getElementById('recent-block');
+  if (!rb) return;
+  rb.addEventListener('mouseenter', () => { _rbHover = true; });
+  rb.addEventListener('mouseleave', () => { _rbHover = false; });
+  rb.addEventListener('click', e => {
+    const a = e.target.closest('.rb-item');
+    const p = a && people.find(x => x.id === +a.dataset.id);
+    if (!p) return;
+    e.preventDefault();
+    highlightMap([p]);
+    _focusPerson(p);
+  });
+  // телефон: попап ★ — клік по імені закриває попап і відкриває картку; відкрили попап — нові «побачено»
+  const bl = document.getElementById('bbp-recent-list'), fab = document.getElementById('bb-fab');
+  if (bl) bl.addEventListener('click', e => {
+    const a = e.target.closest('.rb-item');
+    const p = a && people.find(x => x.id === +a.dataset.id);
+    if (!p) return;
+    e.preventDefault();
+    if (window._bbOpen && fab) fab.click();
+    highlightMap([p]);
+    _focusPerson(p);
+  });
+  // відкрили попап — нові «побачено» (стежимо за класом попапу: не залежить від порядку обробників кнопки ★)
+  const pp = document.getElementById('bb-popup');
+  if (pp && window.MutationObserver) new MutationObserver(() => { if (pp.classList.contains('bb-open')) _rbMarkSeen(); })
+    .observe(pp, {attributes: true, attributeFilter: ['class']});
+  const place = () => _rbPlace();
+  window.addEventListener('resize', place);
+  const mc = document.getElementById('micro-chat');
+  if (window.ResizeObserver) {
+    const ro = new ResizeObserver(place);
+    ro.observe(document.getElementById('bottom-blocks'));
+    if (mc) ro.observe(mc);
+  }
+  if (mc && window.MutationObserver) new MutationObserver(place).observe(mc, {attributes: true, attributeFilter: ['class', 'style']});
+  _rbLoad();
+  setInterval(_rbLoad, 5 * 60 * 1000);   // нові надходження без перезавантаження сторінки
 }
 
 /* --- Закрити список --- */
@@ -5145,7 +5670,8 @@ function _latLngToSvg(lat, lng) {
 }
 function _initMaddMap() {
   if (_maddMap) { _maddMap.invalidateSize(); return; }
-  _maddMap = L.map('madd-map', {center:[49.0,32.0], zoom:5, attributionControl:false});
+  _maddMap = L.map('madd-map', Object.assign({center:[49.0,32.0], zoom:5, attributionControl:false}, _LF_ZOOM_OPTS));
+  _lfSmoothWheel(_maddMap);
   // Той самий URL тайлів, що й для карти світу (адмінка → Карта світу) — єдине джерело,
   // щоб зміна CARTO API-ключа в адмінці одразу діяла і тут, без правок коду.
   const tileUrl = getC('worldmap_tile_url') ||
@@ -5630,25 +6156,9 @@ async function checkDeviceAccess() {
   // Відео-попап (реклама) — невелика затримка, щоб не накладатись на тур/відео-тур на старті
   if(typeof _adVideoCheck==='function') setTimeout(_adVideoCheck, 2500);
   if(typeof _mcInit==='function') _mcInit();
+  if(typeof _rbInit==='function') _rbInit();   // «Нові надходження» — після чату: від нього залежить місце блоку
 
-  // ── Керування partners-layer (глобально, доступно з openCard/closeCard) ──
-  var _pLayer = document.getElementById('partners-layer');
-  var _sBar   = document.getElementById('social-bar');
-  // Ховати лише якщо #card розкривається на весь екран (телефони ≤700px touch)
-  function _cardIsFullscreen() {
-    return window.matchMedia('(pointer: coarse) and (max-width: 700px)').matches;
-  }
-  window._cardOpen = false;
-  window._partnersHide = function() {
-    if (!_cardIsFullscreen()) return; // бокова панель — нічого не ховаємо
-    if (_pLayer) { _pLayer.style.visibility = 'hidden'; _pLayer.style.pointerEvents = 'none'; }
-    if (_sBar)   { _sBar.style.visibility = 'hidden';   _sBar.style.pointerEvents = 'none'; }
-  };
-  window._partnersShow = function() {
-    if (window._cardOpen || window._mcOpen || window._bbOpen) return;
-    if (_pLayer) { _pLayer.style.visibility = ''; _pLayer.style.pointerEvents = ''; }
-    if (_sBar)   { _sBar.style.visibility = '';  _sBar.style.pointerEvents = ''; }
-  };
+  // window._partnersHide/_partnersShow визначено раніше, перед openCard()
 
   // ── FAB кнопки для мобільного ──
   (function() {

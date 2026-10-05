@@ -183,6 +183,83 @@
   .tribute-meta { margin-top:26px; color:var(--muted); font-size:.82rem; display:flex; gap:28px; justify-content:center; align-items:center; flex-wrap:wrap; }
   .tribute-meta strong { color:var(--accent); font-weight:600; }
 
+  /* ── Подарунки загиблому (Gifts-for-fallen.md) ─────────────────────────
+     #gift-stage — якір нульового розміру одразу над свічкою: подарунки стоять на лінії її основи
+     (88px). Місця (етап 8): 2 ряди × 8, по 4 з кожного боку; задній ряд вище, менший і між передніми.
+     --gs — крок між місцями (не менший за найширший подарунок, тож сусіди не накладаються),
+     --gw — ширина подарунка, --gfit — спільне зменшення, коли ряди не вміщуються (телефон).
+     Власний шар (z-index) — «шар» подарунка не ховає його за фон секції. Свічку не змінено */
+  .gift-stage { --gs:60px; --gw:46px; --gfit:1; position:relative; z-index:1; width:0; height:0; margin:0 auto; }
+  .gift-item, .gift-anim { position:absolute; top:calc(88px - var(--glift,0px) * var(--gfit)); left:calc(var(--gs) * var(--gfit) * var(--gx)); transform:translate(-50%,-100%); pointer-events:none; transition:opacity .5s ease; }
+  .gift-item { width:calc(var(--gw) * var(--gfit) * var(--gsc,1) * var(--grow,1)); }
+  .gift-item.is-back { filter:brightness(.88); }
+  .gift-item img { display:block; width:100%; height:auto; filter:drop-shadow(0 6px 12px rgba(0,0,0,.5)); }
+  /* Етап 7: GIF покладання (лише власнику, один раз) у 2.8 раза ширший за подарунок, той самий низ;
+     після нього — статичний подарунок */
+  .gift-item.is-pending { opacity:0; }
+  .gift-anim { width:calc(var(--gw) * var(--gfit) * var(--gsc,1) * var(--grow,1) * var(--ganim,2.8)); z-index:50; }
+  .gift-anim img { display:block; width:100%; height:auto; }
+  .gift-anim.is-done { opacity:0; }
+  .gift-more { position:absolute; top:90px; left:0; transform:translateX(-50%); background:none; border:none; padding:8px 14px; color:var(--muted); font:inherit; font-size:.72rem; letter-spacing:.08em; white-space:nowrap; cursor:pointer; pointer-events:auto; transition:color .2s; }
+  .gift-more:hover, .gift-more:focus-visible { color:var(--accent); }
+  .gifts-btn { display:block; margin:14px auto 0; background:transparent; color:var(--accent); border:1px solid var(--accent); padding:12px 26px; min-height:44px; border-radius:2px; font-family:'Inter',sans-serif; font-weight:600; font-size:.78rem; letter-spacing:.16em; text-transform:uppercase; cursor:pointer; transition:.2s; }
+  .gifts-btn:hover, .gifts-btn:focus-visible { background:var(--accent-soft); }
+  .gifts-btn[hidden] { display:none; }
+  .gift-modal { position:fixed; inset:0; z-index:1000; background:rgba(0,0,0,.72); display:flex; align-items:center; justify-content:center; padding:20px; }
+  .gift-modal[hidden] { display:none; }
+  .gift-modal__box { position:relative; width:100%; max-width:720px; max-height:calc(100vh - 40px); overflow-y:auto; background:var(--bg-2); border:1px solid var(--line); border-radius:6px; padding:clamp(20px,4vw,34px); }
+  .gift-modal__close { position:absolute; top:10px; right:10px; width:44px; height:44px; background:transparent; border:1px solid var(--line); border-radius:4px; color:var(--muted); font-size:1.4rem; line-height:1; cursor:pointer; }
+  .gift-modal__close:hover { color:var(--text); border-color:var(--accent); }
+  .gift-modal__title { font-size:clamp(1.5rem,3vw,2rem); text-align:center; margin:0 44px 6px; }
+  .gift-modal__sub { color:var(--muted); text-align:center; font-size:.88rem; margin-bottom:22px; }
+  .gift-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:12px; }
+  .gift-grid[hidden], .gift-detail[hidden], .gift-orders[hidden], .gift-foot[hidden] { display:none; }
+  .gift-foot { text-align:center; margin-top:14px; }
+  .gift-secondary { display:inline-flex; align-items:center; justify-content:center; min-height:44px; background:transparent; color:var(--accent); border:1px solid var(--accent); padding:10px 22px; border-radius:2px; font-family:'Inter',sans-serif; font-weight:600; font-size:.74rem; letter-spacing:.12em; text-transform:uppercase; cursor:pointer; transition:.2s; }
+  .gift-secondary:hover { background:var(--accent-soft); }
+  .gift-secondary:disabled { opacity:.6; cursor:default; }
+  .gift-confirm { max-width:440px; margin:0 auto; color:var(--text); font-size:.92rem; line-height:1.5; }
+  .gift-orders h4 { font-family:'Cormorant Garamond',serif; font-size:1.4rem; font-weight:500; text-align:center; margin-bottom:14px; }
+  .gift-order { display:flex; gap:12px; align-items:center; background:var(--card); border:1px solid var(--line); border-radius:4px; padding:10px 12px; margin-bottom:8px; text-align:left; }
+  .gift-order img { width:44px; height:44px; object-fit:contain; flex-shrink:0; }
+  .gift-order .o-body { flex:1; min-width:0; }
+  .gift-order .o-name { font-size:.9rem; }
+  .gift-order .o-meta { color:var(--muted); font-size:.75rem; margin-top:2px; }
+  .gift-order .o-status { font-size:.75rem; color:var(--accent); }
+  .gift-order .o-status.is-off { color:var(--muted); }
+  .gift-order .o-acts { display:flex; flex-direction:column; gap:6px; flex-shrink:0; }
+  .gift-order .o-acts .gift-secondary { min-height:36px; padding:6px 12px; font-size:.66rem; }
+  .gift-card { display:flex; flex-direction:column; align-items:center; gap:6px; background:var(--card); border:1px solid var(--line); border-radius:4px; padding:14px 12px; color:var(--text); font:inherit; cursor:pointer; transition:.15s; }
+  .gift-card:hover, .gift-card:focus-visible { border-color:var(--accent); }
+  .gift-card img { width:72px; height:72px; object-fit:contain; }
+  .gift-card .g-name { font-size:.88rem; line-height:1.3; }
+  .gift-card .g-price { color:var(--accent); font-weight:600; font-size:.85rem; }
+  .gift-detail { text-align:center; }
+  .gift-detail img { width:140px; height:140px; object-fit:contain; margin:0 auto 14px; display:block; }
+  .gift-detail .g-name { font-family:'Cormorant Garamond',serif; font-size:1.6rem; line-height:1.2; }
+  .gift-detail .g-descr { color:var(--muted); max-width:460px; margin:8px auto 0; font-size:.9rem; }
+  .gift-detail .g-price { color:var(--accent); font-weight:600; font-size:1.1rem; margin:14px 0 18px; }
+  .gift-action { display:flex; flex-direction:column; align-items:center; gap:12px; }
+  .gift-all { display:grid; grid-template-columns:repeat(auto-fill,minmax(92px,1fr)); gap:14px 10px; margin:18px 0 4px; }
+  .gift-all figure { margin:0; }
+  .gift-detail .gift-all img { width:64px; height:64px; margin:0 auto 6px; }
+  .gift-all figcaption { color:var(--muted); font-size:.75rem; line-height:1.3; }
+  .gift-note { color:var(--muted); font-size:.85rem; max-width:420px; margin:0 auto; text-align:center; }
+  .gift-msg { color:var(--accent); font-size:.85rem; min-height:1.2em; }
+  .gift-primary { display:inline-flex; align-items:center; justify-content:center; min-height:44px; background:var(--accent); color:#1a1207; border:none; padding:12px 28px; border-radius:2px; font-family:'Inter',sans-serif; font-weight:600; font-size:.8rem; letter-spacing:.14em; text-transform:uppercase; text-decoration:none; cursor:pointer; transition:.2s; }
+  .gift-primary:hover { background:#fff; }
+  .gift-primary:disabled { opacity:.6; cursor:default; }
+  .gift-back { background:none; border:none; color:var(--muted); cursor:pointer; font:inherit; font-size:.78rem; letter-spacing:.1em; text-transform:uppercase; margin-top:18px; min-height:44px; padding:0 12px; }
+  .gift-back:hover { color:var(--accent); }
+  @media (max-width:480px) {
+    .gift-stage { --gs:44px; --gw:34px; }
+    .gift-grid { grid-template-columns:repeat(2,1fr); }
+    /* кнопки замовлення — під текстом, в один ряд, щоб текст не стискався в колонку */
+    .gift-order { flex-wrap:wrap; }
+    .gift-order .o-acts { flex-direction:row; width:100%; }
+    .gift-order .o-acts .gift-secondary { flex:1 1 0; }
+  }
+
   /* Back button */
   .back-btn { display:inline-flex; align-items:center; gap:8px; color:var(--muted); font-size:.78rem; letter-spacing:.12em; text-transform:uppercase; text-decoration:none; transition:.15s; padding:8px 0; }
   .back-btn:hover { color:var(--accent); }
@@ -338,6 +415,7 @@
 
 <!-- TRIBUTE -->
 <section class="tribute fade-in" aria-label="Вшанування">
+  <div class="gift-stage" id="gift-stage"></div>
   <div class="candle">
     <div class="flame"></div>
     <div class="body"></div>
@@ -345,6 +423,7 @@
   <h2>Зажгти свічку памʼяті</h2>
   <p>Кожна свічка — це згадка про захисника. Поділіться нею з рідними, щоб світло не згасало.</p>
   <button class="candle-btn" id="candle-btn">Зажгти свічку</button>
+  <button class="gifts-btn" id="gifts-btn" type="button" data-gt="gifts.button" hidden>Подарунки загиблому</button>
   <div class="tribute-meta">
     <span>★ <strong id="likes-count">0</strong> вшанувань</span>
   </div>
@@ -365,6 +444,19 @@
     <p style="margin-top:6px;font-size:.75rem;color:var(--dim)">Цифровий меморіал захисників і захисниць України &nbsp;·&nbsp; <span id="card-app-version" style="color:var(--dim)">v2.42 beta</span></p>
   </div>
 </footer>
+
+<!-- Подарунки загиблому: вікно каталогу (дані вантажаться лише після кліку) -->
+<div class="gift-modal" id="gift-modal" role="dialog" aria-modal="true" aria-labelledby="gift-modal-title" hidden>
+  <div class="gift-modal__box">
+    <button class="gift-modal__close" id="gift-modal-close" type="button" aria-label="Закрити" data-gt-aria="gifts.close">&times;</button>
+    <h3 class="gift-modal__title serif" id="gift-modal-title" data-gt="gifts.title">Подарунки загиблому</h3>
+    <p class="gift-modal__sub" data-gt="gifts.subtitle">Оберіть подарунок — його буде покладено біля свічки памʼяті</p>
+    <div class="gift-grid" id="gift-grid"></div>
+    <div class="gift-detail" id="gift-detail" hidden></div>
+    <div class="gift-orders" id="gift-orders" hidden></div>
+    <div class="gift-foot" id="gift-foot" hidden><button class="gift-back" id="gift-my-orders" type="button" data-gt="gifts.my_orders">Мої замовлення</button></div>
+  </div>
+</div>
 
 <script>
 const API = '';
@@ -619,7 +711,8 @@ function fillPage(p, awards){
       const letter = _CAT_LTR_CARD[a.category] || '★';
       const phHtml = `<div class="medal" style="background:#1a1a2e;color:#555;font-size:28px;font-weight:700">${letter}</div>`;
       const imgHtml = a.img_file
-        ? `<img src="/img/awards/${encodeURIComponent(a.img_file)}" alt="${h(a.name)}" onerror="this.outerHTML='${phHtml.replace(/'/g,'"')}'">`
+        // заглушку — в атрибут лише через h(): її подвійні лапки інакше закривають onerror="…" і ламають картку
+        ? `<img src="/img/awards/${encodeURIComponent(a.img_file)}" alt="${h(a.name)}" onerror="this.outerHTML='${h(phHtml)}'">`
         : phHtml;
       const metaParts = [a.award_date, a.descr].filter(Boolean);
       return `<div class="award">
@@ -697,11 +790,617 @@ function startLikesRefresh(intervalSec) {
   }, ms);
 }
 
+/* ── ПОДАРУНКИ ЗАГИБЛОМУ (Gifts-for-fallen.md) ─────────────────────────
+   Працює лише коли модуль увімкнено (card_gifts_enabled=1), інакше жодних запитів.
+   Каталог вантажиться лише після кліку. Купівля (етап 6) — через LiqPay: сервер створює
+   замовлення й формує data/signature, сторінка лише відправляє форму на checkout.
+   Після оплати LiqPay повертає на цю сторінку з ?gift_order=… — звіряємо статус із сервером. */
+const _gifts = { dict:{}, lang:'uk', catalog:null, me:undefined, busy:false, animQueue:[], anim:null, animObs:null, animSeq:0, items:[], size:1, ganim:2.8 };
+
+function _gt(key, fallback, vars){
+  let s = _gifts.dict[key] || fallback;
+  if(vars) for(const k in vars) s = s.split('{' + k + '}').join(vars[k]);
+  return s;
+}
+function _giftLang(){
+  // як у js/i18n.js: cookie lang → мова браузера (en) → uk
+  const ck = document.cookie.split(';').map(c => c.trim()).find(c => c.startsWith('lang='));
+  const l = ck ? ck.split('=')[1].trim().slice(0, 2).toLowerCase()
+               : ((navigator.language || 'uk').split('-')[0].toLowerCase() === 'en' ? 'en' : 'uk');
+  return /^[a-z]{2}$/.test(l) ? l : 'uk';
+}
+function _giftApplyTexts(root){
+  root.querySelectorAll('[data-gt]').forEach(el => { const v = _gifts.dict[el.dataset.gt]; if(v) el.textContent = v; });
+  root.querySelectorAll('[data-gt-aria]').forEach(el => { const v = _gifts.dict[el.dataset.gtAria]; if(v) el.setAttribute('aria-label', v); });
+}
+function _giftPrice(v){ return (+v || 0).toLocaleString('uk-UA', {maximumFractionDigits:2}) + ' ₴'; }
+function _giftNum(v, lo, hi, dflt){ const n = parseFloat(v); return isNaN(n) ? dflt : Math.min(Math.max(n, lo), hi); }
+// кнопка «Подарунки загиблому» й каталог (етап 9): вимкнено — нового подарунка не обрати, покладені лишаються
+function _giftCatalogOn(){ return _cfg.card_gifts_button !== '0'; }
+
+async function initGifts(){
+  if(_cfg.card_gifts_enabled !== '1' || _cfg.card_show_candle === '0' || !_memId) return;
+  _gifts.lang = _giftLang();
+  // переклади й подарунки меморіалу — паралельно (етап 10: на повільній мережі подарунки з'являються раніше)
+  const listP = _giftFetchList();
+  try{
+    const r = await fetch(`${API}/api/i18n/${_gifts.lang}?sections=gifts`);
+    if(r.ok) _gifts.dict = (await r.json()).t || {};
+  } catch{}
+  _giftApplyTexts(document);
+  // налаштування модуля (етап 9): розмір подарунків біля свічки й GIF покладання
+  _gifts.size = _giftNum(_cfg.card_gifts_size, 70, 140, 100) / 100;
+  _gifts.ganim = _giftNum(_cfg.card_gifts_anim_scale, 1.5, 5, 2.8);
+  document.getElementById('gift-stage').style.setProperty('--ganim', String(_gifts.ganim));
+  const btn = document.getElementById('gifts-btn');
+  btn.hidden = !_giftCatalogOn();
+  btn.addEventListener('click', openGiftCatalog);
+  document.getElementById('gift-modal-close').addEventListener('click', closeGiftModal);
+  document.getElementById('gift-modal').addEventListener('click', e => { if(e.target.id === 'gift-modal') closeGiftModal(); });
+  document.addEventListener('keydown', e => { if(e.key === 'Escape' && !document.getElementById('gift-modal').hidden) closeGiftModal(); });
+  document.getElementById('gift-my-orders').addEventListener('click', showMyOrders);
+  // вкладку сховали посеред покладання — повторимо, коли повернуться
+  document.addEventListener('visibilitychange', () => { if(document.hidden) _giftAnimInterrupt(); else _giftMaybeAnimate(); });
+  // ширина вікна змінилась — перерахувати, чи вміщуються ряди подарунків
+  let rz = 0;
+  addEventListener('resize', () => { cancelAnimationFrame(rz); rz = requestAnimationFrame(_giftRelayout); });
+  // назад із LiqPay кнопкою браузера (bfcache) — розблоковуємо кнопки й оновлюємо замовлення
+  window.addEventListener('pageshow', e => {
+    if(!e.persisted) return;
+    _gifts.busy = false;
+    if(!document.getElementById('gift-modal').hidden) showMyOrders();
+  });
+  // повернулись після входу через Google (next=card:<slug>) — продовжуємо з каталогу
+  const sp = new URLSearchParams(location.search);
+  if(sp.has('oauth') || sp.has('oauth_error')){
+    const ok = sp.get('oauth') === 'success';
+    sp.delete('oauth'); sp.delete('oauth_error');
+    history.replaceState(null, '', location.pathname + '?' + sp.toString());
+    if(ok) openGiftCatalog();
+  }
+  // повернулись з оплати LiqPay (result_url) — звіряємо замовлення й показуємо результат
+  const go = sp.get('gift_order');
+  if(go){
+    sp.delete('gift_order');
+    history.replaceState(null, '', location.pathname + '?' + sp.toString());
+    if(/^zp-[a-f0-9]{24}$/.test(go)){ _giftOpenModal(); syncGiftOrder(go); }
+  }
+  // подарунки — після обробки адреси: якщо відкрилось вікно, покладання почнеться після його закриття
+  const d = await listP;
+  if(d) renderMemorialGifts(d.items || [], d.total);
+}
+
+// Етап 10: за замовчуванням сервер віддає лише подарунки на місцях і загальну кількість; повний список — full
+function _giftFetchList(full){
+  return fetch(`${API}/api/memorial/${_memId}/gifts?lang=${_gifts.lang}${full ? '&full=1' : ''}`)
+    .then(r => r.ok ? r.json() : null).catch(() => null);
+}
+async function loadMemorialGifts(){
+  const d = await _giftFetchList();
+  if(d) renderMemorialGifts(d.items || [], d.total);
+}
+
+// Місця біля свічки (етап 8): 2 ряди × 8. Слот 0–7 — передній ряд, 8–15 — задній (вище, менший,
+// між передніми); парні — ліворуч, непарні — праворуч; менший номер — ближче до свічки.
+function renderMemorialGifts(items, total){
+  _giftAnimReset();   // поточне покладання перериваємо — черга збереться з нових даних
+  _gifts.items = items;
+  _gifts.total = total == null ? items.length : +total;
+  const stage = document.getElementById('gift-stage');
+  stage.innerHTML = '';
+  let extra = 0;
+  for(const it of items){
+    if(it.slot == null || it.slot < 0 || it.slot > 15){
+      extra++;
+      if(it.anim) _giftMarkShown(it.id);   // понад місця — показати покладання ніде
+      continue;
+    }
+    const front = it.slot < 8, k = it.slot % 8;
+    const side = k % 2 === 0 ? -1 : 1, ring = Math.floor(k / 2);
+    const gx = side * ((front ? 1 : 1.5) + ring);
+    const sc = Math.min(Math.max(+it.scale || 1, 0.6), 1.25), row = front ? 1 : 0.78;
+    const el = document.createElement('div');
+    el.className = front ? 'gift-item' : 'gift-item is-back';
+    el.style.setProperty('--gx', String(gx));
+    el.style.setProperty('--gsc', String(sc));
+    if(!front){ el.style.setProperty('--grow', String(row)); el.style.setProperty('--glift', '24px'); }
+    // задній ряд завжди за переднім; у межах ряду — «шар» із каталогу
+    el.style.zIndex = String((front ? 31 : 10) + Math.min(Math.max(+it.z || 0, -10), 10));
+    el.dataset.slot = it.slot; el.dataset.gx = gx; el.dataset.w = sc * row;
+    const img = document.createElement('img');
+    img.src = it.img; img.alt = it.name || ''; img.title = it.name || '';
+    img.loading = 'lazy'; img.decoding = 'async';
+    el.appendChild(img);
+    if(it.anim){ el.classList.add('is-pending'); _gifts.animQueue.push({el, it}); }
+    stage.appendChild(el);
+  }
+  // «ще N»: подарунки понад 16 місць сервер за замовчуванням не віддає — рахуємо із загальної кількості
+  extra = Math.max(extra, _gifts.total - stage.querySelectorAll('.gift-item').length);
+  const more = document.createElement('button');
+  more.type = 'button'; more.className = 'gift-more'; more.hidden = true;
+  more.dataset.extra = String(extra);
+  more.addEventListener('click', showAllGifts);
+  stage.appendChild(more);
+  _giftRelayout();
+  _giftMaybeAnimate();
+}
+
+// Ряди не вміщуються (вузький екран) — усі подарунки й кроки зменшуються разом (до 0.6);
+// те, що не вміщується й тоді, ховається в «ще N» (горизонтального прокручування немає)
+function _giftRelayout(){
+  const stage = document.getElementById('gift-stage'), host = stage.parentElement;
+  if(!host) return;
+  const cs = getComputedStyle(host), ss = getComputedStyle(stage);
+  const avail = (host.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight)) / 2;
+  const gs = parseFloat(ss.getPropertyValue('--gs')) || 60, gw = parseFloat(ss.getPropertyValue('--gw')) || 46;
+  const els = [...stage.querySelectorAll('.gift-item')];
+  const ext = el => Math.abs(+el.dataset.gx) * gs + gw * (+el.dataset.w) / 2;   // напівширина при --gfit: 1
+  const size = _gifts.size || 1;   // розмір подарунків біля свічки з налаштувань
+  const need = els.reduce((m, el) => Math.max(m, ext(el)), 0) * size;
+  const fit = need > avail && avail > 0 ? Math.max(0.6, avail / need) : 1;
+  stage.style.setProperty('--gfit', (size * fit).toFixed(3));
+  let hidden = 0;
+  for(const el of els){ el.hidden = ext(el) * size * fit > avail + 0.5; if(el.hidden) hidden++; }
+  const more = stage.querySelector('.gift-more');
+  if(more){
+    const n = (+more.dataset.extra || 0) + hidden;
+    more.hidden = !n;
+    more.textContent = _gt('gifts.more', 'ще {n}', {n});
+    more.setAttribute('aria-label', _gt('gifts.all_title', 'Подарунки біля свічки') + ' · ' + _gifts.total);
+  }
+}
+
+// «ще N» — усі подарунки біля свічки списком, зокрема ті, яким не вистачило місця
+async function showAllGifts(){
+  _giftOpenModal();
+  _giftView('detail');
+  const box = document.getElementById('gift-detail');
+  box.innerHTML = `<p class="gift-note">${h(_gt('gifts.loading', 'Завантаження…'))}</p>`;
+  // повний список вантажиться лише тут (етап 10); не вдалось — показуємо те, що вже є
+  const d = await _giftFetchList(true);
+  const items = (d && d.items) || _gifts.items || [];
+  const total = (d && d.total) || items.length;
+  box.innerHTML = `<div class="g-name">${h(_gt('gifts.all_title', 'Подарунки біля свічки'))}&nbsp;·&nbsp;${total}</div>
+    <div class="gift-all">${items.map(it => `<figure><img src="${h(it.img)}" alt="" loading="lazy" decoding="async"><figcaption>${h(it.name)}</figcaption></figure>`).join('')}</div>
+    <button class="gift-back" type="button" id="gift-all-back">${h(_giftCatalogOn() ? _gt('gifts.back', '← До каталогу') : _gt('gifts.close', 'Закрити'))}</button>`;
+  document.getElementById('gift-all-back').addEventListener('click', showGiftGrid);
+}
+
+/* ── Етап 7: GIF покладання ───────────────────────────────────────────────
+   Сервер віддає anim лише власнику подарунка (покупцю або адміну, що поклав) і лише поки
+   покладання не показано. GIF вантажиться тільки в момент показу й грає, коли вікно подарунків
+   закрите, вкладка видима, а свічка в полі зору. Потім — статичний подарунок, і сервер позначає
+   показ (anim_state='shown'), тож удруге анімація не запускається. */
+function _giftAnimTop(){   // скільки місця над свічкою потрібно GIF (залежить від розміру з налаштувань)
+  return Math.max(140, Math.round(46 * (_gifts.size || 1) * (_gifts.ganim || 2.8)));
+}
+function _giftCandleInView(){
+  const c = document.querySelector('.tribute .candle');
+  if(!c) return false;
+  const r = c.getBoundingClientRect();
+  return r.top >= _giftAnimTop() && r.bottom <= innerHeight;   // над основою свічки має вміститись GIF
+}
+function _giftAnimReset(){
+  const a = _gifts.anim;
+  if(a){ clearTimeout(a.timer); a.node.remove(); _gifts.anim = null; }
+  _gifts.animQueue = [];
+}
+function _giftAnimInterrupt(){   // показ перервали (відкрили вікно, сховали вкладку) — повторимо згодом
+  const a = _gifts.anim;
+  if(!a) return;
+  clearTimeout(a.timer); a.node.remove(); _gifts.anim = null;
+  _gifts.animQueue.unshift({el: a.el, it: a.it});
+}
+function _giftMarkShown(id){
+  fetch(`${API}/api/memorial-gift/${encodeURIComponent(id)}/shown`, {method:'POST', credentials:'same-origin', keepalive:true}).catch(() => {});
+}
+function _giftWatchAnim(){
+  if(_gifts.animObs || !('IntersectionObserver' in window)) return;
+  const c = document.querySelector('.tribute .candle');
+  if(!c) return;
+  _gifts.animObs = new IntersectionObserver(es => { if(es.some(e => e.isIntersecting)) _giftMaybeAnimate(); },
+    {rootMargin: `-${_giftAnimTop()}px 0px 0px 0px`, threshold: 0.99});
+  _gifts.animObs.observe(c);
+}
+function _giftMaybeAnimate(){
+  if(_gifts.anim || !_gifts.animQueue.length) return;
+  if(!document.getElementById('gift-modal').hidden || document.hidden || !_giftCandleInView()){ _giftWatchAnim(); return; }
+  const {el, it} = _gifts.animQueue.shift();
+  if(!el.isConnected || el.hidden) return _giftMaybeAnimate();   // не вмістилось на екрані — покладання лишається на потім
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches){   // без анімації — одразу статичний
+    el.classList.remove('is-pending'); _giftMarkShown(it.id); return _giftMaybeAnimate();
+  }
+  const node = document.createElement('div');
+  node.className = 'gift-anim';
+  for(const v of ['--gx', '--gsc', '--grow', '--glift']) node.style.setProperty(v, el.style.getPropertyValue(v));
+  const img = document.createElement('img');
+  img.alt = ''; img.decoding = 'async';
+  const a = _gifts.anim = {node, el, it, timer: 0};
+  const finish = shown => {
+    if(_gifts.anim !== a) return;
+    clearTimeout(a.timer); _gifts.anim = null;
+    el.classList.remove('is-pending');
+    node.classList.add('is-done');
+    setTimeout(() => node.remove(), 600);
+    if(shown) _giftMarkShown(it.id);
+    setTimeout(_giftMaybeAnimate, 700);
+  };
+  // GIF не встиг завантажитись — показуємо статичний, покладання лишається до наступного візиту
+  a.timer = setTimeout(() => finish(false), 10000);
+  img.onload = () => { if(_gifts.anim !== a) return; clearTimeout(a.timer); a.timer = setTimeout(() => finish(true), it.anim.ms); };
+  img.onerror = () => finish(true);
+  // окрема адреса для кожного показу — GIF завжди починається з першого кадру
+  img.src = it.anim.gif + '?play=' + it.id + '-' + (++_gifts.animSeq);
+  node.appendChild(img);
+  document.getElementById('gift-stage').appendChild(node);
+}
+function _giftScrollToCandle(){
+  const c = document.querySelector('.tribute .candle');
+  if(c) c.scrollIntoView({behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center'});
+}
+
+function _giftOpenModal(){
+  _giftAnimInterrupt();   // покладання під вікном ніхто не побачить — повторимо після закриття
+  document.getElementById('gift-modal').hidden = false;
+  document.body.style.overflow = 'hidden';
+  document.getElementById('gift-modal-close').focus();
+}
+
+function openGiftCatalog(){
+  if(!_giftCatalogOn()) return;
+  _giftOpenModal();
+  showGiftGrid();
+}
+
+// Каталог вантажиться один раз — при першому показі сітки (зокрема після повернення з оплати,
+// коли вікно відкрилось одразу на результаті)
+async function _giftLoadCatalog(){
+  if(_gifts.catalog || _gifts.catalogLoading) return;
+  _gifts.catalogLoading = true;
+  const grid = document.getElementById('gift-grid');
+  grid.innerHTML = `<p class="gift-note">${h(_gt('gifts.loading', 'Завантаження…'))}</p>`;
+  try{
+    const r = await fetch(`${API}/api/gifts/catalog?lang=${_gifts.lang}`);
+    if(!r.ok) throw new Error(r.status);
+    _gifts.catalog = (await r.json()).items || [];
+  } catch{
+    grid.innerHTML = `<p class="gift-note">${h(_gt('gifts.error_load', 'Не вдалося завантажити каталог. Спробуйте пізніше'))}</p>`;
+    return;
+  } finally{ _gifts.catalogLoading = false; }
+  renderGiftGrid();
+}
+
+function renderGiftGrid(){
+  const grid = document.getElementById('gift-grid');
+  if(!_gifts.catalog.length){
+    grid.innerHTML = `<p class="gift-note">${h(_gt('gifts.empty', 'Каталог подарунків поки порожній'))}</p>`;
+    return;
+  }
+  grid.innerHTML = _gifts.catalog.map((g, i) => `
+    <button class="gift-card" type="button" data-i="${i}">
+      <img src="${h(g.img)}" alt="" loading="lazy" decoding="async">
+      <span class="g-name">${h(g.name)}</span>
+      <span class="g-price">${h(_giftPrice(g.price))}</span>
+    </button>`).join('');
+  grid.querySelectorAll('.gift-card').forEach(b => b.addEventListener('click', () => showGiftDetail(_gifts.catalog[+b.dataset.i])));
+}
+
+function _giftView(name){
+  document.getElementById('gift-grid').hidden = name !== 'grid';
+  document.getElementById('gift-detail').hidden = name !== 'detail';
+  document.getElementById('gift-orders').hidden = name !== 'orders';
+  document.getElementById('gift-foot').hidden = !(name === 'grid' && _gifts.me);
+}
+function showGiftGrid(){
+  if(!_giftCatalogOn()){ closeGiftModal(); return; }   // каталог вимкнено — «до каталогу» просто закриває вікно
+  _giftView('grid');
+  if(_gifts.me === undefined) _giftMe().then(() => { if(!document.getElementById('gift-grid').hidden) _giftView('grid'); });
+  _giftLoadCatalog();
+}
+
+async function _giftMe(){
+  if(_gifts.me !== undefined) return _gifts.me;
+  try{
+    const r = await fetch(`${API}/api/auth/me`, {credentials:'same-origin'});
+    _gifts.me = r.ok ? ((await r.json()).user || null) : null;
+  } catch{ _gifts.me = null; }
+  return _gifts.me;
+}
+
+const _GIFT_STATUS = {
+  created:   ['gifts.status.created', 'Створено, очікує оплати'],
+  pending:   ['gifts.status.pending', 'Очікує підтвердження оплати'],
+  paid:      ['gifts.status.paid', 'Оплачено'],
+  cancelled: ['gifts.status.cancelled', 'Скасовано'],
+  error:     ['gifts.status.error', 'Помилка оплати'],
+  unknown:   ['gifts.status.unknown', 'Статус уточнюється'],
+};
+function _giftStatus(st){ const s = _GIFT_STATUS[st]; return s ? _gt(s[0], s[1]) : st; }
+function _giftOrderNo(id){ return String(id || '').slice(-8).toUpperCase(); }
+function _giftLoginHtml(){
+  const slug = new URLSearchParams(location.search).get('slug') || '';
+  return `<p class="gift-note">${h(_gt('gifts.login_note', 'Щоб покласти подарунок, увійдіть через Google'))}</p>
+    <a class="gift-primary" href="/api/auth/google?next=${encodeURIComponent('card:' + slug)}">${h(_gt('gifts.login_btn', 'Увійти через Google'))}</a>`;
+}
+
+async function showGiftDetail(g){
+  const box = document.getElementById('gift-detail');
+  _giftView('detail');
+  box.innerHTML = `
+    <img src="${h(g.img)}" alt="">
+    <div class="g-name">${h(g.name)}</div>
+    ${g.descr ? `<p class="g-descr">${h(g.descr)}</p>` : ''}
+    <div class="g-price">${h(_giftPrice(g.price))}</div>
+    <div class="gift-action" id="gift-action"><p class="gift-note">${h(_gt('gifts.loading', 'Завантаження…'))}</p></div>
+    <button class="gift-back" type="button" id="gift-back">${h(_gt('gifts.back', '← До каталогу'))}</button>`;
+  document.getElementById('gift-back').addEventListener('click', showGiftGrid);
+  const act = document.getElementById('gift-action');
+  const me = await _giftMe();
+  if(!me){ act.innerHTML = _giftLoginHtml(); return; }
+  // подарунок без ціни купити не можна (LiqPay не приймає нульову суму)
+  const buyOn = _cfg.card_gifts_buy_enabled === '1' && _cfg.card_gifts_pay_ready === '1' && +g.price > 0;
+  let html = buyOn
+    ? `<button class="gift-primary" type="button" id="gift-buy">${h(_gt('gifts.buy', 'Купити за {price}', {price: _giftPrice(g.price)}))}</button>`
+    : `<p class="gift-note">${h(_gt('gifts.soon', 'Оплата подарунків незабаром запрацює. Дякуємо, що вшановуєте памʼять'))}</p>`;
+  if(me.role === 'admin'){
+    html += `<button class="gift-secondary" type="button" id="gift-place">${h(_gt('gifts.place_test', 'Покласти без оплати (тест)'))}</button>
+      <p class="gift-note">${h(_gt('gifts.admin_note', 'Тестове розміщення адміністратором — без оплати'))}</p>`;
+  }
+  act.innerHTML = html + '<p class="gift-msg" id="gift-msg" role="status"></p>';
+  if(buyOn) document.getElementById('gift-buy').addEventListener('click', () => confirmGiftOrder(g));
+  if(me.role === 'admin') document.getElementById('gift-place').addEventListener('click', () => placeGift(g));
+}
+
+// Підтвердження: що купуємо, для кого і скільки — до створення замовлення
+function confirmGiftOrder(g){
+  const act = document.getElementById('gift-action');
+  // у #hero-name прізвище й імʼя розділені <br> — innerText перетворює його на перенос, далі нормалізуємо пробіли
+  const heroEl = document.getElementById('hero-name');
+  const name = ((heroEl && (heroEl.innerText || heroEl.textContent)) || '').replace(/\s+/g, ' ').trim();
+  act.innerHTML = `
+    <p class="gift-confirm">${h(_gt('gifts.confirm_text', 'Подарунок «{gift}» для меморіалу «{name}». Сума до сплати: {price}.', {gift: g.name, name: name, price: _giftPrice(g.price)}))}</p>
+    <p class="gift-note">${h(_gt('gifts.pay_note', 'Оплата через LiqPay (ПриватБанк). Після оплати ви повернетеся на цю сторінку'))}</p>
+    <button class="gift-primary" type="button" id="gift-confirm">${h(_gt('gifts.confirm_pay', 'Перейти до оплати'))}</button>
+    <button class="gift-secondary" type="button" id="gift-confirm-back">${h(_gt('gifts.confirm_back', 'Назад'))}</button>
+    <p class="gift-msg" id="gift-msg" role="status"></p>`;
+  document.getElementById('gift-confirm').addEventListener('click', () => createGiftOrder(g));
+  document.getElementById('gift-confirm-back').addEventListener('click', () => showGiftDetail(g));
+}
+
+async function createGiftOrder(g){
+  if(_gifts.busy) return;
+  _gifts.busy = true;
+  const btn = document.getElementById('gift-confirm'), msg = document.getElementById('gift-msg');
+  if(btn) btn.disabled = true;
+  let order = null;
+  try{
+    // на сервер ідуть лише ID: ціну, користувача й меморіал сервер бере сам
+    const r = await fetch(`${API}/api/gifts/orders`, {
+      method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({memorial_id: _memId, gift_id: g.id})
+    });
+    const d = await r.json().catch(() => ({}));
+    if(r.status === 401){ _gifts.me = null; document.getElementById('gift-action').innerHTML = _giftLoginHtml(); return; }
+    if(!r.ok){
+      if(msg) msg.textContent = r.status === 403 ? _gt('gifts.buy_off', 'Купівля подарунків зараз недоступна')
+        : r.status === 503 ? _gt('gifts.pay_unavailable', 'Оплата тимчасово недоступна. Спробуйте пізніше')
+        : (typeof d.detail === 'string' && (r.status === 409 || r.status === 429)) ? d.detail
+        : _gt('gifts.error_order', 'Не вдалося створити замовлення. Спробуйте пізніше');
+      if(btn) btn.disabled = false;
+      return;
+    }
+    order = d.order;
+  } catch{
+    if(msg) msg.textContent = _gt('gifts.error_order', 'Не вдалося створити замовлення. Спробуйте пізніше');
+    if(btn) btn.disabled = false;
+  } finally{ _gifts.busy = false; }
+  if(order) _giftPay(order.order_id, msg);
+}
+
+// Перехід на оплату LiqPay: data/signature формує сервер, сторінка лише відправляє форму
+async function _giftPay(orderId, msg){
+  if(_gifts.busy) return;
+  _gifts.busy = true;
+  if(msg) msg.textContent = _gt('gifts.redirecting', 'Переходимо до оплати…');
+  let leaving = false;
+  try{
+    const r = await fetch(`${API}/api/gifts/orders/${encodeURIComponent(orderId)}/pay`, {
+      method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({lang: _gifts.lang})
+    });
+    const d = await r.json().catch(() => ({}));
+    if(r.status === 401){ _gifts.me = null; _giftNotice('', true); return; }
+    if(r.ok && d.checkout){ leaving = _giftCheckout(d.checkout); if(leaving) return; }
+    if(r.ok && d.order && !d.checkout){ showGiftResult(d.order); return; }  // уже оплачено / обробляється
+    _giftNotice((typeof d.detail === 'string' && [409, 429, 503].includes(r.status)) ? d.detail
+      : _gt('gifts.pay_unavailable', 'Оплата тимчасово недоступна. Спробуйте пізніше'));
+  } catch{
+    _giftNotice(_gt('gifts.pay_unavailable', 'Оплата тимчасово недоступна. Спробуйте пізніше'));
+  } finally{ if(!leaving) _gifts.busy = false; }
+}
+
+function _giftCheckout(co){
+  // форма йде лише на checkout LiqPay
+  if(!co || !/^https:\/\/www\.liqpay\.ua\//.test(co.action || '')) return false;
+  const f = document.createElement('form');
+  f.method = 'POST'; f.action = co.action; f.acceptCharset = 'utf-8'; f.hidden = true;
+  for(const k of ['data', 'signature']){
+    const i = document.createElement('input');
+    i.type = 'hidden'; i.name = k; i.value = co[k] || '';
+    f.appendChild(i);
+  }
+  document.body.appendChild(f);
+  f.submit();
+  return true;
+}
+
+// Короткий екран із повідомленням (або входом) і переходом до замовлень
+function _giftNotice(text, login){
+  const box = document.getElementById('gift-detail');
+  _giftView('detail');
+  box.innerHTML = login ? `<div class="gift-action">${_giftLoginHtml()}</div>` : `
+    <p class="gift-confirm">${h(text)}</p>
+    <div class="gift-action"><button class="gift-secondary" type="button" id="gift-to-orders">${h(_gt('gifts.my_orders', 'Мої замовлення'))}</button></div>`;
+  const b = document.getElementById('gift-to-orders');
+  if(b) b.addEventListener('click', () => showMyOrders());
+}
+
+// Результат оплати: після повернення з LiqPay, «Перевірити оплату» або якщо замовлення вже не очікує оплати
+function showGiftResult(o, check){
+  const box = document.getElementById('gift-detail');
+  _giftView('detail');
+  const st = o.status;
+  let title = '', text, btns;
+  const toOrders = ['orders', 'gift-secondary', _gt('gifts.my_orders', 'Мої замовлення')];
+  if(st === 'paid'){
+    title = _gt('gifts.result_paid_title', 'Дякуємо!');
+    text = _gt('gifts.result_paid', 'Подарунок «{gift}» покладено біля свічки', {gift: o.name});
+    btns = [['close', 'gift-primary', _gt('gifts.close', 'Закрити')]];
+  } else if(st === 'pending' || st === 'unknown'){
+    text = _gt('gifts.result_pending', 'Оплата ще обробляється. Подарунок зʼявиться біля свічки одразу після підтвердження');
+    btns = [['check', 'gift-primary', _gt('gifts.check_again', 'Перевірити ще раз')], toOrders];
+  } else if(st === 'created'){
+    text = _gt('gifts.result_created', 'Оплату не завершено');
+    btns = [['pay', 'gift-primary', _gt('gifts.pay_btn', 'Оплатити')], ['cancel', 'gift-secondary', _gt('gifts.cancel_order', 'Скасувати')], toOrders];
+  } else if(st === 'error'){
+    text = _gt('gifts.result_error', 'Оплата не пройшла. Можна спробувати ще раз — оберіть подарунок у каталозі');
+    btns = [['grid', 'gift-primary', _gt('gifts.back', '← До каталогу')], toOrders];
+  } else {
+    text = _gt('gifts.result_cancelled', 'Замовлення скасовано');
+    btns = [['grid', 'gift-secondary', _gt('gifts.back', '← До каталогу')]];
+  }
+  // каталог вимкнено (етап 9) — замість «до каталогу» просто «Закрити»
+  if(!_giftCatalogOn()) btns = btns.map(b => b[0] === 'grid' ? ['close', b[1], _gt('gifts.close', 'Закрити')] : b);
+  box.innerHTML = `
+    ${o.img ? `<img src="${h(o.img)}" alt="">` : ''}
+    ${title ? `<div class="g-name">${h(title)}</div>` : ''}
+    <p class="gift-confirm">${h(text)}</p>
+    ${check === 'fail' ? `<p class="gift-note">${h(_gt('gifts.check_failed', 'Не вдалося звʼязатися з банком. Спробуйте за хвилину'))}</p>` : ''}
+    <p class="gift-note">${h(_gt('gifts.order_no', 'Замовлення № {n}', {n: _giftOrderNo(o.order_id)}))} · ${h(_giftStatus(st))}</p>
+    <div class="gift-action">${btns.map(([a, cls, t]) => `<button class="${cls}" type="button" data-act="${a}">${h(t)}</button>`).join('')}
+      <p class="gift-msg" id="gift-msg" role="status"></p></div>`;
+  box.querySelectorAll('[data-act]').forEach(b => b.addEventListener('click', () => {
+    const a = b.dataset.act;
+    if(a === 'close'){ closeGiftModal(); if(st === 'paid') _giftScrollToCandle(); }   // далі — покладання біля свічки
+    else if(a === 'check') syncGiftOrder(o.order_id);
+    else if(a === 'pay') _giftPay(o.order_id, document.getElementById('gift-msg'));
+    else if(a === 'cancel') cancelGiftOrder(o.order_id, b);
+    else if(a === 'orders') showMyOrders();
+    else showGiftGrid();
+  }));
+  if(st === 'paid') loadMemorialGifts();
+}
+
+async function syncGiftOrder(orderId){
+  const box = document.getElementById('gift-detail');
+  _giftView('detail');
+  box.innerHTML = `<p class="gift-note">${h(_gt('gifts.checking', 'Перевіряємо оплату…'))}</p>`;
+  try{
+    const r = await fetch(`${API}/api/gifts/orders/${encodeURIComponent(orderId)}/sync`, {
+      method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({lang: _gifts.lang})
+    });
+    if(r.status === 401){ _gifts.me = null; _giftNotice('', true); return; }
+    if(!r.ok) throw new Error(r.status);
+    const d = await r.json();
+    showGiftResult(d.order, d.check);
+  } catch{
+    _giftNotice(_gt('gifts.check_failed', 'Не вдалося звʼязатися з банком. Спробуйте за хвилину'));
+  }
+}
+
+// Кнопки рядка замовлення за статусом (блок не виводиться, якщо дій немає)
+function _giftOrderActs(o, payOn){
+  const acts = (o.status === 'created' && payOn ? `<button class="gift-secondary" type="button" data-pay="${h(o.order_id)}">${h(_gt('gifts.pay_btn', 'Оплатити'))}</button>` : '')
+    + (o.status === 'pending' || o.status === 'unknown' ? `<button class="gift-secondary" type="button" data-check="${h(o.order_id)}">${h(_gt('gifts.check_btn', 'Перевірити оплату'))}</button>` : '')
+    + (o.status === 'created' || o.status === 'pending' ? `<button class="gift-secondary" type="button" data-cancel="${h(o.order_id)}">${h(_gt('gifts.cancel_order', 'Скасувати'))}</button>` : '');
+  return acts ? `<div class="o-acts">${acts}</div>` : '';
+}
+
+async function showMyOrders(note){
+  note = typeof note === 'string' ? note : '';   // викликається й як обробник кліку (Event)
+  const box = document.getElementById('gift-orders');
+  _giftView('orders');
+  box.innerHTML = `<p class="gift-note">${h(_gt('gifts.loading', 'Завантаження…'))}</p>`;
+  let items = [];
+  try{
+    const r = await fetch(`${API}/api/gifts/orders?memorial_id=${_memId}&lang=${_gifts.lang}`, {credentials:'same-origin'});
+    if(r.status === 401){ _gifts.me = null; box.innerHTML = `<div class="gift-action">${_giftLoginHtml()}</div>`; return; }
+    if(!r.ok) throw new Error(r.status);
+    items = (await r.json()).items || [];
+  } catch{
+    box.innerHTML = `<p class="gift-note">${h(_gt('gifts.error_load', 'Не вдалося завантажити каталог. Спробуйте пізніше'))}</p>`;
+    return;
+  }
+  const payOn = _cfg.card_gifts_pay_ready === '1';
+  box.innerHTML = `<h4>${h(_gt('gifts.my_orders', 'Мої замовлення'))}</h4>` +
+    (note ? `<p class="gift-msg" role="status" style="text-align:center">${h(note)}</p>` : '') + (items.length ? items.map(o => `
+    <div class="gift-order">
+      <img src="${h(o.img)}" alt="" loading="lazy" decoding="async">
+      <div class="o-body">
+        <div class="o-name">${h(o.name)} · ${h(_giftPrice(o.price))}</div>
+        <div class="o-meta">${h(_gt('gifts.order_no', 'Замовлення № {n}', {n: _giftOrderNo(o.order_id)}))} · ${h(new Date(o.created_at * 1000).toLocaleDateString('uk-UA'))}</div>
+        <div class="o-status${o.status === 'cancelled' ? ' is-off' : ''}">${h(_giftStatus(o.status))}</div>
+      </div>
+      ${_giftOrderActs(o, payOn)}
+    </div>`).join('') : `<p class="gift-note">${h(_gt('gifts.no_orders', 'Для цього меморіалу у вас ще немає замовлень'))}</p>`) +
+    `<div style="text-align:center"><button class="gift-back" type="button" id="gift-orders-back">${h(_gt('gifts.back', '← До каталогу'))}</button></div>`;
+  box.querySelectorAll('[data-cancel]').forEach(b => b.addEventListener('click', () => cancelGiftOrder(b.dataset.cancel, b)));
+  box.querySelectorAll('[data-pay]').forEach(b => b.addEventListener('click', () => { b.disabled = true; _giftPay(b.dataset.pay, null); }));
+  box.querySelectorAll('[data-check]').forEach(b => b.addEventListener('click', () => syncGiftOrder(b.dataset.check)));
+  document.getElementById('gift-orders-back').addEventListener('click', showGiftGrid);
+}
+
+async function cancelGiftOrder(orderId, btn){
+  if(!confirm(_gt('gifts.cancel_confirm', 'Скасувати це замовлення?'))) return;
+  if(btn) btn.disabled = true;
+  let note = '';
+  try{
+    const r = await fetch(`${API}/api/gifts/orders/${encodeURIComponent(orderId)}/cancel`, {method:'POST', credentials:'same-origin'});
+    if(!r.ok){
+      const d = await r.json().catch(() => ({}));
+      note = typeof d.detail === 'string' ? d.detail : _gt('gifts.cancel_failed', 'Не вдалося скасувати замовлення');
+    }
+  } catch{ note = _gt('gifts.cancel_failed', 'Не вдалося скасувати замовлення'); }
+  showMyOrders(note);
+}
+
+async function placeGift(g){
+  if(_gifts.busy) return;
+  _gifts.busy = true;
+  const msg = document.getElementById('gift-msg');
+  const btn = document.getElementById('gift-place');
+  if(btn) btn.disabled = true;
+  try{
+    const r = await fetch(`${API}/api/memorial/${_memId}/gifts`, {
+      method:'POST', credentials:'same-origin',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({gift_id: g.id})
+    });
+    if(!r.ok) throw new Error(r.status);
+    if(msg) msg.textContent = _gt('gifts.placed', 'Подарунок покладено біля свічки');
+    await loadMemorialGifts();
+    setTimeout(closeGiftModal, 900);
+  } catch{
+    if(msg) msg.textContent = _gt('gifts.error_place', 'Не вдалося покласти подарунок. Спробуйте пізніше');
+    if(btn) btn.disabled = false;
+  } finally{ _gifts.busy = false; }
+}
+
+function closeGiftModal(){
+  document.getElementById('gift-modal').hidden = true;
+  document.body.style.overflow = '';
+  const b = document.getElementById('gifts-btn');
+  if(b) b.focus();
+  _giftMaybeAnimate();
+}
+
 (async () => {
   await loadSettings();
   await loadCard();
   applySettingsVisibility();
   startLikesRefresh(_cfg.card_likes_refresh ?? '60');
+  initGifts();
 })();
 </script>
 </body>

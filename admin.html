@@ -303,6 +303,8 @@ input:checked + .toggle-slider:before{transform:translateX(18px)}
 .map-tool-btn:hover{background:rgba(0,200,255,.1);color:var(--accent);border-color:rgba(0,200,255,.3)}
 .map-tool-btn.active{background:rgba(0,200,255,.15);color:var(--accent);border-color:rgba(0,200,255,.4)}
 .pl-ftab.active{background:rgba(0,200,255,.15);color:var(--accent);border-color:rgba(0,200,255,.4)}
+.gf-tab.active{background:rgba(0,200,255,.15);color:var(--accent);border-color:rgba(0,200,255,.4)}
+.gf-thumb{width:40px;height:40px;object-fit:contain;background:rgba(255,255,255,.04);border-radius:6px;display:block}
 #map-hint{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);background:rgba(0,200,255,.1);border:1px solid rgba(0,200,255,.3);border-radius:8px;padding:8px 16px;font-size:11px;color:var(--accent);pointer-events:none;white-space:nowrap}
 #admin-map-svg-container{position:absolute;inset:0;cursor:grab}
 #admin-map-svg-container.grabbing{cursor:grabbing}
@@ -566,8 +568,12 @@ tr:hover td{background:rgba(255,255,255,.02)}
   <symbol id="ico-upload" viewBox="0 0 24 24"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></symbol>
   <symbol id="ico-device" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><rect x="9" y="18" width="6" height="1" rx="0.5" fill="currentColor" stroke="none"/><rect x="9" y="6" width="6" height="8" rx="1"/></symbol>
   <symbol id="ico-tour" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="ico-recent" viewBox="0 0 24 24"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M18.5 15.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/></symbol>
   <symbol id="ico-ad" viewBox="0 0 24 24"><path d="M3 11v2a2 2 0 0 0 2 2h1l3 6 2-1-2.5-5H10l9 4V5l-9 4H5a2 2 0 0 0-2 2z"/><line x1="19" y1="9" x2="19" y2="15"/></symbol>
   <symbol id="ico-phone" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></symbol>
+  <symbol id="ico-gift" viewBox="0 0 24 24"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></symbol>
+  <symbol id="ico-plus" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></symbol>
+  <symbol id="ico-cross" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></symbol>
 </svg>
 
 <!-- Hamburger (mobile) -->
@@ -621,9 +627,11 @@ tr:hover td{background:rgba(255,255,255,.02)}
     <div class="nav-item"        draggable="true" onclick="showSec('silence')"   data-s="silence">   <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-candle"/></svg></span><span data-i18n="nav.silence">Хв. Мовчання</span></div>
     <div class="nav-item"        draggable="true" onclick="showSec('seo')"     data-s="seo">     <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-search"/></svg></span><span data-i18n="nav.seo">SEO</span></div>
     <div class="nav-item"        draggable="true" onclick="showSec('card')"    data-s="card">    <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-star"/></svg></span><span data-i18n="nav.card">Картка</span></div>
+    <div class="nav-item"        draggable="true" onclick="showSec('gifts')"   data-s="gifts">   <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-gift"/></svg></span><span data-i18n="nav.gifts">Подарунки загиблому</span></div>
     <div class="nav-item"        draggable="true" onclick="showSec('portfolio')" data-s="portfolio"><span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-users"/></svg></span><span data-i18n="nav.portfolio">Сторінка Автора</span></div>
     <div class="nav-item"        draggable="true" onclick="showSec('device')"    data-s="device">   <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-device"/></svg></span><span data-i18n="nav.device">Пристрої</span></div>
     <div class="nav-item"        draggable="true" onclick="showSec('tour')"      data-s="tour">      <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-tour"/></svg></span><span data-i18n="nav.tour">Підказки</span></div>
+    <div class="nav-item"        draggable="true" onclick="showSec('recent')"    data-s="recent">    <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-recent"/></svg></span><span data-i18n="nav.recent">Нові надходження</span></div>
     <div class="nav-item"        draggable="true" onclick="showSec('adv')"       data-s="adv">       <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-ad"/></svg></span><span data-i18n="nav.adv">Реклама</span></div>
     <div class="nav-item"        draggable="true" onclick="showSec('addmode')"   data-s="addmode">   <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-phone"/></svg></span><span data-i18n="nav.addmode">Додавання людей</span></div>
     <div class="nav-item"        draggable="true" onclick="showSec('pricing')"   data-s="pricing">   <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-send"/></svg></span><span data-i18n="nav.pricing">Заявки на тарифи</span><span class="nb" id="pricing-nb" style="display:none">0</span></div>
@@ -4352,6 +4360,155 @@ tr:hover td{background:rgba(255,255,255,.02)}
 
       </div><!-- /sec-card -->
 
+      <!-- ПОДАРУНКИ ЗАГИБЛОМУ (Gifts-for-fallen.md): каталог, категорії, розміщення, налаштування -->
+      <div id="sec-gifts" class="section">
+        <div class="sec-title"><svg class="adm-ico"><use href="#ico-gift"/></svg> <span data-i18n="nav.gifts">Подарунки загиблому</span></div>
+        <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:14px">
+          <button class="btn gf-tab active" data-t="catalog"    onclick="gfTab('catalog',this)"><span data-i18n="adm.gifts.tab_catalog">Каталог</span></button>
+          <button class="btn gf-tab"        data-t="categories" onclick="gfTab('categories',this)"><span data-i18n="adm.gifts.tab_categories">Категорії</span></button>
+          <button class="btn gf-tab"        data-t="placements" onclick="gfTab('placements',this)"><span data-i18n="adm.gifts.tab_placements">Замовлення</span></button>
+          <button class="btn gf-tab"        data-t="settings"   onclick="gfTab('settings',this)"><span data-i18n="adm.gifts.tab_settings">Налаштування</span></button>
+        </div>
+
+        <div class="gf-panel" id="gf-panel-catalog">
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px">
+            <button class="btn btn-p" onclick="gfOpenGift(null)"><svg class="adm-ico"><use href="#ico-plus"/></svg> <span data-i18n="adm.gifts.add_gift">Додати подарунок</span></button>
+            <input type="text" id="gf-search" data-i18n-placeholder="btn.search" placeholder="Пошук…" oninput="gfRenderGifts()" style="flex:1;min-width:140px;padding:7px 12px;background:var(--panel);border:1px solid var(--border);color:var(--text);border-radius:6px;font-size:12px;outline:none">
+            <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)"><input type="checkbox" id="gf-show-off" onchange="gfRenderGifts()" style="width:auto"> <span data-i18n="adm.gifts.show_inactive">Показувати вимкнені</span></label>
+          </div>
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr>
+                <th style="width:44px">ID</th>
+                <th style="width:52px"></th>
+                <th data-i18n="adm.gifts.col_name">Назва</th>
+                <th style="width:130px" data-i18n="adm.gifts.col_category">Категорія</th>
+                <th style="width:80px" data-i18n="adm.gifts.col_price">Ціна</th>
+                <th style="width:56px">GIF</th>
+                <th style="width:84px" data-i18n="adm.gifts.col_placed">Розміщено</th>
+                <th style="width:70px" data-i18n="adm.gifts.col_order">Порядок</th>
+                <th style="width:80px" data-i18n="adm.gifts.col_active">Активний</th>
+                <th style="width:90px" data-i18n="adm.mem.col_actions">Дії</th>
+              </tr></thead>
+              <tbody id="gf-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="gf-panel" id="gf-panel-categories" style="display:none">
+          <div style="margin-bottom:12px"><button class="btn btn-p" onclick="gfOpenCat(null)"><svg class="adm-ico"><use href="#ico-plus"/></svg> <span data-i18n="adm.gifts.add_category">Додати категорію</span></button></div>
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr>
+                <th style="width:44px">ID</th>
+                <th style="width:130px" data-i18n="adm.gifts.col_code">Код</th>
+                <th data-i18n="adm.gifts.col_name">Назва</th>
+                <th style="width:96px" data-i18n="adm.gifts.col_count">Подарунків</th>
+                <th style="width:70px" data-i18n="adm.gifts.col_order">Порядок</th>
+                <th style="width:80px" data-i18n="adm.gifts.col_active">Активний</th>
+                <th style="width:90px" data-i18n="adm.mem.col_actions">Дії</th>
+              </tr></thead>
+              <tbody id="gf-cat-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="gf-panel" id="gf-panel-placements" style="display:none">
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px">
+            <select id="gf-pl-status" onchange="gfPlFilter()" style="padding:7px 12px;background:var(--panel);border:1px solid var(--border);color:var(--text);border-radius:6px;font-size:12px;outline:none"><option value="">—</option></select>
+            <input type="text" id="gf-pl-search" data-i18n-placeholder="adm.gifts.pl_search" placeholder="Меморіал, ID або email…" oninput="gfPlSearch()" style="flex:1;min-width:160px;padding:7px 12px;background:var(--panel);border:1px solid var(--border);color:var(--text);border-radius:6px;font-size:12px;outline:none">
+          </div>
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr>
+                <th style="width:54px">ID</th>
+                <th style="width:130px" data-i18n="adm.gifts.col_date">Дата</th>
+                <th data-i18n="adm.gifts.col_memorial">Меморіал</th>
+                <th data-i18n="adm.gifts.col_gift">Подарунок</th>
+                <th data-i18n="adm.gifts.col_user">Користувач</th>
+                <th style="width:130px" data-i18n="adm.gifts.col_status">Статус</th>
+                <th style="width:80px" data-i18n="adm.gifts.col_sum">Сума</th>
+                <th style="width:60px" data-i18n="adm.mem.col_actions">Дії</th>
+              </tr></thead>
+              <tbody id="gf-pl-tbody"></tbody>
+            </table>
+          </div>
+          <div id="gf-pl-pager" style="display:flex;gap:8px;align-items:center;justify-content:flex-end;margin-top:10px;font-size:12px;color:var(--muted)"></div>
+          <div id="gf-pl-summary" style="margin-top:6px;font-size:12px;color:var(--muted);text-align:right"></div>
+        </div>
+
+        <div class="gf-panel" id="gf-panel-settings" style="display:none">
+          <div class="rg-group">
+            <div class="rg-row">
+              <div class="rg-row-info">
+                <div class="rg-row-label" data-i18n="adm.card.gifts_module">Модуль «Подарунки загиблому»</div>
+                <div class="rg-row-desc" data-i18n="adm.card.gifts_module_desc">Кнопка й каталог подарунків біля свічки на сторінці меморіалу</div>
+              </div>
+              <label class="rg-toggle"><input type="checkbox" id="gf-enabled"><span class="rg-slider"></span></label>
+            </div>
+            <div class="rg-row">
+              <div class="rg-row-info">
+                <div class="rg-row-label" data-i18n="adm.gifts.button_toggle">Кнопка «Подарунки загиблому» й каталог</div>
+                <div class="rg-row-desc" data-i18n="adm.gifts.button_toggle_desc">Вимкнено — нового подарунка не обрати (і не купити), але вже покладені подарунки лишаються біля свічки</div>
+              </div>
+              <label class="rg-toggle"><input type="checkbox" id="gf-button"><span class="rg-slider"></span></label>
+            </div>
+            <div class="rg-row">
+              <div class="rg-row-info">
+                <div class="rg-row-label" data-i18n="adm.gifts.buy_toggle">Купівля доступна</div>
+                <div class="rg-row-desc" data-i18n="adm.gifts.buy_toggle_desc">Авторизовані відвідувачі можуть купити подарунок і оплатити його через LiqPay. Працює лише коли в .env задано ключі LiqPay</div>
+              </div>
+              <label class="rg-toggle"><input type="checkbox" id="gf-buy-enabled"><span class="rg-slider"></span></label>
+            </div>
+            <div class="rg-row">
+              <div class="rg-row-info">
+                <div class="rg-row-label" data-i18n="adm.gifts.liqpay">Оплата LiqPay (ПриватБанк)</div>
+                <div class="rg-row-desc" id="gf-liqpay-status">—</div>
+              </div>
+            </div>
+            <div class="rg-row">
+              <div class="rg-row-info">
+                <div class="rg-row-label" data-i18n="adm.gifts.anim_toggle">Анімація покладання (GIF)</div>
+                <div class="rg-row-desc" data-i18n="adm.gifts.anim_toggle_desc">Покупець один раз бачить, як руки кладуть подарунок біля свічки. Вимкнено — одразу статичний подарунок</div>
+              </div>
+              <label class="rg-toggle"><input type="checkbox" id="gf-anim"><span class="rg-slider"></span></label>
+            </div>
+            <div class="rg-row">
+              <div class="rg-row-info">
+                <div class="rg-row-label" data-i18n="adm.gifts.anim_scale">Розмір GIF відносно подарунка</div>
+                <div class="rg-row-desc" data-i18n="adm.gifts.anim_scale_desc">У скільки разів GIF ширший за подарунок біля свічки (1.5–5). Стандарт 2.8 — коли подарунок наприкінці займає ≈⅓ ширини кадру</div>
+              </div>
+              <input id="gf-anim-scale" type="number" min="1.5" max="5" step="0.1" style="width:90px;background:var(--bg);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:6px 8px;font-size:12px;box-sizing:border-box">
+            </div>
+            <div class="rg-row">
+              <div class="rg-row-info">
+                <div class="rg-row-label" data-i18n="adm.gifts.size">Розмір подарунків біля свічки, %</div>
+                <div class="rg-row-desc" data-i18n="adm.gifts.size_desc">70–140%. На вузьких екранах подарунки ще й зменшуються самі, щоб уміститись</div>
+              </div>
+              <input id="gf-size" type="number" min="70" max="140" step="5" style="width:90px;background:var(--bg);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:6px 8px;font-size:12px;box-sizing:border-box">
+            </div>
+            <div class="rg-row">
+              <div class="rg-row-info">
+                <div class="rg-row-label" data-i18n="adm.gifts.notify">Лист про оплачений подарунок</div>
+                <div class="rg-row-desc" id="gf-notify-status">—</div>
+              </div>
+              <label class="rg-toggle"><input type="checkbox" id="gf-notify"><span class="rg-slider"></span></label>
+            </div>
+            <div class="rg-row">
+              <div class="rg-row-info">
+                <div class="rg-row-label" data-i18n="adm.gifts.texts">Тексти модуля</div>
+                <div class="rg-row-desc" data-i18n="adm.gifts.texts_desc">Кнопки, повідомлення й підписи сторінки меморіалу (українською й англійською) — у розділі «Локалізація», секція gifts</div>
+              </div>
+              <button class="btn" type="button" onclick="gfEditTexts()"><svg class="adm-ico"><use href="#ico-edit"/></svg> <span data-i18n="adm.gifts.texts_btn">Редагувати</span></button>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;margin-top:12px">
+            <button class="btn btn-p" onclick="gfSaveSettings()"><svg class="adm-ico"><use href="#ico-save"/></svg> <span data-i18n="btn.save">Зберегти</span></button>
+            <span id="gf-settings-status" style="font-size:12px;color:var(--muted)"></span>
+          </div>
+        </div>
+      </div>
+
       <!-- VERSION SECTION -->
       <div id="sec-version" class="section">
         <div class="sec-title"><svg class="adm-ico"><use href="#ico-doc"/></svg> <span data-i18n="adm.version.title">Версія додатку</span></div>
@@ -5031,6 +5188,60 @@ tr:hover td{background:rgba(255,255,255,.02)}
           <span id="tour-save-hint" style="font-size:11px;color:var(--green);margin-left:4px"></span>
         </div>
       </div><!-- /sec-tour -->
+
+      <!-- ── НОВІ НАДХОДЖЕННЯ (v3.58): блок у лівому нижньому куті сайту ── -->
+      <div id="sec-recent" class="section">
+        <div class="sec-title"><svg class="adm-ico"><use href="#ico-recent"/></svg> <span data-i18n="adm.recent.title">Нові надходження</span></div>
+        <p style="font-size:12px;color:var(--muted);margin:0 0 20px;line-height:1.6">
+          Блок у лівому нижньому куті сайту, над статистикою: загиблі, які нещодавно зʼявились на сайті, — прізвище, імʼя й «додано», рамка мʼяко світиться.
+          Запис потрапляє в блок, коли стає видимим на сайті: адмін додав його схваленим або схвалив заявку з модерації. Клік по імені на сайті — політ до точки на карті й картка.
+          На телефонах і планшетах блоку немає — там лівий нижній кут займають кнопки.
+        </p>
+
+        <div class="rg-row">
+          <div class="rg-row-info">
+            <div class="rg-row-label">Показувати блок</div>
+            <div class="rg-row-desc">Вимкнено — блоку на сайті немає; час появи нових записів однаково зберігається</div>
+          </div>
+          <label class="rg-toggle">
+            <input type="checkbox" id="recent-enabled">
+            <span class="rg-slider"></span>
+          </label>
+        </div>
+
+        <div class="rg-row">
+          <div class="rg-row-info">
+            <div class="rg-row-label">Скільки днів показувати</div>
+            <div class="rg-row-desc">Запис тримається в блоці стільки днів від появи на сайті (1–14, за замовчуванням 3). Записів багато — блок показує по 5 і сам гортає сторінки</div>
+          </div>
+          <input type="number" id="recent-days" min="1" max="14" step="1"
+            style="width:80px;padding:7px 10px;font-size:13px;border-radius:6px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-family:inherit">
+        </div>
+
+        <div style="display:flex;gap:10px;margin-top:16px;align-items:center">
+          <button class="btn btn-p" onclick="saveRecentSettings()">
+            <svg class="adm-ico"><use href="#ico-check"/></svg> Зберегти
+          </button>
+          <button class="btn" onclick="loadRecentSettings()">
+            <svg class="adm-ico"><use href="#ico-refresh"/></svg> Скасувати
+          </button>
+          <span id="recent-save-hint" style="font-size:11px;color:var(--green);margin-left:4px"></span>
+        </div>
+
+        <div style="margin-top:26px">
+          <div class="rg-row-label" style="margin-bottom:8px">Зараз у блоці <span id="recent-adm-count" style="color:var(--muted);font-weight:400"></span></div>
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr>
+                <th>Загиблий</th>
+                <th style="width:150px">Зʼявився на сайті</th>
+                <th style="width:130px">Дії</th>
+              </tr></thead>
+              <tbody id="recent-adm-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div><!-- /sec-recent -->
 
       <!-- ── ВІДЕО-ПОПАП (РЕКЛАМА) ── -->
       <div id="sec-adv" class="section">
@@ -5853,6 +6064,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
             <option value="stats">stats</option>
             <option value="errors">errors</option>
             <option value="admin">admin</option>
+            <option value="gifts">gifts</option>
           </select>
           <input id="i18n-search" type="text" placeholder="Пошук по ключу або тексту…" oninput="i18nFilter()" style="background:#0d1a2d;border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:8px;font-size:13px;flex:1;min-width:200px">
           <button class="btn btn-p" onclick="i18nLoad()"><svg class="adm-ico"><use href="#ico-refresh"/></svg> Оновити</button>
@@ -5992,6 +6204,15 @@ tr:hover td{background:rgba(255,255,255,.02)}
         </select>
       </div>
       <div class="em-f"><label style="display:flex;align-items:center;gap:6px;margin-top:22px"><input type="checkbox" id="e-show-creator" style="width:auto"> Показувати автора публічно</label></div>
+      <div class="em-f"><label>Тарифний план <span id="e-tier-note" style="float:right;font-weight:400;color:rgba(150,180,210,.5);display:none">лише адмін</span></label>
+        <select id="e-tier">
+          <option value="">— без плану —</option>
+          <option value="bronze">Бронза</option>
+          <option value="silver">Срібло</option>
+          <option value="gold">Золото</option>
+          <option value="platinum">Платина</option>
+        </select>
+      </div>
       <div class="em-f em-full" style="font-size:11px;color:rgba(150,180,210,.6)">
         Додав: <span id="e-added-by-ro">—</span> · Автор (uid): <span id="e-created-by-ro">—</span>
       </div>
@@ -6077,7 +6298,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
         <img id="edit-photo-preview" src="/img/foto_false.png" onerror="this.src='/img/foto_false.png'" style="width:72px;height:72px;object-fit:cover;border-radius:6px;margin-top:6px;border:1px solid var(--border2);display:block">
       </div>
       <div class="em-f em-full"><label>Відео YouTube URL <span style="float:right;font-weight:400;color:rgba(150,180,210,.5);font-size:9px">youtube.com/… або youtu.be/…</span></label><input id="e-video" maxlength="500" placeholder="https://youtu.be/… або youtube.com/watch?v=…" oninput="_V.url(this)"></div>
-      <div class="em-f em-full"><label>Опис <span id="e-desc-cnt" style="float:right;font-weight:400;color:rgba(150,180,210,.6)">0/200</span></label><textarea id="e-desc" maxlength="200" oninput="_V.text(this);document.getElementById('e-desc-cnt').textContent=this.value.length+'/200'"></textarea></div>
+      <div class="em-f em-full"><label>Опис <span id="e-desc-cnt" style="float:right;font-weight:400;color:rgba(150,180,210,.6)">0/10000</span></label><textarea id="e-desc" maxlength="10000" oninput="_V.text(this);document.getElementById('e-desc-cnt').textContent=this.value.length+'/10000'"></textarea></div>
     </div>
     <!-- Coordinates picker — Leaflet world map -->
     <div id="em-coords-section" style="margin-bottom:10px">
@@ -6343,10 +6564,12 @@ function showSec(id) {
   if(id==='device')    loadDeviceSettings();
   if(id==='addmode')   loadAddModeSettings();
   if(id==='tour')      loadTourSettings();
+  if(id==='recent')    loadRecentSettings();
   if(id==='adv')       loadAdVideoSettings();
   if(id==='worldmap')  loadWMSettings();
   if(id==='seo')     loadSeoAdminDash();
   if(id==='card')    cardSettingsLoad();
+  if(id==='gifts')   giftsAdmLoad();
   if(id==='version') versionLoad();
   if(id==='google')  _loadGoogleSettings();
   if(id==='density') _densityLoad();
@@ -7821,8 +8044,8 @@ function _awardImg(file, cat, sz) {
   const letter = _CAT_LTR[cat] || '★';
   const ph = `<div style="width:${sz}px;height:${sz}px;border-radius:4px;background:#2a2a3a;display:flex;align-items:center;justify-content:center;font-size:${Math.round(sz*.5)}px;color:#666;font-weight:700;flex-shrink:0">${letter}</div>`;
   if (!file) return ph;
-  const phQ = ph.replace(/"/g,"'");
-  return `<img src="/img/awards/${encodeURIComponent(file)}" style="width:${sz}px;height:${sz}px;object-fit:contain;flex-shrink:0" onerror="this.outerHTML='${phQ}'">`;
+  // заглушку — в атрибут onerror="…" через h(): заміна " на ' обривала JS-рядок '…' (помилка замість заглушки)
+  return `<img src="/img/awards/${encodeURIComponent(file)}" style="width:${sz}px;height:${sz}px;object-fit:contain;flex-shrink:0" onerror="this.outerHTML='${h(ph)}'">`;
 }
 
 const _IMP_FIELDS = [
@@ -7935,6 +8158,15 @@ function closeImpOverlay() { document.getElementById('imp-overlay').style.displa
 const _UA_BOUNDS_ADM = {latMin:43.95, latMax:52.37, lngMin:22.15, lngMax:41.03};
 let _emMap = null, _emMarker = null;
 
+// Тайли карт адмінки (місце зірки в редагуванні, превʼю на модерації) — та сама адреса, що для карт сайту:
+// адмінка → «Карта світу» (з ключем CARTO). CARTO без ключа віддає заглушку «API KEY REQUIRED»,
+// тож адресу тут не хардкодимо; якщо її не задано — OpenStreetMap (ключ не потрібен)
+function _admTileLayer() {
+  let url = (COLORS.worldmap_tile_url && COLORS.worldmap_tile_url.value) || '';
+  if (!url || url.includes('{carto_key}')) url = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+  return L.tileLayer(url, {maxZoom:19, attribution:'', subdomains:'abcd'});
+}
+
 function _latLngToSvg(lat, lng) {
   const x = parseFloat(((lng - _UA_BOUNDS_ADM.lngMin) / (_UA_BOUNDS_ADM.lngMax - _UA_BOUNDS_ADM.lngMin)).toFixed(4));
   const y = parseFloat((1 - (lat - _UA_BOUNDS_ADM.latMin) / (_UA_BOUNDS_ADM.latMax - _UA_BOUNDS_ADM.latMin)).toFixed(4));
@@ -7944,7 +8176,7 @@ function _latLngToSvg(lat, lng) {
 function _initEmMap() {
   if (_emMap) { _emMap.invalidateSize(); return; }
   _emMap = L.map('em-pick-map', {center:[49.0,32.0], zoom:5, attributionControl:false});
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {maxZoom:19, attribution:''}).addTo(_emMap);
+  _admTileLayer().addTo(_emMap);
   _emMap.on('click', function(e) { _emMapSetPoint(e.latlng.lat, e.latlng.lng); });
 }
 
@@ -8174,7 +8406,7 @@ function _initPendMap(id) {
   const el = document.getElementById('pend-map-'+id);
   if (!el) return;
   const map = L.map(el, {attributionControl:false, zoomControl:true});
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {maxZoom:19, attribution:''}).addTo(map);
+  _admTileLayer().addTo(map);
   const lat = parseFloat(el.dataset.lat);
   const lng = parseFloat(el.dataset.lng);
   if (!isNaN(lat) && !isNaN(lng) && (lat || lng)) {
@@ -9676,6 +9908,17 @@ function _updateAdminDeathReasonOptions(selected){
   sel.innerHTML = opts.map(([v,l]) => `<option value="${v}">${l}</option>`).join('');
   if(selected !== undefined) sel.value = selected;
 }
+// Тарифний план (вигляд бокової панелі на сайті) змінює лише адмін;
+// модератор бачить поле заблокованим, сервер теж відкидає план від модератора
+function _setEditTier(v){
+  const el=document.getElementById('e-tier');
+  if(!el) return;
+  el.value=v||'';
+  const isAdmin=curAdminRole==='admin';
+  el.disabled=!isAdmin;
+  const note=document.getElementById('e-tier-note');
+  if(note) note.style.display=isAdmin?'none':'';
+}
 async function openEditById(id){
   editId=id; editMode='edit';
   const p=allPeople.find(x=>x.id===id)||people.find(x=>x.id===id);
@@ -9696,6 +9939,7 @@ async function openEditById(id){
   document.getElementById('e-citizenship').value=p.citizenship||'';
   document.getElementById('e-nationality').value=p.nationality||'';
   document.getElementById('e-show-creator').checked=!!p.show_creator;
+  _setEditTier(p.tier);
   document.getElementById('e-added-by-ro').textContent=p.added_by||'—';
   document.getElementById('e-created-by-ro').textContent=p.created_by_uid||'—';
   document.getElementById('e-grp').value=p.grp||'';
@@ -9706,7 +9950,7 @@ async function openEditById(id){
   document.getElementById('e-photo').value=p.photo||'';
   document.getElementById('e-video').value=p.video_url||'';
   document.getElementById('e-desc').value=p.descr||'';
-  document.getElementById('e-desc-cnt').textContent=(p.descr||'').length+'/200';
+  document.getElementById('e-desc-cnt').textContent=(p.descr||'').length+'/10000';
   updateEditPhotoPreview();
   // Координати
   _editPickCoords = {
@@ -9748,6 +9992,7 @@ function openCreateModal(){
   document.getElementById('e-citizenship').value='';
   document.getElementById('e-nationality').value='';
   document.getElementById('e-show-creator').checked=false;
+  _setEditTier('');
   document.getElementById('e-added-by-ro').textContent='—';
   document.getElementById('e-created-by-ro').textContent='—';
   document.getElementById('e-grp').value='';
@@ -9758,7 +10003,7 @@ function openCreateModal(){
   document.getElementById('e-photo').value='';
   document.getElementById('e-video').value='';
   document.getElementById('e-desc').value='';
-  document.getElementById('e-desc-cnt').textContent='0/200';
+  document.getElementById('e-desc-cnt').textContent='0/10000';
   updateEditPhotoPreview();
   // Координати і нагороди
   _editPickCoords={x:0,y:0,lat:null,lng:null}; _refreshEditCoords();
@@ -9795,6 +10040,7 @@ async function saveEdit(){
     nationality:document.getElementById('e-nationality').value,
     show_creator:document.getElementById('e-show-creator').checked?1:0,
   };
+  if(curAdminRole==='admin') body.tier=document.getElementById('e-tier').value;
   if(!body.last||!body.first){showN('Вкажіть прізвище та імʼя',true);return;}
   const _nameRe=/^[а-яА-ЯіІїЇєЄґҐёЁa-zA-Z'\-]+$/u;
   if(!_nameRe.test(body.last)){showN('Прізвище: тільки літери без пробілів',true);return;}
@@ -13582,6 +13828,442 @@ function _seoScoreBadge(score, grade) {
   return `<span style="display:inline-block;min-width:36px;text-align:center;padding:1px 7px;border-radius:12px;font-weight:700;font-size:12px;background:${c}20;border:1px solid ${c}40;color:${c}">${score}</span>`;
 }
 
+/* ══════════ ПОДАРУНКИ ЗАГИБЛОМУ (Gifts-for-fallen.md, етап 4) ══════════
+   Каталог, категорії, завантаження зображень/GIF, розміщення, налаштування модуля.
+   Усі запити — /api/admin/gifts* (require_admin на сервері). */
+let _gf = {langs: ['uk', 'en'], gifts: [], categories: []};
+const _gfPl = {page: 1, pages: 1};
+let _gfPlTimer = null;
+const _GF_STATUS = {
+  created: ['Створено', 'by'], pending: ['Очікує оплати', 'by'], paid: ['Оплачено', 'bg'],
+  cancelled: ['Скасовано', 'br'], error: ['Помилка', 'br'], unknown: ['Невідомо', 'by'], granted: ['Розміщено адміном', 'bb'],
+};
+const _GF_INPUT = 'width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:8px 10px;font-size:12px;box-sizing:border-box';
+const _GF_LABEL = 'font-size:10px;color:var(--muted);margin-bottom:4px';
+
+function _gfName(o, lang) { const t = (o && o.i18n) || {}; return (t[lang] && t[lang].name) || (t.uk && t.uk.name) || ''; }
+function _gfPrice(v) { return (+v || 0).toLocaleString('uk-UA', {maximumFractionDigits: 2}) + ' ₴'; }
+function _gfErr(d) { if (!d || !d.detail) return ''; return typeof d.detail === 'string' ? d.detail : (Array.isArray(d.detail) ? d.detail.map(x => x.msg).join('; ') : ''); }
+async function _gfFetch(url, opts = {}) {
+  const r = await fetch(API + url, Object.assign({credentials: 'include'}, opts, {headers: authH(opts.headers || {})}));
+  const d = await r.json().catch(() => ({}));
+  return {ok: r.ok, status: r.status, d};
+}
+
+async function giftsAdmLoad() {
+  const {ok, d} = await _gfFetch('/api/admin/gifts');
+  if (!ok) { showN(_gfErr(d) || 'Помилка завантаження подарунків', true); return; }
+  _gf = d;
+  gfRenderGifts();
+  gfRenderCats();
+  const act = document.querySelector('.gf-tab.active')?.dataset.t;
+  if (act === 'placements') gfLoadPlacements();
+  if (act === 'settings') gfLoadSettings();
+}
+
+function gfTab(t, btn) {
+  document.querySelectorAll('.gf-tab').forEach(b => b.classList.toggle('active', b === btn));
+  document.querySelectorAll('.gf-panel').forEach(p => { p.style.display = p.id === 'gf-panel-' + t ? '' : 'none'; });
+  if (t === 'placements') gfLoadPlacements();
+  if (t === 'settings') gfLoadSettings();
+}
+
+/* ── Каталог ── */
+function gfRenderGifts() {
+  const q = (document.getElementById('gf-search')?.value || '').trim().toLowerCase();
+  const showOff = document.getElementById('gf-show-off')?.checked;
+  const cats = Object.fromEntries(_gf.categories.map(c => [c.id, c]));
+  const list = _gf.gifts.filter(g => (showOff || g.active) && (!q || _gfName(g, 'uk').toLowerCase().includes(q) || String(g.id) === q));
+  const tb = document.getElementById('gf-tbody');
+  if (!tb) return;
+  if (!list.length) { tb.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--muted);padding:20px">Порожньо</td></tr>'; return; }
+  tb.innerHTML = list.map(g => `<tr${g.active ? '' : ' style="opacity:.55"'}>
+    <td><span style="font-family:monospace;color:var(--muted);font-size:11px">${g.id}</span></td>
+    <td>${g.img_main ? `<img class="gf-thumb" src="${h(g.img_main)}" alt="">` : ''}</td>
+    <td>${h(_gfName(g, 'uk') || '—')}</td>
+    <td style="font-size:11px;color:var(--muted)">${h(cats[g.category_id] ? _gfName(cats[g.category_id], 'uk') : '—')}</td>
+    <td>${h(_gfPrice(g.price))}</td>
+    <td>${g.gif_place ? '<span class="badge bb">GIF</span>' : '<span style="color:var(--muted)">—</span>'}</td>
+    <td style="text-align:center">${g.placed}</td>
+    <td style="text-align:center">${g.sort_order}</td>
+    <td><span class="badge ${g.active ? 'bg' : 'by'}" style="cursor:pointer" onclick="gfToggleGift(${g.id})" title="Увімкнути / вимкнути">${g.active ? 'Так' : 'Ні'}</span></td>
+    <td style="display:flex;gap:4px">
+      <button class="btn btn-b" onclick="gfOpenGift(${g.id})" title="Редагувати"><svg class="adm-ico"><use href="#ico-edit"/></svg></button>
+      <button class="btn btn-r" onclick="gfDeleteGift(${g.id})" title="Видалити"><svg class="adm-ico"><use href="#ico-trash"/></svg></button>
+    </td>
+  </tr>`).join('');
+}
+
+function _gfImgField(id, label, kind, val, accept, hint) {
+  return `<div>
+    <div style="${_GF_LABEL}">${label}</div>
+    <div style="display:flex;gap:10px;align-items:center">
+      <div style="width:64px;height:64px;flex-shrink:0;border:1px solid var(--border2);border-radius:6px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.03)">
+        <img id="${id}-prev" src="${h(val)}" alt="" style="max-width:60px;max-height:60px;${val ? '' : 'display:none'}">
+      </div>
+      <div style="flex:1;min-width:0">
+        <input id="${id}" type="hidden" value="${h(val)}">
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <label class="btn" style="cursor:pointer"><svg class="adm-ico"><use href="#ico-upload"/></svg> Завантажити<input type="file" accept="${accept}" style="display:none" onchange="gfUpload('${kind}','${id}',this)"></label>
+          <button class="btn btn-r" type="button" onclick="gfClearImg('${id}')" title="Прибрати"><svg class="adm-ico"><use href="#ico-x"/></svg></button>
+        </div>
+        <div style="font-size:10px;color:var(--muted);margin-top:4px">${hint}</div>
+        <div id="${id}-warn" style="font-size:10px;color:#e0a050;margin-top:4px"></div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function _gfLangFields(prefix, tr, withDescr) {
+  return _gf.langs.map(l => `
+    <div>
+      <div style="${_GF_LABEL}">Назва (${h(l)})${l === 'uk' ? ' *' : ''}</div>
+      <input id="${prefix}-name-${h(l)}" type="text" maxlength="150" value="${h((tr[l] && tr[l].name) || '')}" style="${_GF_INPUT}">
+    </div>` + (withDescr ? `
+    <div>
+      <div style="${_GF_LABEL}">Короткий опис (${h(l)})</div>
+      <textarea id="${prefix}-descr-${h(l)}" maxlength="500" rows="2" style="${_GF_INPUT};resize:vertical">${h((tr[l] && tr[l].descr) || '')}</textarea>
+    </div>` : '')).join('');
+}
+
+function _gfCollectI18n(prefix) {
+  const out = {};
+  for (const l of _gf.langs) {
+    out[l] = {
+      name: (document.getElementById(`${prefix}-name-${l}`)?.value || '').trim(),
+      descr: (document.getElementById(`${prefix}-descr-${l}`)?.value || '').trim(),
+    };
+  }
+  return out;
+}
+
+function _gfModal(id, inner) {
+  document.getElementById(id)?.remove();
+  const m = document.createElement('div');
+  m.id = id;
+  m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9000;display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;padding:24px 0';
+  m.innerHTML = `<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;width:520px;max-width:94vw;margin:auto">${inner}</div>`;
+  m.addEventListener('click', e => { if (e.target === m) m.remove(); });
+  document.body.appendChild(m);
+  return m;
+}
+
+function gfOpenGift(id) {
+  const g = id != null ? _gf.gifts.find(x => x.id === id) : null;
+  const catOpts = '<option value="">— без категорії —</option>' + _gf.categories.map(c =>
+    `<option value="${c.id}"${g && g.category_id === c.id ? ' selected' : ''}>${h(_gfName(c, 'uk'))}${c.active ? '' : ' (вимкнена)'}</option>`).join('');
+  const areas = [['auto', 'Автоматично'], ['left', 'Ліворуч'], ['right', 'Праворуч']]
+    .map(([v, t]) => `<option value="${v}"${((g && g.place_area) || 'auto') === v ? ' selected' : ''}>${t}</option>`).join('');
+  _gfModal('gf-modal', `
+    <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:18px">${g ? 'Редагувати подарунок' : 'Новий подарунок'}</div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      ${_gfLangFields('gfm', (g && g.i18n) || {}, true)}
+      <div style="display:flex;gap:12px;flex-wrap:wrap">
+        <div style="flex:1;min-width:160px"><div style="${_GF_LABEL}">Категорія</div><select id="gfm-cat" style="${_GF_INPUT}">${catOpts}</select></div>
+        <div style="width:140px"><div style="${_GF_LABEL}">Ціна, ₴</div><input id="gfm-price" type="number" min="0" max="100000" step="0.01" value="${g ? g.price : 0}" style="${_GF_INPUT}"></div>
+      </div>
+      ${_gfImgField('gfm-img-main', 'Зображення в каталозі *', 'main', (g && g.img_main) || '', '.png,.jpg,.jpeg,.webp', 'PNG, JPG або WEBP, до 2 МБ')}
+      ${_gfImgField('gfm-img-final', 'Зображення біля свічки', 'final', (g && g.img_final) || '', '.png,.webp', 'PNG або WEBP з прозорим фоном, до 2 МБ. Якщо порожньо — береться зображення з каталогу')}
+      ${_gfImgField('gfm-gif', 'GIF покладання', 'gif', (g && g.gif_place) || '', '.gif', 'Анімація «руки кладуть подарунок», до 6 МБ; тривалість заповнюється сама. Наприкінці подарунок — внизу по центру й займає ≈⅓ ширини кадру: біля свічки GIF показується в 2.8 раза ширшим за подарунок. Бачить лише покупець, один раз')}
+      <div style="display:flex;gap:12px;flex-wrap:wrap">
+        <div style="flex:1;min-width:120px"><div style="${_GF_LABEL}">Тривалість GIF, мс</div><input id="gfm-anim" type="number" min="0" max="60000" step="10" value="${g ? g.anim_ms : 0}" style="${_GF_INPUT}"></div>
+        <div style="flex:1;min-width:120px"><div style="${_GF_LABEL}">Масштаб біля свічки (0.6–1.25)</div><input id="gfm-scale" type="number" min="0.6" max="1.25" step="0.05" value="${g ? g.place_scale : 1}" style="${_GF_INPUT}"></div>
+      </div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap">
+        <div style="flex:1;min-width:120px"><div style="${_GF_LABEL}" title="Якщо на цьому боці всі місця зайняті — подарунок стане на вільне місце з іншого боку">Бік від свічки</div><select id="gfm-area" style="${_GF_INPUT}">${areas}</select></div>
+        <div style="flex:1;min-width:90px"><div style="${_GF_LABEL}" title="Порядок накладання в межах ряду; задній ряд завжди позаду переднього">Шар (−10…10)</div><input id="gfm-z" type="number" min="-10" max="10" step="1" value="${g ? g.place_z : 0}" style="${_GF_INPUT}"></div>
+        <div style="flex:1;min-width:90px"><div style="${_GF_LABEL}">Порядок</div><input id="gfm-order" type="number" step="1" value="${g ? g.sort_order : 0}" style="${_GF_INPUT}"></div>
+      </div>
+      <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text)"><input id="gfm-active" type="checkbox" style="width:auto"${!g || g.active ? ' checked' : ''}> Активний (продається в каталозі)</label>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:18px">
+      <button class="btn" type="button" onclick="document.getElementById('gf-modal').remove()"><svg class="adm-ico"><use href="#ico-x"/></svg> <span data-i18n="btn.cancel">Скасувати</span></button>
+      <button class="btn btn-p" type="button" onclick="gfSaveGift(${g ? g.id : 'null'})"><svg class="adm-ico"><use href="#ico-save"/></svg> <span data-i18n="btn.save">Зберегти</span></button>
+    </div>`);
+}
+
+async function gfUpload(kind, fieldId, input) {
+  const file = input.files[0];
+  if (!file) return;
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('kind', kind);
+  showN('Завантаження…');
+  const {ok, d} = await _gfFetch('/api/admin/gifts/upload', {method: 'POST', body: fd});
+  input.value = '';
+  if (!ok) { showN(_gfErr(d) || 'Помилка завантаження', true); return; }
+  document.getElementById(fieldId).value = d.url;
+  const prev = document.getElementById(fieldId + '-prev');
+  if (prev) { prev.src = d.url; prev.style.display = ''; }
+  // етап 10: біля свічки подарунок ≈60 px — завеликі файли сповільнюють сторінку меморіалу
+  const warn = document.getElementById(fieldId + '-warn');
+  if (warn) {
+    const big = kind !== 'gif' && ((d.w > 600 || d.h > 600) || d.size > 300 * 1024);
+    const bigGif = kind === 'gif' && d.size > 2 * 1024 * 1024;
+    warn.textContent = big ? `⚠ ${d.w || '?'}×${d.h || '?'} px, ${(d.size / 1024).toFixed(0)} КБ — для швидкої сторінки краще до 512×512 px і до 300 КБ`
+      : bigGif ? `⚠ GIF ${(d.size / 1048576).toFixed(1)} МБ — покупець чекатиме завантаження; краще до 2 МБ` : '';
+  }
+  if (kind === 'gif' && d.duration_ms) {
+    const a = document.getElementById('gfm-anim');
+    if (a) a.value = d.duration_ms;
+    showN(`GIF завантажено: ${d.frames} кадр., ${(d.duration_ms / 1000).toFixed(1)} с`);
+  } else showN('Зображення завантажено');
+}
+
+function gfClearImg(fieldId) {
+  const f = document.getElementById(fieldId);
+  if (f) f.value = '';
+  const p = document.getElementById(fieldId + '-prev');
+  if (p) { p.removeAttribute('src'); p.style.display = 'none'; }
+}
+
+function _gfGiftBody(g) {
+  return {category_id: g.category_id, price: g.price, img_main: g.img_main, img_final: g.img_final, gif_place: g.gif_place,
+    anim_ms: g.anim_ms, place_scale: g.place_scale, place_area: g.place_area, place_z: g.place_z,
+    sort_order: g.sort_order, active: g.active, i18n: g.i18n || {}};
+}
+
+async function gfSaveGift(id) {
+  const i18n = _gfCollectI18n('gfm');
+  if (!i18n.uk || !i18n.uk.name) { showN('Вкажіть назву українською', true); return; }
+  const img_main = document.getElementById('gfm-img-main').value;
+  if (!img_main) { showN('Завантажте зображення для каталогу', true); return; }
+  const cat = document.getElementById('gfm-cat').value;
+  const body = {
+    category_id: cat ? +cat : null,
+    price: +(document.getElementById('gfm-price').value || 0),
+    img_main,
+    img_final: document.getElementById('gfm-img-final').value,
+    gif_place: document.getElementById('gfm-gif').value,
+    anim_ms: +(document.getElementById('gfm-anim').value || 0),
+    place_scale: +(document.getElementById('gfm-scale').value || 1),
+    place_area: document.getElementById('gfm-area').value,
+    place_z: +(document.getElementById('gfm-z').value || 0),
+    sort_order: +(document.getElementById('gfm-order').value || 0),
+    active: document.getElementById('gfm-active').checked ? 1 : 0,
+    i18n,
+  };
+  const {ok, d} = await _gfFetch(id != null ? `/api/admin/gifts/${id}` : '/api/admin/gifts', {
+    method: id != null ? 'PUT' : 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)});
+  if (!ok) { showN(_gfErr(d) || 'Помилка збереження', true); return; }
+  showN(id != null ? 'Збережено' : 'Подарунок додано');
+  document.getElementById('gf-modal')?.remove();
+  giftsAdmLoad();
+}
+
+async function gfToggleGift(id) {
+  const g = _gf.gifts.find(x => x.id === id);
+  if (!g) return;
+  const body = Object.assign(_gfGiftBody(g), {active: g.active ? 0 : 1});
+  const {ok, d} = await _gfFetch(`/api/admin/gifts/${id}`, {method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)});
+  if (!ok) { showN(_gfErr(d) || 'Помилка збереження', true); return; }
+  showN(body.active ? 'Подарунок увімкнено' : 'Подарунок вимкнено');
+  giftsAdmLoad();
+}
+
+async function gfDeleteGift(id) {
+  const g = _gf.gifts.find(x => x.id === id);
+  if (!confirm(`Видалити подарунок «${_gfName(g, 'uk') || id}»?`)) return;
+  const {ok, d} = await _gfFetch(`/api/admin/gifts/${id}`, {method: 'DELETE'});
+  if (!ok) { showN(_gfErr(d) || 'Помилка видалення', true); return; }
+  showN('Видалено');
+  giftsAdmLoad();
+}
+
+/* ── Категорії ── */
+function gfRenderCats() {
+  const tb = document.getElementById('gf-cat-tbody');
+  if (!tb) return;
+  if (!_gf.categories.length) { tb.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:20px">Порожньо</td></tr>'; return; }
+  tb.innerHTML = _gf.categories.map(c => `<tr${c.active ? '' : ' style="opacity:.55"'}>
+    <td><span style="font-family:monospace;color:var(--muted);font-size:11px">${c.id}</span></td>
+    <td style="font-family:monospace;font-size:11px">${h(c.code)}</td>
+    <td>${h(_gfName(c, 'uk'))}${c.i18n && c.i18n.en && c.i18n.en.name ? ` <span style="color:var(--muted);font-size:11px">· ${h(c.i18n.en.name)}</span>` : ''}</td>
+    <td style="text-align:center">${c.gifts_count}</td>
+    <td style="text-align:center">${c.sort_order}</td>
+    <td><span class="badge ${c.active ? 'bg' : 'by'}">${c.active ? 'Так' : 'Ні'}</span></td>
+    <td style="display:flex;gap:4px">
+      <button class="btn btn-b" onclick="gfOpenCat(${c.id})" title="Редагувати"><svg class="adm-ico"><use href="#ico-edit"/></svg></button>
+      <button class="btn btn-r" onclick="gfDeleteCat(${c.id})" title="Видалити"><svg class="adm-ico"><use href="#ico-trash"/></svg></button>
+    </td>
+  </tr>`).join('');
+}
+
+function gfOpenCat(id) {
+  const c = id != null ? _gf.categories.find(x => x.id === id) : null;
+  _gfModal('gf-cat-modal', `
+    <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:18px">${c ? 'Редагувати категорію' : 'Нова категорія'}</div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div><div style="${_GF_LABEL}">Код (латиницею, напр. flowers) *</div><input id="gfc-code" type="text" maxlength="40" value="${h((c && c.code) || '')}" style="${_GF_INPUT};font-family:monospace"></div>
+      ${_gfLangFields('gfc', (c && c.i18n) || {}, false)}
+      <div style="display:flex;gap:12px;align-items:flex-end">
+        <div style="width:120px"><div style="${_GF_LABEL}">Порядок</div><input id="gfc-order" type="number" step="1" value="${c ? c.sort_order : 0}" style="${_GF_INPUT}"></div>
+        <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text);padding-bottom:8px"><input id="gfc-active" type="checkbox" style="width:auto"${!c || c.active ? ' checked' : ''}> Активна</label>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:18px">
+      <button class="btn" type="button" onclick="document.getElementById('gf-cat-modal').remove()"><svg class="adm-ico"><use href="#ico-x"/></svg> <span data-i18n="btn.cancel">Скасувати</span></button>
+      <button class="btn btn-p" type="button" onclick="gfSaveCat(${c ? c.id : 'null'})"><svg class="adm-ico"><use href="#ico-save"/></svg> <span data-i18n="btn.save">Зберегти</span></button>
+    </div>`);
+}
+
+async function gfSaveCat(id) {
+  const code = (document.getElementById('gfc-code').value || '').trim().toLowerCase();
+  const i18n = _gfCollectI18n('gfc');
+  if (!/^[a-z0-9_-]{2,40}$/.test(code)) { showN('Код: латиниця, цифри, «-» або «_», 2–40 символів', true); return; }
+  if (!i18n.uk || !i18n.uk.name) { showN('Вкажіть назву українською', true); return; }
+  const body = {code, i18n, sort_order: +(document.getElementById('gfc-order').value || 0), active: document.getElementById('gfc-active').checked ? 1 : 0};
+  const {ok, d} = await _gfFetch(id != null ? `/api/admin/gift-categories/${id}` : '/api/admin/gift-categories', {
+    method: id != null ? 'PUT' : 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)});
+  if (!ok) { showN(_gfErr(d) || 'Помилка збереження', true); return; }
+  showN(id != null ? 'Збережено' : 'Категорію додано');
+  document.getElementById('gf-cat-modal')?.remove();
+  giftsAdmLoad();
+}
+
+async function gfDeleteCat(id) {
+  const c = _gf.categories.find(x => x.id === id);
+  if (!confirm(`Видалити категорію «${_gfName(c, 'uk') || id}»?`)) return;
+  const {ok, d} = await _gfFetch(`/api/admin/gift-categories/${id}`, {method: 'DELETE'});
+  if (!ok) { showN(_gfErr(d) || 'Помилка видалення', true); return; }
+  showN('Видалено');
+  giftsAdmLoad();
+}
+
+/* ── Розміщення (покупки) ── */
+async function gfLoadPlacements() {
+  const qs = new URLSearchParams({
+    status: document.getElementById('gf-pl-status')?.value || '',
+    q: (document.getElementById('gf-pl-search')?.value || '').trim(),
+    page: _gfPl.page, limit: 50,
+  });
+  const {ok, d} = await _gfFetch('/api/admin/memorial-gifts?' + qs);
+  if (!ok) { showN(_gfErr(d) || 'Помилка завантаження розміщень', true); return; }
+  _gfPl.pages = d.pages;
+  gfRenderPlacements(d);
+}
+function gfPlFilter() { _gfPl.page = 1; gfLoadPlacements(); }
+function gfPlSearch() { clearTimeout(_gfPlTimer); _gfPlTimer = setTimeout(gfPlFilter, 300); }
+function gfPlPage(step) { _gfPl.page = Math.max(1, Math.min(_gfPl.pages || 1, _gfPl.page + step)); gfLoadPlacements(); }
+
+function gfRenderPlacements(d) {
+  const sel = document.getElementById('gf-pl-status');
+  if (sel) {
+    const cur = sel.value, counts = d.counts || {};
+    const total = Object.values(counts).reduce((a, b) => a + b, 0);
+    sel.innerHTML = `<option value="">Всі статуси (${total})</option>` +
+      Object.entries(_GF_STATUS).map(([k, [t]]) => `<option value="${k}">${t} (${counts[k] || 0})</option>`).join('');
+    sel.value = cur;
+  }
+  const tb = document.getElementById('gf-pl-tbody');
+  if (!tb) return;
+  tb.innerHTML = !d.items.length
+    ? '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:20px">Порожньо</td></tr>'
+    : d.items.map(r => {
+        const st = _GF_STATUS[r.status] || [r.status, 'by'];
+        const mem = r.slug
+          ? `<a href="/card?slug=${encodeURIComponent(r.slug)}" target="_blank" rel="noopener" style="color:var(--accent)">${h(((r.last || '') + ' ' + (r.first || '')).trim() || '#' + r.memorial_id)}</a>`
+          : h(((r.last || '') + ' ' + (r.first || '')).trim() || '#' + r.memorial_id);
+        return `<tr>
+          <td><span style="font-family:monospace;color:var(--muted);font-size:11px">${r.id}</span></td>
+          <td style="font-size:11px;color:var(--muted)">${r.created_at ? new Date(r.created_at * 1000).toLocaleString('uk-UA') : '—'}</td>
+          <td>${mem} <span style="color:var(--muted);font-size:10px">#${r.memorial_id}</span></td>
+          <td>${h(r.gift_name || '#' + r.gift_id)}</td>
+          <td style="font-size:11px">${h(r.email || r.nickname || '—')}</td>
+          <td><span class="badge ${st[1]}">${h(st[0])}</span>${r.payment_id ? `<div style="font-size:10px;color:var(--muted);font-family:monospace;margin-top:3px" title="ID платежу LiqPay">${h(r.payment_id)}</div>` : ''}</td>
+          <td>${h(_gfPrice(r.price))}</td>
+          <td>${r.status === 'granted'
+            ? `<button class="btn btn-r" onclick="gfDeletePlacement(${r.id})" title="Прибрати з меморіалу"><svg class="adm-ico"><use href="#ico-trash"/></svg></button>`
+            : (_gf && _gf.payment && _gf.payment.ready ? `<button class="btn" onclick="gfSyncOrder(${r.id}, this)" title="Перевірити оплату в LiqPay"><svg class="adm-ico"><use href="#ico-refresh"/></svg></button>` : '')}</td>
+        </tr>`;
+      }).join('');
+  const sm = document.getElementById('gf-pl-summary');
+  if (sm) sm.textContent = `Оплачено: ${(d.counts || {}).paid || 0} на ${_gfPrice(d.paid_sum || 0)}`;
+  const pg = document.getElementById('gf-pl-pager');
+  if (pg) pg.innerHTML = `<span>Сторінка ${d.page} з ${d.pages} · всього ${d.total}</span>
+    <button class="btn" onclick="gfPlPage(-1)"${d.page <= 1 ? ' disabled' : ''}>←</button>
+    <button class="btn" onclick="gfPlPage(1)"${d.page >= d.pages ? ' disabled' : ''}>→</button>`;
+}
+
+async function gfDeletePlacement(id) {
+  if (!confirm('Прибрати цей подарунок з меморіалу?')) return;
+  const {ok, d} = await _gfFetch(`/api/admin/memorial-gift/${id}`, {method: 'DELETE'});
+  if (!ok) { showN(_gfErr(d) || 'Помилка видалення', true); return; }
+  showN('Подарунок прибрано');
+  gfLoadPlacements();
+  giftsAdmLoad();
+}
+
+// Звірити замовлення з LiqPay: callback не дійшов, повернення коштів тощо
+async function gfSyncOrder(id, btn) {
+  if (btn) btn.disabled = true;
+  const {ok, d} = await _gfFetch(`/api/admin/memorial-gift/${id}/sync`, {method: 'POST'});
+  if (btn) btn.disabled = false;
+  if (!ok) { showN(_gfErr(d) || 'Не вдалося перевірити оплату', true); return; }
+  const lbl = s => (_GF_STATUS[s] || [s])[0];
+  showN(d.check === 'none' ? 'LiqPay: платежу немає · ' + lbl(d.status)
+    : d.previous === d.status ? 'LiqPay: без змін · ' + lbl(d.status)
+    : 'LiqPay: ' + lbl(d.previous) + ' → ' + lbl(d.status));
+  gfLoadPlacements();
+}
+
+/* ── Налаштування модуля ── */
+async function gfLoadSettings() {
+  try {
+    const r = await fetch(API + '/api/card/settings');
+    const s = await r.json();
+    const el = document.getElementById('gf-enabled');
+    if (el) el.checked = s.card_gifts_enabled === '1';
+    const buy = document.getElementById('gf-buy-enabled');
+    if (buy) buy.checked = s.card_gifts_buy_enabled === '1';
+    const set = (id, fn) => { const x = document.getElementById(id); if (x) fn(x); };
+    set('gf-button', x => x.checked = s.card_gifts_button !== '0');
+    set('gf-anim', x => x.checked = s.card_gifts_anim !== '0');
+    set('gf-anim-scale', x => x.value = s.card_gifts_anim_scale || '2.8');
+    set('gf-size', x => x.value = s.card_gifts_size || '100');
+    set('gf-notify', x => x.checked = s.card_gifts_notify === '1');
+  } catch {}
+  // лист адміну: адреса — ADMIN_NOTIFY_EMAIL у .env (у публічних налаштуваннях її немає)
+  const ns = document.getElementById('gf-notify-status'), nf = _gf && _gf.notify;
+  if (ns && nf) {
+    ns.innerHTML = nf.email
+      ? `На <b>${h(nf.email)}</b> (ADMIN_NOTIFY_EMAIL у .env)` + (nf.smtp_ready ? '' : ' · <span style="color:#e0a050">SMTP не налаштовано — лист не надійде</span>')
+      : '<span style="color:#e0a050">ADMIN_NOTIFY_EMAIL у .env не задано</span>';
+  }
+  // ключі LiqPay — лише в .env; тут тільки показуємо, чи підключено
+  const ps = document.getElementById('gf-liqpay-status'), p = _gf && _gf.payment;
+  if (ps && p) {
+    ps.innerHTML = p.ready
+      ? `<span style="color:#4caf50">Підключено</span> · ${p.sandbox ? 'тестовий режим (sandbox): кошти не списуються' : 'бойовий режим'}`
+        + `<br>Callback: <code style="font-size:11px">${h(p.callback_url)}</code> — має бути доступний з інтернету`
+      : `<span style="color:#e0a050">Не підключено.</span> Додайте LIQPAY_PUBLIC_KEY і LIQPAY_PRIVATE_KEY у .env і перезапустіть сервер — до того купівля недоступна`;
+  }
+}
+
+// «Тексти модуля» → «Локалізація», секція gifts
+function gfEditTexts() {
+  const sel = document.getElementById('i18n-sec-sel');
+  if (sel) sel.value = 'gifts';
+  showSec('i18n');
+}
+
+async function gfSaveSettings() {
+  const st = document.getElementById('gf-settings-status');
+  const value = document.getElementById('gf-enabled')?.checked ? '1' : '0';
+  const buy = document.getElementById('gf-buy-enabled')?.checked ? '1' : '0';
+  const flag = id => document.getElementById(id)?.checked ? '1' : '0';
+  const num = id => String(document.getElementById(id)?.value || '');
+  if (st) { st.style.color = 'var(--muted)'; st.textContent = 'Збереження…'; }
+  const {ok, d} = await _gfFetch('/api/admin/colors/batch', {method: 'PUT', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify([{key: 'card_gifts_enabled', value}, {key: 'card_gifts_buy_enabled', value: buy},
+      {key: 'card_gifts_button', value: flag('gf-button')}, {key: 'card_gifts_anim', value: flag('gf-anim')},
+      {key: 'card_gifts_anim_scale', value: num('gf-anim-scale')}, {key: 'card_gifts_size', value: num('gf-size')},
+      {key: 'card_gifts_notify', value: flag('gf-notify')}])});
+  if (!ok) { if (st) { st.style.color = '#e05050'; st.textContent = _gfErr(d) || 'Помилка збереження'; } return; }
+  if (st) { st.style.color = '#4caf50'; st.textContent = '✓ Збережено: модуль ' + (value === '1' ? 'увімкнено' : 'вимкнено') + ', купівля ' + (buy === '1' ? 'доступна' : 'недоступна'); }
+  gfLoadSettings();   // показати значення після перевірки на сервері (межі чисел)
+}
+
 /* ══════════ КАРТКА МЕМОРІАЛУ ══════════ */
 async function cardSettingsLoad(){
   try{
@@ -14352,6 +15034,69 @@ async function saveTourSettings() {
     const hint = document.getElementById('tour-save-hint');
     if (hint) { hint.textContent = 'Збережено'; setTimeout(() => hint.textContent = '', 2500); }
   } catch { showN('Помилка збереження', true); }
+}
+
+/* ── «Нові надходження» (v3.58): налаштування блоку й записи, що зараз у ньому ───────── */
+async function loadRecentSettings() {
+  try {
+    const r = await fetch(`${API}/api/colors`);
+    const d = await r.json();
+    const g = (k, def) => (d[k]?.value ?? def);
+    const en = document.getElementById('recent-enabled');
+    if (en) en.checked = g('recent_enabled', '1') !== '0';
+    const dy = document.getElementById('recent-days');
+    if (dy) dy.value = g('recent_days', '3');
+  } catch (e) { console.error('loadRecentSettings', e); }
+  recentLoadList();
+}
+
+async function recentLoadList() {
+  const tb = document.getElementById('recent-adm-tbody');
+  if (!tb) return;
+  const row = t => `<tr><td colspan="3" style="text-align:center;color:var(--muted);padding:16px">${t}</td></tr>`;
+  tb.innerHTML = row('Завантаження…');
+  try {
+    const r = await fetch(`${API}/api/admin/recent-additions`, {headers: authH(), credentials: 'include'});
+    if (!r.ok) throw new Error(r.status);
+    const d = await r.json();
+    const cnt = document.getElementById('recent-adm-count');
+    if (cnt) cnt.textContent = `· ${d.items.length} · за ${d.days} дн.` + (d.enabled ? '' : ' · блок вимкнено');
+    if (!d.items.length) { tb.innerHTML = row('Порожньо — за цей період нових записів на сайті не було'); return; }
+    const fmt = ts => new Date(ts * 1000).toLocaleString('uk-UA', {day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'});
+    tb.innerHTML = d.items.map(it => `<tr>
+      <td><a href="/memorial/${encodeURIComponent(it.slug || '')}" target="_blank" rel="noopener" style="color:var(--accent)">${h(it.last)} ${h(it.first)}</a>
+        <span style="font-family:monospace;color:var(--muted);font-size:11px">#${+it.id}</span></td>
+      <td style="font-size:12px;color:var(--muted)">${fmt(it.ts)}</td>
+      <td><button class="btn btn-r" onclick="recentHide(${+it.id})" title="Прибрати з блоку — сам запис на сайті лишається"><svg class="adm-ico"><use href="#ico-cross"/></svg> Прибрати</button></td>
+    </tr>`).join('');
+  } catch { tb.innerHTML = row('Помилка завантаження'); }
+}
+
+async function saveRecentSettings() {
+  const items = [
+    {key: 'recent_enabled', value: document.getElementById('recent-enabled')?.checked ? '1' : '0'},
+    {key: 'recent_days',    value: String(document.getElementById('recent-days')?.value || '3')},
+  ];
+  try {
+    const r = await fetch(`${API}/api/admin/colors/batch`, {
+      method: 'PUT', headers: {...authH(), 'Content-Type': 'application/json'}, credentials: 'include',
+      body: JSON.stringify(items)
+    });
+    if (!r.ok) throw new Error();
+    const hint = document.getElementById('recent-save-hint');
+    if (hint) { hint.textContent = 'Збережено'; setTimeout(() => hint.textContent = '', 2500); }
+    loadRecentSettings();   // показати значення так, як їх зберіг сервер (дні — в межах 1–14)
+  } catch { showN('Помилка збереження', true); }
+}
+
+async function recentHide(id) {
+  if (!confirm('Прибрати запис із блоку «Нові надходження»? Сам запис на сайті лишається.')) return;
+  try {
+    const r = await fetch(`${API}/api/admin/recent-additions/${id}/hide`, {method: 'POST', headers: authH(), credentials: 'include'});
+    if (!r.ok) throw new Error();
+    showN('Прибрано з блоку');
+    recentLoadList();
+  } catch { showN('Помилка', true); }
 }
 
 /* ── Відео-попап (реклама): налаштування ───────────── */

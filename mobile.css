@@ -277,9 +277,12 @@ body{ -webkit-tap-highlight-color: transparent; }
   content:''; position:absolute; top:8px; left:50%; transform:translateX(-50%);
   width:42px; height:4px; border-radius:3px; background: rgba(255,255,255,.2); z-index:6;
 }
+/* Тарифний план: лист знизу — світіння вгору, а не від лівого краю (Style.css) */
+#card[data-tier]{ box-shadow: 0 -16px 48px rgba(0,0,0,.6), 0 -4px 26px -6px var(--tier-glow), inset 0 0 26px -10px var(--tier-glow); }
 #cphoto{ height: 200px; }
 #cbody{ padding: 18px 18px calc(30px + var(--sa-b)); }
 #cclose{ top: 14px; right: 14px; width:34px; height:34px; }
+#card[data-tier] #ctier-badge{ top: 22px; left: 14px; }   /* центр — на рівні кнопки закриття (44 px) */
 #cname{ font-size: 17px; }
 #cdates{ font-size: 12px; }
 .cv{ font-size: 13px; }

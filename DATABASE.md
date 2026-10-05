@@ -59,7 +59,7 @@ D:\OSPanel\modules\MySQL-8.4\bin\mysql.exe -h 127.0.0.1 -P 3306 -u root -proot z
 | `loc` | VARCHAR(300) | YES | — | Місце загибелі |
 | `bury` | VARCHAR(300) | YES | — | Місце поховання |
 | `circ` | VARCHAR(500) | YES | — | Обставини загибелі |
-| `descr` | TEXT | YES | — | Повний опис (може бути HTML) |
+| `descr` | TEXT | YES | — | Повний опис (може бути HTML). З адмінки — до 10000 символів, з публічної форми — до 5000 (v3.55) |
 | `photo` | VARCHAR(500) | YES | — | URL фотографії (https://) |
 | `color` | VARCHAR(20) | YES | `#4fc3f7` | Колір маркера на карті (hex/rgba) |
 | `pos_x` | DOUBLE | YES | `0.5` | X-позиція на карті (0.0–1.0, нормалізована) |
@@ -74,6 +74,8 @@ D:\OSPanel\modules\MySQL-8.4\bin\mysql.exe -h 127.0.0.1 -P 3306 -u root -proot z
 | `position` | VARCHAR(100) | NO | `''` | Посада |
 | `unit` | VARCHAR(200) | NO | `''` | Військовий підрозділ (напр. "81 ОАеМБр") |
 | `slug` | VARCHAR(220) | YES | NULL | SEO-slug: `ivan-petrenko-42` (auto-generated) |
+| `tier` | VARCHAR(10) | NO | `''` | Тарифний план: `bronze` / `silver` / `gold` / `platinum`, `''` — без плану. Лише вигляд бокової панелі на сайті; виставляє тільки адмін. Створюється в `init_db()` (v3.44) |
+| `published_at` | INT | YES | `NULL` | «Нові надходження» (v3.58): unix-час, коли запис зʼявився на сайті — схвалено з модерації, доданий адміном схваленим чи правка «схвалено» 0 → 1. `NULL` — давні записи й прибрані адміном із блоку. Створюється в `init_db()` |
 
 ### Індекси
 
@@ -544,6 +546,29 @@ img_file = локальні PNG назви (напр. "order_courage_1.png", "me
 123 записи — всі пошуки з 2026-05-06
 Приклади: "Шевченко", "Шевченк", "admin@admin.com"
 ```
+
+---
+
+## Модуль «Подарунки загиблому» (v3.45, Gifts-for-fallen.md)
+
+Створюються в `init_db()` при старті бекенду (`CREATE TABLE IF NOT EXISTS`).
+
+| Таблиця | Призначення | Ключові колонки |
+|---------|-------------|-----------------|
+| `gift_categories` | Категорії каталогу | `code` UNIQUE, `sort_order`, `active` |
+| `gifts` | Каталог подарунків (не захардкоджений) | `price_kop` (копійки), `img_main` / `gif_place` / `img_final`, `active` (0 — не продається, куплені лишаються), `sort_order`, `place_scale`, `place_area`, `place_z` |
+| `gift_i18n` | Назви й описи будь-якою мовою | PK(`entity` 'gift'\|'category', `entity_id`, `lang`), `name`, `descr`; фолбек `uk` |
+| `memorial_gifts` | Подарунки, покладені на меморіал (покупки) | `memorial_id`, `gift_id`, `user_id`, `status` (created\|pending\|paid\|cancelled\|error\|unknown\|granted), `price_kop` (знімок), `order_id` UNIQUE, `payment_id` UNIQUE NULL, `slot` (0..7), `anim_state` (pending\|shown), `img_snap`/`gif_snap` (знімок), INDEX(`memorial_id`,`status`) |
+
+- Подарунки не видаляються остаточно (лише `active=0`), а покупка зберігає знімок ціни й зображень — куплене не зникає при зміні каталогу.
+- `status='granted'` — розміщено адміністратором без оплати (етап 3).
+- `status='created'` — замовлення покупця, очікує оплати (етап 5): `order_id` = `zp-` + 24 hex, `slot` = NULL до оплати; біля свічки показуються лише `granted`/`paid`.
+- `status='pending'` — покупець перейшов на оплату LiqPay (етап 6); якщо платежу в LiqPay немає (оплату покинули), звірка повертає `created`.
+- `status='paid'` — оплату підтверджено підписаним callback або запитом статусу (сума й валюта збіглися зі знімком): `payment_id` (ID платежу LiqPay, UNIQUE — один платіж зараховується один раз), `paid_at`, `slot` (призначається під блокуванням меморіалу).
+- `status='cancelled'` — скасовано покупцем або повернуто кошти (`reversed`, `slot` → NULL); `error` — оплата не пройшла або сума/валюта не збіглися; `unknown` — нерозпізнаний статус LiqPay.
+- `anim_state` — `pending`: GIF покладання ще не показано власнику (покупцю або адміну, що поклав подарунок із GIF); `shown`: показано або GIF немає. Перехід у `shown` — `POST /api/memorial-gift/{id}/shown` після перегляду (етап 7).
+- `slot` — місце біля свічки (етап 8): 0–7 передній ряд, 8–15 задній; парні — ліворуч, непарні — праворуч, менший номер — ближче до свічки; `NULL` — понад 16 місць (на сторінці «ще N»). Призначає сервер (`_gift_pick_slot`) з урахуванням `gifts.place_area`. Звільнене місце (повернення коштів, прибране розміщення) займає найстаріший подарунок «понад місця» (`_gift_fill_free_slots`, етап 10).
+- Індекс `idx_user_status (user_id, status)` (етап 10, створюється в `init_db()`): «мої замовлення» й ліміт незавершених замовлень користувача.
 
 ---
 

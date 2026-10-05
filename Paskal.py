@@ -9,7 +9,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import urllib.request, urllib.error, urllib.parse
 import bcrypt
-from typing import Optional, List
+from typing import Optional, List, Dict
 
 import pymysql
 import pymysql.cursors
@@ -162,6 +162,7 @@ def cache_flush_all():
     cache_delete("labels")
     cache_delete("cities")
     cache_delete("map_points")
+    cache_delete("recent_additions")
     for k in range(1, 100):
         cache_delete(f"people:p{k}:l50")
         cache_delete(f"people:p{k}:l100")
@@ -171,6 +172,7 @@ def cache_flush_memorials():
     cache_delete("stats")
     cache_delete("labels")
     cache_delete("map_points")
+    cache_delete("recent_additions")
     for k in range(1, 100):
         cache_delete(f"people:p{k}:l50")
         cache_delete(f"people:p{k}:l100")
@@ -381,6 +383,80 @@ def init_db():
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
         """)
 
+        # ── Модуль «Подарунки загиблому» (Gifts-for-fallen.md) ──
+        # Каталог не захардкоджений: категорії й подарунки в БД, назви/описи будь-якою
+        # мовою — у gift_i18n (entity 'gift'|'category', фолбек uk).
+        # Ціни — у копійках. Подарунки не видаляються остаточно (active=0), а покупка
+        # зберігає знімок ціни й зображень — куплене не зникає при зміні каталогу.
+        # memorial_gifts.status: created|pending|paid|cancelled|error|unknown|granted
+        # (granted — розміщено адміном без оплати); anim_state: pending|shown.
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS gift_categories (
+                id          INT PRIMARY KEY AUTO_INCREMENT,
+                code        VARCHAR(40) NOT NULL,
+                sort_order  INT NOT NULL DEFAULT 0,
+                active      TINYINT NOT NULL DEFAULT 1,
+                UNIQUE KEY uq_code (code)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        """)
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS gifts (
+                id           INT PRIMARY KEY AUTO_INCREMENT,
+                category_id  INT NULL,
+                price_kop    INT NOT NULL DEFAULT 0,
+                img_main     VARCHAR(300) NOT NULL DEFAULT '',
+                gif_place    VARCHAR(300) NOT NULL DEFAULT '',
+                img_final    VARCHAR(300) NOT NULL DEFAULT '',
+                anim_ms      INT NOT NULL DEFAULT 0,
+                active       TINYINT NOT NULL DEFAULT 1,
+                sort_order   INT NOT NULL DEFAULT 0,
+                place_scale  DECIMAL(4,2) NOT NULL DEFAULT 1.00,
+                place_area   VARCHAR(20) NOT NULL DEFAULT 'auto',
+                place_z      INT NOT NULL DEFAULT 0,
+                created_at   INT NOT NULL DEFAULT 0,
+                updated_at   INT NOT NULL DEFAULT 0,
+                INDEX idx_active (active, sort_order)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        """)
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS gift_i18n (
+                entity     VARCHAR(10) NOT NULL,
+                entity_id  INT NOT NULL,
+                lang       VARCHAR(5) NOT NULL,
+                name       VARCHAR(150) NOT NULL DEFAULT '',
+                descr      VARCHAR(500) NOT NULL DEFAULT '',
+                PRIMARY KEY (entity, entity_id, lang)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        """)
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS memorial_gifts (
+                id           INT PRIMARY KEY AUTO_INCREMENT,
+                memorial_id  INT NOT NULL,
+                gift_id      INT NOT NULL,
+                user_id      INT NULL,
+                status       VARCHAR(16) NOT NULL DEFAULT 'created',
+                price_kop    INT NOT NULL DEFAULT 0,
+                currency     VARCHAR(3) NOT NULL DEFAULT 'UAH',
+                order_id     VARCHAR(64) NOT NULL,
+                payment_id   VARCHAR(64) NULL,
+                slot         INT NULL,
+                anim_state   VARCHAR(10) NOT NULL DEFAULT 'pending',
+                img_snap     VARCHAR(300) NOT NULL DEFAULT '',
+                gif_snap     VARCHAR(300) NOT NULL DEFAULT '',
+                created_at   INT NOT NULL DEFAULT 0,
+                paid_at      INT NULL,
+                updated_at   INT NOT NULL DEFAULT 0,
+                UNIQUE KEY uq_order (order_id),
+                UNIQUE KEY uq_payment (payment_id),
+                INDEX idx_mem_status (memorial_id, status)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        """)
+        # «Подарунки загиблому», етап 10: «мої замовлення» й ліміти незавершених шукають за користувачем
+        try:
+            c.execute("ALTER TABLE memorial_gifts ADD INDEX idx_user_status (user_id, status)")
+        except Exception:
+            pass
+
         # ── ghost_faces (модуль «Привиди в диму»: список SVG-силуетів, 2-6 файлів) ──
         c.execute("""
             CREATE TABLE IF NOT EXISTS ghost_faces (
@@ -428,6 +504,18 @@ def init_db():
             pass
         try:
             c.execute("ALTER TABLE memorials ADD COLUMN `unit` VARCHAR(200) NOT NULL DEFAULT ''")
+        except Exception:
+            pass
+        # Migration: тарифний план (bronze|silver|gold|platinum, '' — без плану).
+        # Поки лише вигляд бокової панелі на сайті; виставляє тільки адмін.
+        try:
+            c.execute("ALTER TABLE memorials ADD COLUMN `tier` VARCHAR(10) NOT NULL DEFAULT ''")
+        except Exception:
+            pass
+        # Migration: «Нові надходження» (v3.58) — коли запис зʼявився на сайті: схвалено з модерації
+        # чи адмін додав одразу схваленим (unix-час; NULL — давні записи й прибрані з блоку адміном)
+        try:
+            c.execute("ALTER TABLE memorials ADD COLUMN `published_at` INT NULL DEFAULT NULL")
         except Exception:
             pass
         # Migration: add role to users
@@ -1660,6 +1748,7 @@ _MAINTENANCE_ALLOW = (
     "/admin", "/api/admin/", "/api/auth/",
     "/api/install/", "/install",
     "/api/maintenance-message",
+    "/api/gifts/liqpay/",   # callback оплати LiqPay — платіж зараховується й під час техробіт
     "/img/", "/js/", "/fonts/", "/audio/",
     "/health", "/metrics",
 )
@@ -1763,6 +1852,17 @@ async def security_headers(request, call_next):
         "frame-src https://www.youtube.com https://www.youtube-nocookie.com; "
         "connect-src 'self' ws: wss: data: https://www.youtube.com https://analytics.google.com https://www.google.com/g/collect;"
     )
+    # HTML без власного правила кешу (адмінка, картка, faq, профіль…): браузер перевіряє актуальність при кожному
+    # відкритті, тож після заливки одразу бачить нову версію. Без цього заголовка браузер брав сторінку з кешу
+    # («свіжість» за Last-Modified) — після деплою v3.54 адмінка ще показувала стару карту. Незмінений файл — 304
+    # за ETag (Nginx з gzip робить його слабким W/…). Головна (no-store) і SSR (max-age=300) — зі своїми правилами
+    if response.status_code == 200 and "cache-control" not in response.headers             and response.headers.get("content-type", "").startswith("text/html"):
+        response.headers["Cache-Control"] = "no-cache"
+        etag, inm = response.headers.get("etag"), request.headers.get("if-none-match")
+        if etag and inm:
+            bare = lambda t: t.strip()[2:] if t.strip().startswith("W/") else t.strip()
+            if bare(etag) in {bare(t) for t in inm.split(",")}:
+                return Response(status_code=304, headers={"ETag": etag, "Cache-Control": "no-cache"})
     return response
 
 # Статичні файли (img)
@@ -2179,6 +2279,14 @@ def get_card_settings():
         "card_show_bio": "1", "card_show_timeline": "1",
         "card_show_video": "1", "card_show_awards": "1",
         "card_show_ribbon": "1", "card_show_candle": "1",
+        "card_gifts_enabled": "0",
+        "card_gifts_buy_enabled": "0",
+        # «Подарунки загиблому», етап 9 — налаштування модуля
+        "card_gifts_button": "1",        # кнопка й каталог (0 — нові подарунки не обрати, покладені лишаються)
+        "card_gifts_anim": "1",          # GIF покладання покупцю
+        "card_gifts_anim_scale": "2.8",  # у скільки разів GIF ширший за подарунок
+        "card_gifts_size": "100",        # розмір подарунків біля свічки, %
+        "card_gifts_notify": "0",        # лист адміну про оплачений подарунок (адреса — ADMIN_NOTIFY_EMAIL у .env)
         "card_no_photo_bg": "/img/bgcard.webp",
         "card_footer_text": "Вічна памʼять Героям України",
         "card_likes_refresh": "60",
@@ -2187,7 +2295,1122 @@ def get_card_settings():
     result = dict(defaults)
     for r in rows:
         result[r["key"]] = r["value"]
+    # оплата подарунків доступна лише з ключами LiqPay у .env (не з БД)
+    result["card_gifts_pay_ready"] = "1" if _liqpay_ready() else "0"
     return result
+
+
+# ── Модуль «Подарунки загиблому» (Gifts-for-fallen.md) ───────────────
+# Етап 3 — без оплати: каталог, отримання розміщених подарунків, розміщення
+# лише адміном (тестове, status='granted'). Покупка й ПриватБанк (LiqPay) —
+# етапи 5–6; GIF покладання — етап 7; повноцінне розміщення — етап 8.
+# Місця біля свічки (етап 8): 2 ряди × 8. 0–7 — передній ряд, 8–15 — задній (вище, менший,
+# між передніми); парні — ліворуч, непарні — праворуч; менший номер — ближче до свічки.
+_GIFT_SLOTS = 16
+
+def _gift_fill_free_slots(c, mid: int):
+    """Етап 10: місце звільнилось (повернення коштів, прибрали розміщення) — його займає найстаріший
+    подарунок «понад місця» (з урахуванням боку). Викликати під блокуванням меморіалу."""
+    c.execute("SELECT slot FROM memorial_gifts WHERE memorial_id=%s AND status IN ('granted','paid')"
+              " AND slot IS NOT NULL", (mid,))
+    used = {r["slot"] for r in c.fetchall()}
+    if len(used) >= _GIFT_SLOTS:
+        return
+    c.execute("SELECT mg.id, g.place_area FROM memorial_gifts mg LEFT JOIN gifts g ON g.id=mg.gift_id"
+              " WHERE mg.memorial_id=%s AND mg.status IN ('granted','paid') AND mg.slot IS NULL"
+              " ORDER BY mg.id LIMIT %s", (mid, _GIFT_SLOTS - len(used)))
+    for r in c.fetchall():
+        slot = _gift_pick_slot(used, r["place_area"] or "auto")
+        if slot is None:
+            break
+        c.execute("UPDATE memorial_gifts SET slot=%s WHERE id=%s", (slot, r["id"]))
+        used.add(slot)
+
+def _gift_pick_slot(used: set, area: str = "auto"):
+    """Найближче до свічки вільне місце (спершу передній ряд). place_area 'left'/'right' — бік
+    свічки; якщо там усе зайнято — будь-яке вільне. None — понад місця (на сторінці «ще N»)."""
+    if area in ("left", "right"):
+        side = 0 if area == "left" else 1
+        slot = next((i for i in range(_GIFT_SLOTS) if i % 2 == side and i not in used), None)
+        if slot is not None:
+            return slot
+    return next((i for i in range(_GIFT_SLOTS) if i not in used), None)
+_GIFT_LANG_RE = re.compile(r'^[a-z]{2}$')
+
+def _gift_settings() -> dict:
+    """Етап 10: усі налаштування модуля (card_gifts_*) одним запитом замість кількох _get_color_val."""
+    db = get_db()
+    try:
+        with db.cursor() as c:
+            c.execute("SELECT `key`, value FROM colors WHERE `key` LIKE 'card_gifts_%'")
+            return {r["key"]: r["value"] for r in c.fetchall()}
+    finally:
+        db.close()
+
+def _gifts_enabled(cfg: Optional[dict] = None) -> bool:
+    return (cfg if cfg is not None else _gift_settings()).get("card_gifts_enabled", "0") == "1"
+
+def _gift_lang(lang: str) -> str:
+    lang = (lang or "uk").strip().lower()[:2]
+    return lang if _GIFT_LANG_RE.match(lang) else "uk"
+
+class GiftPlaceIn(BaseModel):
+    gift_id: int
+
+@app.get("/api/gifts/catalog")
+def gifts_catalog(lang: str = "uk", request: Request = None):
+    ip = _get_ip(request) if request else "unknown"
+    if not _rl.check(f"gifts:{ip}", 60, 60):
+        raise HTTPException(429, "Забагато запитів. Зачекайте.")
+    if not _gifts_enabled():
+        return {"enabled": False, "items": []}
+    lang = _gift_lang(lang)
+    db = get_db()
+    try:
+        with db.cursor() as c:
+            c.execute(
+                "SELECT g.id, g.price_kop, g.img_main, cat.code AS category,"
+                " COALESCE(NULLIF(t.name,''), u.name, '') AS name,"
+                " COALESCE(NULLIF(t.descr,''), u.descr, '') AS descr,"
+                " COALESCE(NULLIF(ct.name,''), cu.name, '') AS category_name"
+                " FROM gifts g"
+                " LEFT JOIN gift_i18n t ON t.entity='gift' AND t.entity_id=g.id AND t.lang=%s"
+                " LEFT JOIN gift_i18n u ON u.entity='gift' AND u.entity_id=g.id AND u.lang='uk'"
+                " LEFT JOIN gift_categories cat ON cat.id=g.category_id AND cat.active=1"
+                " LEFT JOIN gift_i18n ct ON ct.entity='category' AND ct.entity_id=g.category_id AND ct.lang=%s"
+                " LEFT JOIN gift_i18n cu ON cu.entity='category' AND cu.entity_id=g.category_id AND cu.lang='uk'"
+                " WHERE g.active=1 ORDER BY g.sort_order, g.id",
+                (lang, lang)
+            )
+            rows = c.fetchall()
+    finally:
+        db.close()
+    return {"enabled": True, "items": [{
+        "id": r["id"], "name": r["name"], "descr": r["descr"],
+        "price": r["price_kop"] / 100, "img": r["img_main"],
+        "category": r["category"] or "", "category_name": r["category_name"] or "",
+    } for r in rows]}
+
+def _gift_anim_ms(v) -> int:
+    """Скільки показувати GIF покладання: тривалість із каталогу (0 — невідома → 3 с), у межах 0.8–15 с."""
+    v = int(v or 0)
+    return min(max(v, 800), 15000) if v > 0 else 3000
+
+@app.get("/api/memorial/{mid}/gifts")
+def memorial_gifts_list(mid: int, lang: str = "uk", full: int = 0, request: Request = None):
+    """Подарунки біля свічки. Етап 10: за замовчуванням — лише ті, що на місцях (≤16), і загальна
+    кількість (total); повний список (до 500) — ?full=1, коли відкривають «ще N»."""
+    ip = _get_ip(request) if request else "unknown"
+    if not _rl.check(f"gifts:{ip}", 60, 60):
+        raise HTTPException(429, "Забагато запитів. Зачекайте.")
+    cfg = _gift_settings()
+    if not _gifts_enabled(cfg):
+        return {"enabled": False, "items": [], "total": 0}
+    lang = _gift_lang(lang)
+    me = _get_optional_user(request)
+    db = get_db()
+    try:
+        with db.cursor() as c:
+            c.execute(
+                "SELECT mg.id, mg.gift_id, mg.slot, mg.img_snap, mg.gif_snap, mg.anim_state, mg.user_id,"
+                " g.place_scale, g.place_z, g.anim_ms,"
+                " COALESCE(NULLIF(t.name,''), u.name, '') AS name"
+                " FROM memorial_gifts mg"
+                " LEFT JOIN gifts g ON g.id=mg.gift_id"
+                " LEFT JOIN gift_i18n t ON t.entity='gift' AND t.entity_id=mg.gift_id AND t.lang=%s"
+                " LEFT JOIN gift_i18n u ON u.entity='gift' AND u.entity_id=mg.gift_id AND u.lang='uk'"
+                " WHERE mg.memorial_id=%s AND mg.status IN ('granted','paid')"
+                + ("" if full else " AND mg.slot IS NOT NULL") +
+                " ORDER BY mg.slot IS NULL, mg.slot, mg.id" + (" LIMIT 500" if full else ""),
+                (lang, mid)
+            )
+            rows = c.fetchall()
+            c.execute("SELECT COUNT(*) AS n FROM memorial_gifts WHERE memorial_id=%s AND status IN ('granted','paid')", (mid,))
+            total = c.fetchone()["n"]
+    finally:
+        db.close()
+    anim_on = bool(me) and cfg.get("card_gifts_anim", "1") == "1"   # етап 9: анімацію можна вимкнути
+    items = []
+    for r in rows:
+        it = {"id": r["id"], "gift_id": r["gift_id"], "name": r["name"], "img": r["img_snap"],
+              "slot": r["slot"], "scale": float(r["place_scale"] or 1), "z": int(r["place_z"] or 0)}
+        # етап 7: GIF покладання — лише власнику (покупцю чи адміну, що поклав) і лише раз;
+        # решта відвідувачів адреси GIF не отримують і бачать одразу статичний подарунок
+        if anim_on and r["user_id"] == me["id"] and r["anim_state"] == "pending" and r["gif_snap"]:
+            it["anim"] = {"gif": r["gif_snap"], "ms": _gift_anim_ms(r["anim_ms"])}
+        items.append(it)
+    return {"enabled": True, "items": items, "total": total}
+
+@app.post("/api/memorial-gift/{gid}/shown")
+def memorial_gift_anim_shown(gid: int, request: Request):
+    """Етап 7: власник переглянув GIF покладання — далі показуємо лише статичний подарунок."""
+    ip = _get_ip(request)
+    if not _rl.check(f"giftshown:{ip}", 60, 60):
+        raise HTTPException(429, "Забагато запитів. Зачекайте.")
+    user = _get_optional_user(request)
+    if not user:
+        raise HTTPException(401, "Не авторизовано")
+    db = get_db()
+    try:
+        with db.cursor() as c:
+            c.execute("UPDATE memorial_gifts SET anim_state='shown', updated_at=%s WHERE id=%s AND user_id=%s"
+                      " AND anim_state='pending' AND status IN ('paid','granted')",
+                      (int(time.time()), gid, user["id"]))
+            changed = c.rowcount
+        db.commit()
+    finally:
+        db.close()
+    return {"ok": True, "changed": changed}
+
+@app.post("/api/memorial/{mid}/gifts")
+def memorial_gift_place(mid: int, body: GiftPlaceIn, request: Request):
+    # Етап 3 (до підключення оплати): класти подарунок може лише адмін
+    me = require_admin(request)
+    ip = _get_ip(request)
+    if not _rl.check(f"giftplace:{ip}", 30, 60):
+        raise HTTPException(429, "Забагато запитів. Зачекайте.")
+    if not _gifts_enabled():
+        raise HTTPException(403, "Модуль «Подарунки загиблому» вимкнено")
+    db = get_db()
+    try:
+        with db.cursor() as c:
+            # блокування меморіалу — місце не займуть одночасно з оплатою
+            c.execute("SELECT id FROM memorials WHERE id=%s AND approved=1 FOR UPDATE", (mid,))
+            if not c.fetchone():
+                raise HTTPException(404, "Меморіал не знайдено")
+            c.execute("SELECT id, price_kop, img_main, img_final, gif_place, place_area FROM gifts WHERE id=%s AND active=1",
+                      (body.gift_id,))
+            g = c.fetchone()
+            if not g:
+                raise HTTPException(400, "Подарунок недоступний")
+            c.execute("SELECT slot FROM memorial_gifts WHERE memorial_id=%s"
+                      " AND status IN ('granted','paid') AND slot IS NOT NULL", (mid,))
+            used = {r["slot"] for r in c.fetchall()}
+            slot = _gift_pick_slot(used, g["place_area"] or "auto")  # None — понад місця
+            now = int(time.time())
+            c.execute(
+                "INSERT INTO memorial_gifts (memorial_id, gift_id, user_id, status, price_kop, currency,"
+                " order_id, slot, anim_state, img_snap, gif_snap, created_at, updated_at)"
+                " VALUES (%s,%s,%s,'granted',%s,'UAH',%s,%s,%s,%s,%s,%s,%s)",
+                (mid, g["id"], me.get("id"), g["price_kop"], "adm-" + secrets.token_hex(12), slot,
+                 "pending" if g["gif_place"] else "shown",   # етап 7: адмін один раз бачить GIF покладання
+                 g["img_final"] or g["img_main"], g["gif_place"], now, now)
+            )
+            new_id = c.lastrowid
+        db.commit()
+    finally:
+        db.close()
+    sec_log("GIFT_PLACE", ip, f"memorial={mid} gift={g['id']} slot={slot} by={me.get('email','?')}")
+    return {"ok": True, "id": new_id, "slot": slot}
+
+
+# ── «Подарунки загиблому», етап 5: оформлення покупки (без підтвердження оплати) ──
+# Замовлення створює лише авторизований користувач; ціна, користувач і меморіал
+# беруться на сервері (клієнт передає тільки ID). Статус 'created' — очікує оплати;
+# біля свічки замовлення не з'являється, поки не стане 'paid' (етап 6 — LiqPay),
+# тож місце (slot) призначається лише після оплати.
+_GIFT_MAX_ACTIVE_ORDERS = 5           # незавершених замовлень на користувача
+_GIFT_ORDER_DEDUP_SEC = 600           # повторний клік — те саме замовлення
+_GIFT_ORDER_ID_RE = re.compile(r'^zp-[a-f0-9]{24}$')
+
+def _gifts_buy_enabled(cfg: Optional[dict] = None) -> bool:
+    # без кнопки й каталогу (етап 9) нового подарунка не обрати — купівля теж недоступна
+    cfg = cfg if cfg is not None else _gift_settings()
+    return cfg.get("card_gifts_buy_enabled", "0") == "1" and cfg.get("card_gifts_button", "1") == "1"
+
+# Етап 9: перевірка налаштувань модуля при збереженні (PUT /api/admin/colors/batch)
+_GIFT_FLAG_KEYS = ("card_gifts_enabled", "card_gifts_buy_enabled", "card_gifts_button",
+                   "card_gifts_anim", "card_gifts_notify")
+_GIFT_NUM_KEYS = {"card_gifts_anim_scale": (1.5, 5.0, 2.8), "card_gifts_size": (70, 140, 100)}
+
+class GiftOrderIn(BaseModel):
+    memorial_id: int
+    gift_id: int
+
+def _gift_order_out(r: dict) -> dict:
+    return {"order_id": r["order_id"], "status": r["status"], "price": r["price_kop"] / 100,
+            "memorial_id": r["memorial_id"], "gift_id": r["gift_id"], "created_at": r["created_at"],
+            "paid_at": r.get("paid_at"), "name": r.get("name", ""), "img": r.get("img_snap", "")}
+
+@app.post("/api/gifts/orders")
+def gift_order_create(body: GiftOrderIn, request: Request):
+    ip = _get_ip(request)
+    if not _rl.check(f"giftorder:{ip}", 20, 3600):
+        raise HTTPException(429, "Забагато замовлень. Спробуйте пізніше.")
+    user = _get_optional_user(request)
+    if not user:
+        raise HTTPException(401, "Увійдіть, щоб придбати подарунок")
+    cfg = _gift_settings()
+    if not _gifts_enabled(cfg) or not _gifts_buy_enabled(cfg):
+        raise HTTPException(403, "Купівля подарунків зараз недоступна")
+    if not _liqpay_ready():
+        raise HTTPException(503, "Оплата тимчасово недоступна")
+    if not _rl.check(f"giftorder_u:{user['id']}", 10, 3600):
+        raise HTTPException(429, "Забагато замовлень. Спробуйте пізніше.")
+    now = int(time.time())
+    db = get_db()
+    try:
+        with db.cursor() as c:
+            c.execute("SELECT id FROM memorials WHERE id=%s AND approved=1", (body.memorial_id,))
+            if not c.fetchone():
+                raise HTTPException(404, "Меморіал не знайдено")
+            c.execute("SELECT id, price_kop, img_main, img_final, gif_place FROM gifts WHERE id=%s AND active=1",
+                      (body.gift_id,))
+            g = c.fetchone()
+            if not g or g["price_kop"] <= 0:   # нульову суму LiqPay не приймає
+                raise HTTPException(400, "Подарунок недоступний")
+            # повторне натискання — повертаємо щойно створене замовлення, а не дубль
+            c.execute("SELECT * FROM memorial_gifts WHERE user_id=%s AND memorial_id=%s AND gift_id=%s"
+                      " AND status IN ('created','pending') AND created_at>=%s ORDER BY id DESC LIMIT 1",
+                      (user["id"], body.memorial_id, g["id"], now - _GIFT_ORDER_DEDUP_SEC))
+            dup = c.fetchone()
+            if dup:
+                return {"ok": True, "order": _gift_order_out(dup), "deduplicated": True}
+            c.execute("SELECT COUNT(*) AS n FROM memorial_gifts WHERE user_id=%s AND status IN ('created','pending')",
+                      (user["id"],))
+            if c.fetchone()["n"] >= _GIFT_MAX_ACTIVE_ORDERS:
+                raise HTTPException(409, f"У вас уже {_GIFT_MAX_ACTIVE_ORDERS} незавершених замовлень — оплатіть або скасуйте їх")
+            order_id = "zp-" + secrets.token_hex(12)
+            c.execute(
+                "INSERT INTO memorial_gifts (memorial_id, gift_id, user_id, status, price_kop, currency,"
+                " order_id, slot, anim_state, img_snap, gif_snap, created_at, updated_at)"
+                " VALUES (%s,%s,%s,'created',%s,'UAH',%s,NULL,'pending',%s,%s,%s,%s)",
+                (body.memorial_id, g["id"], user["id"], g["price_kop"], order_id,
+                 g["img_final"] or g["img_main"], g["gif_place"], now, now)
+            )
+            c.execute("SELECT * FROM memorial_gifts WHERE order_id=%s", (order_id,))
+            row = c.fetchone()
+        db.commit()
+    finally:
+        db.close()
+    sec_log("GIFT_ORDER", ip, f"order={order_id} memorial={body.memorial_id} gift={g['id']} kop={g['price_kop']} user={user['id']}")
+    return {"ok": True, "order": _gift_order_out(row), "deduplicated": False}
+
+@app.get("/api/gifts/orders")
+def gift_orders_my(request: Request, memorial_id: Optional[int] = None, lang: str = "uk"):
+    """Власні замовлення поточного користувача (тестові розміщення адміна не показуються)."""
+    ip = _get_ip(request)
+    if not _rl.check(f"gifts:{ip}", 60, 60):
+        raise HTTPException(429, "Забагато запитів. Зачекайте.")
+    user = _get_optional_user(request)
+    if not user:
+        raise HTTPException(401, "Не авторизовано")
+    lang = _gift_lang(lang)
+    where, args = ["mg.user_id=%s", "mg.status<>'granted'"], [lang, user["id"]]
+    if memorial_id is not None:
+        where.append("mg.memorial_id=%s"); args.append(memorial_id)
+    db = get_db()
+    try:
+        with db.cursor() as c:
+            c.execute(
+                "SELECT mg.order_id, mg.memorial_id, mg.gift_id, mg.status, mg.price_kop, mg.created_at,"
+                " mg.paid_at, mg.img_snap, COALESCE(NULLIF(t.name,''), u.name, '') AS name"
+                " FROM memorial_gifts mg"
+                " LEFT JOIN gift_i18n t ON t.entity='gift' AND t.entity_id=mg.gift_id AND t.lang=%s"
+                " LEFT JOIN gift_i18n u ON u.entity='gift' AND u.entity_id=mg.gift_id AND u.lang='uk'"
+                " WHERE " + " AND ".join(where) + " ORDER BY mg.id DESC LIMIT 50", args)
+            rows = c.fetchall()
+    finally:
+        db.close()
+    return {"items": [_gift_order_out(r) for r in rows]}
+
+@app.post("/api/gifts/orders/{order_id}/cancel")
+def gift_order_cancel(order_id: str, request: Request):
+    """Скасувати можна лише власне неоплачене замовлення. Якщо перехід на оплату вже був
+    (pending/unknown), спершу звіряємось із LiqPay: оплачене чи те, що ще обробляється, не скасовується."""
+    ip = _get_ip(request)
+    if not _rl.check(f"giftcancel:{ip}", 30, 3600):
+        raise HTTPException(429, "Забагато запитів. Спробуйте пізніше.")
+    user = _get_optional_user(request)
+    if not user:
+        raise HTTPException(401, "Не авторизовано")
+    if not _GIFT_ORDER_ID_RE.match(order_id or ""):
+        raise HTTPException(404, "Замовлення не знайдено")
+    cancellable = ("created",)
+    if _liqpay_ready():
+        row, check = _gift_sync_order(order_id, ip, user["id"], ("pending", "unknown"))
+        if not row:
+            raise HTTPException(404, "Замовлення не знайдено")
+        if check == "fail":
+            raise HTTPException(503, "Не вдалося перевірити оплату. Спробуйте за хвилину")
+    else:
+        cancellable = ("created", "pending", "unknown")   # без ключів LiqPay оплата неможлива
+    row = None
+    db = get_db()
+    try:
+        with db.cursor() as c:
+            ph = ",".join(["%s"] * len(cancellable))
+            c.execute("UPDATE memorial_gifts SET status='cancelled', updated_at=%s"
+                      f" WHERE order_id=%s AND user_id=%s AND status IN ({ph})",
+                      (int(time.time()), order_id, user["id"], *cancellable))
+            changed = c.rowcount
+            if not changed:
+                c.execute("SELECT status FROM memorial_gifts WHERE order_id=%s AND user_id=%s", (order_id, user["id"]))
+                row = c.fetchone()
+        db.commit()
+    finally:
+        db.close()
+    if not changed:
+        if not row:
+            raise HTTPException(404, "Замовлення не знайдено")
+        if row["status"] == "paid":
+            raise HTTPException(409, "Замовлення вже оплачено")
+        if row["status"] in ("pending", "unknown"):
+            raise HTTPException(409, "Оплата цього замовлення обробляється банком — скасувати його не можна")
+        raise HTTPException(409, "Це замовлення вже не можна скасувати")
+    sec_log("GIFT_ORDER_CANCEL", ip, f"order={order_id} user={user['id']}")
+    return {"ok": True, "status": "cancelled"}
+
+
+# ── «Подарунки загиблому», етап 6: оплата через LiqPay (інтернет-еквайринг ПриватБанку) ──
+# Ключі мерчанта — лише в .env (ніколи в colors: /api/colors публічний). Без ключів оплата
+# вимкнена: замовлення не створюються, на сторінці — «Оплата незабаром».
+# Перехід на оплату — форма POST на checkout LiqPay з data/signature, які формує сервер із
+# даних замовлення (ціну й order_id клієнт не задає). Оплаченим замовлення стає лише після
+# підписаного callback (server_url) або запиту статусу з сервера (action=status): сума й
+# валюта мають точно збігатися зі знімком замовлення, один платіж зараховується один раз
+# (payment_id UNIQUE), місце біля свічки призначається під блокуванням меморіалу.
+LIQPAY_PUBLIC_KEY  = os.getenv("LIQPAY_PUBLIC_KEY", "").strip()
+LIQPAY_PRIVATE_KEY = os.getenv("LIQPAY_PRIVATE_KEY", "").strip()
+LIQPAY_SANDBOX     = os.getenv("LIQPAY_SANDBOX", "0").strip() == "1"   # тестові платежі (статус 'sandbox')
+_LIQPAY_CHECKOUT_URL = "https://www.liqpay.ua/api/3/checkout"
+_LIQPAY_API_URL      = "https://www.liqpay.ua/api/request"
+# Проміжні статуси LiqPay — платіж ще не завершено. wait_accept: гроші списано, але магазин
+# ще не пройшов перевірку LiqPay — зараховуємо лише після 'success'.
+_LIQPAY_WAIT = {"processing", "prepared", "hold_wait", "cash_wait", "invoice_wait", "wait_accept",
+                "wait_secure", "wait_lc", "wait_reserve", "wait_card", "wait_compensation",
+                "wait_qr", "wait_sender"}
+
+def _liqpay_ready() -> bool:
+    return bool(LIQPAY_PUBLIC_KEY and LIQPAY_PRIVATE_KEY)
+
+def _liqpay_sign(data: str) -> str:
+    """Підпис LiqPay: base64(sha1(private_key + data + private_key))."""
+    raw = (LIQPAY_PRIVATE_KEY + data + LIQPAY_PRIVATE_KEY).encode("utf-8")
+    return base64.b64encode(hashlib.sha1(raw).digest()).decode("ascii")
+
+def _liqpay_pack(params: dict) -> str:
+    return base64.b64encode(json.dumps(params).encode("utf-8")).decode("ascii")
+
+def _liqpay_map_status(st) -> str:
+    """Статус LiqPay → статус замовлення ('sandbox' — успіх лише в тестовому режимі)."""
+    st = str(st or "").strip().lower()
+    if st == "success" or (st == "sandbox" and LIQPAY_SANDBOX):
+        return "paid"
+    if st in ("failure", "error"):
+        return "error"
+    if st == "reversed":
+        return "cancelled"
+    if st in _LIQPAY_WAIT or st.endswith("_verify"):
+        return "pending"
+    return "unknown"
+
+def _liqpay_status(order_id: str):
+    """Статус платежу з LiqPay (action=status). None — LiqPay не відповів;
+    {} — платежу за цим order_id немає (оплату не розпочато); dict — дані платежу."""
+    data = _liqpay_pack({"action": "status", "version": 3, "public_key": LIQPAY_PUBLIC_KEY, "order_id": order_id})
+    body = urllib.parse.urlencode({"data": data, "signature": _liqpay_sign(data)}).encode("ascii")
+    req = urllib.request.Request(_LIQPAY_API_URL, data=body, method="POST",
+                                 headers={"Content-Type": "application/x-www-form-urlencoded"})
+    try:
+        with urllib.request.urlopen(req, timeout=10) as r:
+            res = json.loads(r.read(200_000).decode("utf-8"))
+    except Exception as e:
+        sec_log("GIFT_PAY_STATUS_FAIL", "liqpay", f"order={order_id} err={type(e).__name__}")
+        return None
+    if not isinstance(res, dict):
+        return None
+    if res.get("payment_id") and str(res.get("order_id") or "") == order_id:
+        return res
+    sec_log("GIFT_PAY_STATUS_NONE", "liqpay", f"order={order_id} answer={str(res.get('err_code') or res.get('status') or '')[:40]}")
+    return {}
+
+def _gift_apply_payment(c, row: dict, p: dict, source: str, ip: str) -> str:
+    """Застосовує відповідь LiqPay до замовлення (рядок уже під FOR UPDATE), повертає статус.
+    Успішний платіж зараховується навіть для скасованого замовлення (гроші списано), а пізніші
+    помилки чи повтори вже оплачене не відкочують."""
+    cur, new, now = row["status"], _liqpay_map_status(p.get("status")), int(time.time())
+    pay_id = str(p.get("payment_id") or "")[:64] or None
+    sec_log("GIFT_PAY_EVENT", ip, f"order={row['order_id']} src={source} liqpay={str(p.get('status'))[:24]}"
+            f" amount={str(p.get('amount'))[:16]} {str(p.get('currency'))[:4]} payment={pay_id}"
+            f" err={str(p.get('err_code') or '')[:40]} {cur}->{new}")
+    if cur == "granted":
+        return cur
+    if new == "paid":
+        try:
+            amount_kop = int(round(float(p.get("amount")) * 100))
+        except (TypeError, ValueError):
+            amount_kop = -1
+        if amount_kop != row["price_kop"] or str(p.get("currency") or "").upper() != row["currency"]:
+            sec_log("GIFT_PAY_MISMATCH", ip, f"order={row['order_id']} expected_kop={row['price_kop']} {row['currency']}")
+            if cur in ("created", "pending", "unknown"):
+                c.execute("UPDATE memorial_gifts SET status='error', updated_at=%s WHERE id=%s", (now, row["id"]))
+                return "error"
+            return cur
+        if cur == "paid":
+            if pay_id and row.get("payment_id") and pay_id != row["payment_id"]:
+                sec_log("GIFT_PAY_SECOND", ip, f"order={row['order_id']} payment={pay_id} stored={row['payment_id']}")
+            return cur  # повторний callback чи запит статусу нічого не змінює
+        # місце біля свічки — під блокуванням меморіалу, щоб одночасні оплати не зайняли одне
+        c.execute("SELECT id FROM memorials WHERE id=%s FOR UPDATE", (row["memorial_id"],))
+        c.execute("SELECT slot FROM memorial_gifts WHERE memorial_id=%s AND status IN ('granted','paid')"
+                  " AND slot IS NOT NULL", (row["memorial_id"],))
+        used = {r["slot"] for r in c.fetchall()}
+        c.execute("SELECT place_area FROM gifts WHERE id=%s", (row["gift_id"],))
+        slot = _gift_pick_slot(used, (c.fetchone() or {}).get("place_area") or "auto")  # None — понад місця
+        try:
+            c.execute("UPDATE memorial_gifts SET status='paid', payment_id=%s, slot=%s, paid_at=%s, updated_at=%s,"
+                      " anim_state=IF(gif_snap='', 'shown', 'pending') WHERE id=%s", (pay_id, slot, now, now, row["id"]))
+        except pymysql.err.IntegrityError:
+            # цей payment_id уже зараховано іншому замовленню — удруге не зараховуємо
+            sec_log("GIFT_PAY_DUP_PAYMENT", ip, f"order={row['order_id']} payment={pay_id}")
+            return cur
+        sec_log("GIFT_PAID", ip, f"order={row['order_id']} memorial={row['memorial_id']} slot={slot} payment={pay_id} src={source}")
+        return "paid"
+    if new == "cancelled":  # reversed — кошти повернуто: подарунок прибирається, місце звільняється
+        if cur == "cancelled":
+            return cur
+        c.execute("UPDATE memorial_gifts SET status='cancelled', slot=NULL, updated_at=%s WHERE id=%s", (now, row["id"]))
+        if cur == "paid":
+            sec_log("GIFT_REFUND", ip, f"order={row['order_id']} memorial={row['memorial_id']} src={source}")
+            c.execute("SELECT id FROM memorials WHERE id=%s FOR UPDATE", (row["memorial_id"],))
+            _gift_fill_free_slots(c, row["memorial_id"])
+        return "cancelled"
+    allowed = {"error": ("created", "pending", "unknown"),
+               "pending": ("created", "unknown", "error"),
+               "unknown": ("created", "pending")}[new]
+    if cur not in allowed:
+        return cur
+    c.execute("UPDATE memorial_gifts SET status=%s, updated_at=%s WHERE id=%s", (new, now, row["id"]))
+    return new
+
+def _gift_notify_paid(order_id: str):
+    """Етап 9: лист адміністратору про оплачений подарунок (якщо ввімкнено). У фоновому потоці —
+    callback LiqPay не чекає на SMTP. Адреса — ADMIN_NOTIFY_EMAIL (.env), у публічних налаштуваннях її немає."""
+    if _get_color_val("card_gifts_notify", "0") != "1" or not ADMIN_NOTIFY_EMAIL:
+        return
+    def run():
+        try:
+            db = get_db()
+            try:
+                with db.cursor() as c:
+                    c.execute("SELECT mg.order_id, mg.price_kop, mg.payment_id, m.last, m.first, m.slug, u.email,"
+                              " COALESCE(gi.name,'') AS gift FROM memorial_gifts mg"
+                              " LEFT JOIN memorials m ON m.id=mg.memorial_id LEFT JOIN users u ON u.id=mg.user_id"
+                              " LEFT JOIN gift_i18n gi ON gi.entity='gift' AND gi.entity_id=mg.gift_id AND gi.lang='uk'"
+                              " WHERE mg.order_id=%s", (order_id,))
+                    r = c.fetchone()
+            finally:
+                db.close()
+            if not r:
+                return
+            e = _html.escape
+            who = _html.unescape(f"{r['last'] or ''} {r['first'] or ''}").strip()
+            link = f"{_SITE_BASE_URL}/card?slug={urllib.parse.quote(r['slug'] or '', safe='')}"
+            body = (f"<h3>Оплачено подарунок</h3><p>«{e(r['gift'])}» — {r['price_kop'] / 100:.2f} ₴<br>"
+                    f"Меморіал: <a href=\"{e(link)}\">{e(who)}</a><br>Покупець: {e(r['email'] or '—')}<br>"
+                    f"Замовлення {e(r['order_id'])} · платіж LiqPay {e(str(r['payment_id'] or '—'))}</p>")
+            subject = f"Подарунок оплачено: {r['gift']} — {who}".replace("\r", " ").replace("\n", " ")[:150]
+            ok, err = _send_email(ADMIN_NOTIFY_EMAIL, subject, body)
+            sec_log("GIFT_NOTIFY" if ok else "GIFT_NOTIFY_FAIL", "smtp", f"order={order_id}" + ("" if ok else f" err={err[:80]}"))
+        except Exception as ex:
+            sec_log("GIFT_NOTIFY_FAIL", "smtp", f"order={order_id} err={type(ex).__name__}")
+    threading.Thread(target=run, daemon=True).start()
+
+def _gift_sync_order(order_id: str, ip: str, user_id: Optional[int] = None, statuses=None):
+    """Звіряє замовлення з LiqPay (action=status) і застосовує результат. Повертає (рядок, check):
+    'payment' — платіж є; 'none' — платежу немає (pending/unknown → created: оплату не завершили);
+    'fail' — LiqPay не відповів; 'skip' — не перевіряли (статус не з statuses, тестове або без ключів)."""
+    db = get_db()
+    try:
+        with db.cursor() as c:
+            if user_id is None:
+                c.execute("SELECT * FROM memorial_gifts WHERE order_id=%s", (order_id,))
+            else:
+                c.execute("SELECT * FROM memorial_gifts WHERE order_id=%s AND user_id=%s", (order_id, user_id))
+            row = c.fetchone()
+        db.rollback()  # мережевий запит нижче — без відкритої транзакції
+        if (not row or row["status"] == "granted" or not _liqpay_ready()
+                or (statuses is not None and row["status"] not in statuses)):
+            return row, "skip"
+        res = _liqpay_status(order_id)
+        if res is None:
+            return row, "fail"
+        with db.cursor() as c:
+            c.execute("SELECT * FROM memorial_gifts WHERE id=%s FOR UPDATE", (row["id"],))
+            row = c.fetchone()
+            prev = row["status"]
+            if res:
+                _gift_apply_payment(c, row, res, "status", ip)
+            elif row["status"] in ("pending", "unknown"):
+                c.execute("UPDATE memorial_gifts SET status='created', updated_at=%s WHERE id=%s",
+                          (int(time.time()), row["id"]))
+            c.execute("SELECT * FROM memorial_gifts WHERE id=%s", (row["id"],))
+            row = c.fetchone()
+        db.commit()
+    finally:
+        db.close()
+    if row and row["status"] == "paid" and prev != "paid":
+        _gift_notify_paid(order_id)
+    return row, ("payment" if res else "none")
+
+def _gift_order_named(c, order_id: str, lang: str):
+    c.execute("SELECT mg.*, COALESCE(NULLIF(t.name,''), u.name, '') AS name FROM memorial_gifts mg"
+              " LEFT JOIN gift_i18n t ON t.entity='gift' AND t.entity_id=mg.gift_id AND t.lang=%s"
+              " LEFT JOIN gift_i18n u ON u.entity='gift' AND u.entity_id=mg.gift_id AND u.lang='uk'"
+              " WHERE mg.order_id=%s", (lang, order_id))
+    return c.fetchone()
+
+class GiftLangIn(BaseModel):
+    lang: str = "uk"
+
+@app.post("/api/gifts/orders/{order_id}/pay")
+def gift_order_pay(order_id: str, request: Request, body: Optional[GiftLangIn] = None):
+    """Перехід на оплату: сервер формує data/signature для checkout LiqPay із даних замовлення."""
+    ip = _get_ip(request)
+    if not _rl.check(f"giftpay:{ip}", 30, 3600):
+        raise HTTPException(429, "Забагато спроб оплати. Спробуйте пізніше.")
+    user = _get_optional_user(request)
+    if not user:
+        raise HTTPException(401, "Не авторизовано")
+    if not _GIFT_ORDER_ID_RE.match(order_id or ""):
+        raise HTTPException(404, "Замовлення не знайдено")
+    cfg = _gift_settings()
+    if not _gifts_enabled(cfg) or not _gifts_buy_enabled(cfg):
+        raise HTTPException(403, "Купівля подарунків зараз недоступна")
+    if not _liqpay_ready():
+        raise HTTPException(503, "Оплата тимчасово недоступна")
+    if not _rl.check(f"giftpay_u:{user['id']}", 20, 3600):
+        raise HTTPException(429, "Забагато спроб оплати. Спробуйте пізніше.")
+    lang = _gift_lang(body.lang if body else "uk")
+    # попередній перехід на оплату не завершено — спершу звіряємось із LiqPay, щоб не оплатити двічі
+    row, check = _gift_sync_order(order_id, ip, user["id"], ("pending", "unknown"))
+    if not row:
+        raise HTTPException(404, "Замовлення не знайдено")
+    if check == "fail":
+        raise HTTPException(503, "Не вдалося перевірити попередню спробу оплати. Спробуйте за хвилину")
+    checkout = None
+    db = get_db()
+    try:
+        with db.cursor() as c:
+            c.execute("SELECT * FROM memorial_gifts WHERE id=%s FOR UPDATE", (row["id"],))
+            row = c.fetchone()
+            if row["status"] == "created":
+                c.execute("SELECT slug, last, first FROM memorials WHERE id=%s", (row["memorial_id"],))
+                m = c.fetchone() or {}
+                gname = (_gift_order_named(c, order_id, lang) or {}).get("name") or ""
+                who = _html.unescape(" ".join(x for x in (m.get("last") or "", m.get("first") or "") if x)).strip()
+                desc = (f"Gift “{gname}” — memorial of {who}" if lang == "en"
+                        else f"Подарунок «{gname}» — меморіал {who}").strip()[:150]
+                slug = (m.get("slug") or "").strip()
+                result_url = (f"{_SITE_BASE_URL}/card?slug={urllib.parse.quote(slug, safe='')}&gift_order={order_id}"
+                              if slug else f"{_SITE_BASE_URL}/")
+                params = {"version": 3, "public_key": LIQPAY_PUBLIC_KEY, "action": "pay",
+                          "amount": row["price_kop"] / 100, "currency": row["currency"],
+                          "description": desc, "order_id": order_id,
+                          "language": "en" if lang == "en" else "uk",
+                          "result_url": result_url, "server_url": f"{_SITE_BASE_URL}/api/gifts/liqpay/callback"}
+                if LIQPAY_SANDBOX:
+                    params["sandbox"] = 1
+                data = _liqpay_pack(params)
+                checkout = {"action": _LIQPAY_CHECKOUT_URL, "data": data, "signature": _liqpay_sign(data)}
+                c.execute("UPDATE memorial_gifts SET status='pending', updated_at=%s WHERE id=%s",
+                          (int(time.time()), row["id"]))
+            named = _gift_order_named(c, order_id, lang)
+        db.commit()
+    finally:
+        db.close()
+    if checkout:
+        sec_log("GIFT_PAY_START", ip, f"order={order_id} kop={row['price_kop']} user={user['id']} sandbox={int(LIQPAY_SANDBOX)}")
+    return {"ok": True, "order": _gift_order_out(named), "checkout": checkout}
+
+@app.post("/api/gifts/orders/{order_id}/sync")
+def gift_order_sync(order_id: str, request: Request, body: Optional[GiftLangIn] = None):
+    """Звірити своє замовлення з LiqPay — після повернення з оплати або кнопкою «Перевірити оплату»."""
+    ip = _get_ip(request)
+    if not _rl.check(f"giftsync:{ip}", 60, 3600):
+        raise HTTPException(429, "Забагато запитів. Спробуйте пізніше.")
+    user = _get_optional_user(request)
+    if not user:
+        raise HTTPException(401, "Не авторизовано")
+    if not _GIFT_ORDER_ID_RE.match(order_id or ""):
+        raise HTTPException(404, "Замовлення не знайдено")
+    lang = _gift_lang(body.lang if body else "uk")
+    row, check = _gift_sync_order(order_id, ip, user["id"], ("pending", "unknown"))
+    if not row:
+        raise HTTPException(404, "Замовлення не знайдено")
+    db = get_db()
+    try:
+        with db.cursor() as c:
+            named = _gift_order_named(c, order_id, lang)
+    finally:
+        db.close()
+    return {"ok": True, "order": _gift_order_out(named), "check": check}
+
+@app.post("/api/gifts/liqpay/callback")
+def gift_liqpay_callback(request: Request, data: str = Form("", max_length=20000),
+                         signature: str = Form("", max_length=100)):
+    """server_url LiqPay. Замовлення стає оплаченим лише після перевірки підпису, ключа магазину,
+    суми й валюти; повторні callback-и нічого не змінюють."""
+    ip = _get_ip(request)
+    if not _rl.check(f"liqpaycb:{ip}", 120, 60):
+        raise HTTPException(429, "Too many requests")
+    if not _liqpay_ready():
+        raise HTTPException(503, "Payments are not configured")
+    if not data or not signature or not secrets.compare_digest(
+            _liqpay_sign(data).encode("ascii"), signature.strip().encode("utf-8")):
+        sec_log("GIFT_PAY_BADSIG", ip, f"len={len(data or '')}")
+        raise HTTPException(400, "Invalid signature")
+    try:
+        p = json.loads(base64.b64decode(data, validate=True).decode("utf-8"))
+    except Exception:
+        p = None
+    if not isinstance(p, dict) or str(p.get("public_key") or "") != LIQPAY_PUBLIC_KEY:
+        sec_log("GIFT_PAY_BADDATA", ip, f"len={len(data)}")
+        raise HTTPException(400, "Invalid data")
+    order_id = str(p.get("order_id") or "")
+    if not _GIFT_ORDER_ID_RE.match(order_id):
+        sec_log("GIFT_PAY_FOREIGN", ip, f"order={order_id[:64]!r}")
+        return {"ok": True, "ignored": True}
+    db = get_db()
+    try:
+        with db.cursor() as c:
+            c.execute("SELECT * FROM memorial_gifts WHERE order_id=%s FOR UPDATE", (order_id,))
+            row = c.fetchone()
+            status = _gift_apply_payment(c, row, p, "callback", ip) if row else None
+        db.commit()
+    finally:
+        db.close()
+    if not row:
+        sec_log("GIFT_PAY_NOORDER", ip, f"order={order_id}")
+        return {"ok": True, "ignored": True}
+    if status == "paid" and row["status"] != "paid":
+        _gift_notify_paid(order_id)
+    return {"ok": True, "status": status}
+
+@app.post("/api/admin/memorial-gift/{gid}/sync")
+def admin_memorial_gift_sync(gid: int, request: Request):
+    """Адмін: звірити замовлення з LiqPay (callback не дійшов, повернення коштів тощо)."""
+    me = require_admin(request)
+    ip = _get_ip(request)
+    if not _rl.check(f"giftadmsync:{ip}", 60, 60):
+        raise HTTPException(429, "Забагато запитів. Зачекайте.")
+    if not _liqpay_ready():
+        raise HTTPException(503, "LiqPay не налаштовано: додайте ключі в .env")
+    db = get_db()
+    try:
+        with db.cursor() as c:
+            c.execute("SELECT order_id, status FROM memorial_gifts WHERE id=%s", (gid,))
+            r = c.fetchone()
+    finally:
+        db.close()
+    if not r:
+        raise HTTPException(404, "Замовлення не знайдено")
+    if r["status"] == "granted" or not _GIFT_ORDER_ID_RE.match(r["order_id"] or ""):
+        raise HTTPException(400, "Це тестове розміщення адміністратора — без оплати")
+    row, check = _gift_sync_order(r["order_id"], ip)
+    if check == "fail":
+        raise HTTPException(502, "LiqPay не відповідає. Спробуйте пізніше")
+    sec_log("GIFT_ADMIN_SYNC", ip, f"id={gid} order={r['order_id']} {r['status']}->{row['status']} check={check} by={me.get('email','?')}")
+    return {"ok": True, "status": row["status"], "previous": r["status"], "check": check}
+
+@app.delete("/api/admin/memorial-gift/{gid}")
+def admin_memorial_gift_delete(gid: int, request: Request):
+    # Лише тестові розміщення адміна (granted); оплачені покупки так не видаляються
+    me = require_admin(request)
+    db = get_db()
+    try:
+        with db.cursor() as c:
+            c.execute("SELECT memorial_id FROM memorial_gifts WHERE id=%s AND status='granted'", (gid,))
+            r = c.fetchone()
+            deleted = 0
+            if r:
+                c.execute("SELECT id FROM memorials WHERE id=%s FOR UPDATE", (r["memorial_id"],))
+                c.execute("DELETE FROM memorial_gifts WHERE id=%s AND status='granted'", (gid,))
+                deleted = c.rowcount
+                _gift_fill_free_slots(c, r["memorial_id"])   # етап 10: місце займає подарунок «понад місця»
+        db.commit()
+    finally:
+        db.close()
+    sec_log("GIFT_DELETE", _get_ip(request), f"id={gid} deleted={deleted} by={me.get('email','?')}")
+    return {"ok": True, "deleted": deleted}
+
+
+# ── «Подарунки загиблому», етап 4: адмінка каталогу ─────────────────────
+# Лише require_admin (ціни/оплата). Тексти каталогу зберігаються як звичайний
+# текст (_gift_text): апостроф у «пам'ять» не екрануємо, бо _sanitize_text()
+# перетворив би його на &#x27; і сторінка показала б сутність. Кутові дужки й
+# керівні символи прибираються, а екранування робить вивід (h() / textContent).
+_GIFT_STATUSES = ('created', 'pending', 'paid', 'cancelled', 'error', 'unknown', 'granted')
+_GIFT_AREAS = ('auto', 'left', 'right')
+# Завантаження з адмінки лягають у корінь img/gifts/; підпапка demo/ — локальні
+# заглушки (на прод не заливаються), інакше їх не можна зберегти в адмінці
+_GIFT_IMG_RE = re.compile(r'^/img/gifts/(?:demo/)?[A-Za-z0-9_\-]+\.(png|jpg|jpeg|webp|gif)$')
+_GIFT_CAT_CODE_RE = re.compile(r'^[a-z0-9_-]{2,40}$')
+# kind → (дозволені розширення, макс. розмір); «final» — біля свічки, з прозорістю
+_GIFT_UPLOAD_KINDS = {
+    "main":  ((".png", ".jpg", ".jpeg", ".webp"), 2_000_000),
+    "final": ((".png", ".webp"), 2_000_000),
+    "gif":   ((".gif",), 6_000_000),
+}
+_GIFT_SIGNATURES = {".png": (b"\x89PNG",), ".jpg": (b"\xff\xd8\xff",), ".jpeg": (b"\xff\xd8\xff",),
+                    ".gif": (b"GIF87a", b"GIF89a"), ".webp": (b"RIFF",)}
+
+def _gift_text(v, maxlen: int) -> str:
+    v = re.sub(r'[\x00-\x1f\x7f<>]', ' ', str(v or ''))
+    return re.sub(r'\s+', ' ', v).strip()[:maxlen]
+
+def _gift_img(url: str) -> str:
+    url = (url or '').strip()
+    if not url:
+        return ''
+    if not _GIFT_IMG_RE.match(url):
+        raise HTTPException(400, "Недопустимий шлях зображення")
+    return url
+
+def _gift_langs() -> list:
+    try:
+        from lang_engine import get_languages
+        codes = [l["code"] for l in get_languages() if l.get("code")]
+    except Exception:
+        codes = []
+    return codes or ["uk", "en"]
+
+def _img_dims(raw: bytes, ext: str):
+    """Етап 10: ширина й висота PNG/JPEG/WEBP за заголовком (без Pillow); (0, 0) — не вдалося визначити."""
+    try:
+        if ext == ".png" and raw[12:16] == b"IHDR":
+            return int.from_bytes(raw[16:20], "big"), int.from_bytes(raw[20:24], "big")
+        if ext in (".jpg", ".jpeg"):
+            i = 2
+            while i + 9 < len(raw):
+                if raw[i] != 0xFF:
+                    i += 1
+                    continue
+                m = raw[i + 1]
+                if m in (0xD8, 0x01, 0xFF) or 0xD0 <= m <= 0xD7:
+                    i += 1 if m == 0xFF else 2
+                    continue
+                if 0xC0 <= m <= 0xCF and m not in (0xC4, 0xC8, 0xCC):   # SOFn: висота, ширина
+                    return int.from_bytes(raw[i + 7:i + 9], "big"), int.from_bytes(raw[i + 5:i + 7], "big")
+                i += 2 + int.from_bytes(raw[i + 2:i + 4], "big")
+        if ext == ".webp":
+            cc = raw[12:16]
+            if cc == b"VP8 ":
+                return int.from_bytes(raw[26:28], "little") & 0x3FFF, int.from_bytes(raw[28:30], "little") & 0x3FFF
+            if cc == b"VP8L":
+                v = int.from_bytes(raw[21:25], "little")
+                return (v & 0x3FFF) + 1, ((v >> 14) & 0x3FFF) + 1
+            if cc == b"VP8X":
+                return int.from_bytes(raw[24:27], "little") + 1, int.from_bytes(raw[27:30], "little") + 1
+    except Exception:
+        pass
+    return 0, 0
+
+def _gif_meta(raw: bytes) -> dict:
+    """Розмір, кількість кадрів і тривалість GIF без Pillow: затримка кадру — у
+    Graphic Control Extension (21 F9 04 …), у сотих секунди; 0–1 браузери показують як 0.1 с."""
+    w = int.from_bytes(raw[6:8], "little")
+    h = int.from_bytes(raw[8:10], "little")
+    total = frames = 0
+    i = raw.find(b"\x21\xf9\x04")
+    while i != -1:
+        delay = int.from_bytes(raw[i + 4:i + 6], "little")
+        total += delay if delay > 1 else 10
+        frames += 1
+        i = raw.find(b"\x21\xf9\x04", i + 8)
+    return {"w": w, "h": h, "frames": frames, "duration_ms": total * 10}
+
+class GiftI18nIn(BaseModel):
+    name:  str = Field("", max_length=300)
+    descr: str = Field("", max_length=1000)
+
+class GiftIn(BaseModel):
+    category_id: Optional[int] = None
+    price:       float = Field(0, ge=0, le=100000)
+    img_main:    str = Field("", max_length=300)
+    gif_place:   str = Field("", max_length=300)
+    img_final:   str = Field("", max_length=300)
+    anim_ms:     int = Field(0, ge=0, le=60000)
+    active:      int = 1
+    sort_order:  int = Field(0, ge=-100000, le=100000)
+    place_scale: float = Field(1.0, ge=0.5, le=2.0)
+    place_area:  str = Field("auto", max_length=10)
+    place_z:     int = Field(0, ge=-10, le=10)
+    i18n:        Dict[str, GiftI18nIn] = {}
+
+class GiftCategoryIn(BaseModel):
+    code:       str = Field(..., max_length=40)
+    sort_order: int = Field(0, ge=-100000, le=100000)
+    active:     int = 1
+    i18n:       Dict[str, GiftI18nIn] = {}
+
+def _gift_i18n_save(c, entity: str, entity_id: int, i18n: dict, langs: list):
+    for lang, tr in (i18n or {}).items():
+        lang = (lang or "").strip().lower()[:5]
+        if lang not in langs:
+            continue
+        c.execute(
+            "INSERT INTO gift_i18n (entity, entity_id, lang, name, descr) VALUES (%s,%s,%s,%s,%s)"
+            " ON DUPLICATE KEY UPDATE name=VALUES(name), descr=VALUES(descr)",
+            (entity, entity_id, lang, _gift_text(tr.name, 150), _gift_text(tr.descr, 500))
+        )
+
+def _gift_uk_name(i18n: dict) -> str:
+    tr = (i18n or {}).get("uk")
+    return _gift_text(tr.name, 150) if tr else ""
+
+def _gift_row_values(b: GiftIn, c) -> tuple:
+    if b.category_id is not None:
+        c.execute("SELECT id FROM gift_categories WHERE id=%s", (b.category_id,))
+        if not c.fetchone():
+            raise HTTPException(400, "Категорію не знайдено")
+    return (b.category_id, int(round(b.price * 100)), _gift_img(b.img_main), _gift_img(b.gif_place),
+            _gift_img(b.img_final), b.anim_ms, 1 if b.active else 0, b.sort_order,
+            round(b.place_scale, 2), b.place_area if b.place_area in _GIFT_AREAS else "auto", b.place_z)
+
+def _smtp_ready() -> bool:
+    cfg = _get_smtp_config()
+    return cfg["enabled"] != "0" and bool(cfg["host"] and cfg["user"])
+
+@app.get("/api/admin/gifts")
+def admin_gifts_list(request: Request):
+    require_admin(request)
+    db = get_db()
+    try:
+        with db.cursor() as c:
+            c.execute("SELECT g.*, (SELECT COUNT(*) FROM memorial_gifts mg WHERE mg.gift_id=g.id) AS placed"
+                      " FROM gifts g ORDER BY g.sort_order, g.id")
+            gifts = c.fetchall()
+            c.execute("SELECT gc.*, (SELECT COUNT(*) FROM gifts g WHERE g.category_id=gc.id) AS gifts_count"
+                      " FROM gift_categories gc ORDER BY gc.sort_order, gc.id")
+            cats = c.fetchall()
+            c.execute("SELECT entity, entity_id, lang, name, descr FROM gift_i18n")
+            trs = c.fetchall()
+    finally:
+        db.close()
+    tr_map = {}
+    for t in trs:
+        tr_map.setdefault((t["entity"], t["entity_id"]), {})[t["lang"]] = {"name": t["name"], "descr": t["descr"]}
+    for g in gifts:
+        g["price"] = g["price_kop"] / 100
+        g["place_scale"] = float(g["place_scale"])
+        g["i18n"] = tr_map.get(("gift", g["id"]), {})
+    for cat in cats:
+        cat["i18n"] = tr_map.get(("category", cat["id"]), {})
+    return {"langs": _gift_langs(), "gifts": gifts, "categories": cats,
+            "payment": {"ready": _liqpay_ready(), "sandbox": LIQPAY_SANDBOX,
+                        "callback_url": f"{_SITE_BASE_URL}/api/gifts/liqpay/callback"},
+            "notify": {"email": ADMIN_NOTIFY_EMAIL, "smtp_ready": _smtp_ready()}}
+
+@app.post("/api/admin/gifts")
+def admin_gift_create(b: GiftIn, request: Request):
+    me = require_admin(request)
+    if not _gift_uk_name(b.i18n):
+        raise HTTPException(400, "Вкажіть назву подарунка українською")
+    if not b.img_main:
+        raise HTTPException(400, "Завантажте зображення подарунка")
+    now = int(time.time())
+    db = get_db()
+    try:
+        with db.cursor() as c:
+            vals = _gift_row_values(b, c)
+            c.execute(
+                "INSERT INTO gifts (category_id, price_kop, img_main, gif_place, img_final, anim_ms, active,"
+                " sort_order, place_scale, place_area, place_z, created_at, updated_at)"
+                " VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)", vals + (now, now))
+            gid = c.lastrowid
+            _gift_i18n_save(c, "gift", gid, b.i18n, _gift_langs())
+        db.commit()
+    finally:
+        db.close()
+    sec_log("GIFT_CREATE", _get_ip(request), f"id={gid} by={me.get('email','?')}")
+    return {"ok": True, "id": gid}
+
+@app.put("/api/admin/gifts/{gid}")
+def admin_gift_update(gid: int, b: GiftIn, request: Request):
+    me = require_admin(request)
+    if not _gift_uk_name(b.i18n):
+        raise HTTPException(400, "Вкажіть назву подарунка українською")
+    if not b.img_main:
+        raise HTTPException(400, "Завантажте зображення подарунка")
+    db = get_db()
+    try:
+        with db.cursor() as c:
+            c.execute("SELECT id FROM gifts WHERE id=%s", (gid,))
+            if not c.fetchone():
+                raise HTTPException(404, "Подарунок не знайдено")
+            vals = _gift_row_values(b, c)
+            c.execute(
+                "UPDATE gifts SET category_id=%s, price_kop=%s, img_main=%s, gif_place=%s, img_final=%s,"
+                " anim_ms=%s, active=%s, sort_order=%s, place_scale=%s, place_area=%s, place_z=%s, updated_at=%s"
+                " WHERE id=%s", vals + (int(time.time()), gid))
+            _gift_i18n_save(c, "gift", gid, b.i18n, _gift_langs())
+        db.commit()
+    finally:
+        db.close()
+    sec_log("GIFT_UPDATE", _get_ip(request), f"id={gid} by={me.get('email','?')}")
+    return {"ok": True}
+
+@app.delete("/api/admin/gifts/{gid}")
+def admin_gift_delete(gid: int, request: Request):
+    # Подарунок, що вже лежав на меморіалі, лише вимикається (active=0) — куплене не зникає
+    me = require_admin(request)
+    db = get_db()
+    try:
+        with db.cursor() as c:
+            c.execute("SELECT COUNT(*) AS n FROM memorial_gifts WHERE gift_id=%s", (gid,))
+            if c.fetchone()["n"]:
+                raise HTTPException(409, "Подарунок уже розміщували на меморіалах — його можна лише вимкнути")
+            c.execute("DELETE FROM gifts WHERE id=%s", (gid,))
+            deleted = c.rowcount
+            c.execute("DELETE FROM gift_i18n WHERE entity='gift' AND entity_id=%s", (gid,))
+        db.commit()
+    finally:
+        db.close()
+    sec_log("GIFT_DELETE_CATALOG", _get_ip(request), f"id={gid} deleted={deleted} by={me.get('email','?')}")
+    return {"ok": True, "deleted": deleted}
+
+@app.post("/api/admin/gift-categories")
+def admin_gift_category_create(b: GiftCategoryIn, request: Request):
+    me = require_admin(request)
+    code = (b.code or "").strip().lower()
+    if not _GIFT_CAT_CODE_RE.match(code):
+        raise HTTPException(400, "Код категорії: латиниця, цифри, «-» або «_», 2–40 символів")
+    if not _gift_uk_name(b.i18n):
+        raise HTTPException(400, "Вкажіть назву категорії українською")
+    db = get_db()
+    try:
+        with db.cursor() as c:
+            c.execute("SELECT id FROM gift_categories WHERE code=%s", (code,))
+            if c.fetchone():
+                raise HTTPException(409, "Категорія з таким кодом уже існує")
+            c.execute("INSERT INTO gift_categories (code, sort_order, active) VALUES (%s,%s,%s)",
+                      (code, b.sort_order, 1 if b.active else 0))
+            cid = c.lastrowid
+            _gift_i18n_save(c, "category", cid, b.i18n, _gift_langs())
+        db.commit()
+    finally:
+        db.close()
+    sec_log("GIFT_CAT_CREATE", _get_ip(request), f"id={cid} code={code} by={me.get('email','?')}")
+    return {"ok": True, "id": cid}
+
+@app.put("/api/admin/gift-categories/{cid}")
+def admin_gift_category_update(cid: int, b: GiftCategoryIn, request: Request):
+    me = require_admin(request)
+    code = (b.code or "").strip().lower()
+    if not _GIFT_CAT_CODE_RE.match(code):
+        raise HTTPException(400, "Код категорії: латиниця, цифри, «-» або «_», 2–40 символів")
+    if not _gift_uk_name(b.i18n):
+        raise HTTPException(400, "Вкажіть назву категорії українською")
+    db = get_db()
+    try:
+        with db.cursor() as c:
+            c.execute("SELECT id FROM gift_categories WHERE id=%s", (cid,))
+            if not c.fetchone():
+                raise HTTPException(404, "Категорію не знайдено")
+            c.execute("SELECT id FROM gift_categories WHERE code=%s AND id<>%s", (code, cid))
+            if c.fetchone():
+                raise HTTPException(409, "Категорія з таким кодом уже існує")
+            c.execute("UPDATE gift_categories SET code=%s, sort_order=%s, active=%s WHERE id=%s",
+                      (code, b.sort_order, 1 if b.active else 0, cid))
+            _gift_i18n_save(c, "category", cid, b.i18n, _gift_langs())
+        db.commit()
+    finally:
+        db.close()
+    sec_log("GIFT_CAT_UPDATE", _get_ip(request), f"id={cid} by={me.get('email','?')}")
+    return {"ok": True}
+
+@app.delete("/api/admin/gift-categories/{cid}")
+def admin_gift_category_delete(cid: int, request: Request):
+    me = require_admin(request)
+    db = get_db()
+    try:
+        with db.cursor() as c:
+            c.execute("SELECT COUNT(*) AS n FROM gifts WHERE category_id=%s", (cid,))
+            if c.fetchone()["n"]:
+                raise HTTPException(409, "У категорії є подарунки — перенесіть їх або вимкніть категорію")
+            c.execute("DELETE FROM gift_categories WHERE id=%s", (cid,))
+            deleted = c.rowcount
+            c.execute("DELETE FROM gift_i18n WHERE entity='category' AND entity_id=%s", (cid,))
+        db.commit()
+    finally:
+        db.close()
+    sec_log("GIFT_CAT_DELETE", _get_ip(request), f"id={cid} deleted={deleted} by={me.get('email','?')}")
+    return {"ok": True, "deleted": deleted}
+
+@app.post("/api/admin/gifts/upload")
+async def admin_gift_upload(request: Request, file: UploadFile = File(...), kind: str = Form("main")):
+    """Зображення подарунка: main — у каталозі, final — біля свічки (з прозорістю), gif — покладання."""
+    me = require_admin(request)
+    ip = _get_ip(request)
+    if not _rl.check(f"giftupload:{ip}", 30, 60):
+        raise HTTPException(429, "Забагато завантажень. Зачекайте хвилину.")
+    if kind not in _GIFT_UPLOAD_KINDS:
+        raise HTTPException(400, "Невідомий тип зображення")
+    allowed, max_size = _GIFT_UPLOAD_KINDS[kind]
+    ext = os.path.splitext(file.filename or "")[1].lower()
+    if ext not in allowed:
+        raise HTTPException(400, f"Дозволені формати: {', '.join(allowed)}")
+    raw = await file.read(max_size + 1)
+    if len(raw) > max_size:
+        raise HTTPException(400, f"Файл завеликий (макс. {max_size // 1_000_000} МБ)")
+    if not any(raw.startswith(sig) for sig in _GIFT_SIGNATURES[ext]) or (ext == ".webp" and raw[8:12] != b"WEBP"):
+        raise HTTPException(400, "Вміст файлу не відповідає формату")
+    os.makedirs(os.path.join("img", "gifts"), exist_ok=True)
+    name = f"{kind}_{int(time.time())}_{secrets.token_hex(4)}{'.jpg' if ext == '.jpeg' else ext}"
+    with open(os.path.join("img", "gifts", name), "wb") as fh:
+        fh.write(raw)
+    sec_log("GIFT_UPLOAD", ip, f"{name} by={me.get('email','?')}")
+    res = {"url": f"/img/gifts/{name}", "size": len(raw)}
+    if kind == "gif":
+        res.update(_gif_meta(raw))
+    else:
+        res["w"], res["h"] = _img_dims(raw, ext)
+    return res
+
+@app.get("/api/admin/memorial-gifts")
+def admin_memorial_gifts(request: Request, status: str = "", q: str = "", page: int = 1, limit: int = 50):
+    """Розміщені подарунки (покупки) з фільтром за статусом і пошуком (меморіал, ID, email/нік)."""
+    require_admin(request)
+    page = max(1, page)
+    limit = max(1, min(limit, 200))
+    where, args = [], []
+    if status in _GIFT_STATUSES:
+        where.append("mg.status=%s"); args.append(status)
+    q = (q or "").strip()[:100]
+    if q:
+        if q.isdigit():
+            where.append("(mg.memorial_id=%s OR mg.id=%s)"); args += [int(q), int(q)]
+        else:
+            like = "%" + q.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
+            where.append("(m.last LIKE %s OR m.first LIKE %s OR u.email LIKE %s OR u.nickname LIKE %s)")
+            args += [like] * 4
+    w = (" WHERE " + " AND ".join(where)) if where else ""
+    base = (" FROM memorial_gifts mg LEFT JOIN memorials m ON m.id=mg.memorial_id"
+            " LEFT JOIN users u ON u.id=mg.user_id"
+            " LEFT JOIN gift_i18n gi ON gi.entity='gift' AND gi.entity_id=mg.gift_id AND gi.lang='uk'")
+    db = get_db()
+    try:
+        with db.cursor() as c:
+            c.execute("SELECT COUNT(*) AS n" + base + w, args)
+            total = c.fetchone()["n"]
+            c.execute(
+                "SELECT mg.id, mg.memorial_id, mg.gift_id, mg.user_id, mg.status, mg.price_kop, mg.currency,"
+                " mg.order_id, mg.payment_id, mg.slot, mg.created_at, mg.paid_at,"
+                " m.last, m.first, m.slug, u.email, u.nickname, COALESCE(gi.name,'') AS gift_name"
+                + base + w + " ORDER BY mg.id DESC LIMIT %s OFFSET %s", args + [limit, (page - 1) * limit])
+            rows = c.fetchall()
+            c.execute("SELECT status, COUNT(*) AS n FROM memorial_gifts GROUP BY status")
+            counts = {r["status"]: r["n"] for r in c.fetchall()}
+            c.execute("SELECT COALESCE(SUM(price_kop), 0) AS s FROM memorial_gifts WHERE status='paid'")
+            paid_sum = float(c.fetchone()["s"]) / 100
+    finally:
+        db.close()
+    for r in rows:
+        r["price"] = r.pop("price_kop") / 100
+    return {"items": rows, "total": total, "page": page, "pages": max(1, (total + limit - 1) // limit), "counts": counts,
+            "paid_sum": paid_sum}
 
 @app.get("/api/admin/google/status")
 def google_status(request: Request):
@@ -2647,7 +3870,7 @@ class PersonIn(BaseModel):
     loc:   Optional[str] = Field("", max_length=300)
     bury:  Optional[str] = Field("", max_length=300)
     circ:  Optional[str] = Field("", max_length=200)
-    descr: Optional[str] = Field("", max_length=5000)
+    descr: Optional[str] = Field("", max_length=10000)   # адмінка — до 10000; публічна форма — 5000 (перевірка в add_person)
     photo: Optional[str] = Field("", max_length=500)
     color: Optional[str] = Field("#4fc3f7", max_length=30)
     video_url: Optional[str] = Field("", max_length=500)
@@ -2666,6 +3889,7 @@ class PersonIn(BaseModel):
     citizenship:  Optional[str] = Field("", max_length=30)
     nationality:  Optional[str] = Field("", max_length=30)
     show_creator: Optional[int] = Field(0)
+    tier:     Optional[str] = Field("", max_length=10)  # лише POST /api/admin/memorial; публічний POST /api/people його не записує
     awards:   List[AwardSimple] = []
 
 class PersonUpdate(BaseModel):
@@ -2683,6 +3907,7 @@ class PersonUpdate(BaseModel):
     category: Optional[str] = None; death_reason: Optional[str] = None
     war_related: Optional[int] = None; citizenship: Optional[str] = None
     nationality: Optional[str] = None; show_creator: Optional[int] = None
+    tier: Optional[str] = None
 
 class SendCodeReq(BaseModel):
     last_name: str
@@ -2924,6 +4149,12 @@ _NATIONALITY_CODES = {
     'crimean_tatar', 'bulgarian', 'hungarian', 'romanian', 'armenian',
     'georgian', 'german', 'other', '',
 }
+# Тарифний план погибшого: впливає лише на вигляд бокової панелі; '' — без плану
+_TIERS = {'bronze', 'silver', 'gold', 'platinum'}
+
+def _validate_tier(tier) -> str:
+    tier = (tier or '').strip().lower()
+    return tier if tier in _TIERS else ''
 
 def _validate_category_fields(category: str, death_reason: str, war_related):
     """Єдина точка правди для category/death_reason/war_related.
@@ -3031,7 +4262,7 @@ def get_people(page: int = 1, limit: int = 50, request: Request = None):
                 "SELECT id,last,first,mid,birth,death,bury,loc,photo,color,pos_x,pos_y,"
                 "grp,`rank`,`position`,unit,likes,rating,video_url,approved,added_by,slug,"
                 "world_lat,world_lng,category,death_reason,war_related,citizenship,"
-                "nationality,show_creator,created_by_uid "
+                "nationality,show_creator,created_by_uid,tier "
                 "FROM memorials WHERE approved=1 ORDER BY rating DESC, likes DESC "
                 "LIMIT %s OFFSET %s",
                 (limit, offset)
@@ -3057,7 +4288,7 @@ def get_map_points(request: Request = None):
         with db.cursor() as c:
             c.execute(
                 "SELECT id, last, first, mid, birth, death, bury, loc, pos_x, pos_y, "
-                "color, likes, rating, grp, slug, world_lat, world_lng "
+                "color, likes, rating, grp, slug, world_lat, world_lng, tier "
                 "FROM memorials WHERE approved=1 ORDER BY rating DESC, likes DESC"
             )
             rows = c.fetchall()
@@ -4890,10 +6121,18 @@ def _oauth_set_session(resp: RedirectResponse, user_id: int) -> RedirectResponse
 # ── Google OAuth ──────────────────────────────────────────
 
 _OAUTH_NEXT_TARGETS = {"admin": "/admin"}  # білий список next → допустимі шляхи повернення
+# next=card:<slug> → повернення на сторінку меморіалу; slug лише з безпечних символів
+_OAUTH_CARD_NEXT_RE = re.compile(r'^card:([a-z0-9-]{3,220})$')
 
 def _oauth_redirect_target(state: str = None) -> str:
     """Визначає шлях для редіректу після OAuth-логіну (захист від open redirect)."""
+    m = _OAUTH_CARD_NEXT_RE.match(state or "")
+    if m:
+        return f"/card?slug={m.group(1)}"
     return _OAUTH_NEXT_TARGETS.get(state, "/")
+
+def _oauth_url(target: str, qs: str) -> str:
+    return f"{target}{'&' if '?' in target else '?'}{qs}"
 
 @app.get("/api/auth/google")
 def auth_google(next: str = None):
@@ -4908,7 +6147,7 @@ def auth_google(next: str = None):
         "scope":         "openid email profile",
         "access_type":   "online",
     }
-    if next in _OAUTH_NEXT_TARGETS:
+    if next in _OAUTH_NEXT_TARGETS or _OAUTH_CARD_NEXT_RE.match(next or ""):
         params["state"] = next
     return RedirectResponse(f"https://accounts.google.com/o/oauth2/v2/auth?{urllib.parse.urlencode(params)}", status_code=302)
 
@@ -4917,7 +6156,7 @@ def auth_google(next: str = None):
 def auth_google_callback(code: str = None, error: str = None, state: str = None):
     target = _oauth_redirect_target(state)
     if error or not code:
-        return RedirectResponse(f"{target}?oauth_error=google_cancelled", status_code=302)
+        return RedirectResponse(_oauth_url(target, "oauth_error=google_cancelled"), status_code=302)
     token_data = urllib.parse.urlencode({
         "code":          code,
         "client_id":     GOOGLE_CLIENT_ID,
@@ -4934,10 +6173,10 @@ def auth_google_callback(code: str = None, error: str = None, state: str = None)
         with urllib.request.urlopen(req, timeout=10) as r:
             token_json = json.loads(r.read())
     except Exception:
-        return RedirectResponse(f"{target}?oauth_error=google_token", status_code=302)
+        return RedirectResponse(_oauth_url(target, "oauth_error=google_token"), status_code=302)
     access_token = token_json.get("access_token")
     if not access_token:
-        return RedirectResponse(f"{target}?oauth_error=google_token", status_code=302)
+        return RedirectResponse(_oauth_url(target, "oauth_error=google_token"), status_code=302)
     try:
         req2 = urllib.request.Request(
             "https://www.googleapis.com/oauth2/v2/userinfo",
@@ -4946,13 +6185,13 @@ def auth_google_callback(code: str = None, error: str = None, state: str = None)
         with urllib.request.urlopen(req2, timeout=10) as r:
             info = json.loads(r.read())
     except Exception:
-        return RedirectResponse(f"{target}?oauth_error=google_userinfo", status_code=302)
+        return RedirectResponse(_oauth_url(target, "oauth_error=google_userinfo"), status_code=302)
     email = info.get("email", "").lower()
     if not email:
-        return RedirectResponse(f"{target}?oauth_error=google_no_email", status_code=302)
+        return RedirectResponse(_oauth_url(target, "oauth_error=google_no_email"), status_code=302)
     name = info.get("name") or email.split("@")[0]
     user = _oauth_login_or_create(email, name)
-    resp = RedirectResponse(f"{target}?oauth=success", status_code=302)
+    resp = RedirectResponse(_oauth_url(target, "oauth=success"), status_code=302)
     return _oauth_set_session(resp, user["id"])
 
 
@@ -5559,7 +6798,9 @@ def approve(mid: int, request: Request):
     require_moder(request)
     db = get_db()
     with db.cursor() as c:
-        c.execute("UPDATE memorials SET approved=1 WHERE id=%s", (mid,))
+        # published_at — до approved: MySQL присвоює зліва направо, IF бачить старе значення approved
+        c.execute("UPDATE memorials SET published_at=IF(approved=1, published_at, %s), approved=1 WHERE id=%s",
+                  (int(time.time()), mid))
         c.execute("SELECT id, first, last, slug FROM memorials WHERE id=%s", (mid,))
         row = c.fetchone()
         if row and not row.get('slug'):
@@ -5573,6 +6814,73 @@ def approve(mid: int, request: Request):
     cache_flush_memorials()
     cache_delete("sitemap")
     return {"ok": True}
+
+# ── «Нові надходження» (v3.58): загиблі, що зʼявились на сайті за останні дні ───────────
+# Блок над статистикою в лівому нижньому куті index.html. Запис потрапляє в нього, коли стає
+# видимим на сайті (published_at: схвалено з модерації чи доданий адміном схваленим).
+# Налаштування в colors: recent_enabled (1/0, дефолт 1), recent_days (1–14, дефолт 3)
+_RECENT_DAYS_DEFAULT, _RECENT_DAYS_MAX, _RECENT_LIMIT = 3, 14, 30
+
+def _recent_days() -> int:
+    try:
+        return min(max(int(float(_get_color_val("recent_days", str(_RECENT_DAYS_DEFAULT)))), 1), _RECENT_DAYS_MAX)
+    except (TypeError, ValueError):
+        return _RECENT_DAYS_DEFAULT
+
+def _recent_items(days: int) -> list:
+    db = get_db()
+    try:
+        with db.cursor() as c:
+            c.execute("SELECT id, slug, `last`, `first`, published_at AS ts FROM memorials"
+                      " WHERE approved=1 AND published_at >= %s ORDER BY published_at DESC, id DESC LIMIT %s",
+                      (int(time.time()) - days * 86400, _RECENT_LIMIT))
+            return c.fetchall()
+    finally:
+        db.close()
+
+@app.get("/api/recent-additions")
+def recent_additions(request: Request):
+    ip = _get_ip(request)
+    if not _rl.check(f"recent:{ip}", 60, 60):
+        raise HTTPException(429, "Забагато запитів. Зачекайте.")
+    if _get_color_val("recent_enabled", "1") != "1":
+        return {"enabled": False, "days": 0, "items": []}
+    cached = cache_get("recent_additions")
+    if cached:
+        try:
+            return json.loads(cached)
+        except Exception:
+            pass
+    days = _recent_days()
+    result = {"enabled": True, "days": days, "items": _recent_items(days)}
+    cache_set("recent_additions", json.dumps(result), 60)
+    return result
+
+@app.get("/api/admin/recent-additions")
+def admin_recent_additions(request: Request):
+    require_admin(request)
+    if not _rl.check(f"recentadm:{_get_ip(request)}", 60, 60):
+        raise HTTPException(429, "Забагато запитів. Зачекайте.")
+    days = _recent_days()
+    return {"enabled": _get_color_val("recent_enabled", "1") == "1", "days": days, "items": _recent_items(days)}
+
+@app.post("/api/admin/recent-additions/{mid}/hide")
+def admin_recent_hide(mid: int, request: Request):
+    """Прибрати запис із блоку «Нові надходження» (сам запис на сайті лишається)."""
+    me = require_admin(request)
+    if not _rl.check(f"recentadm:{_get_ip(request)}", 60, 60):
+        raise HTTPException(429, "Забагато запитів. Зачекайте.")
+    db = get_db()
+    try:
+        with db.cursor() as c:
+            c.execute("UPDATE memorials SET published_at=NULL WHERE id=%s", (mid,))
+            changed = c.rowcount
+        db.commit()
+    finally:
+        db.close()
+    cache_delete("recent_additions")
+    sec_log("RECENT_HIDE", _get_ip(request), f"id={mid} by={me.get('email', '?')}")
+    return {"ok": True, "changed": changed}
 
 @app.post("/api/admin/unapprove/{mid}")
 def unapprove(mid: int, request: Request):
@@ -5598,20 +6906,21 @@ def admin_add_person(p: PersonIn, request: Request):
         p.category or 'military', p.death_reason or '', p.war_related)
     citizenship = p.citizenship if (p.citizenship or '') in _CITIZENSHIP_CODES else ''
     nationality = p.nationality if (p.nationality or '') in _NATIONALITY_CODES else ''
+    tier = _validate_tier(p.tier) if me.get('role') == 'admin' else ''
     db = get_db()
     with db.cursor() as c:
         c.execute("""
             INSERT INTO memorials
             (last,first,mid,birth,death,loc,bury,circ,category,death_reason,war_related,
              citizenship,nationality,descr,photo,color,`rank`,`position`,`unit`,pos_x,pos_y,
-             world_lat,world_lng,grp,added_by,created_by_uid,show_creator,approved)
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,1)
+             world_lat,world_lng,grp,added_by,created_by_uid,show_creator,tier,approved,published_at)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,1,%s)
         """, (p.last.strip(), p.first.strip(), p.mid or '', p.birth or None, p.death or None,
               p.loc or '', p.bury or '', p.circ or '', category, death_reason, war_related,
               citizenship, nationality, p.descr or '', p.photo or '',
               p.color or '#4fc3f7', p.rank or '', p.position or '', p.unit or '',
               pos_x, pos_y, p.world_lat, p.world_lng, p.grp or '', 'admin',
-              me.get("id"), 1 if p.show_creator else 0))
+              me.get("id"), 1 if p.show_creator else 0, tier, int(time.time())))
         new_id = c.lastrowid
         sl = make_slug(p.first.strip(), p.last.strip(), new_id)
         try:
@@ -5826,7 +7135,7 @@ async def import_csv(request: Request, file: UploadFile = File(...)):
                     _sanitize_text((row.get('loc')       or '')[:300],  300),
                     _sanitize_text((row.get('bury')      or '')[:300],  300),
                     _sanitize_text((row.get('circ')      or '')[:500],  500),
-                    _sanitize_text((row.get('descr')     or '')[:5000], 5000),
+                    _sanitize_text((row.get('descr')     or '')[:10000], 10000),
                     _validate_photo_url((row.get('photo') or '')[:500]),
                     _validate_color(row.get('color') or ''),
                     pos_x, pos_y,
@@ -5964,7 +7273,7 @@ async def import_csv_apply(request: Request):
                         _sanitize_text((row.get('loc')       or '')[:300], 300),
                         _sanitize_text((row.get('bury')      or '')[:300], 300),
                         _sanitize_text((row.get('circ')      or '')[:500], 500),
-                        _sanitize_text((row.get('descr')     or '')[:5000], 5000),
+                        _sanitize_text((row.get('descr')     or '')[:10000], 10000),
                         _validate_photo_url((row.get('photo') or '')[:500]),
                         _validate_color(row.get('color') or ''),
                         px, py,
@@ -6020,12 +7329,13 @@ _MEMORIAL_COL_MAP = {
     'citizenship':   '`citizenship`=%s',
     'nationality':   '`nationality`=%s',
     'show_creator':  '`show_creator`=%s',
+    'tier':          '`tier`=%s',
 }
 _MEMORIAL_ALLOWED_FIELDS = set(_MEMORIAL_COL_MAP)
 
 @app.put("/api/admin/memorial/{mid}")
 def update_memorial(mid: int, p: PersonUpdate, request: Request):
-    require_moder(request)
+    me = require_moder(request)
     db = get_db()
     _TEXT_MAXLEN = {
         'last':100,'first':100,'mid':100,'loc':300,'bury':300,
@@ -6054,6 +7364,13 @@ def update_memorial(mid: int, p: PersonUpdate, request: Request):
         update_data['citizenship'] = ''
     if 'nationality' in update_data and update_data['nationality'] not in _NATIONALITY_CODES:
         update_data['nationality'] = ''
+    # Тарифний план змінює лише адмін; від модератора поле мовчки відкидаємо,
+    # щоб решта його правок зберігалась
+    if 'tier' in update_data:
+        if me.get('role') == 'admin':
+            update_data['tier'] = _validate_tier(update_data['tier'])
+        else:
+            del update_data['tier']
     fields, vals = [], []
     for f, v in update_data.items():
         if f not in _MEMORIAL_COL_MAP:
@@ -6061,7 +7378,7 @@ def update_memorial(mid: int, p: PersonUpdate, request: Request):
         if f in _TEXT_MAXLEN and v is not None:
             v = _sanitize_text(str(v), _TEXT_MAXLEN[f])
         elif f == 'descr' and v is not None:
-            v = str(v)[:5000]
+            v = str(v)[:10000]
         elif f == 'photo' and v:
             v = _validate_photo_url(v)
         elif f == 'color' and v:
@@ -6086,6 +7403,9 @@ def update_memorial(mid: int, p: PersonUpdate, request: Request):
             if fname not in update_data:
                 fields.append(_MEMORIAL_COL_MAP[fname])
                 vals.append(fval)
+    if update_data.get('approved') == 1:
+        fields.insert(0, "`published_at`=IF(`approved`=1, `published_at`, %s)")
+        vals.insert(0, int(time.time()))
     vals.append(mid)
     old_slug = None
     with db.cursor() as c:
@@ -6307,6 +7627,21 @@ def update_colors_batch(colors: List[ColorUpdate], request: Request):
                 col.value = _validate_photo_url(col.value)
             elif col.key in ("ad_video_title", "ad_video_channel_btn"):
                 col.value = _sanitize_text(col.value, 150)
+            elif col.key in _GIFT_FLAG_KEYS:   # «Подарунки загиблому»: лише 0/1
+                col.value = "1" if str(col.value).strip() == "1" else "0"
+            elif col.key == "recent_enabled":  # «Нові надходження» (v3.58): лише 0/1
+                col.value = "1" if str(col.value).strip() == "1" else "0"
+            elif col.key == "recent_days":     # скільки днів показувати: 1–14
+                try:
+                    col.value = str(min(max(int(float(col.value)), 1), _RECENT_DAYS_MAX))
+                except (TypeError, ValueError):
+                    col.value = str(_RECENT_DAYS_DEFAULT)
+            elif col.key in _GIFT_NUM_KEYS:    # числа в допустимих межах
+                lo, hi, dflt = _GIFT_NUM_KEYS[col.key]
+                try:
+                    col.value = f"{min(max(float(col.value), lo), hi):g}"
+                except (TypeError, ValueError):
+                    col.value = f"{dflt:g}"
             c.execute(
                 "INSERT INTO colors (`key`,value,label) VALUES (%s,%s,'') "
                 "ON DUPLICATE KEY UPDATE value=%s",
@@ -7287,7 +8622,7 @@ def get_memorial_by_slug(slug: str):
     with db.cursor() as c:
         c.execute(
             "SELECT id,last,first,mid,birth,death,bury,loc,circ,descr,photo,color,pos_x,pos_y,"
-            "grp,`rank`,`position`,unit,likes,rating,video_url,slug "
+            "grp,`rank`,`position`,unit,likes,rating,video_url,slug,tier "
             "FROM memorials WHERE slug=%s AND approved=1",
             (slug,)
         )
