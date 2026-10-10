@@ -1,0 +1,54 @@
+flowchart LR
+  subgraph USERS[Пользователи]
+    V[Посетитель]
+    A[Админ / модератор]
+  end
+  subgraph FRONT[Frontend — страницы]
+    IDX[index.html — карта]
+    MOB[mobile.html — планшет]
+    CARD[card.html — мемориал]
+    PROF[profile.html — профиль]
+    ADM[admin.html — админка]
+    DOCS[faq / rules / terms / how-to-add / pricing / promo / portfolio]
+  end
+  subgraph BACK[Backend Paskal.py — FastAPI]
+    MW["middleware: security_headers, track_visits, техработы"]
+    API["/api/* — маршруты API"]
+    SSR["/memorial/{slug} — SSR и sitemap"]
+    WS[("WebSocket /ws/online")]
+    BG[["фоновые потоки: _cpu_ram_loop, _bot_loop, _currency_rate_loop"]]
+  end
+  subgraph DATA[Данные]
+    DB[(MySQL zoryana_pamyat)]
+    RD[(Redis — кеш, необязательный)]
+    SES[(сессии в памяти)]
+    FS[(файлы img/)]
+  end
+  subgraph EXT[Внешние сервисы]
+    GO[Google OAuth]
+    LP[LiqPay]
+    NBU[НБУ курс]
+    SMTP[SMTP]
+    YT[YouTube]
+    CARTO[CARTO тайлы]
+    GI[Google Indexing]
+    GA[Google Analytics]
+    CDN[CDN: jsDelivr, Google Fonts]
+  end
+  V -->|открывает| IDX & MOB & CARD & PROF & DOCS
+  A -->|открывает| ADM
+  IDX & MOB & CARD & PROF & ADM -->|отправляет запрос| API
+  IDX -->|WebSocket| WS
+  ADM -->|BroadcastChannel вживую| IDX
+  API -->|читает / изменяет| DB
+  API -->|кеш| RD
+  API -->|проверяет сессию| SES
+  API -->|загрузка файлов| FS
+  API -->|OAuth| GO
+  API -->|оплата, подпись| LP
+  API -->|письма| SMTP
+  BG -->|курс| NBU
+  API -->|ping| GI
+  IDX -->|тайлы «Світ»| CARTO
+  CARD & IDX -->|iframe| YT
+  ADM -->|Chart.js, xlsx| CDN

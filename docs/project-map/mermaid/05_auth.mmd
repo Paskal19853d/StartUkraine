@@ -1,0 +1,25 @@
+sequenceDiagram
+  autonumber
+  participant B as Браузер
+  participant S as Paskal.py
+  participant G as Google OAuth
+  participant M as MySQL users
+  participant Ss as _sessions (память)
+  B->>S: POST /api/auth/login {email, password}
+  S->>S: _rl.check (лимит) + _is_locked (5 неудач → 15 мин)
+  S->>M: SELECT users WHERE email
+  S->>S: bcrypt.checkpw
+  S->>Ss: secrets.token_hex(32) → пользователь
+  S-->>B: Set-Cookie admin_session (7 дней)
+  B->>S: GET /api/auth/google?next=…
+  S-->>B: 302 → accounts.google.com
+  B->>G: согласие пользователя
+  G-->>B: 302 /api/auth/google/callback?code
+  B->>S: callback (code, state)
+  S->>G: обмен code → token, затем userinfo
+  S->>M: _oauth_login_or_create (users)
+  S->>Ss: новая сессия
+  S-->>B: 302 → / | /admin | /card?slug=…&oauth=success
+  B->>S: любой /api/admin/* (cookie)
+  S->>Ss: require_admin / require_moder → роль
+  S-->>B: 200 или 401/403

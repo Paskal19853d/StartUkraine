@@ -1,0 +1,389 @@
+erDiagram
+  memorials {
+    int_11_ id
+    varchar_100_ last
+    varchar_100_ first
+    varchar_100_ mid
+    varchar_20_ birth
+    varchar_20_ death
+    varchar_300_ loc
+    varchar_300_ bury
+    varchar_500_ circ
+    varchar_20_ category
+    varchar_40_ death_reason
+    tinyint_4_ war_related
+    varchar_30_ citizenship
+    varchar_30_ nationality
+    text descr
+    varchar_500_ photo
+    varchar_20_ color
+    double pos_x
+    double pos_y
+    int_11_ likes
+    double rating
+    tinyint_4_ approved
+    varchar_100_ grp
+    varchar_100_ added_by
+    int_11_ created_by_uid
+    tinyint_4_ show_creator
+    varchar_500_ video_url
+    varchar_100_ rank
+    varchar_100_ position
+    varchar_200_ unit
+    varchar_220_ slug
+    float world_lat
+    float world_lng
+  }
+  likes_log {
+    int_11_ id
+    int_11_ memorial_id
+    varchar_128_ fingerprint
+    int_11_ ts
+  }
+  users {
+    int_11_ id
+    varchar_100_ name
+    varchar_120_ email
+    varchar_255_ password
+    tinyint_4_ is_admin
+    tinyint_4_ is_banned
+    int_11_ last_seen
+    int_11_ created
+    int_11_ ban_until
+    text notes
+    varchar_20_ role
+    varchar_100_ first_name
+    varchar_100_ last_name
+    varchar_100_ middle_name
+    varchar_100_ nickname
+    varchar_20_ phone
+    varchar_5_ lang
+  }
+  colors {
+    varchar_50_ key
+    text value
+    varchar_100_ label
+  }
+  map_labels {
+    int_11_ id
+    varchar_100_ name
+    double x
+    double y
+    varchar_20_ type
+    varchar_50_ color
+    int_11_ size
+  }
+  search_logs {
+    int_11_ id
+    varchar_200_ query
+    int_11_ results_count
+    int_11_ created_at
+  }
+  cities {
+    int_11_ id
+    varchar_100_ name
+    double pos_x
+    double pos_y
+    int_11_ tier
+    varchar_20_ color
+  }
+  partners {
+    int_11_ id
+    varchar_100_ name
+    varchar_500_ image_url
+    varchar_500_ link_url
+    varchar_200_ caption
+    int_11_ width
+    decimal_3_2_ opacity
+    int_11_ pos_x
+    int_11_ pos_y
+    tinyint_4_ is_visible
+    int_11_ sort_order
+    varchar_500_ caption_url
+  }
+  pricing_leads {
+    INT id
+    VARCHAR_20_ plan
+    VARCHAR_40_ price_label
+    VARCHAR_150_ name
+    VARCHAR_150_ contact
+    INT memorial_id
+    TEXT comment
+    VARCHAR_20_ status
+    VARCHAR_64_ ip
+    INT created_at
+  }
+  gift_categories {
+    INT id
+    VARCHAR_40_ code
+    INT sort_order
+    TINYINT active
+  }
+  gifts {
+    INT id
+    INT category_id
+    INT price_kop
+    VARCHAR_300_ img_main
+    VARCHAR_300_ gif_place
+    VARCHAR_300_ img_final
+    INT anim_ms
+    TINYINT active
+    INT sort_order
+    DECIMAL_4_2_ place_scale
+    VARCHAR_20_ place_area
+    INT place_z
+    INT created_at
+    INT updated_at
+  }
+  gift_i18n {
+    VARCHAR_10_ entity
+    INT entity_id
+    VARCHAR_5_ lang
+    VARCHAR_150_ name
+    VARCHAR_500_ descr
+  }
+  memorial_gifts {
+    INT id
+    INT memorial_id
+    INT gift_id
+    INT user_id
+    VARCHAR_16_ status
+    INT price_kop
+    VARCHAR_3_ currency
+    VARCHAR_64_ order_id
+    VARCHAR_64_ payment_id
+    INT slot
+    VARCHAR_10_ anim_state
+    VARCHAR_300_ img_snap
+    VARCHAR_300_ gif_snap
+    INT created_at
+    INT paid_at
+    INT updated_at
+  }
+  ghost_faces {
+    INT id
+    VARCHAR_300_ svg_file
+    VARCHAR_100_ name
+    TINYINT is_enabled
+    INT sort_order
+    INT individual_size_px
+    INT created_at
+  }
+  ad_video_views {
+    int_11_ id
+    varchar_64_ visitor_id
+    int_11_ seen_at
+  }
+  memorial_awards {
+    int_11_ id
+    int_11_ memorial_id
+    varchar_200_ name
+    varchar_300_ img_file
+    varchar_30_ category
+    date award_date
+    text descr
+    int_11_ sort_order
+  }
+  bot_visits {
+    int_11_ id
+    varchar_60_ bot_name
+    varchar_500_ path
+    varchar_300_ user_agent
+    int_11_ created_at
+  }
+  daily_stats {
+    date date
+    int_11_ views
+  }
+  hourly_stats {
+    int_11_ hour_ts
+    int_11_ views
+    int_11_ human_views
+  }
+  minute_silence_settings {
+    varchar_50_ key
+    text value
+  }
+  seo_index_log {
+    int_11_ id
+    varchar_500_ url
+    varchar_30_ notification_type
+    varchar_20_ status
+    text response
+    int_11_ created_at
+  }
+  seo_broken_links {
+    int_11_ id
+    int_11_ memorial_id
+    varchar_500_ url
+    varchar_20_ link_type
+    int_11_ status_code
+    int_11_ last_checked
+    tinyint_4_ is_broken
+  }
+  seo_score_history {
+    int_11_ id
+    date snapshot_date
+    int_11_ total_count
+    decimal_5_2_ avg_score
+    int_11_ count_a
+    int_11_ count_b
+    int_11_ count_c
+    int_11_ count_d
+  }
+  chat_messages {
+    int_11_ id
+    int_11_ user_id
+    text message
+    bigint_20_ created_at
+    tinyint_4_ is_deleted
+    varchar_64_ guest_fp
+    varchar_45_ guest_ip
+    tinyint_4_ is_guest
+    tinyint_4_ is_bot
+    varchar_100_ bot_name
+  }
+  chat_reports {
+    int_11_ id
+    int_11_ msg_id
+    int_11_ reporter_id
+    varchar_200_ reason
+    bigint_20_ created_at
+  }
+  chat_banned_words {
+    int_11_ id
+    varchar_200_ word
+    varchar_50_ category
+  }
+  chat_bot_phrases {
+    int_11_ id
+    text phrase
+    varchar_50_ category
+    tinyint_4_ is_active
+  }
+  portfolio_thanks {
+    int_11_ id
+    varchar_200_ name
+    int_11_ sort_order
+    tinyint_4_ is_visible
+  }
+  awards_catalog {
+    int_11_ id
+    varchar_200_ name
+    varchar_200_ img_file
+    varchar_30_ category
+    text description
+    int_11_ sort_order
+  }
+  i18n_translations {
+    int_11_ id
+    varchar_5_ lang
+    varchar_50_ section
+    varchar_100_ key
+    text value
+    datetime updated_at
+  }
+  languages {
+    varchar_5_ code
+    varchar_100_ name
+    varchar_10_ flag
+    enum__ltr___rtl__ direction
+    tinyint_1_ is_active
+    tinyint_1_ is_default
+    int_11_ sort_order
+    datetime created_at
+  }
+  legacy_accounts {
+    int_11_ user_id
+    tinyint_4_ activated
+    int_11_ activated_at
+    decimal_10_2_ payment_amount
+    varchar_10_ payment_currency
+    varchar_200_ transaction_id
+    tinyint_4_ activated_by_admin
+    text notes
+    int_11_ created_at
+    int_11_ updated_at
+  }
+  legacy_content {
+    int_11_ id
+    int_11_ user_id
+    varchar_500_ memory_photo
+    varchar_300_ epitaph
+    text biography
+    text final_message
+    varchar_500_ video_url
+    text wishes
+    text family_advice
+    text instructions
+    text achievements
+    tinyint_4_ publish_all
+    tinyint_4_ allow_bio_edit
+    tinyint_4_ allow_memories
+    tinyint_4_ allow_new_photos
+    tinyint_4_ lock_after_memorial
+    tinyint_4_ will_locked
+    int_11_ will_locked_at
+    int_11_ created_at
+    int_11_ updated_at
+  }
+  legacy_logs {
+    int_11_ id
+    int_11_ user_id
+    varchar_100_ action
+    varchar_45_ ip
+    varchar_300_ browser
+    text metadata
+    int_11_ created_at
+  }
+  legacy_requests {
+    int_11_ id
+    int_11_ user_id
+    int_11_ trusted_user_id
+    enum__new___review__ status
+    date death_date
+    text comment
+    int_11_ moderator_id
+    text mod_comment
+    int_11_ created_at
+    int_11_ updated_at
+  }
+  legacy_trusted {
+    int_11_ id
+    int_11_ owner_id
+    int_11_ trusted_id
+    varchar_20_ status
+    int_11_ created_at
+  }
+  legacy_trusted_contacts {
+    int_11_ id
+    int_11_ user_id
+    int_11_ trusted_user_id
+    enum__pending___conf status
+    int_11_ confirmed_at
+    int_11_ created_at
+    int_11_ updated_at
+  }
+  user_nickname_aliases {
+    int_11_ id
+    int_11_ user_id
+    varchar_100_ old_nickname
+    int_11_ created_at
+  }
+  memorials ||--o{ likes_log : "memorial_id"
+  memorials ||--o{ memorial_awards : "memorial_id"
+  memorials ||--o{ memorial_gifts : "memorial_id"
+  gifts ||--o{ memorial_gifts : "gift_id"
+  users ||--o{ memorial_gifts : "user_id"
+  gift_categories ||--o{ gifts : "category_id"
+  gifts ||--o{ gift_i18n : "entity_id (gift)"
+  users ||--o{ chat_messages : "user_id"
+  chat_messages ||--o{ chat_reports : "message_id"
+  users ||--o{ legacy_accounts : "user_id"
+  users ||--o{ user_nickname_aliases : "user_id"
+  memorials ||--o{ pricing_leads : "memorial_id"
+  memorials ||--o{ seo_broken_links : "memorial_id"
+  memorials ||--o{ seo_index_log : "memorial_id"
+  languages ||--o{ i18n_translations : "lang"
+  users ||--o{ memorials : "created_by_uid"
+  awards_catalog ||--o{ memorial_awards : "img_file"

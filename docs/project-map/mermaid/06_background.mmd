@@ -1,0 +1,6 @@
+flowchart LR
+  py_Paskal_py_startup["Событие startup: startup"] -->|запускает| py_Paskal_py_startup__cpu_ram_loop[["startup._cpu_ram_loop"]]
+  py_Paskal_py_startup["Событие startup: startup"] -->|запускает| py_Paskal_py__bot_loop[["_bot_loop"]]
+  py_Paskal_py_startup["Событие startup: startup"] -->|запускает| py_Paskal_py_startup__currency_rate_loop[["startup._currency_rate_loop"]]
+  py_Paskal_py__gift_notify_paid["_gift_notify_paid"] -->|запускает| py_Paskal_py__gift_notify_paid_run[["_gift_notify_paid.run"]]
+  py_Paskal_py_ws_online["ws_online"] -->|запускает| py_Paskal_py_ws_online__ping_loop[["ws_online._ping_loop"]]

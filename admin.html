@@ -274,6 +274,15 @@ input:checked + .toggle-slider:before{transform:translateX(18px)}
 .rg-row-label{font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px;display:flex;align-items:center;gap:6px}
 .rg-row-desc{font-size:11px;color:var(--muted);line-height:1.4}
 .rg-row-disabled{opacity:.45;pointer-events:none}
+/* Регулятор зірок (v3.70) */
+.st-prev-wrap{display:flex;gap:12px;flex-wrap:wrap;margin:0 0 18px;max-width:720px}
+.st-prev{flex:1 1 300px;margin:0;border:1px solid var(--border2);border-radius:8px;overflow:hidden;background:#05080f;position:relative}
+.st-prev canvas{display:block;width:100%;height:170px}
+.st-prev figcaption{position:absolute;left:10px;top:8px;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.6);pointer-events:none}
+.st-ctl{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.st-ctl input[type=range]{width:200px;accent-color:#fda4af}
+.st-val{font-size:12px;color:var(--text);min-width:56px;text-align:right;font-variant-numeric:tabular-nums}
+@media (max-width:640px){ #sec-stars .rg-row{flex-wrap:wrap} #sec-stars .st-ctl{width:100%} #sec-stars .st-ctl input[type=range]{flex:1;width:auto} }
 .rg-badge-fixed{font-size:10px;background:rgba(0,170,221,.12);color:var(--accent);border:1px solid rgba(0,170,221,.25);border-radius:4px;padding:2px 8px;white-space:nowrap}
 .rg-badge-soon{font-size:9px;background:rgba(255,193,7,.15);color:#d4a800;border:1px solid rgba(255,193,7,.3);border-radius:4px;padding:1px 6px;vertical-align:middle}
 .rg-sel{background:var(--panel);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;cursor:pointer;min-width:140px}
@@ -568,6 +577,8 @@ tr:hover td{background:rgba(255,255,255,.02)}
   <symbol id="ico-upload" viewBox="0 0 24 24"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></symbol>
   <symbol id="ico-device" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><rect x="9" y="18" width="6" height="1" rx="0.5" fill="currentColor" stroke="none"/><rect x="9" y="6" width="6" height="8" rx="1"/></symbol>
   <symbol id="ico-tour" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8" fill="currentColor" stroke="none"/></symbol>
+  <!-- регулятор зірок: зірка з блиском і повзунок (v3.70) -->
+  <symbol id="ico-twinkle" viewBox="0 0 24 24"><path d="M9 2.5l1.3 3.4 3.4 1.3-3.4 1.3L9 11.9 7.7 8.5 4.3 7.2l3.4-1.3z"/><path d="M18 4l.6 1.4 1.4.6-1.4.6-.6 1.4-.6-1.4-1.4-.6 1.4-.6z"/><line x1="3" y1="17.5" x2="21" y2="17.5"/><circle cx="14.5" cy="17.5" r="2.2"/></symbol>
   <symbol id="ico-recent" viewBox="0 0 24 24"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M18.5 15.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/></symbol>
   <symbol id="ico-ad" viewBox="0 0 24 24"><path d="M3 11v2a2 2 0 0 0 2 2h1l3 6 2-1-2.5-5H10l9 4V5l-9 4H5a2 2 0 0 0-2 2z"/><line x1="19" y1="9" x2="19" y2="15"/></symbol>
   <symbol id="ico-phone" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></symbol>
@@ -617,6 +628,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
     <div class="nav-item"        draggable="true" onclick="showSec('worldmap')"  data-s="worldmap">  <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-map"/></svg></span><span data-i18n="nav.worldmap">Карта світу</span></div>
     <div class="nav-item"        draggable="true" onclick="showSec('social')"    data-s="social">    <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-share"/></svg></span><span data-i18n="nav.social">Соцмережі</span></div>
     <div class="nav-item"        draggable="true" onclick="showSec('colors')"    data-s="colors">    <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-palette"/></svg></span><span data-i18n="nav.colors">Кольори</span></div>
+    <div class="nav-item"        draggable="true" onclick="showSec('stars')"     data-s="stars">     <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-twinkle"/></svg></span><span data-i18n="nav.stars">Регулятор зірок</span></div>
     <div class="nav-item"        draggable="true" onclick="showSec('smoke')"     data-s="smoke">     <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-smoke"/></svg></span><span data-i18n="nav.smoke">Ефект диму</span></div>
     <div class="nav-item"        draggable="true" onclick="showSec('ghosts')"    data-s="ghosts">    <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-eye"/></svg></span><span data-i18n="nav.ghosts">Привиди в диму</span></div>
     <div class="nav-item"        draggable="true" onclick="showSec('photo')"     data-s="photo">     <span class="nav-drag">⠿</span><span class="nav-ico"><svg class="adm-ico"><use href="#ico-photo"/></svg></span><span data-i18n="nav.photo">Фото на карті</span></div>
@@ -5243,6 +5255,29 @@ tr:hover td{background:rgba(255,255,255,.02)}
         </div>
       </div><!-- /sec-recent -->
 
+      <!-- ── РЕГУЛЯТОР ЗІРОК (v3.70) ── -->
+      <div id="sec-stars" class="section">
+        <div class="sec-title"><svg class="adm-ico"><use href="#ico-twinkle"/></svg> <span data-i18n="adm.stars.title">Регулятор зірок</span></div>
+        <p style="font-size:12px;color:var(--muted);margin:0 0 16px;line-height:1.6;max-width:720px">
+          Мерехтіння, блиск, свічення й розмір зірок памʼяті — на обох картах: України і «Світі». Повзунок одразу показує зміну
+          в попередньому перегляді нижче й на відкритих вкладках сайту; для всіх відвідувачів — після «Зберегти». «Скасувати» повертає збережене.
+        </p>
+        <div class="st-prev-wrap">
+          <figure class="st-prev"><canvas id="st-prev-ua" aria-label="Попередній перегляд: карта України"></canvas><figcaption>Карта України · наближення ×2.5</figcaption></figure>
+          <figure class="st-prev"><canvas id="st-prev-world" aria-label="Попередній перегляд: карта «Світ»"></canvas><figcaption>Світ</figcaption></figure>
+        </div>
+        <div id="st-rows"></div>
+        <div style="display:flex;gap:10px;margin-top:6px;align-items:center;flex-wrap:wrap;max-width:720px">
+          <button class="btn btn-p" onclick="starsSave()">
+            <svg class="adm-ico"><use href="#ico-check"/></svg> Зберегти
+          </button>
+          <button class="btn" onclick="starsLoad()">
+            <svg class="adm-ico"><use href="#ico-refresh"/></svg> Скасувати
+          </button>
+          <span id="st-hint" style="font-size:11px;margin-left:4px"></span>
+        </div>
+      </div><!-- /sec-stars -->
+
       <!-- ── ВІДЕО-ПОПАП (РЕКЛАМА) ── -->
       <div id="sec-adv" class="section">
         <div class="sec-title"><svg class="adm-ico"><use href="#ico-ad"/></svg> Реклама (відео-попап)</div>
@@ -6565,6 +6600,7 @@ function showSec(id) {
   if(id==='addmode')   loadAddModeSettings();
   if(id==='tour')      loadTourSettings();
   if(id==='recent')    loadRecentSettings();
+  if(id==='stars')     starsLoad();
   if(id==='adv')       loadAdVideoSettings();
   if(id==='worldmap')  loadWMSettings();
   if(id==='seo')     loadSeoAdminDash();
@@ -10242,7 +10278,9 @@ function renderColors(){
     </div>
   </div>`;
 
-  const _dotBlockKeys    = ['dot_pulse_speed','dot_pulse_amp','dot_glow_intensity','dot_glow_radius'];
+  // Зірки — у розділі «Регулятор зірок» (v3.70); тут ключі лише в knownKeys, щоб не потрапили в «Інші».
+  // dot_glow_size, dot_twinkle — давні ключі в БД, ніде не використовуються (повзунки нічого не змінювали)
+  const _dotBlockKeys    = ['dot_pulse_speed','dot_pulse_amp','dot_glow_intensity','dot_glow_radius','star_glint_chance','star_glint_strength','star_size','dot_glow_size','dot_twinkle'];
   const _mapBlockKeys    = ['oblast_fill','oblast_stroke','settlement_stroke','city_path_stroke','neon_blue','neon_yellow','thread_color','label_opacity'];
   const _bgBlockKeys     = ['bg','surface','map_bg','bar_bg','card_bg'];
   const _txtBlockKeys    = ['text_primary','text_secondary','accent','yellow','yellow2'];
@@ -10273,10 +10311,7 @@ function renderColors(){
     </div>`;
   };
 
-  const dotBlock   = mkBlock('<svg class="adm-ico" style="vertical-align:middle"><use href="#ico-star"/></svg>',
-                              'Зірки памʼяті — пульсація та свічення',
-                              '#fda4af','253,164,175', _dotBlockKeys,
-                              'Параметри анімації маркерів на карті');
+  const dotBlock   = `<div style="grid-column:1/-1;font-size:11px;color:var(--muted);padding:2px 2px 6px">Мерехтіння, блиск, свічення й розмір зірок — у розділі <a href="#" onclick="showSec('stars');return false" style="color:#fda4af">«Регулятор зірок»</a></div>`;
   const bgBlock    = mkBlock('<svg class="adm-ico" style="vertical-align:middle"><use href="#ico-palette"/></svg>',
                               'Фон та поверхні',
                               '#7dd3fc','125,211,252', _bgBlockKeys,
@@ -15087,6 +15122,215 @@ async function saveRecentSettings() {
     if (hint) { hint.textContent = 'Збережено'; setTimeout(() => hint.textContent = '', 2500); }
     loadRecentSettings();   // показати значення так, як їх зберіг сервер (дні — в межах 1–14)
   } catch { showN('Помилка збереження', true); }
+}
+
+/* ══════════ РЕГУЛЯТОР ЗІРОК (v3.70) ══════════
+   Мерехтіння, блиск, свічення й розмір зірок на обох картах. Значення — ключі colors (PUT /api/admin/colors/batch;
+   межі перевіряє сервер — _STAR_NUM_KEYS у Paskal.py). Повзунок одразу оновлює попередній перегляд і відкриті вкладки
+   сайту (BroadcastChannel); «Зберегти» — у БД; «Скасувати» — повертає збережене (і на вкладках сайту теж).
+   Попередній перегляд повторює малювання з index.html (_twinkle, drawDotFX, _wmSprite): змінюючи вигляд зірок там —
+   оновити й тут */
+const _ST_CFG = [
+  {grp: 'Мерехтіння'},
+  {key: 'dot_pulse_amp', min: 0, max: 1, step: 0.05, def: 0.35, lbl: 'Сила імпульсу',
+   desc: 'Наскільки зірка притухає між спалахами: 0 — не мерехтить, 1 — між спалахами майже гасне', fmt: v => Math.round(v * 100) + ' %'},
+  {key: 'dot_pulse_speed', min: 0.1, max: 5, step: 0.1, def: 1, lbl: 'Швидкість мерехтіння',
+   desc: v => `Цикл однієї зірки — ${(5 / v).toFixed(1)}–${(10 / v).toFixed(1)} с (у кожної свій, тож зірки спалахують не разом)`, fmt: v => '×' + (+v).toFixed(1)},
+  {grp: 'Блиск'},
+  {key: 'star_glint_chance', min: 0, max: 100, step: 1, def: 33, lbl: 'Частота блиску',
+   desc: 'У скількох спалахах на вершині зʼявляється білий хрестик: 0 — ніколи, 100 — у кожному', fmt: v => Math.round(v) + ' %'},
+  {key: 'star_glint_strength', min: 0, max: 2, step: 0.05, def: 1, lbl: 'Сила блиску',
+   desc: 'Яскравість і довжина хрестика: 0 — без блиску', fmt: v => '×' + (+v).toFixed(2)},
+  {grp: 'Свічення та розмір'},
+  {key: 'dot_glow_intensity', min: 0, max: 2, step: 0.05, def: 0.4, lbl: 'Інтенсивність свічення',
+   desc: 'Яскравість ореолу й променів навколо зірок — обидві карти', fmt: v => (+v).toFixed(2)},
+  {key: 'dot_glow_radius', min: 1, max: 12, step: 0.5, def: 3, lbl: 'Радіус ореолу',
+   desc: 'Розмір мʼякого ореолу навколо зірки — карта України', fmt: v => '×' + (+v).toFixed(1)},
+  {key: 'star_size', min: 0.5, max: 2, step: 0.05, def: 1, lbl: 'Розмір зірок',
+   desc: 'Обидві карти; разом зі зіркою більшає й зона наведення', fmt: v => '×' + (+v).toFixed(2)},
+];
+const _ST_KEYS = _ST_CFG.filter(c => c.key);
+let _stVals = {}, _stSaved = {}, _stRaf = 0, _stBcT = 0, _stBcDirty = false, _stStars = null, _stDpr = 1;
+
+async function starsLoad() {
+  try {
+    const r = await fetch(`${API}/api/colors`, {credentials: 'include'});
+    const d = await r.json();
+    _ST_KEYS.forEach(c => { const v = parseFloat(d[c.key]?.value); _stSaved[c.key] = isFinite(v) ? Math.min(c.max, Math.max(c.min, v)) : c.def; });
+  } catch (e) {
+    console.error('starsLoad', e);
+    _ST_KEYS.forEach(c => { if (!(c.key in _stSaved)) _stSaved[c.key] = c.def; });
+  }
+  _stVals = {..._stSaved};
+  _stRender();
+  if (_stBcDirty) { clearTimeout(_stBcT); _stBcT = 0; _stBcSend(); _stBcDirty = false; }   // вкладки сайту — до збереженого
+  _stStart();
+}
+
+function _stRender() {
+  const box = document.getElementById('st-rows');
+  if (!box) return;
+  const groups = [];
+  _ST_CFG.forEach(c => { if (c.grp) groups.push({title: c.grp, rows: []}); else groups[groups.length - 1].rows.push(c); });
+  box.innerHTML = groups.map(g => `<div class="rg-group"><div class="rg-group-title">${g.title}</div>` + g.rows.map(c => `
+      <div class="rg-row">
+        <div class="rg-row-info">
+          <div class="rg-row-label">${c.lbl}</div>
+          <div class="rg-row-desc" id="st-d-${c.key}">${typeof c.desc === 'function' ? c.desc(_stVals[c.key]) : c.desc}</div>
+        </div>
+        <div class="st-ctl">
+          <input type="range" id="st-r-${c.key}" min="${c.min}" max="${c.max}" step="${c.step}" value="${_stVals[c.key]}" aria-label="${c.lbl}" oninput="_stSet('${c.key}',this.value)">
+          <span class="st-val" id="st-v-${c.key}">${c.fmt(_stVals[c.key])}</span>
+        </div>
+      </div>`).join('') + `</div>`).join('');
+  _stHint();
+}
+
+function _stSet(key, v) {
+  const c = _ST_KEYS.find(x => x.key === key);
+  v = parseFloat(v);
+  if (!c || !isFinite(v)) return;
+  v = Math.min(c.max, Math.max(c.min, v));
+  _stVals[key] = v;
+  const ve = document.getElementById('st-v-' + key); if (ve) ve.textContent = c.fmt(v);
+  if (typeof c.desc === 'function') { const de = document.getElementById('st-d-' + key); if (de) de.textContent = c.desc(v); }
+  _stHint();
+  if (!_stBcT) _stBcT = setTimeout(() => { _stBcT = 0; _stBcSend(); _stBcDirty = true; }, 150);   // вкладки сайту — наживо, не частіше ніж раз на 150 мс
+}
+function _stBcSend() { _broadcastColors(_ST_KEYS.map(c => ({key: c.key, value: String(_stVals[c.key])}))); }
+function _stDirty() { return _ST_KEYS.some(c => Math.abs(_stVals[c.key] - _stSaved[c.key]) > 1e-9); }
+function _stHint(msg) {
+  const e = document.getElementById('st-hint');
+  if (!e) return;
+  if (msg) { e.textContent = msg; e.style.color = 'var(--green)'; return; }
+  e.textContent = _stDirty() ? 'Є незбережені зміни: на сайті для всіх відвідувачів — після «Зберегти»' : '';
+  e.style.color = '#fbbf24';
+}
+
+async function starsSave() {
+  const items = _ST_KEYS.map(c => ({key: c.key, value: String(_stVals[c.key])}));
+  try {
+    const r = await fetch(`${API}/api/admin/colors/batch`, {
+      method: 'PUT', headers: {...authH(), 'Content-Type': 'application/json'}, credentials: 'include',
+      body: JSON.stringify(items)
+    });
+    if (r.status === 401 || r.status === 403) { showN('Немає прав на збереження', true); return; }
+    if (!r.ok) throw new Error(r.status);
+    items.forEach(({key, value}) => { if (COLORS[key]) COLORS[key].value = value; else COLORS[key] = {value, label: key}; });
+    clearTimeout(_stBcT); _stBcT = 0;
+    _broadcastColors(items);
+    _stBcDirty = false;
+    await starsLoad();   // значення так, як їх зберіг сервер (у межах)
+    _stHint('Збережено');
+    setTimeout(() => _stHint(), 2500);
+  } catch (e) { showN('Помилка збереження', true); }
+}
+
+// ── попередній перегляд: ті самі формули, що на сайті ──
+const _ST_PAL = ['#FF6B6B', '#FFD700', '#F06292', '#80DEEA', '#CE93D8', '#81C784', '#4FC3F7', '#FFB74D'];
+function _stMakeStars(n, seed) {
+  let q = seed;
+  const rnd = () => { q = (Math.imul(q, 1664525) + 1013904223) >>> 0; return q / 4294967296; };
+  const out = [];
+  for (let i = 0; i < n; i++) out.push({id: seed * 100 + i + 1, x: 0.05 + rnd() * 0.9, y: 0.18 + rnd() * 0.74, color: _ST_PAL[i % 8], rn: rnd(), five: rnd() > 0.5});
+  return out;
+}
+function _stTwinkle(st, t) {   // як _twinkle() в index.html
+  const id = st.id, V = _stVals;
+  if (st.tp === undefined) {
+    st.tp = 5 + 5 * ((((id * 1103515245 + 12345) >>> 0) % 1000) / 1000);
+    st.tf = (((id * 2654435761) >>> 0) % 10007) / 10007;
+  }
+  const x = t * V.dot_pulse_speed / st.tp + st.tf, k = Math.floor(x);
+  const s = 0.5 - 0.5 * Math.cos(6.2831853 * (x - k));
+  let hsh = Math.imul(id ^ Math.imul(k + 1, 0x27d4eb2d), 0x165667b1); hsh ^= hsh >>> 15;
+  st.tw = s > 0.75 && (hsh >>> 0) % 1000 < V.star_glint_chance * 10 ? (s - 0.75) * 4 * Math.min(1, V.dot_pulse_amp / 0.5) : 0;
+  return s * s;
+}
+function _stRgb(c) { const n = parseInt(c.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; }
+function _stStarPath(c, x, y, o, i, pts) {
+  for (let j = 0; j < pts * 2; j++) { const r = j % 2 ? i : o, a = j * Math.PI / pts - Math.PI / 2; c.lineTo(x + r * Math.cos(a), y + r * Math.sin(a)); }
+  c.closePath();
+}
+function _stCross(c, x, y, L, hw, a, glow) {   // білий хрестик блиску
+  c.save(); c.globalAlpha = a; c.translate(x, y);
+  for (const v of [true, false]) {
+    const g = v ? c.createLinearGradient(0, -L, 0, L) : c.createLinearGradient(-L, 0, L, 0);
+    g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(0.5, 'rgba(255,255,255,1)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+    c.fillStyle = g;
+    if (v) c.fillRect(-hw, -L, hw * 2, L * 2); else c.fillRect(-L, -hw, L * 2, hw * 2);
+  }
+  if (glow) { const g = c.createRadialGradient(0, 0, 0, 0, 0, glow); g.addColorStop(0, 'rgba(255,255,255,0.9)'); g.addColorStop(1, 'rgba(255,255,255,0)'); c.fillStyle = g; c.beginPath(); c.arc(0, 0, glow, 0, 6.2832); c.fill(); }
+  c.restore();
+}
+function _stDrawUA(c, W, H, stars, t) {   // як карта України: drawDotFX → мʼяке тіло → тіло → ядро (index.html)
+  const V = _stVals, A = V.dot_pulse_amp, gi = V.dot_glow_intensity, gs = V.star_glint_strength;
+  const bg = c.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, '#0d2a55'); bg.addColorStop(1, '#091a36');
+  c.globalAlpha = 1; c.fillStyle = bg; c.fillRect(0, 0, W, H);
+  const vis = stars.map(st => ({st, P: (1 - A) + A * _stTwinkle(st, t), x: st.x * W, y: st.y * H, r: (1.5 + st.rn * 2.8) * 1.58 * V.star_size}));
+  for (const {st, P, x, y, r} of vis) {
+    const [R, G, B] = _stRgb(st.color), gr = r * (V.dot_glow_radius + st.rn * 2) * P;
+    if (gr > 0) {
+      const g = c.createRadialGradient(x, y, 0, x, y, gr);
+      g.addColorStop(0, `rgba(${R},${G},${B},${Math.min(1, gi * .9)})`); g.addColorStop(0.4, `rgba(${R},${G},${B},${Math.min(1, gi * .4)})`); g.addColorStop(1, `rgba(${R},${G},${B},0)`);
+      c.globalAlpha = Math.min(1, P); c.fillStyle = g; c.beginPath(); c.arc(x, y, gr, 0, 6.2832); c.fill();
+      const gl = gr * 0.82, ra = Math.min(0.45, 0.18 * gi);
+      for (const v of [true, false]) {
+        const lg = v ? c.createLinearGradient(x, y - gl, x, y + gl) : c.createLinearGradient(x - gl, y, x + gl, y);
+        lg.addColorStop(0, `rgba(${R},${G},${B},0)`); lg.addColorStop(0.5, `rgba(${R},${G},${B},${ra})`); lg.addColorStop(1, `rgba(${R},${G},${B},0)`);
+        c.fillStyle = lg;
+        if (v) c.fillRect(x - 0.8, y - gl, 1.6, gl * 2); else c.fillRect(x - gl, y - 0.8, gl * 2, 1.6);
+      }
+    }
+    if (st.tw > 0.02 && gs > 0) _stCross(c, x, y, r * (3.2 + 2.2 * st.tw) * (0.7 + 0.3 * gs), Math.max(0.5, r * 0.17), Math.min(1, 0.9 * st.tw * gs), 0);
+  }
+  for (const [a, f] of [[0.35, 1.5], [1, 1]]) {
+    c.globalAlpha = a;
+    for (const {st, P, x, y, r} of vis) { const rp = r * (0.84 + 0.22 * P) * f; c.fillStyle = st.color; c.beginPath(); _stStarPath(c, x, y, rp, rp * 0.35, 4); c.fill(); }
+  }
+  c.fillStyle = 'rgba(255,255,255,0.95)';
+  for (const {P, x, y, r} of vis) { c.globalAlpha = Math.min(1, 0.2 + 0.8 * P); c.beginPath(); c.arc(x, y, r * 0.28 * (0.75 + 0.55 * P), 0, 6.2832); c.fill(); }
+  c.globalAlpha = 1;
+}
+function _stDrawWorld(c, W, H, stars, t) {   // як «Світ»: спрайт зірки (_wmSprite) + блиск (_wmSpark), index.html
+  const V = _stVals, A = V.dot_pulse_amp, gi = V.dot_glow_intensity, gs = V.star_glint_strength, sz = V.star_size;
+  c.globalAlpha = 1; c.fillStyle = '#0e0e10'; c.fillRect(0, 0, W, H);
+  for (const st of stars) {
+    const P = (1 - A) + A * _stTwinkle(st, t), x = st.x * W, y = st.y * H, k = (0.82 + 0.38 * P) * sz, ga = 0.3 + 0.7 * P;
+    const pts = st.five ? 5 : 4, outer = 13 * 0.46 * k, inner = outer * (st.five ? 0.40 : 0.35), rl = 13 * 0.42 * k;
+    c.fillStyle = st.color;
+    c.globalAlpha = ga * Math.min(0.9, 0.33 * gi); c.beginPath(); _stStarPath(c, x, y, outer * 1.55, inner * 1.55, pts); c.fill();
+    c.globalAlpha = ga * Math.min(0.9, 0.376 * gi); c.fillRect(x - 0.7 * k, y - rl, 1.4 * k, rl * 2); c.fillRect(x - rl, y - 0.7 * k, rl * 2, 1.4 * k);
+    c.globalAlpha = ga * 0.93; c.beginPath(); _stStarPath(c, x, y, outer, inner, pts); c.fill();
+    c.globalAlpha = ga; c.fillStyle = 'rgba(255,255,255,0.95)'; c.beginPath(); c.arc(x, y, outer * 0.28 * (0.75 + 0.55 * P), 0, 6.2832); c.fill();
+    if (st.tw > 0.02 && gs > 0) _stCross(c, x, y, 14 * (0.7 + 0.3 * gs) * sz, 0.8 * Math.max(0.75, Math.sqrt(sz)), Math.min(1, 0.9 * st.tw * gs), 4.5 * sz);
+  }
+  c.globalAlpha = 1;
+}
+function _stStart() {   // ~30 кадрів/с, лише поки розділ відкритий
+  if (_stRaf) return;
+  if (!_stStars) _stStars = {ua: _stMakeStars(22, 7), world: _stMakeStars(22, 13)};
+  let last = 0;
+  const frame = now => {
+    _stRaf = 0;
+    const sec = document.getElementById('sec-stars');
+    if (!sec || !sec.classList.contains('active')) return;   // розділ закрили — стоп; starsLoad() запустить знову
+    if (now - last >= 33) {
+      last = now;
+      _stDpr = Math.min(window.devicePixelRatio || 1, 2);
+      for (const [id, draw, set] of [['st-prev-ua', _stDrawUA, _stStars.ua], ['st-prev-world', _stDrawWorld, _stStars.world]]) {
+        const cv = document.getElementById(id);
+        if (!cv || !cv.clientWidth) continue;
+        const w = Math.round(cv.clientWidth * _stDpr), hh = Math.round(cv.clientHeight * _stDpr);
+        if (cv.width !== w || cv.height !== hh) { cv.width = w; cv.height = hh; }
+        const c = cv.getContext('2d');
+        c.setTransform(_stDpr, 0, 0, _stDpr, 0, 0);
+        draw(c, cv.clientWidth, cv.clientHeight, set, now / 1000);
+      }
+    }
+    _stRaf = requestAnimationFrame(frame);
+  };
+  _stRaf = requestAnimationFrame(frame);
 }
 
 async function recentHide(id) {

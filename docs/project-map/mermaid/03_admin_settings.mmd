@@ -1,0 +1,505 @@
+flowchart LR
+  grp_admin_html_sec_stats["Статистика"]
+  grp_admin_html_sec_mem["Всі записи"]
+  grp_admin_html_sec_pend["На модерації"]
+  grp_admin_html_sec_users["Користувачі"]
+  grp_admin_html_sec_authreg["Реєстрація та авторизація"]
+  grp_admin_html_sec_emailcfg["Електронна пошта (SMTP)"]
+  grp_admin_html_sec_map_editor["#sec-map-editor"]
+  grp_admin_html_sec_colors["Кольори та дизайн"]
+  grp_admin_html_sec_worldmap["Карта світу"]
+  grp_admin_html_sec_social["Соціальні мережі"]
+  grp_admin_html_sec_smoke["Ефект диму"]
+  grp_admin_html_sec_ghosts["Привиди в диму SVG-привиди (2-6 файлів)"]
+  grp_admin_html_sec_sea["Хвилі морів"]
+  grp_admin_html_sec_icons["Іконки сайту"]
+  grp_admin_html_sec_photo["Фото на карті"]
+  grp_admin_html_sec_friends["Друзі та партнери"]
+  grp_admin_html_sec_pricing["Заявки на тарифи"]
+  grp_admin_html_sec_cities["Міста України"]
+  grp_admin_html_sec_silence["Хвилина мовчання"]
+  grp_admin_html_sec_seo["SEO — Пошукова оптимізація"]
+  grp_admin_html_sec_card["Картка меморіалу"]
+  grp_admin_html_sec_gifts["Подарунки загиблому"]
+  grp_admin_html_sec_version["Версія додатку"]
+  grp_admin_html_sec_google["Google"]
+  grp_admin_html_sec_density["Щільність % — Алгоритм відображення зіро…"]
+  grp_admin_html_sec_portfolio["Сторінка Автора — «Дякую тим, хто поряд»"]
+  grp_admin_html_sec_device["Доступ за типом пристрою"]
+  grp_admin_html_sec_addmode["Додавання людей"]
+  grp_admin_html_sec_tour["Підказки сайту"]
+  grp_admin_html_sec_recent["Нові надходження"]
+  grp_admin_html_sec_stars["Регулятор зірок"]
+  grp_admin_html_sec_adv["Реклама (відео-попап)"]
+  grp_admin_html_sec_chat["Мікро-чат"]
+  grp_admin_html_sec_legacy["Спадщина пам'яті"]
+  grp_admin_html_sec_devmode["Режим розробки"]
+  grp_admin_html_sec_projcost["Вартість проекту"]
+  grp_admin_html_sec_i18n["Локалізація"]
+  set_bg{{"bg"}}
+  grp_admin_html_sec_colors -->|изменяет| set_bg
+  set_surface{{"surface"}}
+  grp_admin_html_sec_colors -->|изменяет| set_surface
+  set_text_primary{{"text_primary"}}
+  grp_admin_html_sec_colors -->|изменяет| set_text_primary
+  grp_admin_html_sec_ghosts -->|изменяет| set_text_primary
+  grp_admin_html_sec_photo -->|изменяет| set_text_primary
+  grp_admin_html_sec_sea -->|изменяет| set_text_primary
+  grp_admin_html_sec_smoke -->|изменяет| set_text_primary
+  set_text_secondary{{"text_secondary"}}
+  grp_admin_html_sec_colors -->|изменяет| set_text_secondary
+  set_accent{{"accent"}}
+  grp_admin_html_sec_colors -->|изменяет| set_accent
+  set_yellow{{"yellow"}}
+  grp_admin_html_sec_colors -->|изменяет| set_yellow
+  set_yellow2{{"yellow2"}}
+  grp_admin_html_sec_colors -->|изменяет| set_yellow2
+  set_neon_blue{{"neon_blue"}}
+  grp_admin_html_sec_colors -->|изменяет| set_neon_blue
+  grp_admin_html_sec_ghosts -->|изменяет| set_neon_blue
+  grp_admin_html_sec_photo -->|изменяет| set_neon_blue
+  grp_admin_html_sec_sea -->|изменяет| set_neon_blue
+  grp_admin_html_sec_smoke -->|изменяет| set_neon_blue
+  set_neon_yellow{{"neon_yellow"}}
+  grp_admin_html_sec_colors -->|изменяет| set_neon_yellow
+  grp_admin_html_sec_ghosts -->|изменяет| set_neon_yellow
+  grp_admin_html_sec_photo -->|изменяет| set_neon_yellow
+  grp_admin_html_sec_sea -->|изменяет| set_neon_yellow
+  grp_admin_html_sec_smoke -->|изменяет| set_neon_yellow
+  set_oblast_fill{{"oblast_fill"}}
+  grp_admin_html_sec_colors -->|изменяет| set_oblast_fill
+  set_oblast_stroke{{"oblast_stroke"}}
+  grp_admin_html_sec_colors -->|изменяет| set_oblast_stroke
+  set_thread_color{{"thread_color"}}
+  grp_admin_html_sec_colors -->|изменяет| set_thread_color
+  set_map_bg{{"map_bg"}}
+  grp_admin_html_sec_colors -->|изменяет| set_map_bg
+  grp_admin_html_sec_ghosts -->|изменяет| set_map_bg
+  grp_admin_html_sec_photo -->|изменяет| set_map_bg
+  grp_admin_html_sec_sea -->|изменяет| set_map_bg
+  grp_admin_html_sec_smoke -->|изменяет| set_map_bg
+  set_bar_bg{{"bar_bg"}}
+  grp_admin_html_sec_colors -->|изменяет| set_bar_bg
+  set_logo_star{{"logo_star"}}
+  grp_admin_html_sec_colors -->|изменяет| set_logo_star
+  set_logo_text{{"logo_text"}}
+  grp_admin_html_sec_colors -->|изменяет| set_logo_text
+  grp_admin_html_sec_ghosts -->|изменяет| set_logo_text
+  grp_admin_html_sec_photo -->|изменяет| set_logo_text
+  grp_admin_html_sec_sea -->|изменяет| set_logo_text
+  grp_admin_html_sec_smoke -->|изменяет| set_logo_text
+  set_logo_accent{{"logo_accent"}}
+  grp_admin_html_sec_colors -->|изменяет| set_logo_accent
+  grp_admin_html_sec_ghosts -->|изменяет| set_logo_accent
+  grp_admin_html_sec_photo -->|изменяет| set_logo_accent
+  grp_admin_html_sec_sea -->|изменяет| set_logo_accent
+  grp_admin_html_sec_smoke -->|изменяет| set_logo_accent
+  set_btn_add_bg{{"btn_add_bg"}}
+  grp_admin_html_sec_colors -->|изменяет| set_btn_add_bg
+  set_btn_add_text{{"btn_add_text"}}
+  grp_admin_html_sec_colors -->|изменяет| set_btn_add_text
+  set_card_bg{{"card_bg"}}
+  grp_admin_html_sec_card -->|изменяет| set_card_bg
+  grp_admin_html_sec_colors -->|изменяет| set_card_bg
+  set_label_opacity{{"label_opacity"}}
+  grp_admin_html_sec_colors -->|изменяет| set_label_opacity
+  grp_admin_html_sec_sea -->|изменяет| set_label_opacity
+  set_glow_color{{"glow_color"}}
+  grp_admin_html_sec_colors -->|изменяет| set_glow_color
+  set_glow_spread{{"glow_spread"}}
+  grp_admin_html_sec_colors -->|изменяет| set_glow_spread
+  grp_admin_html_sec_sea -->|изменяет| set_glow_spread
+  set_glow_outer_color{{"glow_outer_color"}}
+  grp_admin_html_sec_colors -->|изменяет| set_glow_outer_color
+  set_glow_outer_spread{{"glow_outer_spread"}}
+  grp_admin_html_sec_colors -->|изменяет| set_glow_outer_spread
+  grp_admin_html_sec_sea -->|изменяет| set_glow_outer_spread
+  set_zoom_min{{"zoom_min"}}
+  grp_admin_html_sec_colors -->|изменяет| set_zoom_min
+  grp_admin_html_sec_sea -->|изменяет| set_zoom_min
+  set_zoom_max{{"zoom_max"}}
+  grp_admin_html_sec_colors -->|изменяет| set_zoom_max
+  grp_admin_html_sec_sea -->|изменяет| set_zoom_max
+  set_city_border{{"city_border"}}
+  grp_admin_html_sec_colors -->|изменяет| set_city_border
+  set_city_border_zoom{{"city_border_zoom"}}
+  grp_admin_html_sec_colors -->|изменяет| set_city_border_zoom
+  grp_admin_html_sec_sea -->|изменяет| set_city_border_zoom
+  set_smoke_density{{"smoke_density"}}
+  grp_admin_html_sec_colors -->|изменяет| set_smoke_density
+  grp_admin_html_sec_sea -->|изменяет| set_smoke_density
+  grp_admin_html_sec_smoke -->|изменяет| set_smoke_density
+  set_smoke_velocity{{"smoke_velocity"}}
+  grp_admin_html_sec_colors -->|изменяет| set_smoke_velocity
+  grp_admin_html_sec_sea -->|изменяет| set_smoke_velocity
+  grp_admin_html_sec_smoke -->|изменяет| set_smoke_velocity
+  set_smoke_splat_radius{{"smoke_splat_radius"}}
+  grp_admin_html_sec_colors -->|изменяет| set_smoke_splat_radius
+  grp_admin_html_sec_sea -->|изменяет| set_smoke_splat_radius
+  grp_admin_html_sec_smoke -->|изменяет| set_smoke_splat_radius
+  set_smoke_splat_force{{"smoke_splat_force"}}
+  grp_admin_html_sec_colors -->|изменяет| set_smoke_splat_force
+  grp_admin_html_sec_sea -->|изменяет| set_smoke_splat_force
+  grp_admin_html_sec_smoke -->|изменяет| set_smoke_splat_force
+  set_smoke_curl{{"smoke_curl"}}
+  grp_admin_html_sec_colors -->|изменяет| set_smoke_curl
+  grp_admin_html_sec_sea -->|изменяет| set_smoke_curl
+  grp_admin_html_sec_smoke -->|изменяет| set_smoke_curl
+  set_smoke_opacity{{"smoke_opacity"}}
+  grp_admin_html_sec_colors -->|изменяет| set_smoke_opacity
+  grp_admin_html_sec_sea -->|изменяет| set_smoke_opacity
+  grp_admin_html_sec_smoke -->|изменяет| set_smoke_opacity
+  set_smoke_color_from{{"smoke_color_from"}}
+  grp_admin_html_sec_colors -->|изменяет| set_smoke_color_from
+  grp_admin_html_sec_smoke -->|изменяет| set_smoke_color_from
+  set_smoke_color_to{{"smoke_color_to"}}
+  grp_admin_html_sec_colors -->|изменяет| set_smoke_color_to
+  grp_admin_html_sec_smoke -->|изменяет| set_smoke_color_to
+  set_use_cookies{{"use_cookies"}}
+  grp_admin_html_sec_colors -->|изменяет| set_use_cookies
+  grp_admin_html_sec_smoke -->|изменяет| set_use_cookies
+  set_map_photo_url{{"map_photo_url"}}
+  grp_admin_html_sec_colors -->|изменяет| set_map_photo_url
+  grp_admin_html_sec_photo -->|изменяет| set_map_photo_url
+  set_map_photo_opacity{{"map_photo_opacity"}}
+  grp_admin_html_sec_colors -->|изменяет| set_map_photo_opacity
+  grp_admin_html_sec_photo -->|изменяет| set_map_photo_opacity
+  set_map_photo_blend{{"map_photo_blend"}}
+  grp_admin_html_sec_colors -->|изменяет| set_map_photo_blend
+  grp_admin_html_sec_photo -->|изменяет| set_map_photo_blend
+  set_map_photo_feather{{"map_photo_feather"}}
+  grp_admin_html_sec_colors -->|изменяет| set_map_photo_feather
+  grp_admin_html_sec_photo -->|изменяет| set_map_photo_feather
+  set_map_photo_scale{{"map_photo_scale"}}
+  grp_admin_html_sec_colors -->|изменяет| set_map_photo_scale
+  grp_admin_html_sec_photo -->|изменяет| set_map_photo_scale
+  set_app_version{{"app_version"}}
+  grp_admin_html_sec_colors -->|изменяет| set_app_version
+  grp_admin_html_sec_version -->|изменяет| set_app_version
+  set_admin_theme{{"admin_theme"}}
+  grp_admin_html_sec_colors -->|изменяет| set_admin_theme
+  set_admin_logo_url{{"admin_logo_url"}}
+  grp_admin_html_sec_colors -->|изменяет| set_admin_logo_url
+  grp_admin_html_sec_icons -->|изменяет| set_admin_logo_url
+  set_admin_logo_url_light{{"admin_logo_url_light"}}
+  grp_admin_html_sec_colors -->|изменяет| set_admin_logo_url_light
+  grp_admin_html_sec_icons -->|изменяет| set_admin_logo_url_light
+  set_admin_logo_height{{"admin_logo_height"}}
+  grp_admin_html_sec_colors -->|изменяет| set_admin_logo_height
+  grp_admin_html_sec_icons -->|изменяет| set_admin_logo_height
+  set_admin_logo_radius{{"admin_logo_radius"}}
+  grp_admin_html_sec_colors -->|изменяет| set_admin_logo_radius
+  grp_admin_html_sec_icons -->|изменяет| set_admin_logo_radius
+  set_sea_enabled{{"sea_enabled"}}
+  grp_admin_html_sec_colors -->|изменяет| set_sea_enabled
+  grp_admin_html_sec_sea -->|изменяет| set_sea_enabled
+  set_sea_wave_color{{"sea_wave_color"}}
+  grp_admin_html_sec_colors -->|изменяет| set_sea_wave_color
+  grp_admin_html_sec_sea -->|изменяет| set_sea_wave_color
+  set_sea_wave_count{{"sea_wave_count"}}
+  grp_admin_html_sec_colors -->|изменяет| set_sea_wave_count
+  grp_admin_html_sec_sea -->|изменяет| set_sea_wave_count
+  set_sea_wave_intensity{{"sea_wave_intensity"}}
+  grp_admin_html_sec_colors -->|изменяет| set_sea_wave_intensity
+  grp_admin_html_sec_sea -->|изменяет| set_sea_wave_intensity
+  set_sea_shore_impact{{"sea_shore_impact"}}
+  grp_admin_html_sec_colors -->|изменяет| set_sea_shore_impact
+  grp_admin_html_sec_sea -->|изменяет| set_sea_shore_impact
+  set_sea_blur{{"sea_blur"}}
+  grp_admin_html_sec_colors -->|изменяет| set_sea_blur
+  grp_admin_html_sec_sea -->|изменяет| set_sea_blur
+  set_sea_wave_dir{{"sea_wave_dir"}}
+  grp_admin_html_sec_colors -->|изменяет| set_sea_wave_dir
+  grp_admin_html_sec_sea -->|изменяет| set_sea_wave_dir
+  set_sea_wave_speed{{"sea_wave_speed"}}
+  grp_admin_html_sec_colors -->|изменяет| set_sea_wave_speed
+  grp_admin_html_sec_sea -->|изменяет| set_sea_wave_speed
+  set_sea_glow_on{{"sea_glow_on"}}
+  grp_admin_html_sec_colors -->|изменяет| set_sea_glow_on
+  grp_admin_html_sec_sea -->|изменяет| set_sea_glow_on
+  set_sea_glow_color{{"sea_glow_color"}}
+  grp_admin_html_sec_colors -->|изменяет| set_sea_glow_color
+  grp_admin_html_sec_sea -->|изменяет| set_sea_glow_color
+  set_sea_glow_spread{{"sea_glow_spread"}}
+  grp_admin_html_sec_colors -->|изменяет| set_sea_glow_spread
+  grp_admin_html_sec_sea -->|изменяет| set_sea_glow_spread
+  set_sea_svg_tx{{"sea_svg_tx"}}
+  grp_admin_html_sec_colors -->|изменяет| set_sea_svg_tx
+  grp_admin_html_sec_sea -->|изменяет| set_sea_svg_tx
+  set_sea_svg_ty{{"sea_svg_ty"}}
+  grp_admin_html_sec_colors -->|изменяет| set_sea_svg_ty
+  grp_admin_html_sec_sea -->|изменяет| set_sea_svg_ty
+  set_sea_svg_scale{{"sea_svg_scale"}}
+  grp_admin_html_sec_colors -->|изменяет| set_sea_svg_scale
+  grp_admin_html_sec_sea -->|изменяет| set_sea_svg_scale
+  set_social_order{{"social_order"}}
+  grp_admin_html_sec_social -->|изменяет| set_social_order
+  set_social_facebook{{"social_facebook"}}
+  grp_admin_html_sec_social -->|изменяет| set_social_facebook
+  set_social_facebook_url{{"social_facebook_url"}}
+  grp_admin_html_sec_social -->|изменяет| set_social_facebook_url
+  set_social_twitter{{"social_twitter"}}
+  grp_admin_html_sec_social -->|изменяет| set_social_twitter
+  set_social_twitter_url{{"social_twitter_url"}}
+  grp_admin_html_sec_social -->|изменяет| set_social_twitter_url
+  set_social_instagram{{"social_instagram"}}
+  grp_admin_html_sec_social -->|изменяет| set_social_instagram
+  set_social_instagram_url{{"social_instagram_url"}}
+  grp_admin_html_sec_social -->|изменяет| set_social_instagram_url
+  set_social_youtube{{"social_youtube"}}
+  grp_admin_html_sec_social -->|изменяет| set_social_youtube
+  set_social_youtube_url{{"social_youtube_url"}}
+  grp_admin_html_sec_social -->|изменяет| set_social_youtube_url
+  set_social_telegram{{"social_telegram"}}
+  grp_admin_html_sec_social -->|изменяет| set_social_telegram
+  set_social_telegram_url{{"social_telegram_url"}}
+  grp_admin_html_sec_social -->|изменяет| set_social_telegram_url
+  set_social_tiktok{{"social_tiktok"}}
+  grp_admin_html_sec_social -->|изменяет| set_social_tiktok
+  set_social_tiktok_url{{"social_tiktok_url"}}
+  grp_admin_html_sec_social -->|изменяет| set_social_tiktok_url
+  set_social_linkedin{{"social_linkedin"}}
+  grp_admin_html_sec_social -->|изменяет| set_social_linkedin
+  set_social_linkedin_url{{"social_linkedin_url"}}
+  grp_admin_html_sec_social -->|изменяет| set_social_linkedin_url
+  set_social_viber{{"social_viber"}}
+  grp_admin_html_sec_social -->|изменяет| set_social_viber
+  set_social_viber_url{{"social_viber_url"}}
+  grp_admin_html_sec_social -->|изменяет| set_social_viber_url
+  set_smtp_host{{"smtp_host"}}
+  grp_admin_html_sec_emailcfg -->|изменяет| set_smtp_host
+  set_smtp_port{{"smtp_port"}}
+  grp_admin_html_sec_emailcfg -->|изменяет| set_smtp_port
+  set_smtp_user{{"smtp_user"}}
+  grp_admin_html_sec_emailcfg -->|изменяет| set_smtp_user
+  set_smtp_pass{{"smtp_pass"}}
+  grp_admin_html_sec_emailcfg -->|изменяет| set_smtp_pass
+  set_smtp_from{{"smtp_from"}}
+  grp_admin_html_sec_emailcfg -->|изменяет| set_smtp_from
+  set_smtp_secure{{"smtp_secure"}}
+  grp_admin_html_sec_emailcfg -->|изменяет| set_smtp_secure
+  set_smtp_enabled{{"smtp_enabled"}}
+  grp_admin_html_sec_emailcfg -->|изменяет| set_smtp_enabled
+  set_reg_enabled{{"reg_enabled"}}
+  grp_admin_html_sec_authreg -->|изменяет| set_reg_enabled
+  set_reg_allow_google{{"reg_allow_google"}}
+  grp_admin_html_sec_authreg -->|изменяет| set_reg_allow_google
+  grp_admin_html_sec_google -->|изменяет| set_reg_allow_google
+  set_reg_field_mid{{"reg_field_mid"}}
+  grp_admin_html_sec_authreg -->|изменяет| set_reg_field_mid
+  set_reg_field_phone{{"reg_field_phone"}}
+  grp_admin_html_sec_authreg -->|изменяет| set_reg_field_phone
+  set_reg_require_email_verify{{"reg_require_email_verify"}}
+  grp_admin_html_sec_authreg -->|изменяет| set_reg_require_email_verify
+  set_reg_min_pass_len{{"reg_min_pass_len"}}
+  grp_admin_html_sec_authreg -->|изменяет| set_reg_min_pass_len
+  set_reg_welcome_msg{{"reg_welcome_msg"}}
+  grp_admin_html_sec_authreg -->|изменяет| set_reg_welcome_msg
+  set_device_desktop_enabled{{"device_desktop_enabled"}}
+  grp_admin_html_sec_device -->|изменяет| set_device_desktop_enabled
+  set_device_tablet_enabled{{"device_tablet_enabled"}}
+  grp_admin_html_sec_device -->|изменяет| set_device_tablet_enabled
+  set_device_mobile_enabled{{"device_mobile_enabled"}}
+  grp_admin_html_sec_device -->|изменяет| set_device_mobile_enabled
+  set_device_block_msg{{"device_block_msg"}}
+  grp_admin_html_sec_device -->|изменяет| set_device_block_msg
+  set_show_coffee{{"show_coffee"}}
+  grp_admin_html_sec_device -->|изменяет| set_show_coffee
+  set_dev_mode{{"dev_mode"}}
+  grp_admin_html_sec_devmode -->|изменяет| set_dev_mode
+  set_dev_icon{{"dev_icon"}}
+  grp_admin_html_sec_devmode -->|изменяет| set_dev_icon
+  set_dev_title{{"dev_title"}}
+  grp_admin_html_sec_devmode -->|изменяет| set_dev_title
+  set_dev_text1{{"dev_text1"}}
+  grp_admin_html_sec_devmode -->|изменяет| set_dev_text1
+  set_dev_text2{{"dev_text2"}}
+  grp_admin_html_sec_devmode -->|изменяет| set_dev_text2
+  set_dev_btn_text{{"dev_btn_text"}}
+  grp_admin_html_sec_devmode -->|изменяет| set_dev_btn_text
+  set_dev_btn_color{{"dev_btn_color"}}
+  grp_admin_html_sec_devmode -->|изменяет| set_dev_btn_color
+  set_worldmap_enabled{{"worldmap_enabled"}}
+  grp_admin_html_sec_worldmap -->|изменяет| set_worldmap_enabled
+  set_worldmap_default{{"worldmap_default"}}
+  grp_admin_html_sec_worldmap -->|изменяет| set_worldmap_default
+  set_worldmap_tile_url{{"worldmap_tile_url"}}
+  grp_admin_html_sec_pend -->|изменяет| set_worldmap_tile_url
+  grp_admin_html_sec_worldmap -->|изменяет| set_worldmap_tile_url
+  set_tour_enabled{{"tour_enabled"}}
+  grp_admin_html_sec_tour -->|изменяет| set_tour_enabled
+  set_tour_video_url{{"tour_video_url"}}
+  grp_admin_html_sec_tour -->|изменяет| set_tour_video_url
+  set_tour_video_enabled{{"tour_video_enabled"}}
+  grp_admin_html_sec_tour -->|изменяет| set_tour_video_enabled
+  set_ad_video_enabled{{"ad_video_enabled"}}
+  grp_admin_html_sec_adv -->|изменяет| set_ad_video_enabled
+  set_ad_video_url{{"ad_video_url"}}
+  grp_admin_html_sec_adv -->|изменяет| set_ad_video_url
+  set_ad_video_title{{"ad_video_title"}}
+  grp_admin_html_sec_adv -->|изменяет| set_ad_video_title
+  set_ad_video_preview_url{{"ad_video_preview_url"}}
+  grp_admin_html_sec_adv -->|изменяет| set_ad_video_preview_url
+  set_ad_video_channel_url{{"ad_video_channel_url"}}
+  grp_admin_html_sec_adv -->|изменяет| set_ad_video_channel_url
+  set_ad_video_channel_btn{{"ad_video_channel_btn"}}
+  grp_admin_html_sec_adv -->|изменяет| set_ad_video_channel_btn
+  set_ad_video_freq_days{{"ad_video_freq_days"}}
+  grp_admin_html_sec_adv -->|изменяет| set_ad_video_freq_days
+  set_chat_enabled{{"chat_enabled"}}
+  grp_admin_html_sec_chat -->|изменяет| set_chat_enabled
+  set_chat_history_count{{"chat_history_count"}}
+  grp_admin_html_sec_chat -->|изменяет| set_chat_history_count
+  set_chat_poll_interval{{"chat_poll_interval"}}
+  grp_admin_html_sec_chat -->|изменяет| set_chat_poll_interval
+  set_card_accent{{"card_accent"}}
+  grp_admin_html_sec_card -->|изменяет| set_card_accent
+  set_card_show_bio{{"card_show_bio"}}
+  grp_admin_html_sec_card -->|изменяет| set_card_show_bio
+  set_card_show_timeline{{"card_show_timeline"}}
+  grp_admin_html_sec_card -->|изменяет| set_card_show_timeline
+  set_card_show_video{{"card_show_video"}}
+  grp_admin_html_sec_card -->|изменяет| set_card_show_video
+  set_card_show_awards{{"card_show_awards"}}
+  grp_admin_html_sec_card -->|изменяет| set_card_show_awards
+  set_card_show_ribbon{{"card_show_ribbon"}}
+  grp_admin_html_sec_card -->|изменяет| set_card_show_ribbon
+  set_card_show_candle{{"card_show_candle"}}
+  grp_admin_html_sec_card -->|изменяет| set_card_show_candle
+  set_card_no_photo_bg{{"card_no_photo_bg"}}
+  grp_admin_html_sec_card -->|изменяет| set_card_no_photo_bg
+  set_card_footer_text{{"card_footer_text"}}
+  grp_admin_html_sec_card -->|изменяет| set_card_footer_text
+  set_card_likes_refresh{{"card_likes_refresh"}}
+  grp_admin_html_sec_card -->|изменяет| set_card_likes_refresh
+  set_google_site_verification{{"google_site_verification"}}
+  grp_admin_html_sec_google -->|изменяет| set_google_site_verification
+  set_google_analytics_id{{"google_analytics_id"}}
+  grp_admin_html_sec_google -->|изменяет| set_google_analytics_id
+  set_google_analytics_enabled{{"google_analytics_enabled"}}
+  grp_admin_html_sec_google -->|изменяет| set_google_analytics_enabled
+  set_density_config{{"density_config"}}
+  grp_admin_html_sec_density -->|изменяет| set_density_config
+  set_proj_cost_server_usd{{"proj_cost_server_usd"}}
+  grp_admin_html_sec_projcost -->|изменяет| set_proj_cost_server_usd
+  set_proj_cost_domains_usd{{"proj_cost_domains_usd"}}
+  grp_admin_html_sec_projcost -->|изменяет| set_proj_cost_domains_usd
+  set_proj_cost_ai_usd{{"proj_cost_ai_usd"}}
+  grp_admin_html_sec_projcost -->|изменяет| set_proj_cost_ai_usd
+  set_proj_cost_other_usd{{"proj_cost_other_usd"}}
+  grp_admin_html_sec_projcost -->|изменяет| set_proj_cost_other_usd
+  set_proj_cost_months{{"proj_cost_months"}}
+  grp_admin_html_sec_projcost -->|изменяет| set_proj_cost_months
+  set_proj_usd_rate{{"proj_usd_rate"}}
+  grp_admin_html_sec_projcost -->|изменяет| set_proj_usd_rate
+  set_proj_usd_rate_updated{{"proj_usd_rate_updated"}}
+  grp_admin_html_sec_projcost -->|изменяет| set_proj_usd_rate_updated
+  set_proj_cost_per_user_usd{{"proj_cost_per_user_usd"}}
+  grp_admin_html_sec_projcost -->|изменяет| set_proj_cost_per_user_usd
+  set_star_glint_chance{{"star_glint_chance"}}
+  grp_admin_html_sec_colors -->|изменяет| set_star_glint_chance
+  grp_admin_html_sec_stars -->|изменяет| set_star_glint_chance
+  set_star_glint_strength{{"star_glint_strength"}}
+  grp_admin_html_sec_colors -->|изменяет| set_star_glint_strength
+  grp_admin_html_sec_stars -->|изменяет| set_star_glint_strength
+  set_star_size{{"star_size"}}
+  grp_admin_html_sec_colors -->|изменяет| set_star_size
+  grp_admin_html_sec_stars -->|изменяет| set_star_size
+  set_add_person_mode{{"add_person_mode"}}
+  grp_admin_html_sec_addmode -->|изменяет| set_add_person_mode
+  set_admin_nav_order{{"admin_nav_order"}}
+  grp_admin_html_sec_colors -->|изменяет| set_admin_nav_order
+  set_callcenter_msg_en{{"callcenter_msg_en"}}
+  grp_admin_html_sec_addmode -->|изменяет| set_callcenter_msg_en
+  set_callcenter_msg_uk{{"callcenter_msg_uk"}}
+  grp_admin_html_sec_addmode -->|изменяет| set_callcenter_msg_uk
+  set_callcenter_phone{{"callcenter_phone"}}
+  grp_admin_html_sec_addmode -->|изменяет| set_callcenter_phone
+  set_chat_bots_enabled{{"chat_bots_enabled"}}
+  grp_admin_html_sec_chat -->|изменяет| set_chat_bots_enabled
+  set_cities_ua_enabled{{"cities_ua_enabled"}}
+  grp_admin_html_sec_worldmap -->|изменяет| set_cities_ua_enabled
+  set_city_path_stroke{{"city_path_stroke"}}
+  grp_admin_html_sec_colors -->|изменяет| set_city_path_stroke
+  set_dot_glow_intensity{{"dot_glow_intensity"}}
+  grp_admin_html_sec_colors -->|изменяет| set_dot_glow_intensity
+  grp_admin_html_sec_sea -->|изменяет| set_dot_glow_intensity
+  grp_admin_html_sec_stars -->|изменяет| set_dot_glow_intensity
+  set_dot_glow_size{{"dot_glow_size"}}
+  grp_admin_html_sec_colors -->|изменяет| set_dot_glow_size
+  set_dot_pulse_amp{{"dot_pulse_amp"}}
+  grp_admin_html_sec_colors -->|изменяет| set_dot_pulse_amp
+  grp_admin_html_sec_sea -->|изменяет| set_dot_pulse_amp
+  grp_admin_html_sec_stars -->|изменяет| set_dot_pulse_amp
+  set_dot_pulse_speed{{"dot_pulse_speed"}}
+  grp_admin_html_sec_colors -->|изменяет| set_dot_pulse_speed
+  grp_admin_html_sec_sea -->|изменяет| set_dot_pulse_speed
+  grp_admin_html_sec_stars -->|изменяет| set_dot_pulse_speed
+  set_dot_twinkle{{"dot_twinkle"}}
+  grp_admin_html_sec_colors -->|изменяет| set_dot_twinkle
+  set_icon_likes{{"icon_likes"}}
+  grp_admin_html_sec_colors -->|изменяет| set_icon_likes
+  grp_admin_html_sec_icons -->|изменяет| set_icon_likes
+  set_icon_logo{{"icon_logo"}}
+  grp_admin_html_sec_colors -->|изменяет| set_icon_logo
+  grp_admin_html_sec_icons -->|изменяет| set_icon_logo
+  set_icon_people{{"icon_people"}}
+  grp_admin_html_sec_colors -->|изменяет| set_icon_people
+  grp_admin_html_sec_icons -->|изменяет| set_icon_people
+  set_ref_img_opacity{{"ref_img_opacity"}}
+  grp_admin_html_sec_colors -->|изменяет| set_ref_img_opacity
+  grp_admin_html_sec_map_editor -->|изменяет| set_ref_img_opacity
+  set_ref_img_size{{"ref_img_size"}}
+  grp_admin_html_sec_colors -->|изменяет| set_ref_img_size
+  grp_admin_html_sec_map_editor -->|изменяет| set_ref_img_size
+  set_ref_img_sx{{"ref_img_sx"}}
+  grp_admin_html_sec_colors -->|изменяет| set_ref_img_sx
+  grp_admin_html_sec_map_editor -->|изменяет| set_ref_img_sx
+  set_ref_img_sy{{"ref_img_sy"}}
+  grp_admin_html_sec_colors -->|изменяет| set_ref_img_sy
+  grp_admin_html_sec_map_editor -->|изменяет| set_ref_img_sy
+  set_ref_img_x{{"ref_img_x"}}
+  grp_admin_html_sec_colors -->|изменяет| set_ref_img_x
+  grp_admin_html_sec_map_editor -->|изменяет| set_ref_img_x
+  set_ref_img_y{{"ref_img_y"}}
+  grp_admin_html_sec_colors -->|изменяет| set_ref_img_y
+  grp_admin_html_sec_map_editor -->|изменяет| set_ref_img_y
+  set_settlement_stroke{{"settlement_stroke"}}
+  grp_admin_html_sec_colors -->|изменяет| set_settlement_stroke
+  set_smoke_enabled{{"smoke_enabled"}}
+  grp_admin_html_sec_colors -->|изменяет| set_smoke_enabled
+  grp_admin_html_sec_smoke -->|изменяет| set_smoke_enabled
+  set_ghost_selection_mode{{"ghost_selection_mode"}}
+  grp_admin_html_sec_ghosts -->|изменяет| set_ghost_selection_mode
+  set_ghost_size_fixed{{"ghost_size_fixed"}}
+  grp_admin_html_sec_ghosts -->|изменяет| set_ghost_size_fixed
+  set_ghost_tint_color{{"ghost_tint_color"}}
+  grp_admin_html_sec_ghosts -->|изменяет| set_ghost_tint_color
+  set_ghost_enabled{{"ghost_enabled"}}
+  grp_admin_html_sec_ghosts -->|изменяет| set_ghost_enabled
+  set_ghost_dev_mode{{"ghost_dev_mode"}}
+  grp_admin_html_sec_ghosts -->|изменяет| set_ghost_dev_mode
+  set_ghost_edge_highlight_enabled{{"ghost_edge_highlight_enabled"}}
+  grp_admin_html_sec_ghosts -->|изменяет| set_ghost_edge_highlight_enabled
+  set_card_gifts_enabled{{"card_gifts_enabled"}}
+  grp_admin_html_sec_gifts -->|изменяет| set_card_gifts_enabled
+  set_card_gifts_buy_enabled{{"card_gifts_buy_enabled"}}
+  grp_admin_html_sec_gifts -->|изменяет| set_card_gifts_buy_enabled
+  set_card_gifts_button{{"card_gifts_button"}}
+  grp_admin_html_sec_gifts -->|изменяет| set_card_gifts_button
+  set_card_gifts_anim{{"card_gifts_anim"}}
+  grp_admin_html_sec_gifts -->|изменяет| set_card_gifts_anim
+  set_card_gifts_anim_scale{{"card_gifts_anim_scale"}}
+  grp_admin_html_sec_gifts -->|изменяет| set_card_gifts_anim_scale
+  set_card_gifts_size{{"card_gifts_size"}}
+  grp_admin_html_sec_gifts -->|изменяет| set_card_gifts_size
+  set_card_gifts_notify{{"card_gifts_notify"}}
+  grp_admin_html_sec_gifts -->|изменяет| set_card_gifts_notify
+  set_recent_enabled{{"recent_enabled"}}
+  grp_admin_html_sec_recent -->|изменяет| set_recent_enabled
+  set_recent_days{{"recent_days"}}
+  grp_admin_html_sec_recent -->|изменяет| set_recent_days
+  set_dot_glow_radius{{"dot_glow_radius"}}
+  grp_admin_html_sec_colors -->|изменяет| set_dot_glow_radius
+  grp_admin_html_sec_sea -->|изменяет| set_dot_glow_radius
+  grp_admin_html_sec_stars -->|изменяет| set_dot_glow_radius

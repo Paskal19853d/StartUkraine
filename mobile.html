@@ -2645,6 +2645,8 @@ let _lastVbKey = '';   // debounce: останній viewBox key для уник
 let hovId = null, selId = null;
 let COLORS = {};
 let _dotPulseSpeed = 1.0, _dotPulseAmp = 0.35, _dotGlowInt = 0.40, _dotGlowR = 3.0;
+// Регулятор зірок (v3.70): частота (%) і сила блиску, розмір зірок — обидві карти
+let _starGlintChance = 33, _starGlintStr = 1, _starSize = 1;
 
 /* ── Завантаження кольорів з БД ── */
 // ── Density algorithm ──────────────────────────────────────
@@ -2732,9 +2734,8 @@ async function loadColors() {
 let _worldMap = null;
 let _worldMapReady = false;
 let _mapMode = 'ukraine';
-let _worldMarkersLayer = null;
-// Карта «Світ»: маркери за id і підсвічена зірка відкритої картки (як selId на карті України)
-const _worldMarkerById = new Map();
+// Карта «Світ»: зірки за id і підсвічена зірка відкритої картки (як selId на карті України)
+const _worldPtById = new Map();   // id → зірка канваса {p, ll, x, y, …} (v3.68)
 let _worldPickedId = null;
 
 // ── Дробовий плавний зум Leaflet (карта «Світ», вибір точки у формі) ─────────────
@@ -2759,7 +2760,7 @@ function _lfSmoothWheel(map) {
     S.raf = 0;
     // Карту змінили ззовні (кнопки, flyTo, драг) — завершуємо, не перебиваючи їх
     if (map.getZoom() !== S.z || !map.getCenter().equals(S.lastCenter)) { finish(); return; }
-    // dt до 250 мс: на повільних кадрах (1168 DOM-маркерів) зум іде в реальному часі, а не «тягнеться»
+    // dt до 250 мс: на повільних кадрах зум іде в реальному часі, а не «тягнеться»
     const dt = Math.min(250, Math.max(1, now - S.last)); S.last = now;
     let z = S.z + (S.goal - S.z) * (1 - Math.exp(-dt / 80));
     const settled = Math.abs(S.goal - z) < 0.001;
@@ -2790,7 +2791,8 @@ function _lfSmoothWheel(map) {
   }, {passive: false});
   cont.addEventListener('mousedown', finish);
   cont.addEventListener('touchstart', finish, {passive: true});
-  // Під час будь-якого зуму пульсацію зірок призупиняємо — менше роботи щокадру (1168 SVG-маркерів)
+  // Під час будь-якого зуму пульсацію зірки відкритої картки (DOM-маркер) призупиняємо; зірки канваса
+  // під час руху карти теж не пульсують (_wmBusy)
   map.on('zoomstart', () => cont.classList.add('zp-zooming'));
   map.on('zoomend', () => cont.classList.remove('zp-zooming'));
   map._zpWheelStop = finish;
@@ -2811,76 +2813,331 @@ function _starSvgPath(cx, cy, outer, inner, pts) {
   return d + 'Z';
 }
 
-function _renderWorldMarkers() {
-  if (!_worldMapReady || !_worldMap) return;
-  if (_worldMarkersLayer) {
-    _worldMarkersLayer.clearLayers();
-  } else {
-    _worldMarkersLayer = L.featureGroup().addTo(_worldMap);
-  }
-  _worldMarkerById.clear();
-  _worldPickedId = null;
-  if (!people || !people.length) return;
-  people.forEach(p => {
-    if (!p || !isFinite(p.x) || !isFinite(p.y)) return;
-    const [lat, lng] = _p2ll(p.x, p.y);
-    const color = p.color || '#4fc3f7';
-    const rn = p._rn ?? 0;
-    const pts = rn > 0.5 ? 5 : 4;
-    const sz = 13, cx = sz / 2, cy = sz / 2;
-    const outer = sz * 0.46;
-    const inner = outer * (rn > 0.5 ? 0.40 : 0.35);
-    const delay = (((p.id || 0) * 2654435761) >>> 0) % 3000 / 1000;
-    const starPath = _starSvgPath(cx, cy, outer, inner, pts);
-    const starPathSoft = _starSvgPath(cx, cy, outer * 1.55, inner * 1.55, pts);
-    const rl = sz * 0.42;
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${sz}" height="${sz}" viewBox="0 0 ${sz} ${sz}" style="overflow:visible">
-      <g style="animation:wstar-pulse 2.8s ${delay.toFixed(2)}s ease-in-out infinite alternate">
-        <path d="${starPathSoft}" fill="${color}" opacity="0.28"/>
-        <rect x="${(cx-0.7).toFixed(1)}" y="${(cy-rl).toFixed(1)}" width="1.4" height="${(rl*2).toFixed(1)}" fill="${color}" opacity="0.32"/>
-        <rect x="${(cx-rl).toFixed(1)}" y="${(cy-0.7).toFixed(1)}" width="${(rl*2).toFixed(1)}" height="1.4" fill="${color}" opacity="0.32"/>
-        <path d="${starPath}" fill="${color}" opacity="0.93"/>
+// ── Зірки карти «Світ» на одному канвасі (v3.68) ─────────────────────────────────
+// Раніше кожна зірка була DOM-маркером (L.divIcon зі SVG і вічною CSS-пульсацією): 1168 елементів,
+// анімацію яких браузер рахує на головному потоці, — карта «Світ» тягнулась ~5 кадрів/с.
+// Тепер усі зірки малює один канвас у власній панелі Leaflet (над тайлами, під маркерами):
+// — драг: канвас їде разом із картою; перемальовується, лише коли вікно доходить до його краю
+//   (запас — чверть екрана з кожного боку), і після зупинки;
+// — зум колесом, щипком і політ: перемальовується щокадру — зірки свого розміру, як були DOM-маркери;
+//   анімований зум (кнопки +/−): позиції переходять за 250 мс тією ж кривою, що маркери Leaflet;
+// — мерехтіння — те саме, що на карті України (_twinkle, v3.69): свій цикл і фаза в кожної зірки, спалах —
+//   прозорість 0.3→1, масштаб 0.82→1.2, ядро більшає, іноді білий блиск; ~25 кадрів/с, на паузі, поки карта рухається;
+// — наведення й клік — найближча зірка за сіткою; підказка — одна L.tooltip (lf-tip, за курсором);
+// — зірка відкритої картки — окремий DOM-маркер із маяком (_worldPick), на канвасі її не малюємо.
+const _WM_R = 10;                 // півсторона зірки, px (мʼяка зірка — до 9.3 px)
+const _WM_LV = 20;                // рівні спалаху 0…1 (крок 0.05) — свій спрайт на кожен
+const _WM_PAD = 0.25;             // запас канваса з кожного боку — частка вікна
+let _wmCanvas = null, _wmCtx = null, _wmItems = [], _wmOrg = null, _wmW = 0, _wmH = 0, _wmDpr = 1;
+let _wmGrid = null, _wmBusy = false, _wmAnim = null, _wmRaf = 0, _wmLast = 0, _wmDrawn = 0, _wmClock = 0;
+let _wmTip = null, _wmHoverId = null, _wmMouse = null, _wmPicked = null, _wmSig = '';
+const _wmSprites = new Map();
+
+// SVG зірки — для DOM-маркера відкритої картки (та сама геометрія, що в спрайта канваса)
+function _wmStarSvg(it) {
+  const sz = 13, cx = sz / 2, cy = sz / 2, color = h(it.color), ws = (sz * _starSize).toFixed(2);
+  const outer = sz * 0.46, inner = outer * (it.five ? 0.40 : 0.35), pts = it.five ? 5 : 4, rl = sz * 0.42;
+  const ha = Math.min(0.9, 0.33 * _dotGlowInt).toFixed(2), ra = Math.min(0.9, 0.376 * _dotGlowInt).toFixed(2);   // як у спрайта
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${ws}" height="${ws}" viewBox="0 0 ${sz} ${sz}" style="overflow:visible">
+      <g style="animation:wstar-pulse 2.8s ${it.d.toFixed(2)}s ease-in-out infinite alternate">
+        <path d="${_starSvgPath(cx, cy, outer * 1.55, inner * 1.55, pts)}" fill="${color}" opacity="${ha}"/>
+        <rect x="${(cx-0.7).toFixed(1)}" y="${(cy-rl).toFixed(1)}" width="1.4" height="${(rl*2).toFixed(1)}" fill="${color}" opacity="${ra}"/>
+        <rect x="${(cx-rl).toFixed(1)}" y="${(cy-0.7).toFixed(1)}" width="${(rl*2).toFixed(1)}" height="1.4" fill="${color}" opacity="${ra}"/>
+        <path d="${_starSvgPath(cx, cy, outer, inner, pts)}" fill="${color}" opacity="0.93"/>
         <circle cx="${cx}" cy="${cy}" r="${(outer*0.28).toFixed(2)}" fill="rgba(255,255,255,0.95)"/>
       </g>
     </svg>`;
-    const icon = L.divIcon({ html: svg, className: '', iconSize: [sz, sz], iconAnchor: [cx, cy] });
-    const marker = L.marker([lat, lng], { icon });
-    const tipHtml = `<div class="tn">${h(p.last)} ${h(p.first)}</div><div class="tl">&#9875; ${h(p.bury)||'—'}</div><div class="ts">&#11088; ${p.likes||0}</div>`;
-    marker.bindTooltip(tipHtml, { sticky: true, opacity: 1, className: 'lf-tip', offset: [10, 0] });
-    marker.on('click', () => openCard(p));
-    _worldMarkerById.set(p.id, marker);
-    _worldMarkersLayer.addLayer(marker);
+}
+
+// Спрайт зірки (колір × 4/5 променів × рівень спалаху): мʼяка зірка, промені, зірка, біле ядро — як у SVG
+// вище. Кожен рівень намальований у своєму розмірі (масштаб 0.82…1.2, ядро 0.75…1.3 — v3.69): при малюванні
+// спрайт не масштабується — без розмиття. Сторона парна: центр зірки — на межі пікселів, як у маркера Leaflet.
+// Розмір (star_size) і яскравість ореолу й променів (dot_glow_intensity; 0.85 — як було до v3.70) — з «Регулятора зірок»
+function _wmSprite(color, five, lv) {
+  const key = color + '|' + (five ? 5 : 4) + '|' + lv;
+  let sp = _wmSprites.get(key);
+  if (sp) return sp;
+  const P = lv / _WM_LV, k = (0.82 + 0.38 * P) * _wmDpr * _starSize, n = 2 * Math.ceil(_WM_R * k);
+  sp = document.createElement('canvas'); sp.width = sp.height = n;
+  const c = sp.getContext('2d');
+  c.setTransform(k, 0, 0, k, n / 2, n / 2);
+  const pts = five ? 5 : 4, outer = 13 * 0.46, inner = outer * (five ? 0.40 : 0.35), rl = 13 * 0.42;
+  const star = (o, i) => {
+    c.beginPath();
+    for (let j = 0; j < pts * 2; j++) {
+      const r = j % 2 ? i : o, a = j * Math.PI / pts - Math.PI / 2;
+      c.lineTo(r * Math.cos(a), r * Math.sin(a));
+    }
+    c.closePath();
+  };
+  c.fillStyle = color;
+  c.globalAlpha = Math.min(0.9, 0.33 * _dotGlowInt); star(outer * 1.55, inner * 1.55); c.fill();
+  c.globalAlpha = Math.min(0.9, 0.376 * _dotGlowInt); c.fillRect(-0.7, -rl, 1.4, rl * 2); c.fillRect(-rl, -0.7, rl * 2, 1.4);
+  c.globalAlpha = 0.93; star(outer, inner); c.fill();
+  c.globalAlpha = 1; c.fillStyle = 'rgba(255,255,255,0.95)';
+  c.beginPath(); c.arc(0, 0, outer * 0.28 * (0.75 + 0.55 * P), 0, Math.PI * 2); c.fill();
+  _wmSprites.set(key, sp);
+  return sp;
+}
+
+// Блиск (v3.69): білий хрестик із мʼяким центром — поверх зірки на вершині спалаху (_twinkle → p._twS).
+// Довжина — від «Сили блиску» й розміру зірок (v3.70)
+let _wmSpk = null;
+function _wmSpark() {
+  const key = _wmDpr + '|' + _starSize + '|' + _starGlintStr;
+  if (_wmSpk && _wmSpk._key === key) return _wmSpk;
+  const f = (0.7 + 0.3 * _starGlintStr) * _starSize, L = 14 * f, w = 0.8 * Math.max(0.75, Math.sqrt(_starSize));
+  const n = 2 * Math.ceil((L + 1) * _wmDpr);
+  const sp = document.createElement('canvas'); sp.width = sp.height = n; sp._key = key;
+  const c = sp.getContext('2d');
+  c.setTransform(_wmDpr, 0, 0, _wmDpr, n / 2, n / 2);
+  for (const vert of [true, false]) {
+    const g = vert ? c.createLinearGradient(0, -L, 0, L) : c.createLinearGradient(-L, 0, L, 0);
+    g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(0.5, 'rgba(255,255,255,1)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+    c.fillStyle = g;
+    if (vert) c.fillRect(-w, -L, w * 2, L * 2); else c.fillRect(-L, -w, L * 2, w * 2);
+  }
+  const gr = 4.5 * _starSize, gl = c.createRadialGradient(0, 0, 0, 0, 0, gr);
+  gl.addColorStop(0, 'rgba(255,255,255,0.9)'); gl.addColorStop(1, 'rgba(255,255,255,0)');
+  c.fillStyle = gl; c.beginPath(); c.arc(0, 0, gr, 0, Math.PI * 2); c.fill();
+  return (_wmSpk = sp);
+}
+
+// Канвас — на вікно з запасом; позиції зірок — у точках шару Leaflet (без округлення: плавний зум)
+function _wmLayout() {
+  const m = _worldMap;
+  if (!_wmCanvas || !m) return;
+  const size = m.getSize();
+  if (!size.x || !size.y) return;                     // контейнер ще прихований
+  const px = Math.round(size.x * _WM_PAD), py = Math.round(size.y * _WM_PAD);
+  const w = size.x + px * 2, hh = size.y + py * 2;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  if (dpr !== _wmDpr) { _wmDpr = dpr; _wmSprites.clear(); _wmItems.forEach(it => { it.sp = []; }); }
+  if (w !== _wmW || hh !== _wmH || _wmCanvas.width !== Math.round(w * dpr)) {
+    _wmW = w; _wmH = hh;
+    _wmCanvas.width = Math.round(w * dpr); _wmCanvas.height = Math.round(hh * dpr);
+    _wmCanvas.style.width = w + 'px'; _wmCanvas.style.height = hh + 'px';
+  }
+  _wmOrg = m.containerPointToLayerPoint([-px, -py]).round();
+  L.DomUtil.setPosition(_wmCanvas, _wmOrg);
+  const z = m.getZoom(), po = m.getPixelOrigin();
+  for (const it of _wmItems) {
+    const pt = m.project(it.ll, z);
+    it.x = pt.x - po.x; it.y = pt.y - po.y;
+  }
+  _wmGrid = null;                                     // сітку для наведення збудуємо при потребі
+  _wmDraw();
+}
+
+function _wmDraw() {
+  const c = _wmCtx;
+  if (!c || !_wmOrg) return;
+  // «Регулятор зірок» (v3.70): змінились розмір чи свічення (або щільність пікселів) — спрайти заново,
+  // маркер зірки відкритої картки — теж
+  const sig = _wmDpr + '|' + _starSize + '|' + _dotGlowInt;
+  let repick = false;
+  if (sig !== _wmSig) {
+    _wmSig = sig; _wmSprites.clear(); _wmItems.forEach(it => { it.sp = []; });
+    if (_wmPicked && _worldPickedId != null) { _wmPicked.remove(); _wmPicked = null; repick = true; }
+  }
+  _wmDrawn = performance.now();
+  const dpr = _wmDpr;
+  c.setTransform(1, 0, 0, 1, 0, 0);                  // у пікселях канваса
+  c.clearRect(0, 0, _wmCanvas.width, _wmCanvas.height);
+  const ox = _wmOrg.x, oy = _wmOrg.y, T = _wmClock, lim = 20 * _starSize, A = _dotPulseAmp, gs = _starGlintStr;
+  const spk = _wmSpark(), sh = spk.width / 2;
+  for (const it of _wmItems) {
+    if (it.p.id === _worldPickedId) continue;         // її показує DOM-маркер із маяком
+    const x = it.x - ox, y = it.y - oy;
+    if (x < -lim || y < -lim || x > _wmW + lim || y > _wmH + lim) continue;
+    const P = (1 - A) + A * _twinkle(it.p, T);        // мерехтіння — як на карті України (v3.69)
+    const lv = Math.round(P * _WM_LV);
+    const sp = it.sp[lv] || (it.sp[lv] = _wmSprite(it.color, it.five, lv)), hn = sp.width / 2;
+    const px = Math.round(x * dpr), py = Math.round(y * dpr);
+    c.globalAlpha = 0.3 + 0.7 * P;
+    c.drawImage(sp, px - hn, py - hn);
+    const s = it.p._twS;
+    if (s > 0.02 && gs > 0) { c.globalAlpha = Math.min(1, 0.9 * s * gs); c.drawImage(spk, px - sh, py - sh); }
+  }
+  c.globalAlpha = 1;
+  if (repick) _worldPick(_worldPickedId);
+}
+
+// cubic-bezier(0,0,.25,1) — крива анімованого зуму Leaflet (.leaflet-zoom-anim, leaflet.css)
+function _wmEase(x) {
+  let lo = 0, hi = 1, t = x;
+  for (let i = 0; i < 18; i++) { t = (lo + hi) / 2; if (0.75 * (1 - t) * t * t + t * t * t < x) lo = t; else hi = t; }
+  return 3 * (1 - t) * t * t + t * t * t;
+}
+
+// Один цикл: анімований зум — щокадру; пульсація — ~25 кадрів/с, поки карта стоїть
+function _wmTick(now) {
+  _wmRaf = 0;
+  if (_mapMode !== 'world' || !_wmCanvas) return;    // повернулись на карту України — цикл стоїть
+  const dt = Math.min(100, Math.max(0, now - _wmLast)); _wmLast = now;
+  if (_wmAnim) {
+    const t = Math.min(1, (now - _wmAnim.t0) / 250), e = _wmEase(t);
+    for (const it of _wmItems) { it.x = it.fx + (it.tx - it.fx) * e; it.y = it.fy + (it.ty - it.fy) * e; }
+    _wmDraw();
+    if (t >= 1) _wmAnim = null;                       // точне розставлення — подія zoom наприкінці анімації
+  } else if (!_wmBusy) {
+    _wmClock += dt / 1000;
+    if (now - _wmDrawn >= 40) _wmDraw();
+  }
+  _wmRaf = requestAnimationFrame(_wmTick);
+}
+function _wmStart() {
+  if (_wmRaf) return;
+  _wmLast = performance.now();
+  _wmRaf = requestAnimationFrame(_wmTick);
+}
+
+function _wmOnZoomAnim(e) {                           // кнопки +/−, подвійний клік: як маркери Leaflet
+  const m = _worldMap;
+  for (const it of _wmItems) {
+    const pt = m._latLngToNewLayerPoint(it.ll, e.zoom, e.center);
+    it.fx = it.x; it.fy = it.y; it.tx = pt.x; it.ty = pt.y;
+  }
+  _wmAnim = {t0: performance.now()};
+  _wmGrid = null;
+  _wmStart();
+}
+function _wmOnZoom() {                                // колесо, щипок, політ — щокадру; кінець анімованого зуму
+  if (_worldMap._animatingZoom) return;
+  _wmAnim = null;
+  _wmLayout();
+}
+function _wmOnMove() {                                // драг: перемальовуємо, лише коли вікно дійшло до краю канваса
+  if (_wmAnim || !_wmOrg) return;
+  const m = _worldMap, tl = m.containerPointToLayerPoint([0, 0]), s = m.getSize();
+  if (tl.x < _wmOrg.x || tl.y < _wmOrg.y || tl.x + s.x > _wmOrg.x + _wmW || tl.y + s.y > _wmOrg.y + _wmH) _wmLayout();
+}
+function _wmOnMoveStart() { _wmBusy = true; _wmHideTip(); }
+function _wmOnMoveEnd() {
+  _wmBusy = false; _wmAnim = null;
+  _wmLayout();
+  if (_wmMouse) _wmHover(_wmMouse, null);              // курсор лишився над зіркою — підказка знову
+}
+
+// Найближча зірка до точки шару: ~8 px мишею, 16 px пальцем; зірка картки — збільшена й поверх сусідів
+function _wmTouch(ev) {
+  return !!ev && (ev.pointerType === 'touch' || ev.pointerType === 'pen' || !!(ev.sourceCapabilities && ev.sourceCapabilities.firesTouchEvents));
+}
+function _wmHit(lp, ev) {
+  if (_wmAnim || !_wmItems.length) return null;
+  const r = (_wmTouch(ev) ? 16 : 8) * Math.max(1, _starSize), C = 32;
+  const pk = _worldPickedId != null ? _worldPtById.get(_worldPickedId) : null;
+  if (pk && (pk.x - lp.x) ** 2 + (pk.y - lp.y) ** 2 <= (r * 1.6) ** 2) return pk;
+  if (!_wmGrid) {
+    _wmGrid = new Map();
+    for (const it of _wmItems) {
+      const k = Math.floor(it.x / C) + ',' + Math.floor(it.y / C);
+      const a = _wmGrid.get(k);
+      if (a) a.push(it); else _wmGrid.set(k, [it]);
+    }
+  }
+  let best = null, bd = r * r;
+  const gx = Math.floor(lp.x / C), gy = Math.floor(lp.y / C);
+  for (let i = gx - 1; i <= gx + 1; i++) for (let j = gy - 1; j <= gy + 1; j++) {
+    const a = _wmGrid.get(i + ',' + j);
+    if (!a) continue;
+    for (const it of a) {                             // у порядку малювання: при рівній відстані — верхня
+      const d = (it.x - lp.x) ** 2 + (it.y - lp.y) ** 2;
+      if (d <= bd) { bd = d; best = it; }
+    }
+  }
+  return best;
+}
+function _wmHover(cp, ev) {                           // cp — точка контейнера
+  const m = _worldMap;
+  const it = _wmBusy ? null : _wmHit(m.containerPointToLayerPoint(cp), ev);
+  if (!it) { _wmHideTip(); return; }
+  if (!_wmTip) _wmTip = L.tooltip({className: 'lf-tip', opacity: 1, offset: [10, 0]});
+  if (_wmHoverId !== it.p.id) { _wmTip.setContent(_wmTipHtml(it.p)); _wmHoverId = it.p.id; }
+  _wmTip.setLatLng(m.containerPointToLatLng(cp));    // за курсором, як sticky-підказка маркера
+  if (!m.hasLayer(_wmTip)) _wmTip.addTo(m);
+  if (_wmCanvas.style.cursor !== 'pointer') _wmCanvas.style.cursor = 'pointer';
+}
+function _wmHideTip() {
+  if (_wmTip && _worldMap && _worldMap.hasLayer(_wmTip)) _worldMap.removeLayer(_wmTip);
+  _wmHoverId = null;
+  if (_wmCanvas && _wmCanvas.style.cursor) _wmCanvas.style.cursor = '';
+}
+// Лише над самим канвасом: над кнопками зуму й підписами Leaflet зірок «під ними» не чіпаємо
+function _wmOnMouseMove(e) {
+  const ev = e.originalEvent;
+  _wmMouse = _wmTouch(ev) ? null : e.containerPoint;
+  if (_wmBusy) return;
+  if (ev && ev.target !== _wmCanvas) { _wmHideTip(); return; }
+  _wmHover(e.containerPoint, ev);
+}
+function _wmOnMouseOut() { _wmMouse = null; _wmHideTip(); }
+function _wmOnClick(e) {
+  const ev = e.originalEvent;
+  if (ev && ev.target !== _wmCanvas) return;
+  const it = _wmHit(e.layerPoint, ev);
+  if (!it) { _wmHideTip(); return; }
+  _wmHover(e.containerPoint, ev);                     // підказка, як у маркера (на дотик — теж)
+  openCard(it.p);
+}
+
+function _wmInit() {
+  if (_wmCanvas) return;
+  const m = _worldMap, pane = m.createPane('zpStars');
+  pane.style.zIndex = 450;                            // над тайлами (200) і overlayPane (400), під маркерами (600)
+  _wmCanvas = L.DomUtil.create('canvas', 'zp-wm-stars', pane);
+  _wmCtx = _wmCanvas.getContext('2d');
+  m.on({movestart: _wmOnMoveStart, move: _wmOnMove, moveend: _wmOnMoveEnd, zoom: _wmOnZoom, zoomanim: _wmOnZoomAnim,
+        viewreset: _wmLayout, resize: _wmLayout, mousemove: _wmOnMouseMove, mouseout: _wmOnMouseOut, click: _wmOnClick});
+}
+
+function _renderWorldMarkers() {
+  if (!_worldMapReady || !_worldMap) return;
+  _wmInit();
+  _wmHideTip();
+  if (_wmPicked) { _wmPicked.remove(); _wmPicked = null; }
+  _worldPtById.clear();
+  _worldPickedId = null;
+  _wmItems = [];
+  (people || []).forEach(p => {
+    if (!p || !isFinite(p.x) || !isFinite(p.y)) return;
+    const [lat, lng] = _p2ll(p.x, p.y);
+    if (!isFinite(lat) || !isFinite(lng)) return;
+    const it = {p, ll: L.latLng(lat, lng), color: p.color || '#4fc3f7', five: (p._rn ?? 0) > 0.5,
+      d: (((p.id || 0) * 2654435761) >>> 0) % 3000 / 1000,   // своя фаза пульсації (як затримка анімації раніше)
+      sp: [], x: 0, y: 0};
+    _wmItems.push(it);
+    _worldPtById.set(p.id, it);
   });
+  _wmItems.sort((a, b) => b.ll.lat - a.ll.lat);       // як у Leaflet: південніша зірка поверх північнішої
+  _wmLayout();
+  _wmStart();
   if (selId != null) _worldPick(selId);   // картка відкрита — її зірка підсвічена й після перемальовування
 }
 
 // Зірка відкритої картки на карті «Світ» — той самий фокус, що на карті України (drawDotFX, isS):
 // м'яке золоте свічення, золоте кільце й три кільця-маяки (Style.css .wm-beacon), поверх сусідів.
+// Окремий DOM-маркер (не чіпає мишу — наведення й клік обробляє канвас); на канвасі ця зірка не малюється.
 // Аналог виділення selId; id = null — зняти
 const _WM_BEACON = '<span class="wm-beacon"><i class="wm-glow"></i><i class="wm-b wm-b0"></i><i class="wm-b wm-b1"></i><i class="wm-b wm-b2"></i><i class="wm-ring"></i></span>';
 function _worldPick(id) {
-  const prev = _worldPickedId != null ? _worldMarkerById.get(_worldPickedId) : null;
-  if (prev && _worldPickedId !== id) {
-    prev.setZIndexOffset(0);
-    const el = prev.getElement();
-    if (el) { el.classList.remove('wm-picked'); const b = el.querySelector('.wm-beacon'); if (b) b.remove(); }
-    prev.closeTooltip();
-  }
   _worldPickedId = id;
-  const m = id != null ? _worldMarkerById.get(id) : null;
-  if (!m) return;
-  m.setZIndexOffset(10000);
-  const el = m.getElement();
-  if (el) {
-    el.classList.add('wm-picked');
-    if (!el.querySelector('.wm-beacon')) el.insertAdjacentHTML('afterbegin', _WM_BEACON);
+  const it = id != null ? _worldPtById.get(id) : null;
+  if (_wmPicked && (!it || _wmPicked._zpId !== id)) { _wmPicked.remove(); _wmPicked = null; }
+  if (it && !_wmPicked && _worldMap) {
+    _wmPicked = L.marker(it.ll, {
+      icon: L.divIcon({html: _WM_BEACON + _wmStarSvg(it), className: 'wm-picked', iconSize: [13 * _starSize, 13 * _starSize], iconAnchor: [6.5 * _starSize, 6.5 * _starSize]}),
+      interactive: false, keyboard: false, zIndexOffset: 10000
+    }).addTo(_worldMap);
+    _wmPicked._zpId = id;
   }
+  _wmDraw();
 }
 
 // Пошук у режимі «Світ»: летимо до зірки по карті світу (а не по прихованій карті України)
 function _worldFlyTo(p) {
-  const m = _worldMarkerById.get(p.id);
-  const ll = m ? m.getLatLng() : L.latLng((p.world_lat != null && p.world_lng != null)
+  const it = _worldPtById.get(p.id);
+  const ll = it ? it.ll : L.latLng((p.world_lat != null && p.world_lng != null)
     ? [parseFloat(p.world_lat), parseFloat(p.world_lng)] : _p2ll(p.x, p.y));
   if (_worldMap._zpWheelStop) _worldMap._zpWheelStop();
   _worldMap.flyTo(ll, Math.max(_worldMap.getZoom(), 9), {duration: 0.9});
@@ -2891,8 +3148,8 @@ function _worldFlyTo(p) {
 // тож рухається разом із картою; після анімації прибирається
 function _worldLikeBurst(p) {
   if (!_worldMap) return;
-  const m = _worldMarkerById.get(p.id);
-  const ll = m ? m.getLatLng() : L.latLng((p.world_lat != null && p.world_lng != null)
+  const it = _worldPtById.get(p.id);
+  const ll = it ? it.ll : L.latLng((p.world_lat != null && p.world_lng != null)
     ? [parseFloat(p.world_lat), parseFloat(p.world_lng)] : _p2ll(p.x, p.y));
   const pt = _worldMap.latLngToLayerPoint(ll);
   const el = document.createElement('span');
@@ -2904,6 +3161,11 @@ function _worldLikeBurst(p) {
   const done = () => el.remove();
   el.addEventListener('animationend', done);
   setTimeout(done, 1500);
+}
+
+// Підказка зірки — будується при наведенні (свіжі лайки)
+function _wmTipHtml(p) {
+  return `<div class="tn">${h(p.last)} ${h(p.first)}</div><div class="tl">&#9875; ${h(p.bury)||'—'}</div><div class="ts">&#11088; ${p.likes||0}</div>`;
 }
 
 function _initWorldMap() {
@@ -3138,10 +3400,15 @@ function applyColors() {
   window.ZOOM_MAX         = parseFloat(c('zoom_max')         || '8');
   window.CITY_BORDER_ZOOM = parseFloat(c('city_border_zoom') || '2.5');
   // Пульсація і свічення зірок
-  _dotPulseSpeed = Math.max(0.1, parseFloat(c('dot_pulse_speed')    || '1.0'));
-  _dotPulseAmp   = Math.max(0,   parseFloat(c('dot_pulse_amp')      || '0.35'));
-  _dotGlowInt    = Math.max(0,   parseFloat(c('dot_glow_intensity') || '0.40'));
-  _dotGlowR      = Math.max(1,   parseFloat(c('dot_glow_radius')    || '3.0'));
+  // Адмінка → «Регулятор зірок» (v3.70); межі — ті самі, що на сервері (_STAR_NUM_KEYS у Paskal.py)
+  const _stN = (k, d, lo, hi) => { const v = parseFloat(c(k)); return isFinite(v) ? Math.min(hi, Math.max(lo, v)) : d; };
+  _dotPulseSpeed   = _stN('dot_pulse_speed',     1.0,  0.1, 5);
+  _dotPulseAmp     = _stN('dot_pulse_amp',       0.35, 0,   1);
+  _dotGlowInt      = _stN('dot_glow_intensity',  0.40, 0,   2);
+  _dotGlowR        = _stN('dot_glow_radius',     3.0,  1,   12);
+  _starGlintChance = _stN('star_glint_chance',   33,   0,   100);
+  _starGlintStr    = _stN('star_glint_strength', 1,    0,   2);
+  _starSize        = _stN('star_size',           1,    0.5, 2);
 
   // Застосовуємо smoke-налаштування до fluid simulation
   applySmokeConfig();
@@ -3613,7 +3880,7 @@ function flyTo(xr,yr,ts) {
   })(t0);
 }
 
-function dotR(p) { return(2+(p._rn??0)*3.5)*_cachedSqrtS; }
+function dotR(p) { return(2+(p._rn??0)*3.5)*_cachedSqrtS*_starSize; }   // _starSize — «Регулятор зірок» (v3.70)
 function hit(sx,sy) {
   let best=null,bd=Infinity;
   for(const p of people){const pos=w2s(p.x,p.y);const d=Math.hypot(sx-pos.x,sy-pos.y);const r=dotR(p)*3+10;if(d<r&&d<bd){best=p;bd=d;}}
@@ -3857,6 +4124,26 @@ function drawNeonThreads(visIds) {
   ctx.restore();
 }
 
+// ── Мерехтіння зірок (v3.69) — однакове на карті України і на «Світі» ────────────────────────────
+// У кожної зірки своя тривалість циклу (5–10 с при швидкості 1; швидкість 2 → 2.5–5 с) і своя фаза по всьому
+// циклу: зірки спалахують не разом, а через різні цикли візерунок не повторюється. Хвиля загострена (квадрат
+// косинусної): більшу частину циклу зірка притемнена й ненадовго яскраво спалахує — так мерехтіння помітне.
+// У частині циклів (star_glint_chance, за замовчуванням 33 %; у кожної зірки — свої) на вершині спалаху — білий
+// блиск (p._twS, 0..1). Усе — в адмінці → «Регулятор зірок» (v3.70): dot_pulse_speed, dot_pulse_amp, star_glint_*
+function _twinkle(p, t) {
+  const id = p.id || 0;
+  if (p._twP === undefined) {
+    p._twP = 5 + 5 * ((((id * 1103515245 + 12345) >>> 0) % 1000) / 1000);
+    p._twF = (((id * 2654435761) >>> 0) % 10007) / 10007;
+  }
+  const x = t * _dotPulseSpeed / p._twP + p._twF, k = Math.floor(x);
+  const s = 0.5 - 0.5 * Math.cos(6.2831853 * (x - k));          // 0 → 1 → 0 за цикл
+  let hsh = Math.imul(id ^ Math.imul(k + 1, 0x27d4eb2d), 0x165667b1); hsh ^= hsh >>> 15;
+  p._twS = s > 0.75 && (hsh >>> 0) % 1000 < _starGlintChance * 10 ? (s - 0.75) * 4 * Math.min(1, _dotPulseAmp / 0.5) : 0;
+  return s * s;
+}
+
+const _spkCache = new Map();   // градієнти блиску (v3.69), за розміром
 function drawDotFX(p, pos, pulse) {
   const rn=p._rn??0;
   const r=dotR(p);
@@ -3870,6 +4157,27 @@ function drawDotFX(p, pos, pulse) {
     grd.addColorStop(0.45,`rgba(${p._r},${p._g},${p._b},${Math.min(1,baseA*.35).toFixed(2)})`);
     grd.addColorStop(1,   `rgba(${p._r},${p._g},${p._b},0)`);
     ctx.beginPath();ctx.arc(pos.x,pos.y,gr,0,Math.PI*2);ctx.fillStyle=grd;ctx.fill();
+  }
+  // ── блиск на вершині спалаху (v3.69): білий хрестик, приблизно в кожному третьому циклі (_twinkle) ──
+  const spk=p._twS||0, gs=_starGlintStr;   // gs — «Сила блиску» з адмінки (v3.70)
+  if(spk>0.02&&gs>0){
+    const L=Math.round(r*(3.2+2.2*spk)*(0.7+0.3*gs)*2)/2, hw=Math.max(0.5,Math.round(r*0.17*4)/4);
+    const sKey=L+'|'+hw;
+    let sg=_spkCache.get(sKey);
+    if(!sg){
+      sg={};
+      sg.v=ctx.createLinearGradient(0,-L,0,L);
+      sg.h=ctx.createLinearGradient(-L,0,L,0);
+      for(const g of [sg.v,sg.h]){g.addColorStop(0,'rgba(255,255,255,0)');g.addColorStop(0.5,'rgba(255,255,255,1)');g.addColorStop(1,'rgba(255,255,255,0)');}
+      if(_spkCache.size>400)_spkCache.clear();
+      _spkCache.set(sKey,sg);
+    }
+    ctx.save();
+    ctx.globalAlpha=Math.min(1,0.9*spk*gs);
+    ctx.translate(pos.x,pos.y);
+    ctx.fillStyle=sg.v;ctx.fillRect(-hw,-L,hw*2,L*2);
+    ctx.fillStyle=sg.h;ctx.fillRect(-L,-hw,L*2,hw*2);
+    ctx.restore();
   }
   // ── неонове кільце для дублікатів ───────────────────────
   if(p._hasDupe){const ringR=r*4.5+Math.sin(animT*2.5+(p.id||0))*r*.5;ctx.beginPath();ctx.arc(pos.x,pos.y,ringR,0,Math.PI*2);ctx.strokeStyle=`rgba(0,200,255,${(.12+.08*Math.sin(animT*2)).toFixed(2)})`;ctx.lineWidth=1;ctx.stroke();}
@@ -3896,6 +4204,7 @@ function _startCanvasLoop() {
     _lastCanvasFrame = ts;
     _cachedSqrtS = Math.min(Math.sqrt(tr.s), 2.5);
     animT+=.033;ctx.clearRect(0,0,W,H);
+    const _twT=ts/1000;   // час мерехтіння — реальний (animT іде швидше, коли карта рухається)
     // Pre-compute visible dots + індивідуальний pulse кожної зірки
     let _minS=0; try{_minS=_densityMinScore(tr.s);}catch(_){}
     let _denCount=0;
@@ -3907,12 +4216,8 @@ function _startCanvasLoop() {
       const pos=w2s(p.x,p.y);
       if(!isFinite(pos.x)||!isFinite(pos.y))continue;
       if(pos.x<-60||pos.x>W+60||pos.y<-60||pos.y>H+60)continue;
-      // Псевдо-випадкові фаза і швидкість — кожна зірка мерехтить незалежно
-      const _pid=(p.id||0);
-      const phase=((_pid*2654435761)>>>0)%6283/1000;           // 0..2π унікальна фаза
-      const spd=0.7+0.6*(((_pid*1103515245+12345)>>>0)%1000)/1000; // 0.7..1.3×
-      const sp=_dotPulseSpeed*spd*(1+(p._rn??0)*0.3);
-      const pulse=(1-_dotPulseAmp)+_dotPulseAmp*((Math.sin(animT*sp+phase)+1)/2);
+      // Мерехтіння (v3.69): своя тривалість циклу й фаза в кожної зірки — _twinkle()
+      const pulse=(1-_dotPulseAmp)+_dotPulseAmp*_twinkle(p,_twT);
       _vis.push({p,pos,pulse});
     }
     // Лінії зв'язку — тільки між зірками, що пройшли фільтр щільності
@@ -3926,8 +4231,8 @@ function _startCanvasLoop() {
     }
     // Pass 2: основні кола зі змазаними краями (blur → реалістична зірка)
     const _cb=new Map();
-    for(const {p,pos} of _vis){
-      const r=dotR(p);
+    for(const {p,pos,pulse} of _vis){
+      const r=dotR(p)*(0.84+0.22*pulse);   // v3.69: тіло зірки «дихає» разом зі спалахом
       if(!_cb.has(p.color))_cb.set(p.color,[]);
       _cb.get(p.color).push({pos,r});
     }
@@ -3942,8 +4247,9 @@ function _startCanvasLoop() {
     // Pass 3: яскраве біле ядро поверх (пульсує асинхронно, без blur)
     for(const {p,pos,pulse} of _vis){
       const r=dotR(p);const isH=hovId===p.id,isS=selId===p.id;
-      ctx.globalAlpha=Math.min(1,(0.3+0.65*pulse)*(isH||isS?1.4:1));
-      ctx.beginPath();ctx.arc(pos.x,pos.y,r*.38,0,Math.PI*2);
+      // v3.69: ядро яскравішає й більшає на спалаху — найпомітніша частина мерехтіння
+      ctx.globalAlpha=Math.min(1,(0.2+0.8*pulse)*(isH||isS?1.4:1));
+      ctx.beginPath();ctx.arc(pos.x,pos.y,r*.38*(0.75+0.5*pulse),0,Math.PI*2);
       ctx.fillStyle='rgba(255,255,255,0.92)';ctx.fill();
     }
     ctx.globalAlpha=1;
@@ -4178,6 +4484,7 @@ async function loadData() {
     _plStep('people');
     const raw=allPeople;
     people=raw.map(p=>({...p,x:parseFloat(p.pos_x??p.x??0.5),y:parseFloat(p.pos_y??p.y??0.5),grp:p.grp||''}));
+    if (_mapMode === 'world') _renderWorldMarkers();   // відкрили одразу в «Світі» — зірки після завантаження (як в index.html)
     // Ключ зв'язку: ПІБ + дата нар. + дата смерті (незалежно від поля grp)
     people.forEach(p=>{
       const last=(p.last||'').trim().toLowerCase();

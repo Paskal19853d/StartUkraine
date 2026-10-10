@@ -853,6 +853,10 @@ def init_db():
         ("proj_usd_rate",          "0",   "Вартість проекту — курс USD/UAH (НБУ, авто)"),
         ("proj_usd_rate_updated",  "0",   "Вартість проекту — timestamp оновлення курсу"),
         ("proj_cost_per_user_usd", "1.0", "Вартість проекту — CPM ціна одного користувача, $"),
+        # ── Регулятор зірок (v3.70; решта ключів — dot_pulse_*, dot_glow_* — давні) ──────
+        ("star_glint_chance",   "33", "Зірки — частота блиску: у скількох спалахах білий хрестик, % (0–100)"),
+        ("star_glint_strength", "1",  "Зірки — сила блиску: яскравість і довжина хрестика (0–2)"),
+        ("star_size",           "1",  "Зірки — розмір на обох картах (0.5–2)"),
     ]
     with db.cursor() as c:
         for key, val, label in defaults:
@@ -7612,6 +7616,18 @@ def update_color(c_body: ColorUpdate, request: Request):
     cache_delete("colors")
     return {"ok": True}
 
+# Регулятор зірок (v3.70): мерехтіння, блиск, свічення й розмір зірок на обох картах — числа в межах
+# (ключ: (мін, макс, за замовчуванням)); ті самі межі — в applyColors() на сайті й у розділі адмінки
+_STAR_NUM_KEYS = {
+    "dot_pulse_amp":       (0, 1, 0.35),     # сила імпульсу (глибина мерехтіння)
+    "dot_pulse_speed":     (0.1, 5, 1.0),    # швидкість мерехтіння
+    "dot_glow_intensity":  (0, 2, 0.4),      # інтенсивність свічення
+    "dot_glow_radius":     (1, 12, 3.0),     # радіус ореолу (карта України)
+    "star_glint_chance":   (0, 100, 33),     # частота блиску, %
+    "star_glint_strength": (0, 2, 1.0),      # сила блиску
+    "star_size":           (0.5, 2, 1.0),    # розмір зірок
+}
+
 @app.put("/api/admin/colors/batch")
 def update_colors_batch(colors: List[ColorUpdate], request: Request):
     me = require_admin(request)
@@ -7636,10 +7652,13 @@ def update_colors_batch(colors: List[ColorUpdate], request: Request):
                     col.value = str(min(max(int(float(col.value)), 1), _RECENT_DAYS_MAX))
                 except (TypeError, ValueError):
                     col.value = str(_RECENT_DAYS_DEFAULT)
-            elif col.key in _GIFT_NUM_KEYS:    # числа в допустимих межах
-                lo, hi, dflt = _GIFT_NUM_KEYS[col.key]
+            elif col.key in _GIFT_NUM_KEYS or col.key in _STAR_NUM_KEYS:   # числа в допустимих межах
+                lo, hi, dflt = _GIFT_NUM_KEYS.get(col.key) or _STAR_NUM_KEYS[col.key]
                 try:
-                    col.value = f"{min(max(float(col.value), lo), hi):g}"
+                    _v = float(col.value)
+                    if _v != _v or _v in (float("inf"), float("-inf")):   # nan / inf — як нечислове
+                        raise ValueError
+                    col.value = f"{min(max(_v, lo), hi):g}"
                 except (TypeError, ValueError):
                     col.value = f"{dflt:g}"
             c.execute(

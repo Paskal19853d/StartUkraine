@@ -1354,13 +1354,14 @@ mark.shl {
 .leaflet-tooltip.lf-tip .tl { color: #aaa; }
 .leaflet-tooltip.lf-tip .ts { color: #f0b54a; margin-top: 3px; }
 
-/* Пульсація зірок на карті Світу */
+/* Пульсація зірки відкритої картки на карті Світу (DOM-маркер, _worldPick). Решту зірок малює
+   канвас (index.html, _wmDraw) з тими самими параметрами пульсації (v3.68) */
 @keyframes wstar-pulse {
   0%   { opacity: 0.65; transform: scale(0.88); }
   100% { opacity: 1;    transform: scale(1.12); }
 }
 /* Під час зуму карти Світу (клас ставить _lfSmoothWheel на zoomstart/zoomend) пульсацію
-   1168 SVG-зірок призупиняємо — менше роботи щокадру, на око пауза ~пів секунди непомітна */
+   зірки-маркера призупиняємо, як і зірки канваса */
 .leaflet-container.zp-zooming .leaflet-marker-icon g { animation-play-state: paused; }
 /* Зірка відкритої картки (пошук чи клік) на карті Світу — той самий фокус, що на карті України
    (drawDotFX, isS; r ≈ 3.7 px): золоте кільце 5.5r, м'яке свічення 3r→18r, три кільця-маяки,

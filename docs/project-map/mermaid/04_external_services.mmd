@@ -1,0 +1,76 @@
+flowchart LR
+  ext_google_oauth(["Google OAuth 2.0"])
+  ext_google_indexing(["Google Indexing API"])
+  ext_google_search(["Google (ping / проверка)"])
+  ext_liqpay(["LiqPay (ПриватБанк)"])
+  ext_nbu(["НБУ API (bank.gov.ua)"])
+  ext_youtube(["YouTube"])
+  ext_smtp(["SMTP-сервер почты"])
+  ext_google_analytics(["Google Analytics 4 (gtag)"])
+  ext_google_fonts(["Google Fonts"])
+  ext_jsdelivr(["CDN jsDelivr"])
+  ext_carto(["CARTO basemaps"])
+  ext_osm(["Тайлы OpenStreetMap"])
+  ext_wikimedia(["Wikimedia Commons"])
+  ext_monobank(["Monobank (банка)"])
+  ext_social(["Соцсети (Facebook, X, Instagram, YouTube, Telegr…"])
+  ext_tiles_other(["Прочие внешние ресурсы"])
+  py_Paskal_py_startup["Событие startup: startup"] -->|отправляет запрос| ext_nbu
+  py_Paskal_py_startup__currency_rate_loop["startup._currency_rate_loop"] -->|отправляет запрос| ext_nbu
+  py_Paskal_py__liqpay_status["_liqpay_status"] -->|отправляет запрос| ext_liqpay
+  py_Paskal_py_gift_order_pay["gift_order_pay"] -->|отправляет запрос| ext_liqpay
+  py_Paskal_py__send_email["_send_email"] -->|отправляет запрос| ext_smtp
+  py_Paskal_py_yt_check["yt_check"] -->|отправляет запрос| ext_youtube
+  py_Paskal_py_auth_google["auth_google"] -->|отправляет запрос| ext_google_oauth
+  py_Paskal_py_auth_google_callback["auth_google_callback"] -->|отправляет запрос| ext_google_oauth
+  py_Paskal_py__google_index_notify["_google_index_notify"] -->|отправляет запрос| ext_google_oauth
+  py_Paskal_py__google_index_notify["_google_index_notify"] -->|отправляет запрос| ext_google_indexing
+  py_Paskal_py_sitemap["sitemap"] -->|отправляет запрос| ext_google_search
+  py_Paskal_py_sitemap["sitemap"] -->|отправляет запрос| ext_youtube
+  py_Paskal_py_refresh_usd_rate["refresh_usd_rate"] -->|отправляет запрос| ext_nbu
+  page_index_html["Главная (ПК и телефон)"] -->|загружает| ext_google_fonts
+  page_index_html["Главная (ПК и телефон)"] -->|загружает| ext_youtube
+  js_index_html__initWorldMap["_initWorldMap"] -->|зависит от| ext_osm
+  js_index_html__initWorldMap["_initWorldMap"] -->|зависит от| ext_carto
+  js_index_html_loadColors["loadColors"] -->|зависит от| ext_google_analytics
+  js_index_html__buildYtPreview["_buildYtPreview"] -->|зависит от| ext_youtube
+  js_index_html__buildYtPreview_wrap_onclick_4045["⚡ wrap «click»"] -->|зависит от| ext_youtube
+  js_index_html__ytFallback["_ytFallback"] -->|зависит от| ext_youtube
+  js_index_html__showTourVideo["_showTourVideo"] -->|зависит от| ext_youtube
+  js_index_html__showAdVideo["_showAdVideo"] -->|зависит от| ext_youtube
+  page_mobile_html["Версия для планшетов (/mobile)"] -->|загружает| ext_google_fonts
+  page_mobile_html["Версия для планшетов (/mobile)"] -->|загружает| ext_youtube
+  js_mobile_html_loadColors["loadColors"] -->|зависит от| ext_google_analytics
+  js_mobile_html__initWorldMap["_initWorldMap"] -->|зависит от| ext_osm
+  js_mobile_html__initWorldMap["_initWorldMap"] -->|зависит от| ext_carto
+  js_mobile_html__buildYtPreview["_buildYtPreview"] -->|зависит от| ext_youtube
+  js_mobile_html__buildYtPreview_wrap_onclick_3962["⚡ wrap «click»"] -->|зависит от| ext_youtube
+  js_mobile_html__ytFallback["_ytFallback"] -->|зависит от| ext_youtube
+  lib_chartjs["Chart.js 4.4 (графики админки)"] -->|загружает| ext_jsdelivr
+  lib_xlsx["SheetJS xlsx (Excel в админке)"] -->|загружает| ext_jsdelivr
+  js_admin_html__renderImpTable["_renderImpTable"] -->|зависит от| ext_youtube
+  js_admin_html__admTileLayer["_admTileLayer"] -->|зависит от| ext_osm
+  page_card_html["Страница мемориала (card?slug=)"] -->|загружает| ext_google_analytics
+  page_card_html["Страница мемориала (card?slug=)"] -->|загружает| ext_google_fonts
+  page_card_html["Страница мемориала (card?slug=)"] -->|зависит от| ext_youtube
+  js_card_html_fillPage["fillPage"] -->|зависит от| ext_youtube
+  page_profile_html["Профиль пользователя (/user/{nickname})"] -->|загружает| ext_google_analytics
+  page_faq_html["FAQ"] -->|загружает| ext_google_analytics
+  page_faq_html["FAQ"] -->|загружает| ext_google_fonts
+  page_rules_html["Правила"] -->|загружает| ext_google_analytics
+  page_rules_html["Правила"] -->|загружает| ext_google_fonts
+  page_terms_html["Условия использования"] -->|загружает| ext_google_analytics
+  page_terms_html["Условия использования"] -->|загружает| ext_google_fonts
+  page_how_to_add_html["Как добавить погибшего"] -->|загружает| ext_google_analytics
+  page_how_to_add_html["Как добавить погибшего"] -->|загружает| ext_google_fonts
+  page_privacy_policy_html["Политика конфиденциальности"] -->|загружает| ext_google_analytics
+  page_privacy_policy_html["Политика конфиденциальности"] -->|загружает| ext_google_fonts
+  page_pricing_index_html["Тарифы (/pricing/)"] -->|загружает| ext_google_fonts
+  page_promo_index_html["Промо (/promo/)"] -->|загружает| ext_google_fonts
+  page_portfolio_index_html["Портфолио (/portfolio/)"] -->|загружает| ext_google_fonts
+  page_update_v_uddate_history_html["История обновлений (/update_v/…)"] -->|загружает| ext_google_fonts
+  page_offline_html["Офлайн-страница"] -->|загружает| ext_google_analytics
+  page_404_html["Ошибка 404"] -->|загружает| ext_google_analytics
+  page_403_html["Ошибка 403"] -->|загружает| ext_google_analytics
+  page_429_html["Ошибка 429"] -->|загружает| ext_google_analytics
+  page_load_test_html["Нагрузочный тест (служебная)"] -->|загружает| ext_jsdelivr
